@@ -1,0 +1,501 @@
+from __future__ import annotations
+
+import logging
+import threading
+import traceback
+from pathlib import Path
+from typing import Any, Optional
+
+import aiofiles
+from fastapi import FastAPI, File, HTTPException, UploadFile
+from llama_index.core.schema import NodeWithScore
+from pydantic import BaseModel
+from starlette.concurrency import run_in_threadpool
+
+from ..config.general_config import GeneralConfig
+from ..config.ingest_config import IngestConfig
+from ..config.rerank_config import RerankConfig
+from ..embed.embed import create_embed_manager
+from ..ingest import ingest
+from ..ingest.loader.file_loader import FileLoader
+from ..ingest.loader.html_loader import HTMLLoader
+from ..llama.core.schema import Modality
+from ..logger import logger
+from ..meta_store.meta_store import create_meta_store
+from ..rerank.rerank import create_rerank_manager
+from ..retrieve import retrieve
+from ..vector_store.vector_store import create_vector_store_manager
+
+__all__ = ["app"]
+
+logging.getLogger("httpcore.http11").setLevel(logging.WARNING)
+logging.getLogger("httpcore.connection").setLevel(logging.WARNING)
+logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
+logging.getLogger("PIL.Image").setLevel(logging.WARNING)
+logging.getLogger("PIL.PngImagePlugin").setLevel(logging.WARNING)
+logging.getLogger("openai._base_client").setLevel(logging.WARNING)
+logging.getLogger("unstructured.trace").setLevel(logging.WARNING)
+
+
+class QueryTextRequest(BaseModel):
+    query: str
+    topk: Optional[int] = None
+
+
+class QueryMultimodalRequest(BaseModel):
+    path: str
+    topk: Optional[int] = None
+
+
+class PathRequest(BaseModel):
+    path: str
+
+
+class URLRequest(BaseModel):
+    url: str
+
+
+# uvicorn raggify.main:app --host 0.0.0.0 --port 8000
+app = FastAPI(title=GeneralConfig.project_name, version=GeneralConfig.version)
+
+_embed = create_embed_manager()
+logger.info(f"{_embed.name} embed initialized")
+
+_meta_store = create_meta_store()
+logger.info("meta store initialized")
+
+_vector_store = create_vector_store_manager(embed=_embed, meta_store=_meta_store)
+logger.info(f"{_vector_store.name} vector store initialized")
+
+_rerank = create_rerank_manager()
+logger.info(f"{_rerank.name} rerank initialized")
+
+_file_loader = FileLoader(
+    chunk_size=IngestConfig.chunk_size,
+    chunk_overlap=IngestConfig.chunk_overlap,
+    store=_vector_store,
+)
+logger.info("file loader initialized")
+
+_html_loader = HTMLLoader(
+    chunk_size=IngestConfig.chunk_size,
+    chunk_overlap=IngestConfig.chunk_overlap,
+    file_loader=_file_loader,
+    store=_vector_store,
+    user_agent=IngestConfig.user_agent,
+)
+logger.info("html loader initialized")
+
+_request_lock = threading.Lock()
+
+
+def _nodes_to_response(nodes: list[NodeWithScore]) -> list[dict[str, Any]]:
+    """NodeWithScore リストを JSON 返却可能な辞書リストへ変換する。
+
+    Args:
+        nodes (list[NodeWithScore]): 変換対象ノード
+
+    Returns:
+        list[dict[str, Any]]: JSON 変換済みノードリスト
+    """
+    return [
+        {"text": node.text, "metadata": node.metadata, "score": node.score}
+        for node in nodes
+    ]
+
+
+@app.get("/v1/health")
+async def health() -> dict[str, Any]:
+    """raggify の稼働状態を返却する。
+
+    Returns:
+        dict[str, Any]: 結果
+    """
+    logger.info("exec /v1/health")
+
+    return {
+        "status": "ok",
+        "store": _vector_store.name,
+        "embed": _embed.name,
+        "rerank": _rerank.name,
+    }
+
+
+@app.post("/v1/upload", operation_id="upload")
+async def upload(files: list[UploadFile] = File(...)) -> dict[str, Any]:
+    """ファイルを（クライアントから）アップロードする。
+
+    Args:
+        files (list[UploadFile], optional): ファイル群。Defaults to File(...).
+
+    Raises:
+        HTTPException(500): 初期化やファイル作成に失敗
+        HTTPException(400): ファイル名が空
+
+    Returns:
+        dict[str, Any]: 結果
+    """
+    logger.info("exec /v1/upload")
+
+    try:
+        upload_dir = Path(IngestConfig.upload_dir).absolute()
+        upload_dir.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"upload init failure: {e}") from e
+
+    await run_in_threadpool(_request_lock.acquire)
+    try:
+        results = []
+        for f in files:
+            if f.filename is None:
+                raise HTTPException(status_code=400, detail="filename is not specified")
+
+            try:
+                safe = Path(f.filename).name
+                path = upload_dir / safe
+                async with aiofiles.open(path, "wb") as buf:
+                    while True:
+                        chunk = await f.read(1024 * 1024)
+                        if not chunk:
+                            break
+                        await buf.write(chunk)
+
+            except Exception as e:
+                traceback.print_exc()
+                raise HTTPException(
+                    status_code=500, detail=f"upload failure: {e}"
+                ) from e
+            finally:
+                await f.close()
+
+            results.append(
+                {
+                    "filename": safe,
+                    "content_type": f.content_type,
+                    "save_path": str(path),
+                }
+            )
+
+        return {"files": results}
+    finally:
+        _request_lock.release()
+
+
+@app.post("/v1/query/text_text", operation_id="query_text_text")
+async def query_text_text(payload: QueryTextRequest) -> dict[str, Any]:
+    """クエリ文字列によるテキストドキュメント検索。
+
+    Args:
+        payload (QueryTextRequest): クエリ内容
+
+    Raises:
+        HTTPException: 検索処理に失敗
+
+    Returns:
+        dict[str, Any]: 検索結果
+    """
+    logger.info("exec /v1/query/text_text")
+
+    if Modality.TEXT not in _embed.modality:
+        raise HTTPException(
+            status_code=501,
+            detail="text embeddings is not supported",
+        )
+
+    await run_in_threadpool(_request_lock.acquire)
+    try:
+        try:
+            nodes = await retrieve.aquery_text_text(
+                query=payload.query,
+                store=_vector_store,
+                topk=payload.topk or RerankConfig.topk,
+                rerank=_rerank,
+            )
+        except Exception as e:
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"query failure: {e}") from e
+    finally:
+        _request_lock.release()
+
+    return {"documents": _nodes_to_response(nodes)}
+
+
+@app.post("/v1/query/text_image", operation_id="query_text_image")
+async def query_text_image(payload: QueryTextRequest) -> dict[str, Any]:
+    """クエリ文字列による画像ドキュメント検索。
+
+    Args:
+        payload (QueryTextRequest): クエリ内容
+
+    Raises:
+        HTTPException: 検索処理に失敗
+
+    Returns:
+        dict[str, Any]: 検索結果
+    """
+    logger.info("exec /v1/query/text_image")
+
+    if Modality.IMAGE not in _embed.modality:
+        raise HTTPException(
+            status_code=501,
+            detail="image embeddings is not supported",
+        )
+
+    await run_in_threadpool(_request_lock.acquire)
+    try:
+        try:
+            nodes = await retrieve.aquery_text_image(
+                query=payload.query,
+                store=_vector_store,
+                topk=payload.topk or RerankConfig.topk,
+                rerank=_rerank,
+            )
+        except Exception as e:
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"query failure: {e}") from e
+    finally:
+        _request_lock.release()
+
+    return {"documents": _nodes_to_response(nodes)}
+
+
+@app.post("/v1/query/image_image", operation_id="query_image_image")
+async def query_image_image(payload: QueryMultimodalRequest) -> dict[str, Any]:
+    """クエリ画像による画像ドキュメント検索。
+
+    Args:
+        payload (QueryMultimodalRequest): クエリ内容
+
+    Raises:
+        HTTPException: 検索処理に失敗
+
+    Returns:
+        dict[str, Any]: 検索結果
+    """
+    logger.info("exec /v1/query/image_image")
+
+    if Modality.IMAGE not in _embed.modality:
+        raise HTTPException(
+            status_code=501,
+            detail="image embeddings is not supported",
+        )
+
+    await run_in_threadpool(_request_lock.acquire)
+    try:
+        try:
+            nodes = await retrieve.aquery_image_image(
+                path=payload.path,
+                store=_vector_store,
+                topk=payload.topk or RerankConfig.topk,
+            )
+        except Exception as e:
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"query failure: {e}") from e
+    finally:
+        _request_lock.release()
+
+    return {"documents": _nodes_to_response(nodes)}
+
+
+@app.post("/v1/query/text_audio", operation_id="query_text_audio")
+async def query_text_audio(payload: QueryTextRequest) -> dict[str, Any]:
+    """クエリ文字列による音声ドキュメント検索。
+
+    Args:
+        payload (QueryTextRequest): クエリ内容
+
+    Raises:
+        HTTPException: 検索処理に失敗
+
+    Returns:
+        dict[str, Any]: 検索結果
+    """
+    logger.info("exec /v1/query/text_audio")
+
+    if Modality.AUDIO not in _embed.modality:
+        raise HTTPException(
+            status_code=501,
+            detail="audio embeddings is not supported",
+        )
+
+    await run_in_threadpool(_request_lock.acquire)
+    try:
+        try:
+            nodes = await retrieve.aquery_text_audio(
+                query=payload.query,
+                store=_vector_store,
+                topk=payload.topk or RerankConfig.topk,
+                rerank=_rerank,
+            )
+        except Exception as e:
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"query failure: {e}") from e
+    finally:
+        _request_lock.release()
+
+    return {"documents": _nodes_to_response(nodes)}
+
+
+@app.post("/v1/query/audio_audio", operation_id="query_audio_audio")
+async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
+    """クエリ音声による音声ドキュメント検索。
+
+    Args:
+        payload (QueryMultimodalRequest): クエリ内容
+
+    Raises:
+        HTTPException: 検索処理に失敗
+
+    Returns:
+        dict[str, Any]: 検索結果
+    """
+    logger.info("exec /v1/query/audio_audio")
+
+    if Modality.AUDIO not in _embed.modality:
+        raise HTTPException(
+            status_code=501,
+            detail="audio embeddings is not supported",
+        )
+
+    await run_in_threadpool(_request_lock.acquire)
+    try:
+        try:
+            nodes = await retrieve.aquery_audio_audio(
+                path=payload.path,
+                store=_vector_store,
+                topk=payload.topk or RerankConfig.topk,
+            )
+        except Exception as e:
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"query failure: {e}") from e
+    finally:
+        _request_lock.release()
+
+    return {"documents": _nodes_to_response(nodes)}
+
+
+@app.post("/v1/ingest/path", operation_id="ingest_path")
+async def ingest_path(payload: PathRequest) -> dict[str, str]:
+    """ローカルパス（ディレクトリ、ファイル）からコンテンツを収集、埋め込み、ストアに格納する。
+    ディレクトリの場合はツリーを下りながら複数ファイルを取り込む。
+
+    Args:
+        payload (PathRequest): 対象パス
+
+    Raises:
+        HTTPException: 収集処理に失敗
+
+    Returns:
+        dict[str, str]: 実行結果
+    """
+    logger.info("exec /v1/ingest/path")
+
+    await run_in_threadpool(_request_lock.acquire)
+    try:
+        await ingest.aingest_from_path(
+            path=payload.path,
+            store=_vector_store,
+            file_loader=_file_loader,
+        )
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
+    finally:
+        _request_lock.release()
+
+    return {"status": "ok"}
+
+
+@app.post("/v1/ingest/path_list", operation_id="ingest_path_list")
+async def ingest_path_list(payload: PathRequest) -> dict[str, str]:
+    """path リストに記載の複数パスからコンテンツを収集、埋め込み、ストアに格納する。
+
+    Args:
+        payload (PathRequest): path リストのパス（テキストファイル。# で始まるコメント行・空行はスキップ）
+
+    Raises:
+        HTTPException: 収集処理に失敗
+
+    Returns:
+        dict[str, str]: 実行結果
+    """
+    logger.info("exec /v1/ingest/path_list")
+
+    await run_in_threadpool(_request_lock.acquire)
+    try:
+        await ingest.aingest_from_path_list(
+            list_path=payload.path,
+            store=_vector_store,
+            file_loader=_file_loader,
+        )
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
+    finally:
+        _request_lock.release()
+
+    return {"status": "ok"}
+
+
+@app.post("/v1/ingest/url", operation_id="ingest_url")
+async def ingest_url(payload: URLRequest) -> dict[str, str]:
+    """URL からコンテンツを収集、埋め込み、ストアに格納する。
+    サイトマップ（.xml）の場合はツリーを下りながら複数サイトから取り込む。
+
+    Args:
+        payload (URLRequest): 対象 URL
+
+    Raises:
+        HTTPException: 収集処理に失敗
+
+    Returns:
+        dict[str, str]: 実行結果
+    """
+    logger.info("exec /v1/ingest/url")
+
+    await run_in_threadpool(_request_lock.acquire)
+    try:
+        await ingest.aingest_from_url(
+            url=payload.url,
+            store=_vector_store,
+            html_loader=_html_loader,
+        )
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
+    finally:
+        _request_lock.release()
+
+    return {"status": "ok"}
+
+
+@app.post("/v1/ingest/url_list", operation_id="ingest_url_list")
+async def ingest_url_list(payload: PathRequest) -> dict[str, str]:
+    """URL リストに記載の複数サイトからコンテンツを収集、埋め込み、ストアに格納する。
+
+    Args:
+        payload (PathRequest): URL リストのパス（テキストファイル。# で始まるコメント行・空行はスキップ）
+
+    Raises:
+        HTTPException: 収集処理に失敗
+
+    Returns:
+        dict[str, str]: 実行結果
+    """
+    logger.info("exec /v1/ingest/url_list")
+
+    await run_in_threadpool(_request_lock.acquire)
+    try:
+        await ingest.aingest_from_url_list(
+            list_path=payload.path,
+            store=_vector_store,
+            html_loader=_html_loader,
+        )
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
+    finally:
+        _request_lock.release()
+
+    return {"status": "ok"}

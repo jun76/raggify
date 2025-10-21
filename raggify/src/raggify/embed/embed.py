@@ -1,0 +1,161 @@
+from __future__ import annotations
+
+from llama_index.embeddings.clip import ClipEmbedding
+from llama_index.embeddings.cohere.base import CohereEmbedding
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.embeddings.openai.base import OpenAIEmbedding
+
+from ..config.embed_config import EmbedConfig
+from ..config.general_config import GeneralConfig
+from ..config.settings import EmbedProvider
+from ..llama.core.schema import Modality
+from ..llama.embeddings.clap import ClapEmbedding
+from ..logger import logger
+from .embed_manager import EmbedContainer, EmbedManager
+
+__all__ = ["create_embed_manager"]
+
+
+def create_embed_manager() -> EmbedManager:
+    """埋め込み管理インスタンスを生成する。
+
+    Raises:
+        RuntimeError: インスタンス生成に失敗またはプロバイダ指定漏れ
+
+    Returns:
+        EmbedManager: 埋め込み管理
+    """
+    try:
+        conts: dict[Modality, EmbedContainer] = {}
+        if GeneralConfig.text_embed_provider:
+            match GeneralConfig.text_embed_provider:
+                case EmbedProvider.OPENAI:
+                    cont = _openai_text()
+                case EmbedProvider.COHERE:
+                    cont = _cohere_text()
+                case EmbedProvider.CLIP:
+                    cont = _clip_text()
+                case EmbedProvider.HUGGINGFACE:
+                    cont = _huggingface_text()
+                case _:
+                    raise ValueError(
+                        "unsupported text embed provider: "
+                        f"{GeneralConfig.text_embed_provider}"
+                    )
+            conts[Modality.TEXT] = cont
+
+        if GeneralConfig.image_embed_provider:
+            match GeneralConfig.image_embed_provider:
+                case EmbedProvider.COHERE:
+                    cont = _cohere_image()
+                case EmbedProvider.CLIP:
+                    cont = _clip_image()
+                case EmbedProvider.HUGGINGFACE:
+                    cont = _huggingface_image()
+                case _:
+                    raise ValueError(
+                        "unsupported image embed provider: "
+                        f"{GeneralConfig.image_embed_provider}"
+                    )
+            conts[Modality.IMAGE] = cont
+
+        if GeneralConfig.audio_embed_provider:
+            match GeneralConfig.audio_embed_provider:
+                case EmbedProvider.CLAP:
+                    cont = _clap_audio()
+                case _:
+                    raise ValueError(
+                        "unsupported audio embed provider: "
+                        f"{GeneralConfig.audio_embed_provider}"
+                    )
+            conts[Modality.AUDIO] = cont
+    except Exception as e:
+        raise RuntimeError(f"failed to create embedding: {e}") from e
+
+    if not conts:
+        raise RuntimeError("no embedding providers are specified")
+
+    return EmbedManager(conts)
+
+
+# 以下、プロバイダ毎のコンテナ生成ヘルパー
+def _openai_text() -> EmbedContainer:
+    return EmbedContainer(
+        provider_name=EmbedProvider.OPENAI,
+        embed=OpenAIEmbedding(
+            model=EmbedConfig.openai_embed_model_text,
+            api_base=GeneralConfig.openai_base_url,
+            # device=GeneralConfig.device,
+        ),
+    )
+
+
+def _cohere_text() -> EmbedContainer:
+    return EmbedContainer(
+        provider_name=EmbedProvider.COHERE,
+        embed=CohereEmbedding(
+            model_name=EmbedConfig.cohere_embed_model_text,
+            # device=GeneralConfig.device,
+        ),
+    )
+
+
+def _cohere_image() -> EmbedContainer:
+    return EmbedContainer(
+        provider_name=EmbedProvider.COHERE,
+        embed=CohereEmbedding(
+            model_name=EmbedConfig.cohere_embed_model_image,
+            device=GeneralConfig.device,
+        ),
+    )
+
+
+def _clip_text() -> EmbedContainer:
+    return EmbedContainer(
+        provider_name=EmbedProvider.CLIP,
+        embed=ClipEmbedding(
+            model_name=EmbedConfig.clip_embed_model_text,
+            device=GeneralConfig.device,
+        ),
+    )
+
+
+def _clip_image() -> EmbedContainer:
+    return EmbedContainer(
+        provider_name=EmbedProvider.CLIP,
+        embed=ClipEmbedding(
+            model_name=EmbedConfig.clip_embed_model_image,
+            device=GeneralConfig.device,
+        ),
+    )
+
+
+def _huggingface_text() -> EmbedContainer:
+    return EmbedContainer(
+        provider_name=EmbedProvider.HUGGINGFACE,
+        embed=HuggingFaceEmbedding(
+            model_name=EmbedConfig.huggingface_embed_model_text,
+            device=GeneralConfig.device,
+        ),
+    )
+
+
+def _huggingface_image() -> EmbedContainer:
+    return EmbedContainer(
+        provider_name=EmbedProvider.HUGGINGFACE,
+        embed=HuggingFaceEmbedding(
+            model_name=EmbedConfig.huggingface_embed_model_image,
+            device=GeneralConfig.device,
+            trust_remote_code=True,
+        ),
+    )
+
+
+def _clap_audio() -> EmbedContainer:
+    return EmbedContainer(
+        provider_name=EmbedProvider.CLAP,
+        embed=ClapEmbedding(
+            model_name=EmbedConfig.clap_embed_model_audio,
+            device=GeneralConfig.device,
+        ),
+    )

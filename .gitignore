@@ -1,0 +1,14 @@
+__pycache__
+.mypy_cache
+.env
+/.devcontainer
+chroma_db
+upload
+AGENTS.md
+.coderabbit.yaml
+temp
+raggify_db
+raggify_metas.db
+uv.lock
+.venv
+.zshrc
