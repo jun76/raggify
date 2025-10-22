@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ..config.default_settings import RerankProvider
 from ..config.general_config import GeneralConfig
 from ..config.rerank_config import RerankConfig
-from ..config.settings import RerankProvider
 
 if TYPE_CHECKING:
     from .rerank_manager import RerankContainer, RerankManager

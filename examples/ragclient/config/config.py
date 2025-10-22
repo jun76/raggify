@@ -8,7 +8,7 @@ from pydantic import SecretStr
 from .settings import Settings
 
 
-@dataclass(kw_only=True, frozen=True)
+@dataclass(kw_only=True)
 class Config:
     raggify_base_url: str = Settings.RAGGIFY_BASE_URL
     openai_llm_model: str = Settings.OPENAI_LLM_MODEL

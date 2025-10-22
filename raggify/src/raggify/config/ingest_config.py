@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .settings import Settings
+from .default_settings import DefaultSettings
 
 
-@dataclass(kw_only=True, frozen=True)
+@dataclass(kw_only=True)
 class IngestConfig:
     """ドキュメント取り込み処理関連の設定用データクラス"""
 
-    chunk_size: int = Settings.CHUNK_SIZE
-    chunk_overlap: int = Settings.CHUNK_OVERLAP
-    user_agent: str = Settings.USER_AGENT
-    upload_dir: str = Settings.UPLOAD_DIR
+    chunk_size: int = DefaultSettings.CHUNK_SIZE
+    chunk_overlap: int = DefaultSettings.CHUNK_OVERLAP
+    user_agent: str = DefaultSettings.USER_AGENT
+    upload_dir: str = DefaultSettings.UPLOAD_DIR

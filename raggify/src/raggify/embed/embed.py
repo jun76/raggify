@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from ..config.default_settings import EmbedProvider
 from ..config.embed_config import EmbedConfig
 from ..config.general_config import GeneralConfig
-from ..config.settings import EmbedProvider
 from ..llama.core.schema import Modality
 from .embed_manager import EmbedContainer, EmbedManager
 

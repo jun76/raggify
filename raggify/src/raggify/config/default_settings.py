@@ -28,7 +28,7 @@ class RerankProvider(StrEnum):
     COHERE = auto()
 
 
-class Settings:
+class DefaultSettings:
     """各種設定値のデフォルト値管理クラス
 
     API キーやパスワード等は予め .env ファイルに記述しておく。

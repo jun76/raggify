@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ..config.default_settings import VectorStoreProvider
 from ..config.general_config import GeneralConfig
-from ..config.settings import VectorStoreProvider
 from ..config.vector_store_config import VectorStoreConfig
 from ..llama.core.schema import Modality
 
