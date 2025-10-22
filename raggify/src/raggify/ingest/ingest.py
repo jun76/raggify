@@ -8,14 +8,14 @@ if TYPE_CHECKING:
     from .loader.html_loader import HTMLLoader
 
 __all__ = [
-    "aingest_from_path",
-    "aingest_from_path_list",
-    "aingest_from_url",
-    "aingest_from_url_list",
+    "aingest_path",
+    "aingest_path_list",
+    "aingest_url",
+    "aingest_url_list",
 ]
 
 
-async def aingest_from_path(
+async def aingest_path(
     path: str,
     store: VectorStoreManager,
     file_loader: FileLoader,
@@ -32,7 +32,7 @@ async def aingest_from_path(
     await store.aupsert_nodes(nodes)
 
 
-async def aingest_from_path_list(
+async def aingest_path_list(
     list_path: str,
     store: VectorStoreManager,
     file_loader: FileLoader,
@@ -48,7 +48,7 @@ async def aingest_from_path_list(
     await store.aupsert_nodes(nodes)
 
 
-async def aingest_from_url(
+async def aingest_url(
     url: str,
     store: VectorStoreManager,
     html_loader: HTMLLoader,
@@ -65,7 +65,7 @@ async def aingest_from_url(
     await store.aupsert_nodes(nodes)
 
 
-async def aingest_from_url_list(
+async def aingest_url_list(
     list_path: str,
     store: VectorStoreManager,
     html_loader: HTMLLoader,

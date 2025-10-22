@@ -14,6 +14,33 @@ class RestAPIClient:
         """
         self._base_url = base_url.rstrip("/")
 
+    def _make_request(
+        self, endpoint: str, timeout: int = 120, **kwargs
+    ) -> dict[str, Any]:
+        """共通のリクエスト処理とエラーハンドリング。
+
+        Args:
+            endpoint (str): エンドポイント
+            timeout (int, optional): タイムアウト（秒）Defaults to 120.
+
+        Raises:
+            RuntimeError: リクエスト失敗または JSON 解析失敗時
+
+        Returns:
+            dict[str, Any]: JSON 応答
+        """
+        url = f"{self._base_url}{endpoint}"
+        try:
+            response = requests.post(url, timeout=timeout, **kwargs)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            raise RuntimeError("failed to call raggify server endpoint") from e
+
+        try:
+            return response.json()
+        except ValueError as e:
+            raise RuntimeError("raggify server response is not json") from e
+
     def _post_json(self, endpoint: str, payload: dict[str, Any]) -> dict[str, Any]:
         """POST リクエストを送信し、JSON 応答を辞書で返す。
 
@@ -27,17 +54,7 @@ class RestAPIClient:
         Returns:
             dict[str, Any]: JSON 応答
         """
-        url = f"{self._base_url}{endpoint}"
-        try:
-            response = requests.post(url, json=payload, timeout=120)
-            response.raise_for_status()
-        except requests.RequestException as e:
-            raise RuntimeError("failed to call raggify server endpoint") from e
-
-        try:
-            return response.json()
-        except ValueError as e:
-            raise RuntimeError("raggify server response is not json") from e
+        return self._make_request(endpoint, json=payload)
 
     def _post_form_data_json(
         self, endpoint: str, files: list[tuple[str, tuple[str, bytes, str]]]
@@ -54,17 +71,7 @@ class RestAPIClient:
         Returns:
             dict[str, Any]: JSON 応答
         """
-        url = f"{self._base_url}{endpoint}"
-        try:
-            response = requests.post(url, files=files, timeout=120)
-            response.raise_for_status()
-        except requests.RequestException as e:
-            raise RuntimeError("failed to call raggify server endpoint") from e
-
-        try:
-            return response.json()
-        except ValueError as e:
-            raise RuntimeError("raggify server response is not json") from e
+        return self._make_request(endpoint, files=files)
 
     def ingest_path(self, path: str) -> dict[str, Any]:
         """パス指定の取り込み API を呼び出す。

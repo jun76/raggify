@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from enum import StrEnum, auto
 from typing import TYPE_CHECKING, Coroutine
 
@@ -92,8 +93,6 @@ class ClapEmbedding(AudioEmbedding):
         Returns:
             Embedding: 埋め込みベクトル
         """
-        import asyncio
-
         return await asyncio.to_thread(self._get_query_embedding, query)
 
     def _get_text_embedding(self, text: str) -> Embedding:
@@ -160,8 +159,6 @@ class ClapEmbedding(AudioEmbedding):
         Returns:
             list[Embedding]: 埋め込みベクトル
         """
-        import asyncio
-
         from llama_index.core.callbacks.schema import CBEventType, EventPayload
 
         cur_batch: list[AudioType] = []
@@ -230,6 +227,4 @@ class ClapEmbedding(AudioEmbedding):
         Returns:
             list[Embedding]: 埋め込みベクトル
         """
-        import asyncio
-
         return await asyncio.to_thread(self._get_audio_embeddings, audio_file_paths)

@@ -6,6 +6,7 @@ import traceback
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
+import aiofiles
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
@@ -82,14 +83,15 @@ def _get_embed_manager() -> EmbedManager:
 
     global _embed
 
-    if _embed is None:
-        try:
-            _embed = create_embed_manager()
-        except Exception as e:
-            traceback.print_exc()
-            raise RuntimeError("failed to create embed manager") from e
+    with _request_lock:
+        if _embed is None:
+            try:
+                _embed = create_embed_manager()
+            except Exception as e:
+                traceback.print_exc()
+                raise RuntimeError("failed to create embed manager") from e
 
-        logger.info(f"{_embed.name} embed initialized")
+            logger.info(f"{_embed.name} embed initialized")
 
     return _embed
 
@@ -107,14 +109,15 @@ def _get_meta_store() -> Structured:
 
     global _meta_store
 
-    if _meta_store is None:
-        try:
-            _meta_store = create_meta_store()
-        except Exception as e:
-            traceback.print_exc()
-            raise RuntimeError("failed to create embed manager") from e
+    with _request_lock:
+        if _meta_store is None:
+            try:
+                _meta_store = create_meta_store()
+            except Exception as e:
+                traceback.print_exc()
+                raise RuntimeError("failed to create meta store") from e
 
-        logger.info("meta store initialized")
+            logger.info("meta store initialized")
 
     return _meta_store
 
@@ -132,16 +135,17 @@ def _get_vector_store() -> VectorStoreManager:
 
     global _vector_store
 
-    if _vector_store is None:
-        try:
-            _vector_store = create_vector_store_manager(
-                embed=_get_embed_manager(), meta_store=_get_meta_store()
-            )
-        except Exception as e:
-            traceback.print_exc()
-            raise RuntimeError("failed to create embed manager") from e
+    with _request_lock:
+        if _vector_store is None:
+            try:
+                _vector_store = create_vector_store_manager(
+                    embed=_get_embed_manager(), meta_store=_get_meta_store()
+                )
+            except Exception as e:
+                traceback.print_exc()
+                raise RuntimeError("failed to create vector store manager") from e
 
-        logger.info("vector store initialized")
+            logger.info("vector store initialized")
 
     return _vector_store
 
@@ -159,14 +163,15 @@ def _get_rerank_manager() -> RerankManager:
 
     global _rerank
 
-    if _rerank is None:
-        try:
-            _rerank = create_rerank_manager()
-        except Exception as e:
-            traceback.print_exc()
-            raise RuntimeError("failed to create rerank manager") from e
+    with _request_lock:
+        if _rerank is None:
+            try:
+                _rerank = create_rerank_manager()
+            except Exception as e:
+                traceback.print_exc()
+                raise RuntimeError("failed to create rerank manager") from e
 
-        logger.info(f"{_rerank.name} rerank initialized")
+            logger.info(f"{_rerank.name} rerank initialized")
 
     return _rerank
 
@@ -184,18 +189,19 @@ def _get_file_loader() -> FileLoader:
 
     global _file_loader
 
-    if _file_loader is None:
-        try:
-            _file_loader = FileLoader(
-                chunk_size=IngestConfig.chunk_size,
-                chunk_overlap=IngestConfig.chunk_overlap,
-                store=_get_vector_store(),
-            )
-        except Exception as e:
-            traceback.print_exc()
-            raise RuntimeError("failed to create file loader") from e
+    with _request_lock:
+        if _file_loader is None:
+            try:
+                _file_loader = FileLoader(
+                    chunk_size=IngestConfig.chunk_size,
+                    chunk_overlap=IngestConfig.chunk_overlap,
+                    store=_get_vector_store(),
+                )
+            except Exception as e:
+                traceback.print_exc()
+                raise RuntimeError("failed to create file loader") from e
 
-        logger.info("file loader initialized")
+            logger.info("file loader initialized")
 
     return _file_loader
 
@@ -213,22 +219,23 @@ def _get_html_loader() -> HTMLLoader:
 
     global _html_loader
 
-    if _html_loader is None:
-        try:
-            _html_loader = HTMLLoader(
-                chunk_size=IngestConfig.chunk_size,
-                chunk_overlap=IngestConfig.chunk_overlap,
-                file_loader=_get_file_loader(),
-                store=_get_vector_store(),
-                user_agent=IngestConfig.user_agent,
-            )
-        except Exception as e:
-            traceback.print_exc()
-            raise RuntimeError("failed to create HTML loader") from e
+    with _request_lock:
+        if _html_loader is None:
+            try:
+                _html_loader = HTMLLoader(
+                    chunk_size=IngestConfig.chunk_size,
+                    chunk_overlap=IngestConfig.chunk_overlap,
+                    file_loader=_get_file_loader(),
+                    store=_get_vector_store(),
+                    user_agent=IngestConfig.user_agent,
+                )
+            except Exception as e:
+                traceback.print_exc()
+                raise RuntimeError("failed to create HTML loader") from e
 
-        logger.info("HTML loader initialized")
+            logger.info("HTML loader initialized")
 
-    return _html_loader
+        return _html_loader
 
 
 def _nodes_to_response(nodes: list[NodeWithScore]) -> list[dict[str, Any]]:
@@ -255,12 +262,16 @@ async def health() -> dict[str, Any]:
     """
     logger.info("exec /v1/health")
 
-    return {
-        "status": "ok",
-        "store": _get_vector_store().name,
-        "embed": _get_embed_manager().name,
-        "rerank": _get_rerank_manager().name,
-    }
+    await run_in_threadpool(_request_lock.acquire)
+    try:
+        return {
+            "status": "ok",
+            "store": _get_vector_store().name,
+            "embed": _get_embed_manager().name,
+            "rerank": _get_rerank_manager().name,
+        }
+    finally:
+        _request_lock.release()
 
 
 @app.post("/v1/upload", operation_id="upload")
@@ -277,8 +288,6 @@ async def upload(files: list[UploadFile] = File(...)) -> dict[str, Any]:
     Returns:
         dict[str, Any]: 結果
     """
-    import aiofiles
-
     logger.info("exec /v1/upload")
 
     try:
@@ -547,7 +556,7 @@ async def ingest_path(payload: PathRequest) -> dict[str, str]:
 
     await run_in_threadpool(_request_lock.acquire)
     try:
-        await ingest.aingest_from_path(
+        await ingest.aingest_path(
             path=payload.path,
             store=_get_vector_store(),
             file_loader=_get_file_loader(),
@@ -578,7 +587,7 @@ async def ingest_path_list(payload: PathRequest) -> dict[str, str]:
 
     await run_in_threadpool(_request_lock.acquire)
     try:
-        await ingest.aingest_from_path_list(
+        await ingest.aingest_path_list(
             list_path=payload.path,
             store=_get_vector_store(),
             file_loader=_get_file_loader(),
@@ -610,7 +619,7 @@ async def ingest_url(payload: URLRequest) -> dict[str, str]:
 
     await run_in_threadpool(_request_lock.acquire)
     try:
-        await ingest.aingest_from_url(
+        await ingest.aingest_url(
             url=payload.url,
             store=_get_vector_store(),
             html_loader=_get_html_loader(),
@@ -641,7 +650,7 @@ async def ingest_url_list(payload: PathRequest) -> dict[str, str]:
 
     await run_in_threadpool(_request_lock.acquire)
     try:
-        await ingest.aingest_from_url_list(
+        await ingest.aingest_url_list(
             list_path=payload.path,
             store=_get_vector_store(),
             html_loader=_get_html_loader(),

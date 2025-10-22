@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 import typer
 import uvicorn
+
+if TYPE_CHECKING:
+    from raggify.client.client import RestAPIClient
 
 __all__ = ["app"]
 
@@ -70,189 +73,71 @@ def server(host: str, port: int, as_rest_api: bool, as_mcp: bool):
         )
 
 
-@app.command(help="Ingest from local path.")
-def ingest_from_path(path: str):
-    """ローカルパス（ディレクトリ、ファイル）からコンテンツを収集、埋め込み、ストアに格納する。
+# 以下、REST API Client のラッパーコマンドを定義
 
-    Args:
-        path (str): 対象パス
 
-    Raises:
-        typer.Exit: エラー発生
-    """
+class ClientCommand(Protocol):
+    def __call__(
+        self, client: "RestAPIClient", *args: Any, **kwargs: Any
+    ) -> dict[str, Any]: ...
+
+
+def _execute_client_command(
+    command_func: ClientCommand, *args: Any, **kwargs: Any
+) -> None:
     try:
         client = _create_rest_client()
-        result = client.ingest_path(path)
+        result = command_func(client, *args, **kwargs)
     except Exception as e:
         typer.echo(f"error: {e}")
         raise typer.Exit(code=1)
 
     _echo_json(result)
+
+
+@app.command(help="Ingest from local path.")
+def ingest_path(path: str):
+    _execute_client_command(lambda client: client.ingest_path(path))
 
 
 @app.command(help="Ingest from local-path list.")
-def ingest_from_path_list(list_path: str):
-    """path リストに記載の複数パスからコンテンツを収集、埋め込み、ストアに格納する。
-
-    Args:
-        list_path (str): path リストのパス
-
-    Raises:
-        typer.Exit: エラー発生
-    """
-    try:
-        client = _create_rest_client()
-        result = client.ingest_path_list(list_path)
-    except Exception as e:
-        typer.echo(f"error: {e}")
-        raise typer.Exit(code=1)
-
-    _echo_json(result)
+def ingest_path_list(list_path: str):
+    _execute_client_command(lambda client: client.ingest_path_list(list_path))
 
 
 @app.command(help="Ingest from URL.")
-def ingest_from_url(url: str):
-    """URL からコンテンツを収集、埋め込み、ストアに格納する。
-
-    Args:
-        url (str): 対象 URL
-
-    Raises:
-        typer.Exit: エラー発生
-    """
-    try:
-        client = _create_rest_client()
-        result = client.ingest_url(url)
-    except Exception as e:
-        typer.echo(f"error: {e}")
-        raise typer.Exit(code=1)
-
-    _echo_json(result)
+def ingest_url(url: str):
+    _execute_client_command(lambda client: client.ingest_url(url))
 
 
 @app.command(help="Ingest from URL list.")
-def ingest_from_url_list(list_path: str):
-    """URL リストに記載の複数サイトからコンテンツを収集、埋め込み、ストアに格納する。
-
-    Args:
-        list_path (str): URL リストのパス
-
-    Raises:
-        typer.Exit: エラー発生
-    """
-    try:
-        client = _create_rest_client()
-        result = client.ingest_url_list(list_path)
-    except Exception as e:
-        typer.echo(f"error: {e}")
-        raise typer.Exit(code=1)
-
-    _echo_json(result)
+def ingest_url_list(list_path: str):
+    _execute_client_command(lambda client: client.ingest_url_list(list_path))
 
 
 @app.command(help="Search text documents by text query.")
 def query_text_text(query: str, topk: int):
-    """クエリ文字列によるテキストドキュメント検索。
-
-    Args:
-        query (str): クエリ文字列
-        topk (int): 取得件数
-
-    Raises:
-        typer.Exit: エラー発生
-    """
-    try:
-        client = _create_rest_client()
-        result = client.query_text_text(query=query, topk=topk)
-    except Exception as e:
-        typer.echo(f"error: {e}")
-        raise typer.Exit(code=1)
-
-    _echo_json(result)
+    _execute_client_command(lambda client: client.query_text_text(query, topk))
 
 
 @app.command(help="Search image documents by text query.")
 def query_text_image(query: str, topk: int):
-    """クエリ文字列による画像ドキュメント検索。
-
-    Args:
-        query (str): クエリ文字列
-        topk (int): 取得件数
-
-    Raises:
-        typer.Exit: エラー発生
-    """
-    try:
-        client = _create_rest_client()
-        result = client.query_text_image(query=query, topk=topk)
-    except Exception as e:
-        typer.echo(f"error: {e}")
-        raise typer.Exit(code=1)
-
-    _echo_json(result)
+    _execute_client_command(lambda client: client.query_text_image(query, topk))
 
 
 @app.command(help="Search image documents by image query.")
 def query_image_image(path: str, topk: int):
-    """クエリ画像による画像ドキュメント検索。
-
-    Args:
-        path (str): クエリ画像パス
-        topk (int): 取得件数
-
-    Raises:
-        typer.Exit: エラー発生
-    """
-    try:
-        client = _create_rest_client()
-        result = client.query_image_image(path=path, topk=topk)
-    except Exception as e:
-        typer.echo(f"error: {e}")
-        raise typer.Exit(code=1)
-
-    _echo_json(result)
+    _execute_client_command(lambda client: client.query_image_image(path, topk))
 
 
 @app.command(help="Search audio documents by text query.")
 def query_text_audio(query: str, topk: int):
-    """クエリ文字列による音声ドキュメント検索。
-
-    Args:
-        query (str): クエリ文字列
-        topk (int): 取得件数
-
-    Raises:
-        typer.Exit: エラー発生
-    """
-    try:
-        client = _create_rest_client()
-        result = client.query_text_audio(query=query, topk=topk)
-    except Exception as e:
-        typer.echo(f"error: {e}")
-        raise typer.Exit(code=1)
-
-    _echo_json(result)
+    _execute_client_command(lambda client: client.query_text_audio(query, topk))
 
 
 @app.command(help="Search audio documents by audio query.")
 def query_audio_audio(path: str, topk: int):
-    """クエリ音声による音声ドキュメント検索。
-
-    Args:
-        path (str): クエリ音声パス
-        topk (int): 取得件数
-
-    Raises:
-        typer.Exit: エラー発生
-    """
-    try:
-        client = _create_rest_client()
-        result = client.query_audio_audio(path=path, topk=topk)
-    except Exception as e:
-        typer.echo(f"error: {e}")
-        raise typer.Exit(code=1)
-
-    _echo_json(result)
+    _execute_client_command(lambda client: client.query_audio_audio(path, topk))
 
 
 if __name__ == "__main__":

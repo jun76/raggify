@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import hashlib
+import json
+import os
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, Optional, Sequence
 
@@ -202,8 +205,7 @@ class VectorStoreManager:
             tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
                 テキストノード、画像ノード、音声ノード
         """
-        from llama_index.core.schema import ImageNode, TextNode
-
+        text_nodes = []
         text_nodes = []
         image_nodes = []
         audio_nodes = []
@@ -327,8 +329,6 @@ class VectorStoreManager:
         Args:
             nodes (Itarable[BaseNode]): 対象ノード
         """
-        import os
-
         if len(nodes) == 0:
             logger.warning("empty list")
             return
@@ -489,9 +489,6 @@ class VectorStoreManager:
         Returns:
             str: fingerprint 文字列
         """
-        import hashlib
-        import json
-
         # Web ページの場合、現状 URL しかチェックしない
         fp_data = {
             MK.FILE_PATH: meta.file_path,
