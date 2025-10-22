@@ -4,8 +4,6 @@ from typing import Any, Optional
 
 import requests
 
-from .logger import logger
-
 
 class RAGgifyClient:
     def __init__(self, base_url: str) -> None:

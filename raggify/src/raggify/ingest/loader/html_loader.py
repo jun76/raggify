@@ -111,25 +111,6 @@ class HTMLLoader(Loader):
 
         return res.text
 
-    def _is_file_url(self, url: str) -> bool:
-        """ファイルへの直リンクか。
-
-        Args:
-            url (str): 対象 URL
-
-        Returns:
-            bool: True は直リンク
-        """
-        parsed = urlparse(url)
-        path = parsed.path or ""
-
-        if not path:
-            return False
-
-        filename = path.rstrip("/").rsplit("/", maxsplit=1)[-1]
-
-        return "." in filename and filename != ""
-
     def _gather_asset_links(
         self,
         html: str,
@@ -358,7 +339,7 @@ class HTMLLoader(Loader):
             return []
 
         nodes = []
-        if self._is_file_url(url):
+        if Exts.endswith_exts(url, Exts.FETCH_TARGET):
             # 直リンクファイル
             node = await self._aload_direct_linked_file(url)
             if node is None:

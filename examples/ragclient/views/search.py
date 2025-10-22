@@ -376,7 +376,11 @@ def _render_query_results_text(title: str, result: dict[str, Any]) -> None:
     for doc in documents:
         metadata = doc.get("metadata", {})
         content = doc.get("text", "")
-        source = metadata.get("file_path", "") or metadata.get("url", "")  # 空でない方
+        source = (
+            metadata.get("base_source", "")
+            or metadata.get("url", "")
+            or metadata.get("file_path", "")
+        )  # 優先順
 
         st.divider()
         st.markdown("#### 本文")
@@ -400,7 +404,7 @@ def _render_query_results_image(title: str, result: dict[str, Any]) -> None:
 
     for doc in documents:
         metadata = doc.get("metadata", {})
-        source = metadata.get("file_path", "") or metadata.get("url", "")  # 空でない方
+        source = metadata.get("url", "") or metadata.get("file_path", "")  # 優先順
 
         st.divider()
         try:
@@ -432,7 +436,7 @@ def _render_query_results_audio(title: str, result: dict[str, Any]) -> None:
 
     for doc in documents:
         metadata = doc.get("metadata", {})
-        source = metadata.get("file_path", "") or metadata.get("url", "")  # 空でない方
+        source = metadata.get("url", "") or metadata.get("file_path", "")  # 優先順
 
         st.divider()
         try:

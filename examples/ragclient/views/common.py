@@ -17,7 +17,8 @@ def emojify_robot(s: str) -> str:
 
     Returns:
         str: 整形後の文字列
-    """    return s.replace("\U0001f916", "\U0001f916" + "\ufe0f")  # 🤖
+    """
+    return s.replace("\U0001f916", "\U0001f916" + "\ufe0f")  # 🤖
 
 
 def save_uploaded_files(client: RAGgifyClient, files: list[Any]) -> list[str]:
