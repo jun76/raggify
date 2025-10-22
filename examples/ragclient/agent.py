@@ -9,7 +9,8 @@ from agents import Agent, RunContextWrapper, Runner, function_tool
 from pydantic import BaseModel, ConfigDict
 from typing_extensions import TypedDict
 
-from .api_client import RAGgifyClient
+from raggify.client.client import RestAPIClient
+
 from .logger import logger
 
 __all__ = ["AgentExecutionError", "RagAgentManager"]
@@ -30,7 +31,7 @@ class _MultiModalSearchArgs(TypedDict, total=False):
 
 class _RagAgentContext(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    client: RAGgifyClient
+    client: RestAPIClient
     file_path: Optional[str] = None
 
 
@@ -221,7 +222,7 @@ _TOOLSET = [
 class RagAgentManager:
     """openai-agents を用いた RAG 検索の実行を管理するクラス。"""
 
-    client: RAGgifyClient
+    client: RestAPIClient
     model: str
 
     def run(

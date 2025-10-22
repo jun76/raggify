@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import asyncio
 from enum import StrEnum, auto
-from typing import Coroutine
-
-import laion_clap
-from llama_index.core.base.embeddings.base import Embedding
-from llama_index.core.callbacks.schema import CBEventType, EventPayload
+from typing import TYPE_CHECKING, Coroutine
 
 from .multi_modal_base import AudioEmbedding, AudioType
+
+if TYPE_CHECKING:
+    from llama_index.core.base.embeddings.base import Embedding
 
 
 class ModelName(StrEnum):
@@ -57,6 +55,8 @@ class ClapEmbedding(AudioEmbedding):
             model_name (str, optional): モデル名。未整備のため、ModelName として独自定義。Defaults to "general".
             device (str, optional): 埋め込みデバイス。Defaults to "cuda".
         """
+        import laion_clap
+
         super().__init__(
             model_name=f"clap/{model_name}",
             embed_batch_size=embed_batch_size,
@@ -92,6 +92,8 @@ class ClapEmbedding(AudioEmbedding):
         Returns:
             Embedding: 埋め込みベクトル
         """
+        import asyncio
+
         return await asyncio.to_thread(self._get_query_embedding, query)
 
     def _get_text_embedding(self, text: str) -> Embedding:
@@ -158,6 +160,10 @@ class ClapEmbedding(AudioEmbedding):
         Returns:
             list[Embedding]: 埋め込みベクトル
         """
+        import asyncio
+
+        from llama_index.core.callbacks.schema import CBEventType, EventPayload
+
         cur_batch: list[AudioType] = []
         callback_payloads: list[tuple[str, list[AudioType]]] = []
         result_embeddings: list[Embedding] = []
@@ -224,4 +230,6 @@ class ClapEmbedding(AudioEmbedding):
         Returns:
             list[Embedding]: 埋め込みベクトル
         """
+        import asyncio
+
         return await asyncio.to_thread(self._get_audio_embeddings, audio_file_paths)

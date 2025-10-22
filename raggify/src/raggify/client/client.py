@@ -5,12 +5,12 @@ from typing import Any, Optional
 import requests
 
 
-class RAGgifyClient:
+class RestAPIClient:
     def __init__(self, base_url: str) -> None:
-        """raggify の REST API を呼び出すクライアント。
+        """raggify サーバの REST API を呼び出すクライアント。
 
         Args:
-            base_url (str): raggify へのベース URL
+            base_url (str): raggify サーバへのベース URL
         """
         self._base_url = base_url.rstrip("/")
 
@@ -32,12 +32,12 @@ class RAGgifyClient:
             response = requests.post(url, json=payload, timeout=120)
             response.raise_for_status()
         except requests.RequestException as e:
-            raise RuntimeError("failed to call raggify endpoint") from e
+            raise RuntimeError("failed to call raggify server endpoint") from e
 
         try:
             return response.json()
         except ValueError as e:
-            raise RuntimeError("raggify response is not json") from e
+            raise RuntimeError("raggify server response is not json") from e
 
     def _post_form_data_json(
         self, endpoint: str, files: list[tuple[str, tuple[str, bytes, str]]]
@@ -59,12 +59,12 @@ class RAGgifyClient:
             response = requests.post(url, files=files, timeout=120)
             response.raise_for_status()
         except requests.RequestException as e:
-            raise RuntimeError("failed to call raggify endpoint") from e
+            raise RuntimeError("failed to call raggify server endpoint") from e
 
         try:
             return response.json()
         except ValueError as e:
-            raise RuntimeError("raggify response is not json") from e
+            raise RuntimeError("raggify server response is not json") from e
 
     def ingest_path(self, path: str) -> dict[str, Any]:
         """パス指定の取り込み API を呼び出す。

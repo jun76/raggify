@@ -10,7 +10,8 @@ if __package__ is None or __package__ == "":
 
 import streamlit as st
 
-from .api_client import RAGgifyClient
+from raggify.client.client import RestAPIClient
+
 from .config.config import Config
 from .logger import logger
 from .state import View, ensure_session_state
@@ -21,14 +22,14 @@ from .views.ragsearch import render_ragsearch_view
 from .views.search import render_search_view
 
 
-def _init_services() -> tuple[RAGgifyClient, str]:
+def _init_services() -> tuple[RestAPIClient, str]:
     """設定を読み込み、API クライアントとヘルスチェック用 URL を初期化する。
 
     Returns:
-        tuple[RAGgifyClient, str]: API クライアントと
+        tuple[RestAPIClient, str]: API クライアントと
             raggify サービスのヘルスチェック URL
     """
-    client = RAGgifyClient(Config.raggify_base_url)
+    client = RestAPIClient(Config.raggify_base_url)
     raggify_health = Config.raggify_base_url.rstrip("/") + "/health"
 
     return client, raggify_health

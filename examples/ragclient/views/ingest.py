@@ -4,7 +4,8 @@ from typing import Any, Optional
 
 import streamlit as st
 
-from ..api_client import RAGgifyClient
+from raggify.client.client import RestAPIClient
+
 from ..logger import logger
 from ..state import (
     FeedBack,
@@ -25,14 +26,14 @@ __all__ = [
 
 
 def register_uploaded_files_callback(
-    client: RAGgifyClient,
+    client: RestAPIClient,
     files: Optional[list[Any]],
     feedback_key: FeedBack,
 ) -> None:
     """アップロードファイル経由でナレッジ登録を実行する。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
         files (Optional[list[Any]]): アップロードされたファイル群
         feedback_key (FeedBack): フィードバック表示用キー
 
@@ -55,12 +56,12 @@ def register_uploaded_files_callback(
 
 
 def register_url_callback(
-    client: RAGgifyClient, url_value: str, feedback_key: FeedBack
+    client: RestAPIClient, url_value: str, feedback_key: FeedBack
 ) -> None:
     """URL 指定でナレッジ登録を実行する。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
         url_value (str): 取り込み対象 URL
         feedback_key (FeedBack): フィードバック表示用キー
 
@@ -82,14 +83,14 @@ def register_url_callback(
 
 
 def register_url_list_callback(
-    client: RAGgifyClient,
+    client: RestAPIClient,
     file_obj: Any,
     feedback_key: FeedBack,
 ) -> None:
     """URL リストファイル経由でナレッジ登録を実行する。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
         file_obj (Any): アップロードされた URL リスト
         feedback_key (FeedBack): フィードバック表示用キー
 
@@ -110,11 +111,11 @@ def register_url_list_callback(
         set_feedback(feedback_key, "success", "URL リストの取り込みが完了しました")
 
 
-def render_ingest_view(client: RAGgifyClient) -> None:
+def render_ingest_view(client: RestAPIClient) -> None:
     """ナレッジ登録画面を描画する。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
 
     """
     st.title("📝 ナレッジ登録")

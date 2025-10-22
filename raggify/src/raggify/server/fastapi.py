@@ -4,27 +4,29 @@ import logging
 import threading
 import traceback
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
-import aiofiles
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from llama_index.core.schema import NodeWithScore
 from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 
 from ..config.general_config import GeneralConfig
 from ..config.ingest_config import IngestConfig
 from ..config.rerank_config import RerankConfig
-from ..embed.embed import create_embed_manager
 from ..ingest import ingest
-from ..ingest.loader.file_loader import FileLoader
-from ..ingest.loader.html_loader import HTMLLoader
 from ..llama.core.schema import Modality
 from ..logger import logger
-from ..meta_store.meta_store import create_meta_store
-from ..rerank.rerank import create_rerank_manager
-from ..retrieve import retrieve
-from ..vector_store.vector_store import create_vector_store_manager
+
+if TYPE_CHECKING:
+    from llama_index.core.schema import NodeWithScore
+
+    from raggify.embed.embed_manager import EmbedManager
+    from raggify.rerank.rerank_manager import RerankManager
+    from raggify.vector_store.vector_store_manager import VectorStoreManager
+
+    from ..ingest.loader.file_loader import FileLoader
+    from ..ingest.loader.html_loader import HTMLLoader
+    from ..meta_store.structured.structured import Structured
 
 __all__ = ["app"]
 
@@ -55,38 +57,178 @@ class URLRequest(BaseModel):
     url: str
 
 
-# uvicorn raggify.main:app --host 0.0.0.0 --port 8000
 app = FastAPI(title=GeneralConfig.project_name, version=GeneralConfig.version)
 
-_embed = create_embed_manager()
-logger.info(f"{_embed.name} embed initialized")
-
-_meta_store = create_meta_store()
-logger.info("meta store initialized")
-
-_vector_store = create_vector_store_manager(embed=_embed, meta_store=_meta_store)
-logger.info(f"{_vector_store.name} vector store initialized")
-
-_rerank = create_rerank_manager()
-logger.info(f"{_rerank.name} rerank initialized")
-
-_file_loader = FileLoader(
-    chunk_size=IngestConfig.chunk_size,
-    chunk_overlap=IngestConfig.chunk_overlap,
-    store=_vector_store,
-)
-logger.info("file loader initialized")
-
-_html_loader = HTMLLoader(
-    chunk_size=IngestConfig.chunk_size,
-    chunk_overlap=IngestConfig.chunk_overlap,
-    file_loader=_file_loader,
-    store=_vector_store,
-    user_agent=IngestConfig.user_agent,
-)
-logger.info("html loader initialized")
+_embed: Optional[EmbedManager] = None
+_meta_store: Optional[Structured] = None
+_vector_store: Optional[VectorStoreManager] = None
+_rerank: Optional[RerankManager] = None
+_file_loader: Optional[FileLoader] = None
+_html_loader: Optional[HTMLLoader] = None
 
 _request_lock = threading.Lock()
+
+
+def _get_embed_manager() -> EmbedManager:
+    """埋め込み管理のインスタンスを取得する。
+
+    Raises:
+        RuntimeError: インスタンス生成失敗
+
+    Returns:
+        EmbedManager: インスタンス
+    """
+    from ..embed.embed import create_embed_manager
+
+    global _embed
+
+    if _embed is None:
+        try:
+            _embed = create_embed_manager()
+        except Exception as e:
+            traceback.print_exc()
+            raise RuntimeError("failed to create embed manager") from e
+
+        logger.info(f"{_embed.name} embed initialized")
+
+    return _embed
+
+
+def _get_meta_store() -> Structured:
+    """メタデータ用ストアのインスタンスを取得する。
+
+    Raises:
+        RuntimeError: インスタンス生成失敗
+
+    Returns:
+        Structured: インスタンス
+    """
+    from ..meta_store.meta_store import create_meta_store
+
+    global _meta_store
+
+    if _meta_store is None:
+        try:
+            _meta_store = create_meta_store()
+        except Exception as e:
+            traceback.print_exc()
+            raise RuntimeError("failed to create embed manager") from e
+
+        logger.info("meta store initialized")
+
+    return _meta_store
+
+
+def _get_vector_store() -> VectorStoreManager:
+    """ベクトルストア管理のインスタンスを取得する。
+
+    Raises:
+        RuntimeError: インスタンス生成失敗
+
+    Returns:
+        VectorStoreManager: インスタンス
+    """
+    from ..vector_store.vector_store import create_vector_store_manager
+
+    global _vector_store
+
+    if _vector_store is None:
+        try:
+            _vector_store = create_vector_store_manager(
+                embed=_get_embed_manager(), meta_store=_get_meta_store()
+            )
+        except Exception as e:
+            traceback.print_exc()
+            raise RuntimeError("failed to create embed manager") from e
+
+        logger.info("vector store initialized")
+
+    return _vector_store
+
+
+def _get_rerank_manager() -> RerankManager:
+    """リランク管理のインスタンスを取得する。
+
+    Raises:
+        RuntimeError: インスタンス生成失敗
+
+    Returns:
+        RerankManager: インスタンス
+    """
+    from ..rerank.rerank import create_rerank_manager
+
+    global _rerank
+
+    if _rerank is None:
+        try:
+            _rerank = create_rerank_manager()
+        except Exception as e:
+            traceback.print_exc()
+            raise RuntimeError("failed to create rerank manager") from e
+
+        logger.info(f"{_rerank.name} rerank initialized")
+
+    return _rerank
+
+
+def _get_file_loader() -> FileLoader:
+    """ファイルローダーのインスタンスを取得する。
+
+    Raises:
+        RuntimeError: インスタンス生成失敗
+
+    Returns:
+        FileLoader: インスタンス
+    """
+    from ..ingest.loader.file_loader import FileLoader
+
+    global _file_loader
+
+    if _file_loader is None:
+        try:
+            _file_loader = FileLoader(
+                chunk_size=IngestConfig.chunk_size,
+                chunk_overlap=IngestConfig.chunk_overlap,
+                store=_get_vector_store(),
+            )
+        except Exception as e:
+            traceback.print_exc()
+            raise RuntimeError("failed to create file loader") from e
+
+        logger.info("file loader initialized")
+
+    return _file_loader
+
+
+def _get_html_loader() -> HTMLLoader:
+    """HTML ローダーのインスタンスを取得する。
+
+    Raises:
+        RuntimeError: インスタンス生成失敗
+
+    Returns:
+        HTMLLoader: インスタンス
+    """
+    from ..ingest.loader.html_loader import HTMLLoader
+
+    global _html_loader
+
+    if _html_loader is None:
+        try:
+            _html_loader = HTMLLoader(
+                chunk_size=IngestConfig.chunk_size,
+                chunk_overlap=IngestConfig.chunk_overlap,
+                file_loader=_get_file_loader(),
+                store=_get_vector_store(),
+                user_agent=IngestConfig.user_agent,
+            )
+        except Exception as e:
+            traceback.print_exc()
+            raise RuntimeError("failed to create HTML loader") from e
+
+        logger.info("HTML loader initialized")
+
+    return _html_loader
 
 
 def _nodes_to_response(nodes: list[NodeWithScore]) -> list[dict[str, Any]]:
@@ -115,9 +257,9 @@ async def health() -> dict[str, Any]:
 
     return {
         "status": "ok",
-        "store": _vector_store.name,
-        "embed": _embed.name,
-        "rerank": _rerank.name,
+        "store": _get_vector_store().name,
+        "embed": _get_embed_manager().name,
+        "rerank": _get_rerank_manager().name,
     }
 
 
@@ -135,6 +277,8 @@ async def upload(files: list[UploadFile] = File(...)) -> dict[str, Any]:
     Returns:
         dict[str, Any]: 結果
     """
+    import aiofiles
+
     logger.info("exec /v1/upload")
 
     try:
@@ -195,9 +339,11 @@ async def query_text_text(payload: QueryTextRequest) -> dict[str, Any]:
     Returns:
         dict[str, Any]: 検索結果
     """
+    from ..retrieve.retrieve import aquery_text_text
+
     logger.info("exec /v1/query/text_text")
 
-    if Modality.TEXT not in _embed.modality:
+    if Modality.TEXT not in _get_embed_manager().modality:
         raise HTTPException(
             status_code=501,
             detail="text embeddings is not supported",
@@ -206,9 +352,9 @@ async def query_text_text(payload: QueryTextRequest) -> dict[str, Any]:
     await run_in_threadpool(_request_lock.acquire)
     try:
         try:
-            nodes = await retrieve.aquery_text_text(
+            nodes = await aquery_text_text(
                 query=payload.query,
-                store=_vector_store,
+                store=_get_vector_store(),
                 topk=payload.topk or RerankConfig.topk,
                 rerank=_rerank,
             )
@@ -234,9 +380,11 @@ async def query_text_image(payload: QueryTextRequest) -> dict[str, Any]:
     Returns:
         dict[str, Any]: 検索結果
     """
+    from ..retrieve.retrieve import aquery_text_image
+
     logger.info("exec /v1/query/text_image")
 
-    if Modality.IMAGE not in _embed.modality:
+    if Modality.IMAGE not in _get_embed_manager().modality:
         raise HTTPException(
             status_code=501,
             detail="image embeddings is not supported",
@@ -245,9 +393,9 @@ async def query_text_image(payload: QueryTextRequest) -> dict[str, Any]:
     await run_in_threadpool(_request_lock.acquire)
     try:
         try:
-            nodes = await retrieve.aquery_text_image(
+            nodes = await aquery_text_image(
                 query=payload.query,
-                store=_vector_store,
+                store=_get_vector_store(),
                 topk=payload.topk or RerankConfig.topk,
                 rerank=_rerank,
             )
@@ -273,9 +421,11 @@ async def query_image_image(payload: QueryMultimodalRequest) -> dict[str, Any]:
     Returns:
         dict[str, Any]: 検索結果
     """
+    from ..retrieve.retrieve import aquery_image_image
+
     logger.info("exec /v1/query/image_image")
 
-    if Modality.IMAGE not in _embed.modality:
+    if Modality.IMAGE not in _get_embed_manager().modality:
         raise HTTPException(
             status_code=501,
             detail="image embeddings is not supported",
@@ -284,9 +434,9 @@ async def query_image_image(payload: QueryMultimodalRequest) -> dict[str, Any]:
     await run_in_threadpool(_request_lock.acquire)
     try:
         try:
-            nodes = await retrieve.aquery_image_image(
+            nodes = await aquery_image_image(
                 path=payload.path,
-                store=_vector_store,
+                store=_get_vector_store(),
                 topk=payload.topk or RerankConfig.topk,
             )
         except Exception as e:
@@ -311,9 +461,11 @@ async def query_text_audio(payload: QueryTextRequest) -> dict[str, Any]:
     Returns:
         dict[str, Any]: 検索結果
     """
+    from ..retrieve.retrieve import aquery_text_audio
+
     logger.info("exec /v1/query/text_audio")
 
-    if Modality.AUDIO not in _embed.modality:
+    if Modality.AUDIO not in _get_embed_manager().modality:
         raise HTTPException(
             status_code=501,
             detail="audio embeddings is not supported",
@@ -322,9 +474,9 @@ async def query_text_audio(payload: QueryTextRequest) -> dict[str, Any]:
     await run_in_threadpool(_request_lock.acquire)
     try:
         try:
-            nodes = await retrieve.aquery_text_audio(
+            nodes = await aquery_text_audio(
                 query=payload.query,
-                store=_vector_store,
+                store=_get_vector_store(),
                 topk=payload.topk or RerankConfig.topk,
                 rerank=_rerank,
             )
@@ -350,9 +502,11 @@ async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
     Returns:
         dict[str, Any]: 検索結果
     """
+    from ..retrieve.retrieve import aquery_audio_audio
+
     logger.info("exec /v1/query/audio_audio")
 
-    if Modality.AUDIO not in _embed.modality:
+    if Modality.AUDIO not in _get_embed_manager().modality:
         raise HTTPException(
             status_code=501,
             detail="audio embeddings is not supported",
@@ -361,9 +515,9 @@ async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
     await run_in_threadpool(_request_lock.acquire)
     try:
         try:
-            nodes = await retrieve.aquery_audio_audio(
+            nodes = await aquery_audio_audio(
                 path=payload.path,
-                store=_vector_store,
+                store=_get_vector_store(),
                 topk=payload.topk or RerankConfig.topk,
             )
         except Exception as e:
@@ -395,8 +549,8 @@ async def ingest_path(payload: PathRequest) -> dict[str, str]:
     try:
         await ingest.aingest_from_path(
             path=payload.path,
-            store=_vector_store,
-            file_loader=_file_loader,
+            store=_get_vector_store(),
+            file_loader=_get_file_loader(),
         )
     except Exception as e:
         traceback.print_exc()
@@ -426,8 +580,8 @@ async def ingest_path_list(payload: PathRequest) -> dict[str, str]:
     try:
         await ingest.aingest_from_path_list(
             list_path=payload.path,
-            store=_vector_store,
-            file_loader=_file_loader,
+            store=_get_vector_store(),
+            file_loader=_get_file_loader(),
         )
     except Exception as e:
         traceback.print_exc()
@@ -458,8 +612,8 @@ async def ingest_url(payload: URLRequest) -> dict[str, str]:
     try:
         await ingest.aingest_from_url(
             url=payload.url,
-            store=_vector_store,
-            html_loader=_html_loader,
+            store=_get_vector_store(),
+            html_loader=_get_html_loader(),
         )
     except Exception as e:
         traceback.print_exc()
@@ -489,8 +643,8 @@ async def ingest_url_list(payload: PathRequest) -> dict[str, str]:
     try:
         await ingest.aingest_from_url_list(
             list_path=payload.path,
-            store=_vector_store,
-            html_loader=_html_loader,
+            store=_get_vector_store(),
+            html_loader=_get_html_loader(),
         )
     except Exception as e:
         traceback.print_exc()

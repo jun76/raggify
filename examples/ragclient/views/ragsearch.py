@@ -5,8 +5,9 @@ from typing import Any, Optional
 
 import streamlit as st
 
+from raggify.client.client import RestAPIClient
+
 from ..agent import AgentExecutionError, RagAgentManager
-from ..api_client import RAGgifyClient
 from ..config.config import Config
 from ..state import View, set_view
 from .common import emojify_robot, save_uploaded_files
@@ -21,14 +22,14 @@ class RagSearchSessionKey(StrEnum):
 
 
 def _save_reference_file(
-    client: RAGgifyClient,
+    client: RestAPIClient,
     file_obj: Optional[Any],
     session_key: RagSearchSessionKey,
 ) -> Optional[str]:
     """アップロードファイルを raggify に保存しパスを返す。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
         file_obj (Optional[Any]): アップロードされたファイルオブジェクト
         session_key (RagSearchSessionKey): セッションステートに保存するキー
 
@@ -53,11 +54,11 @@ def _save_reference_file(
     return path
 
 
-def render_ragsearch_view(client: RAGgifyClient) -> None:
+def render_ragsearch_view(client: RestAPIClient) -> None:
     """RAG 検索画面を描画する。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
     """
     st.title(emojify_robot("🤖 RAG 検索"))
     st.button(

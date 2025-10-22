@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from .structured.sqlite_structured import SQLiteStructured
-from .structured.structured import Structured
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .structured.structured import Structured
 
 __all__ = ["create_meta_store"]
 
@@ -15,6 +17,8 @@ def create_meta_store() -> Structured:
     Returns:
         Structured: メタデータ用ストア
     """
+    from .structured.sqlite_structured import SQLiteStructured
+
     try:
         meta_store = SQLiteStructured()
     except Exception as e:

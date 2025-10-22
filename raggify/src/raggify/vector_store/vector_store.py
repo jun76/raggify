@@ -1,17 +1,16 @@
 from __future__ import annotations
 
-import chromadb
-from llama_index.vector_stores.chroma import ChromaVectorStore
-from llama_index.vector_stores.postgres import PGVectorStore
+from typing import TYPE_CHECKING
 
 from ..config.general_config import GeneralConfig
 from ..config.settings import VectorStoreProvider
 from ..config.vector_store_config import VectorStoreConfig
-from ..embed.embed_manager import EmbedManager
 from ..llama.core.schema import Modality
-from ..logger import logger
-from ..meta_store.structured.structured import Structured
-from .vector_store_manager import VectorStoreContainer, VectorStoreManager
+
+if TYPE_CHECKING:
+    from ..embed.embed_manager import EmbedManager
+    from ..meta_store.structured.structured import Structured
+    from .vector_store_manager import VectorStoreContainer, VectorStoreManager
 
 __all__ = ["create_vector_store_manager"]
 
@@ -20,7 +19,7 @@ def create_vector_store_manager(
     embed: EmbedManager,
     meta_store: Structured,
 ) -> VectorStoreManager:
-    """ベクトルストアのインスタンスを生成する。
+    """ベクトルストア管理のインスタンスを生成する。
 
     Args:
         embed (EmbedManager): 埋め込み管理
@@ -30,8 +29,10 @@ def create_vector_store_manager(
         RuntimeError: インスタンス生成に失敗またはプロバイダ指定漏れ
 
     Returns:
-        VectorStoreManager: ベクトルストア
+        VectorStoreManager: ベクトルストア管理
     """
+    from .vector_store_manager import VectorStoreManager
+
     try:
         conts: dict[Modality, VectorStoreContainer] = {}
         if GeneralConfig.text_embed_provider:
@@ -110,6 +111,10 @@ def _pgvector(table_name: str) -> VectorStoreContainer:
     Returns:
         VectorStoreContainer: コンテナ
     """
+    from llama_index.vector_stores.postgres import PGVectorStore
+
+    from .vector_store_manager import VectorStoreContainer
+
     sec = VectorStoreConfig.pgvector_password
     if sec is None:
         raise ValueError("pgvector_password must be specified")
@@ -140,6 +145,11 @@ def _chroma(table_name: str) -> VectorStoreContainer:
     Returns:
         VectorStoreContainer: コンテナ
     """
+    import chromadb
+    from llama_index.vector_stores.chroma import ChromaVectorStore
+
+    from .vector_store_manager import VectorStoreContainer
+
     if (
         VectorStoreConfig.chroma_host is not None
         and VectorStoreConfig.chroma_port is not None

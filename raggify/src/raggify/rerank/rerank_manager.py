@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
-
-from llama_index.core.postprocessor.types import BaseNodePostprocessor
-from llama_index.core.schema import NodeWithScore
+from typing import TYPE_CHECKING, Optional
 
 from ..logger import logger
+
+if TYPE_CHECKING:
+    from llama_index.core.postprocessor.types import BaseNodePostprocessor
+    from llama_index.core.schema import NodeWithScore
 
 
 @dataclass

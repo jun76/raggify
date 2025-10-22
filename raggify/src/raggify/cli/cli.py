@@ -1,25 +1,10 @@
 from __future__ import annotations
 
-from asyncio import run as aiorun
+import json
 from typing import Any
 
 import typer
 import uvicorn
-from llama_index.core.schema import NodeWithScore
-
-from ..config.general_config import GeneralConfig
-from ..config.ingest_config import IngestConfig
-from ..embed.embed import create_embed_manager
-from ..ingest import ingest
-from ..ingest.loader.file_loader import FileLoader
-from ..ingest.loader.html_loader import HTMLLoader
-from ..meta_store.meta_store import create_meta_store
-from ..rerank.rerank import RerankManager, create_rerank_manager
-from ..retrieve import retrieve
-from ..server.fastapi import app as fastapi
-from ..server.mcp import app as mcp
-from ..vector_store.vector_store import create_vector_store_manager
-from ..vector_store.vector_store_manager import VectorStoreManager
 
 __all__ = ["app"]
 
@@ -27,58 +12,35 @@ __all__ = ["app"]
 app = typer.Typer()
 
 
-def _setup_ingest() -> tuple[VectorStoreManager, FileLoader, HTMLLoader]:
-    """ingest 用インスタンス生成ヘルパー。
+def _get_server_base_url() -> str:
+    """raggify サーバのベース URL 文字列を取得する。
 
     Returns:
-        tuple[VectorStoreManager, FileLoader, HTMLLoader]: 各種インスタンス
+        str: ベース URL 文字列
     """
-    embed = create_embed_manager()
-    meta_store = create_meta_store()
-    vector_store = create_vector_store_manager(embed=embed, meta_store=meta_store)
-    file_loader = FileLoader(
-        chunk_size=IngestConfig.chunk_size,
-        chunk_overlap=IngestConfig.chunk_overlap,
-        store=vector_store,
-    )
-    html_loader = HTMLLoader(
-        chunk_size=IngestConfig.chunk_size,
-        chunk_overlap=IngestConfig.chunk_overlap,
-        file_loader=file_loader,
-        store=vector_store,
-        user_agent=IngestConfig.user_agent,
-    )
+    from raggify.config.general_config import GeneralConfig
 
-    return vector_store, file_loader, html_loader
+    return f"http://{GeneralConfig.host}:{GeneralConfig.port}/v1"
 
 
-def _setup_retrieve() -> tuple[VectorStoreManager, RerankManager]:
-    """retrieve 用インスタンス生成ヘルパー。
+def _create_rest_client():
+    """REST API クライアントを生成する。
 
     Returns:
-        tuple[VectorStoreManager, RerankManager]: 各種インスタンス
+        RestAPIClient: REST API クライアント
     """
-    embed = create_embed_manager()
-    meta_store = create_meta_store()
-    vector_store = create_vector_store_manager(embed=embed, meta_store=meta_store)
-    rerank = create_rerank_manager()
+    from ..client.client import RestAPIClient
 
-    return vector_store, rerank
+    return RestAPIClient(_get_server_base_url())
 
 
-def _nodes_to_response(nodes: list[NodeWithScore]) -> list[dict[str, Any]]:
-    """NodeWithScore リストを JSON 返却可能な辞書リストへ変換する。
+def _echo_json(data: dict[str, Any]) -> None:
+    """JSON 文字列として整形出力する。
 
     Args:
-        nodes (list[NodeWithScore]): 変換対象ノード
-
-    Returns:
-        list[dict[str, Any]]: JSON 変換済みノードリスト
+        data (dict[str, Any]): 出力データ
     """
-    return [
-        {"text": node.text, "metadata": node.metadata, "score": node.score}
-        for node in nodes
-    ]
+    typer.echo(json.dumps(data, ensure_ascii=False, indent=2))
 
 
 @app.command(help="Start as a local server.")
@@ -92,9 +54,14 @@ def server(host: str, port: int, as_rest_api: bool, as_mcp: bool):
         as_mcp (bool): MCP サーバとして公開するか
     """
     if as_mcp:
+        from ..server.mcp import app as mcp
+
         mcp.mount_http()
 
     if as_rest_api:
+        from ..config.general_config import GeneralConfig
+        from ..server.fastapi import app as fastapi
+
         uvicorn.run(
             app=fastapi,
             host=host,
@@ -114,16 +81,16 @@ def ingest_from_path(path: str):
         typer.Exit: エラー発生
     """
     try:
-        store, file_loader, _ = _setup_ingest()
-        aiorun(
-            ingest.aingest_from_path(path=path, store=store, file_loader=file_loader)
-        )
+        client = _create_rest_client()
+        result = client.ingest_path(path)
     except Exception as e:
         typer.echo(f"error: {e}")
         raise typer.Exit(code=1)
 
+    _echo_json(result)
 
-@app.command(help="Ingest from local path-list.")
+
+@app.command(help="Ingest from local-path list.")
 def ingest_from_path_list(list_path: str):
     """path リストに記載の複数パスからコンテンツを収集、埋め込み、ストアに格納する。
 
@@ -134,15 +101,13 @@ def ingest_from_path_list(list_path: str):
         typer.Exit: エラー発生
     """
     try:
-        store, file_loader, _ = _setup_ingest()
-        aiorun(
-            ingest.aingest_from_path_list(
-                list_path=list_path, store=store, file_loader=file_loader
-            )
-        )
+        client = _create_rest_client()
+        result = client.ingest_path_list(list_path)
     except Exception as e:
         typer.echo(f"error: {e}")
         raise typer.Exit(code=1)
+
+    _echo_json(result)
 
 
 @app.command(help="Ingest from URL.")
@@ -156,14 +121,16 @@ def ingest_from_url(url: str):
         typer.Exit: エラー発生
     """
     try:
-        store, _, html_loader = _setup_ingest()
-        aiorun(ingest.aingest_from_url(url=url, store=store, html_loader=html_loader))
+        client = _create_rest_client()
+        result = client.ingest_url(url)
     except Exception as e:
         typer.echo(f"error: {e}")
         raise typer.Exit(code=1)
 
+    _echo_json(result)
 
-@app.command(help="Ingest from URL-list.")
+
+@app.command(help="Ingest from URL list.")
 def ingest_from_url_list(list_path: str):
     """URL リストに記載の複数サイトからコンテンツを収集、埋め込み、ストアに格納する。
 
@@ -174,15 +141,13 @@ def ingest_from_url_list(list_path: str):
         typer.Exit: エラー発生
     """
     try:
-        store, _, html_loader = _setup_ingest()
-        aiorun(
-            ingest.aingest_from_url_list(
-                list_path=list_path, store=store, html_loader=html_loader
-            )
-        )
+        client = _create_rest_client()
+        result = client.ingest_url_list(list_path)
     except Exception as e:
         typer.echo(f"error: {e}")
         raise typer.Exit(code=1)
+
+    _echo_json(result)
 
 
 @app.command(help="Search text documents by text query.")
@@ -197,20 +162,13 @@ def query_text_text(query: str, topk: int):
         typer.Exit: エラー発生
     """
     try:
-        store, rerank = _setup_retrieve()
-        nodes = aiorun(
-            retrieve.aquery_text_text(
-                query=query,
-                store=store,
-                topk=topk,
-                rerank=rerank,
-            )
-        )
+        client = _create_rest_client()
+        result = client.query_text_text(query=query, topk=topk)
     except Exception as e:
         typer.echo(f"error: {e}")
         raise typer.Exit(code=1)
 
-    print(_nodes_to_response(nodes))
+    _echo_json(result)
 
 
 @app.command(help="Search image documents by text query.")
@@ -225,20 +183,13 @@ def query_text_image(query: str, topk: int):
         typer.Exit: エラー発生
     """
     try:
-        store, rerank = _setup_retrieve()
-        nodes = aiorun(
-            retrieve.aquery_text_image(
-                query=query,
-                store=store,
-                topk=topk,
-                rerank=rerank,
-            )
-        )
+        client = _create_rest_client()
+        result = client.query_text_image(query=query, topk=topk)
     except Exception as e:
         typer.echo(f"error: {e}")
         raise typer.Exit(code=1)
 
-    print(_nodes_to_response(nodes))
+    _echo_json(result)
 
 
 @app.command(help="Search image documents by image query.")
@@ -253,19 +204,13 @@ def query_image_image(path: str, topk: int):
         typer.Exit: エラー発生
     """
     try:
-        store, _ = _setup_retrieve()
-        nodes = aiorun(
-            retrieve.aquery_image_image(
-                path=path,
-                store=store,
-                topk=topk,
-            )
-        )
+        client = _create_rest_client()
+        result = client.query_image_image(path=path, topk=topk)
     except Exception as e:
         typer.echo(f"error: {e}")
         raise typer.Exit(code=1)
 
-    print(_nodes_to_response(nodes))
+    _echo_json(result)
 
 
 @app.command(help="Search audio documents by text query.")
@@ -280,20 +225,13 @@ def query_text_audio(query: str, topk: int):
         typer.Exit: エラー発生
     """
     try:
-        store, rerank = _setup_retrieve()
-        nodes = aiorun(
-            retrieve.aquery_text_audio(
-                query=query,
-                store=store,
-                topk=topk,
-                rerank=rerank,
-            )
-        )
+        client = _create_rest_client()
+        result = client.query_text_audio(query=query, topk=topk)
     except Exception as e:
         typer.echo(f"error: {e}")
         raise typer.Exit(code=1)
 
-    print(_nodes_to_response(nodes))
+    _echo_json(result)
 
 
 @app.command(help="Search audio documents by audio query.")
@@ -308,19 +246,13 @@ def query_audio_audio(path: str, topk: int):
         typer.Exit: エラー発生
     """
     try:
-        store, _ = _setup_retrieve()
-        nodes = aiorun(
-            retrieve.aquery_audio_audio(
-                path=path,
-                store=store,
-                topk=topk,
-            )
-        )
+        client = _create_rest_client()
+        result = client.query_audio_audio(path=path, topk=topk)
     except Exception as e:
         typer.echo(f"error: {e}")
         raise typer.Exit(code=1)
 
-    print(_nodes_to_response(nodes))
+    _echo_json(result)
 
 
 if __name__ == "__main__":

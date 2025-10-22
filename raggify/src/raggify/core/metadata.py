@@ -3,8 +3,6 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any, Optional
 
-from ..logger import logger
-
 
 class META_KEYS_FROM:
     # ライブラリ側定義ラベル（字列変更不可）

@@ -11,6 +11,8 @@ class GeneralConfig:
     project_name: str = Settings.PROJECT_NAME
     version: str = Settings.VERSION
     knowledgebase_name: str = Settings.KNOWLEDGEBASE_NAME
+    host: str = Settings.HOST
+    port: int = Settings.PORT
     vector_store_provider: VectorStoreProvider = Settings.VECTOR_STORE_PROVIDER
     text_embed_provider: EmbedProvider = Settings.TEXT_EMBED_PROVIDER
     image_embed_provider: Optional[EmbedProvider] = Settings.IMAGE_EMBED_PROVIDER

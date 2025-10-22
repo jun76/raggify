@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from ..api_client import RAGgifyClient
-from ..logger import logger
+from raggify.client.client import RestAPIClient
 
 __all__ = ["emojify_robot", "save_uploaded_files"]
 
@@ -21,11 +20,11 @@ def emojify_robot(s: str) -> str:
     return s.replace("\U0001f916", "\U0001f916" + "\ufe0f")  # 🤖
 
 
-def save_uploaded_files(client: RAGgifyClient, files: list[Any]) -> list[str]:
+def save_uploaded_files(client: RestAPIClient, files: list[Any]) -> list[str]:
     """アップロード済みファイルを保存し、raggify 上の保存パスを返す。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
         files (list[Any]): Streamlit のアップロードファイルオブジェクト
 
     Returns:

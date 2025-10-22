@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from typing import Optional
-
-from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
-from llama_index.core.schema import NodeWithScore
+from typing import TYPE_CHECKING, Optional
 
 from ..llama.core.indices.multi_modal.retriever import AudioRetriever
 from ..llama.core.schema import Modality
 from ..logger import logger
-from ..rerank.rerank_manager import RerankManager
-from ..vector_store.vector_store_manager import VectorStoreManager
+
+if TYPE_CHECKING:
+    from llama_index.core.schema import NodeWithScore
+
+    from ..rerank.rerank_manager import RerankManager
+    from ..vector_store.vector_store_manager import VectorStoreManager
 
 __all__ = [
     "aquery_text_text",
@@ -78,6 +79,8 @@ async def aquery_text_image(
     Returns:
         list[NodeWithScore]: 検索結果のリスト
     """
+    from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
+
     index = store.get_index(Modality.IMAGE)
     if index is None:
         logger.error("store is not initialized")
@@ -126,6 +129,8 @@ async def aquery_image_image(
     Returns:
         list[NodeWithScore]: 検索結果のリスト
     """
+    from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
+
     index = store.get_index(Modality.IMAGE)
     if index is None:
         logger.error("store is not initialized")

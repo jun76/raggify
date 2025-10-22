@@ -3,23 +3,21 @@ from __future__ import annotations
 import asyncio
 import tempfile
 import time
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 from urllib.parse import urljoin, urlparse
 
 import requests
-from bs4 import BeautifulSoup
-from llama_index.core.node_parser import SentenceSplitter
-from llama_index.core.schema import BaseNode, TextNode
-from llama_index.readers.web.simple_web.base import SimpleWebPageReader
-from llama_index.readers.web.sitemap.base import SitemapReader
 
 from ...config.general_config import GeneralConfig
 from ...core.exts import Exts
-from ...core.metadata import BasicMetaData
 from ...logger import logger
-from ...vector_store.vector_store_manager import VectorStoreManager
-from .file_loader import FileLoader
 from .loader import Loader
+
+if TYPE_CHECKING:
+    from llama_index.core.schema import BaseNode
+
+    from ...vector_store.vector_store_manager import VectorStoreManager
+    from .file_loader import FileLoader
 
 
 class HTMLLoader(Loader):
@@ -129,6 +127,8 @@ class HTMLLoader(Loader):
         Returns:
             list[str]: 収集した絶対 URL
         """
+        from bs4 import BeautifulSoup
+
         seen = set()
         out = []
         base = urlparse(base_url)
@@ -230,6 +230,10 @@ class HTMLLoader(Loader):
         Returns:
             Optional[BaseNode]: 生成したノード
         """
+        from llama_index.core.schema import TextNode
+
+        from ...core.metadata import BasicMetaData
+
         temp_file_path = await self._adownload_direct_linked_file(
             url=url, allowed_exts=Exts.FETCH_TARGET
         )
@@ -258,6 +262,11 @@ class HTMLLoader(Loader):
         Returns:
             list[BaseNode]: 生成したノード
         """
+        from llama_index.core.node_parser import SentenceSplitter
+        from llama_index.readers.web.simple_web.base import SimpleWebPageReader
+
+        from ...core.metadata import BasicMetaData
+
         try:
             reader = SimpleWebPageReader(html_to_text=True)
             doc = await reader.aload_data([url])
@@ -371,6 +380,8 @@ class HTMLLoader(Loader):
         Returns:
             list[BaseNode]: 生成したノード
         """
+        from llama_index.readers.web.sitemap.base import SitemapReader
+
         # サイトマップ以外は単一のサイトとして読み込み
         if not Exts.endswith_exts(url, Exts.SITEMAP):
             return await self._aload_from_site(url)

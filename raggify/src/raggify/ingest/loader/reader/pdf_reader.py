@@ -1,17 +1,19 @@
+from __future__ import annotations
+
 import os
 import tempfile
 import time
-from typing import Any, Iterable
+from typing import TYPE_CHECKING, Any, Iterable
 
-import pymupdf as fitz
-from fitz import Document as FDoc
 from llama_index.core.readers.base import BaseReader
 from llama_index.core.schema import Document
 
 from ....config.general_config import GeneralConfig
 from ....core.exts import Exts
-from ....core.metadata import BasicMetaData
 from ....logger import logger
+
+if TYPE_CHECKING:
+    from fitz import Document as FDoc
 
 
 class MultiPDFReader(BaseReader):
@@ -26,6 +28,8 @@ class MultiPDFReader(BaseReader):
         Returns:
             Iterable[Document]: テキストドキュメントと画像ドキュメント
         """
+        import pymupdf as fitz
+
         path = os.path.abspath(path)
         if not os.path.exists(path):
             logger.warning(f"file not found: {path}")
@@ -67,6 +71,8 @@ class MultiPDFReader(BaseReader):
         Returns:
             list[Document]: 生成したドキュメントリスト
         """
+        from ....core.metadata import BasicMetaData
+
         docs = []
         for page_no in range(pdf.page_count):
             try:
@@ -104,6 +110,10 @@ class MultiPDFReader(BaseReader):
         Returns:
             list[Document]: 生成したドキュメントリスト
         """
+        import pymupdf as fitz
+
+        from ....core.metadata import BasicMetaData
+
         docs = []
         for page_no in range(pdf.page_count):
             try:

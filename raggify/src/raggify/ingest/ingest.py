@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from ..vector_store.vector_store_manager import VectorStoreManager
-from .loader.file_loader import FileLoader
-from .loader.html_loader import HTMLLoader
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..vector_store.vector_store_manager import VectorStoreManager
+    from .loader.file_loader import FileLoader
+    from .loader.html_loader import HTMLLoader
 
 __all__ = [
     "aingest_from_path",

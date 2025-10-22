@@ -1,18 +1,27 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Iterable, Optional, Sequence, Union
+from typing import (
+    TYPE_CHECKING,
+    Awaitable,
+    Callable,
+    Iterable,
+    Optional,
+    Sequence,
+    Union,
+)
 
-from llama_index.core import VectorStoreIndex
 from llama_index.core.base.embeddings.base import BaseEmbedding
 from llama_index.core.retrievers import BaseRetriever
-from llama_index.core.schema import BaseNode, NodeWithScore, QueryBundle
-from llama_index.core.vector_stores.types import (
-    MetadataFilters,
-    VectorStoreQuery,
-    VectorStoreQueryMode,
-    VectorStoreQueryResult,
-)
+from llama_index.core.vector_stores.types import VectorStoreQueryMode
+
+if TYPE_CHECKING:
+    from llama_index.core import VectorStoreIndex
+    from llama_index.core.schema import BaseNode, NodeWithScore, QueryBundle
+    from llama_index.core.vector_stores.types import (
+        MetadataFilters,
+        VectorStoreQueryResult,
+    )
 
 Embeddings = Sequence[float]
 
@@ -181,6 +190,8 @@ class AudioRetriever(BaseRetriever):
         Returns:
             list[NodeWithScore]: 類似ノードのリスト
         """
+        from llama_index.core.schema import QueryBundle
+
         if isinstance(query, QueryBundle):
             query_str = query.query_str
             embedding = query.embedding
@@ -226,6 +237,8 @@ class AudioRetriever(BaseRetriever):
         Returns:
             list[NodeWithScore]: 類似ノードのリスト
         """
+        from llama_index.core.vector_stores.types import VectorStoreQuery
+
         query = VectorStoreQuery(
             query_embedding=list(embedding),
             similarity_top_k=self._top_k,
@@ -251,6 +264,8 @@ class AudioRetriever(BaseRetriever):
         Returns:
             list[NodeWithScore]: 変換後のノード一覧
         """
+        from llama_index.core.schema import NodeWithScore
+
         nodes: Iterable[BaseNode] = query_result.nodes or []
         nodes = list(nodes)
 

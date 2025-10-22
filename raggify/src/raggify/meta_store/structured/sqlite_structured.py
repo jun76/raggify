@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-import asyncio
-import sqlite3
-from typing import Any, Iterable, Sequence
-
-import aiosqlite
+from typing import TYPE_CHECKING, Any, Iterable, Sequence
 
 from ...config.general_config import GeneralConfig
 from ...core.metadata import META_KEYS as MK
-from ...core.metadata import BasicMetaData
 from .structured import Structured
+
+if TYPE_CHECKING:
+    from ...core.metadata import BasicMetaData
 
 # メタデータ管理テーブルの create 用
 # カラムを追加する場合、PRIMARY KEY への追加が必要なら足し忘れに注意
@@ -94,6 +92,8 @@ class SQLiteStructured(Structured):
         Raises:
             RuntimeError: 初期化失敗
         """
+        import sqlite3
+
         self._db_path = f"{GeneralConfig.project_name}_metas.db"
 
         try:
@@ -175,6 +175,8 @@ class SQLiteStructured(Structured):
         Raises:
             RuntimeError: upsert 失敗
         """
+        import aiosqlite
+
         sql = DML_UPSERT_METADATA.format(
             table_name=table_name,
             file_path=MK.FILE_PATH,
@@ -222,6 +224,8 @@ class SQLiteStructured(Structured):
         Raises:
             RuntimeError: upsert 失敗
         """
+        import asyncio
+
         if table_name not in self._created:
             await asyncio.to_thread(self._prepare_with, table_name)
 

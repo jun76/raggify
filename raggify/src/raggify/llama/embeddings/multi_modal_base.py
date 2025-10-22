@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from io import BytesIO
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any, Union
 
-from llama_index.core.base.embeddings.base import Embedding
 from llama_index.core.embeddings import BaseEmbedding
+
+if TYPE_CHECKING:
+    from llama_index.core.base.embeddings.base import Embedding
 
 AudioType = Union[str, BytesIO]
 

@@ -4,7 +4,8 @@ from typing import Any, Callable
 
 import streamlit as st
 
-from ..api_client import RAGgifyClient
+from raggify.client.client import RestAPIClient
+
 from ..logger import logger
 from ..state import (
     FeedBack,
@@ -71,11 +72,11 @@ def _render_search_section(
         result_renderer(result)
 
 
-def _render_search_view_text_text(client: RAGgifyClient) -> None:
+def _render_search_view_text_text(client: RestAPIClient) -> None:
     """テキスト→テキスト検索を描画する。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
     """
     _render_search_section(
         title="📝→📝 テキストでテキストを検索",
@@ -95,11 +96,11 @@ def _render_search_view_text_text(client: RAGgifyClient) -> None:
     )
 
 
-def _render_search_view_text_image(client: RAGgifyClient) -> None:
+def _render_search_view_text_image(client: RestAPIClient) -> None:
     """テキスト→画像検索を描画する。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
     """
     _render_search_section(
         title="📝→🖼️ テキストで画像を検索",
@@ -119,11 +120,11 @@ def _render_search_view_text_image(client: RAGgifyClient) -> None:
     )
 
 
-def _render_search_view_image_image(client: RAGgifyClient) -> None:
+def _render_search_view_image_image(client: RestAPIClient) -> None:
     """画像→画像検索を描画する。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
     """
     _render_search_section(
         title="🖼️→🖼️ 画像で画像を検索",
@@ -145,11 +146,11 @@ def _render_search_view_image_image(client: RAGgifyClient) -> None:
     )
 
 
-def _render_search_view_text_audio(client: RAGgifyClient) -> None:
+def _render_search_view_text_audio(client: RestAPIClient) -> None:
     """テキスト→音声検索を描画する。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
     """
     _render_search_section(
         title="📝→🎤 テキストで音声を検索",
@@ -169,11 +170,11 @@ def _render_search_view_text_audio(client: RAGgifyClient) -> None:
     )
 
 
-def _render_search_view_audio_audio(client: RAGgifyClient) -> None:
+def _render_search_view_audio_audio(client: RestAPIClient) -> None:
     """音声→音声検索を描画する。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
     """
     _render_search_section(
         title="🎤→🎤 音声で音声を検索",
@@ -229,7 +230,7 @@ def _run_text_search(
 
 
 def run_text_text_search_callback(
-    client: RAGgifyClient,
+    client: RestAPIClient,
     query: str,
     result_key: SearchResult,
     feedback_key: FeedBack,
@@ -237,7 +238,7 @@ def run_text_text_search_callback(
     """クエリ文字列によるテキストドキュメント検索 API を呼び出す。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
         query (str): 検索クエリ
         result_key (SearchResult): 検索結果を保持するセッションキー
         feedback_key (FeedBack): フィードバック表示用キー
@@ -251,7 +252,7 @@ def run_text_text_search_callback(
 
 
 def run_text_image_search_callback(
-    client: RAGgifyClient,
+    client: RestAPIClient,
     query: str,
     result_key: SearchResult,
     feedback_key: FeedBack,
@@ -259,7 +260,7 @@ def run_text_image_search_callback(
     """クエリ文字列による画像ドキュメント検索 API を呼び出す。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
         query (str): 検索クエリ
         result_key (SearchResult): 検索結果を保持するセッションキー
         feedback_key (FeedBack): フィードバック表示用キー
@@ -273,7 +274,7 @@ def run_text_image_search_callback(
 
 
 def run_image_image_search_callback(
-    client: RAGgifyClient,
+    client: RestAPIClient,
     file_obj: Any,
     result_key: SearchResult,
     feedback_key: FeedBack,
@@ -281,7 +282,7 @@ def run_image_image_search_callback(
     """クエリ画像による画像ドキュメント検索 API を呼び出す。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
         file_obj (Any): アップロードされた画像ファイル
         result_key (SearchResult): 検索結果を保持するセッションキー
         feedback_key (FeedBack): フィードバック表示用キー
@@ -306,7 +307,7 @@ def run_image_image_search_callback(
 
 
 def run_text_audio_search_callback(
-    client: RAGgifyClient,
+    client: RestAPIClient,
     query: str,
     result_key: SearchResult,
     feedback_key: FeedBack,
@@ -314,7 +315,7 @@ def run_text_audio_search_callback(
     """クエリ文字列による音声ドキュメント検索 API を呼び出す。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
         query (str): 検索クエリ
         result_key (SearchResult): 検索結果を保持するセッションキー
         feedback_key (FeedBack): フィードバック表示用キー
@@ -328,7 +329,7 @@ def run_text_audio_search_callback(
 
 
 def run_audio_audio_search_callback(
-    client: RAGgifyClient,
+    client: RestAPIClient,
     file_obj: Any,
     result_key: SearchResult,
     feedback_key: FeedBack,
@@ -336,7 +337,7 @@ def run_audio_audio_search_callback(
     """クエリ音声による音声ドキュメント検索 API を呼び出す。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
         file_obj (Any): アップロードされた音声ファイル
         result_key (SearchResult): 検索結果を保持するセッションキー
         feedback_key (FeedBack): フィードバック表示用キー
@@ -454,11 +455,11 @@ def _render_query_results_audio(title: str, result: dict[str, Any]) -> None:
             st.write(f"出典：{base_source}")
 
 
-def render_search_view(client: RAGgifyClient) -> None:
+def render_search_view(client: RestAPIClient) -> None:
     """検索画面を描画する。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
     """
     st.title("🔎 検索")
     st.button(
@@ -466,7 +467,7 @@ def render_search_view(client: RAGgifyClient) -> None:
     )
     st.divider()
 
-    choice_map: dict[str, Callable[[RAGgifyClient], None]] = {
+    choice_map: dict[str, Callable[[RestAPIClient], None]] = {
         "ﾃｷｽﾄ📝 → ﾃｷｽﾄ📝": _render_search_view_text_text,
         "ﾃｷｽﾄ📝 → 画像🖼️": _render_search_view_text_image,
         "画像🖼️ → 画像🖼️": _render_search_view_image_image,

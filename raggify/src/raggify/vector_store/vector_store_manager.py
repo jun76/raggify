@@ -1,15 +1,9 @@
 from __future__ import annotations
 
-import hashlib
-import json
-import os
 from dataclasses import dataclass
-from typing import Callable, Optional, Sequence
+from typing import TYPE_CHECKING, Callable, Optional, Sequence
 
-from llama_index.core.indices import VectorStoreIndex
-from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
-from llama_index.core.schema import BaseNode, ImageNode, TextNode
-from llama_index.core.vector_stores.types import BasePydanticVectorStore
+from llama_index.core.schema import ImageNode, TextNode
 
 from ..core.exts import Exts
 from ..core.metadata import META_KEYS
@@ -18,7 +12,13 @@ from ..core.metadata import BasicMetaData
 from ..embed.embed_manager import EmbedManager, Modality
 from ..llama.core.schema import AudioNode
 from ..logger import logger
-from ..meta_store.structured.structured import Structured
+
+if TYPE_CHECKING:
+    from llama_index.core.indices import VectorStoreIndex
+    from llama_index.core.schema import BaseNode
+    from llama_index.core.vector_stores.types import BasePydanticVectorStore
+
+    from ..meta_store.structured.structured import Structured
 
 
 @dataclass
@@ -202,6 +202,8 @@ class VectorStoreManager:
             tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
                 テキストノード、画像ノード、音声ノード
         """
+        from llama_index.core.schema import ImageNode, TextNode
+
         text_nodes = []
         image_nodes = []
         audio_nodes = []
@@ -325,6 +327,8 @@ class VectorStoreManager:
         Args:
             nodes (Itarable[BaseNode]): 対象ノード
         """
+        import os
+
         if len(nodes) == 0:
             logger.warning("empty list")
             return
@@ -427,6 +431,9 @@ class VectorStoreManager:
         Returns:
             VectorStoreIndex: 生成したインデックス
         """
+        from llama_index.core.indices import VectorStoreIndex
+        from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
+
         match modality:
             case Modality.TEXT:
                 return VectorStoreIndex.from_vector_store(
@@ -482,6 +489,9 @@ class VectorStoreManager:
         Returns:
             str: fingerprint 文字列
         """
+        import hashlib
+        import json
+
         # Web ページの場合、現状 URL しかチェックしない
         fp_data = {
             MK.FILE_PATH: meta.file_path,

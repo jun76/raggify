@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-
-from llama_index.core.base.embeddings.base import BaseEmbedding, Embedding
-from llama_index.core.embeddings.multi_modal_base import MultiModalEmbedding
-from llama_index.core.schema import ImageType
+from typing import TYPE_CHECKING
 
 from ..llama.core.schema import Modality
-from ..llama.embeddings.multi_modal_base import AudioEmbedding, AudioType
 from ..logger import logger
+
+if TYPE_CHECKING:
+    from llama_index.core.base.embeddings.base import BaseEmbedding, Embedding
+    from llama_index.core.schema import ImageType
+
+    from ..llama.embeddings.multi_modal_base import AudioType
 
 
 @dataclass
@@ -139,6 +141,8 @@ class EmbedManager:
         Returns:
             list[Embedding]: 埋め込みベクトル
         """
+        from llama_index.core.embeddings.multi_modal_base import MultiModalEmbedding
+
         embed = self.get_container(Modality.IMAGE).embed
         if not isinstance(embed, MultiModalEmbedding):
             raise RuntimeError("multimodal embed model is required")
@@ -161,6 +165,8 @@ class EmbedManager:
         Returns:
             list[Embedding]: 埋め込みベクトル
         """
+        from ..llama.embeddings.multi_modal_base import AudioEmbedding
+
         embed = self.get_container(Modality.AUDIO).embed
         if not isinstance(embed, AudioEmbedding):
             raise RuntimeError("audio embed model is required")

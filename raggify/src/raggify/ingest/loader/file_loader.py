@@ -2,19 +2,20 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-
-from llama_index.core.node_parser import SentenceSplitter
-from llama_index.core.node_parser.interface import MetadataAwareTextSplitter
-from llama_index.core.readers.base import BaseReader
-from llama_index.core.readers.file.base import SimpleDirectoryReader
-from llama_index.core.schema import BaseNode
+from typing import TYPE_CHECKING
 
 from ...core.exts import Exts
-from ...core.metadata import BasicMetaData
 from ...logger import logger
-from ...vector_store.vector_store_manager import VectorStoreManager
 from .loader import Loader
 from .reader.pdf_reader import MultiPDFReader
+
+if TYPE_CHECKING:
+    from llama_index.core.node_parser.interface import MetadataAwareTextSplitter
+    from llama_index.core.readers.base import BaseReader
+    from llama_index.core.readers.file.base import SimpleDirectoryReader
+    from llama_index.core.schema import BaseNode
+
+    from ...vector_store.vector_store_manager import VectorStoreManager
 
 
 class FileLoader(Loader):
@@ -56,6 +57,8 @@ class FileLoader(Loader):
         Returns:
             list[BaseNode]: 生成したノード
         """
+        from ...core.metadata import BasicMetaData
+
         try:
             docs = await reader.aload_file(
                 input_file=Path(path),
@@ -93,6 +96,9 @@ class FileLoader(Loader):
         Returns:
             list[BaseNode]: 生成したノード
         """
+        from llama_index.core.node_parser import SentenceSplitter
+        from llama_index.core.readers.file.base import SimpleDirectoryReader
+
         try:
             path = Path(root)
             reader = SimpleDirectoryReader(

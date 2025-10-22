@@ -4,7 +4,8 @@ from typing import Any
 
 import streamlit as st
 
-from ..api_client import RAGgifyClient
+from raggify.client.client import RestAPIClient
+
 from ..logger import logger
 from ..state import (
     FeedBack,
@@ -24,12 +25,12 @@ __all__ = [
 
 
 def register_local_path_callback(
-    client: RAGgifyClient, path_value: str, feedback_key: FeedBack
+    client: RestAPIClient, path_value: str, feedback_key: FeedBack
 ) -> None:
     """ローカルパス取り込みを実行する。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
         path_value (str): 取り込み対象パス
         feedback_key (FeedBack): フィードバック表示用キー
     """
@@ -50,14 +51,14 @@ def register_local_path_callback(
 
 
 def register_path_list_callback(
-    client: RAGgifyClient,
+    client: RestAPIClient,
     file_obj: Any,
     feedback_key: FeedBack,
 ) -> None:
     """ローカルパスリスト取り込みを実行する。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
         file_obj (Any): アップロードされたパスリストファイル
         feedback_key (FeedBack): フィードバック表示用キー
     """
@@ -77,11 +78,11 @@ def register_path_list_callback(
         set_feedback(feedback_key, "success", "パスリストの取り込みが完了しました")
 
 
-def render_admin_view(client: RAGgifyClient) -> None:
+def render_admin_view(client: RestAPIClient) -> None:
     """管理者メニュー画面を描画する。
 
     Args:
-        client (RAGgifyClient): raggify API クライアント
+        client (RestAPIClient): raggify API クライアント
     """
     st.title("🛠️ 管理メニュー")
     st.button(
