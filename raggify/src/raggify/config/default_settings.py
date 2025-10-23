@@ -19,6 +19,7 @@ class EmbedProvider(StrEnum):
     COHERE = auto()
     HUGGINGFACE = auto()
     CLAP = auto()
+    VOYAGE = auto()
 
 
 class RerankProvider(StrEnum):
@@ -76,11 +77,13 @@ class DefaultSettings:
     COHERE_EMBED_MODEL_TEXT: str = "embed-v4.0"
     CLIP_EMBED_MODEL_TEXT: str = "ViT-B/32"
     HUGGINGFACE_EMBED_MODEL_TEXT: str = "intfloat/multilingual-e5-base"
+    VOYAGE_EMBED_MODEL_TEXT: str = "voyage-3.5"
 
     # Image
     COHERE_EMBED_MODEL_IMAGE: str = "embed-v4.0"
     CLIP_EMBED_MODEL_IMAGE: str = "ViT-B/32"
     HUGGINGFACE_EMBED_MODEL_IMAGE: str = "llamaindex/vdr-2b-multi-v1"
+    VOYAGE_EMBED_MODEL_IMAGE: str = "voyage-multimodal-3"
 
     # Audio
     CLAP_EMBED_MODEL_AUDIO: Literal[

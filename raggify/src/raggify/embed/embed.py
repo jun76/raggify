@@ -29,6 +29,8 @@ def create_embed_manager() -> EmbedManager:
                     cont = _clip_text()
                 case EmbedProvider.HUGGINGFACE:
                     cont = _huggingface_text()
+                case EmbedProvider.VOYAGE:
+                    cont = _voyage_text()
                 case _:
                     raise ValueError(
                         "unsupported text embed provider: "
@@ -44,6 +46,8 @@ def create_embed_manager() -> EmbedManager:
                     cont = _clip_image()
                 case EmbedProvider.HUGGINGFACE:
                     cont = _huggingface_image()
+                case EmbedProvider.VOYAGE:
+                    cont = _voyage_image()
                 case _:
                     raise ValueError(
                         "unsupported image embed provider: "
@@ -79,7 +83,6 @@ def _openai_text() -> EmbedContainer:
         embed=OpenAIEmbedding(
             model=cfg.embed.openai_embed_model_text,
             api_base=cfg.general.openai_base_url,
-            # device=cfg.general.device,
         ),
     )
 
@@ -91,7 +94,6 @@ def _cohere_text() -> EmbedContainer:
         provider_name=EmbedProvider.COHERE,
         embed=CohereEmbedding(
             model_name=cfg.embed.cohere_embed_model_text,
-            # device=cfg.general.device,
         ),
     )
 
@@ -103,7 +105,6 @@ def _cohere_image() -> EmbedContainer:
         provider_name=EmbedProvider.COHERE,
         embed=CohereEmbedding(
             model_name=cfg.embed.cohere_embed_model_image,
-            device=cfg.general.device,
         ),
     )
 
@@ -165,5 +166,29 @@ def _clap_audio() -> EmbedContainer:
         embed=ClapEmbedding(
             model_name=cfg.embed.clap_embed_model_audio,
             device=cfg.general.device,
+        ),
+    )
+
+
+def _voyage_text() -> EmbedContainer:
+    from llama_index.embeddings.voyageai.base import VoyageEmbedding
+
+    return EmbedContainer(
+        provider_name=EmbedProvider.VOYAGE,
+        embed=VoyageEmbedding(
+            model_name=cfg.embed.voyage_embed_model_text,
+            truncation=False,
+        ),
+    )
+
+
+def _voyage_image() -> EmbedContainer:
+    from llama_index.embeddings.voyageai.base import VoyageEmbedding
+
+    return EmbedContainer(
+        provider_name=EmbedProvider.VOYAGE,
+        embed=VoyageEmbedding(
+            model_name=cfg.embed.voyage_embed_model_image,
+            truncation=False,
         ),
     )
