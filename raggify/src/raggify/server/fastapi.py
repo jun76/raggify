@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import threading
 import traceback
@@ -10,7 +11,6 @@ from typing import TYPE_CHECKING, Any, Optional
 import aiofiles
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from pydantic import BaseModel
-from starlette.concurrency import run_in_threadpool
 
 from ..config import cfg
 from ..ingest import ingest
@@ -92,7 +92,8 @@ _rerank: Optional[RerankManager] = None
 _file_loader: Optional[FileLoader] = None
 _html_loader: Optional[HTMLLoader] = None
 
-_request_lock = threading.RLock()
+_init_lock = threading.RLock()
+_request_lock = asyncio.Lock()
 
 
 def _get_embed_manager() -> EmbedManager:
@@ -108,7 +109,7 @@ def _get_embed_manager() -> EmbedManager:
 
     global _embed
 
-    with _request_lock:
+    with _init_lock:
         if _embed is None:
             try:
                 _embed = create_embed_manager()
@@ -134,7 +135,7 @@ def _get_meta_store() -> Structured:
 
     global _meta_store
 
-    with _request_lock:
+    with _init_lock:
         if _meta_store is None:
             try:
                 _meta_store = create_meta_store()
@@ -160,7 +161,7 @@ def _get_vector_store() -> VectorStoreManager:
 
     global _vector_store
 
-    with _request_lock:
+    with _init_lock:
         if _vector_store is None:
             try:
                 _vector_store = create_vector_store_manager(
@@ -188,7 +189,7 @@ def _get_rerank_manager() -> RerankManager:
 
     global _rerank
 
-    with _request_lock:
+    with _init_lock:
         if _rerank is None:
             try:
                 _rerank = create_rerank_manager()
@@ -214,7 +215,7 @@ def _get_file_loader() -> FileLoader:
 
     global _file_loader
 
-    with _request_lock:
+    with _init_lock:
         if _file_loader is None:
             try:
                 _file_loader = FileLoader(
@@ -244,7 +245,7 @@ def _get_html_loader() -> HTMLLoader:
 
     global _html_loader
 
-    with _request_lock:
+    with _init_lock:
         if _html_loader is None:
             try:
                 _html_loader = HTMLLoader(
@@ -287,13 +288,13 @@ async def health() -> dict[str, Any]:
     """
     logger.info("exec /v1/health")
 
-    # lifespan で初期化済みのため常に read only
-    return {
-        "status": "ok",
-        "store": _get_vector_store().name,
-        "embed": _get_embed_manager().name,
-        "rerank": _get_rerank_manager().name,
-    }
+    async with _request_lock:
+        return {
+            "status": "ok",
+            "store": _get_vector_store().name,
+            "embed": _get_embed_manager().name,
+            "rerank": _get_rerank_manager().name,
+        }
 
 
 @app.post("/v1/upload", operation_id="upload")
@@ -319,8 +320,7 @@ async def upload(files: list[UploadFile] = File(...)) -> dict[str, Any]:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"upload init failure: {e}") from e
 
-    await run_in_threadpool(_request_lock.acquire)
-    try:
+    async with _request_lock:
         results = []
         for f in files:
             if f.filename is None:
@@ -353,8 +353,6 @@ async def upload(files: list[UploadFile] = File(...)) -> dict[str, Any]:
             )
 
         return {"files": results}
-    finally:
-        _request_lock.release()
 
 
 @app.post("/v1/query/text_text", operation_id="query_text_text")
@@ -380,8 +378,7 @@ async def query_text_text(payload: QueryTextRequest) -> dict[str, Any]:
             detail="text embeddings is not supported",
         )
 
-    await run_in_threadpool(_request_lock.acquire)
-    try:
+    async with _request_lock:
         try:
             nodes = await aquery_text_text(
                 query=payload.query,
@@ -392,8 +389,6 @@ async def query_text_text(payload: QueryTextRequest) -> dict[str, Any]:
         except Exception as e:
             traceback.print_exc()
             raise HTTPException(status_code=500, detail=f"query failure: {e}") from e
-    finally:
-        _request_lock.release()
 
     return {"documents": _nodes_to_response(nodes)}
 
@@ -421,8 +416,7 @@ async def query_text_image(payload: QueryTextRequest) -> dict[str, Any]:
             detail="image embeddings is not supported",
         )
 
-    await run_in_threadpool(_request_lock.acquire)
-    try:
+    async with _request_lock:
         try:
             nodes = await aquery_text_image(
                 query=payload.query,
@@ -433,8 +427,6 @@ async def query_text_image(payload: QueryTextRequest) -> dict[str, Any]:
         except Exception as e:
             traceback.print_exc()
             raise HTTPException(status_code=500, detail=f"query failure: {e}") from e
-    finally:
-        _request_lock.release()
 
     return {"documents": _nodes_to_response(nodes)}
 
@@ -462,8 +454,7 @@ async def query_image_image(payload: QueryMultimodalRequest) -> dict[str, Any]:
             detail="image embeddings is not supported",
         )
 
-    await run_in_threadpool(_request_lock.acquire)
-    try:
+    async with _request_lock:
         try:
             nodes = await aquery_image_image(
                 path=payload.path,
@@ -473,8 +464,6 @@ async def query_image_image(payload: QueryMultimodalRequest) -> dict[str, Any]:
         except Exception as e:
             traceback.print_exc()
             raise HTTPException(status_code=500, detail=f"query failure: {e}") from e
-    finally:
-        _request_lock.release()
 
     return {"documents": _nodes_to_response(nodes)}
 
@@ -502,8 +491,7 @@ async def query_text_audio(payload: QueryTextRequest) -> dict[str, Any]:
             detail="audio embeddings is not supported",
         )
 
-    await run_in_threadpool(_request_lock.acquire)
-    try:
+    async with _request_lock:
         try:
             nodes = await aquery_text_audio(
                 query=payload.query,
@@ -514,8 +502,6 @@ async def query_text_audio(payload: QueryTextRequest) -> dict[str, Any]:
         except Exception as e:
             traceback.print_exc()
             raise HTTPException(status_code=500, detail=f"query failure: {e}") from e
-    finally:
-        _request_lock.release()
 
     return {"documents": _nodes_to_response(nodes)}
 
@@ -543,8 +529,7 @@ async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
             detail="audio embeddings is not supported",
         )
 
-    await run_in_threadpool(_request_lock.acquire)
-    try:
+    async with _request_lock:
         try:
             nodes = await aquery_audio_audio(
                 path=payload.path,
@@ -554,8 +539,6 @@ async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
         except Exception as e:
             traceback.print_exc()
             raise HTTPException(status_code=500, detail=f"query failure: {e}") from e
-    finally:
-        _request_lock.release()
 
     return {"documents": _nodes_to_response(nodes)}
 
@@ -576,18 +559,16 @@ async def ingest_path(payload: PathRequest) -> dict[str, str]:
     """
     logger.info("exec /v1/ingest/path")
 
-    await run_in_threadpool(_request_lock.acquire)
-    try:
-        await ingest.aingest_path(
-            path=payload.path,
-            store=_get_vector_store(),
-            file_loader=_get_file_loader(),
-        )
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
-    finally:
-        _request_lock.release()
+    async with _request_lock:
+        try:
+            await ingest.aingest_path(
+                path=payload.path,
+                store=_get_vector_store(),
+                file_loader=_get_file_loader(),
+            )
+        except Exception as e:
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
 
     return {"status": "ok"}
 
@@ -607,18 +588,16 @@ async def ingest_path_list(payload: PathRequest) -> dict[str, str]:
     """
     logger.info("exec /v1/ingest/path_list")
 
-    await run_in_threadpool(_request_lock.acquire)
-    try:
-        await ingest.aingest_path_list(
-            list_path=payload.path,
-            store=_get_vector_store(),
-            file_loader=_get_file_loader(),
-        )
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
-    finally:
-        _request_lock.release()
+    async with _request_lock:
+        try:
+            await ingest.aingest_path_list(
+                list_path=payload.path,
+                store=_get_vector_store(),
+                file_loader=_get_file_loader(),
+            )
+        except Exception as e:
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
 
     return {"status": "ok"}
 
@@ -639,18 +618,16 @@ async def ingest_url(payload: URLRequest) -> dict[str, str]:
     """
     logger.info("exec /v1/ingest/url")
 
-    await run_in_threadpool(_request_lock.acquire)
-    try:
-        await ingest.aingest_url(
-            url=payload.url,
-            store=_get_vector_store(),
-            html_loader=_get_html_loader(),
-        )
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
-    finally:
-        _request_lock.release()
+    async with _request_lock:
+        try:
+            await ingest.aingest_url(
+                url=payload.url,
+                store=_get_vector_store(),
+                html_loader=_get_html_loader(),
+            )
+        except Exception as e:
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
 
     return {"status": "ok"}
 
@@ -670,17 +647,15 @@ async def ingest_url_list(payload: PathRequest) -> dict[str, str]:
     """
     logger.info("exec /v1/ingest/url_list")
 
-    await run_in_threadpool(_request_lock.acquire)
-    try:
-        await ingest.aingest_url_list(
-            list_path=payload.path,
-            store=_get_vector_store(),
-            html_loader=_get_html_loader(),
-        )
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
-    finally:
-        _request_lock.release()
+    async with _request_lock:
+        try:
+            await ingest.aingest_url_list(
+                list_path=payload.path,
+                store=_get_vector_store(),
+                html_loader=_get_html_loader(),
+            )
+        except Exception as e:
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
 
     return {"status": "ok"}

@@ -21,7 +21,7 @@ class GeneralConfig:
     text_embed_provider: EmbedProvider = DefaultSettings.TEXT_EMBED_PROVIDER
     image_embed_provider: Optional[EmbedProvider] = DefaultSettings.IMAGE_EMBED_PROVIDER
     audio_embed_provider: Optional[EmbedProvider] = DefaultSettings.AUDIO_EMBED_PROVIDER
-    rerank_provider: RerankProvider = DefaultSettings.RERANK_PROVIDER
+    rerank_provider: Optional[RerankProvider] = DefaultSettings.RERANK_PROVIDER
     openai_base_url: Optional[str] = DefaultSettings.OPENAI_BASE_URL
     device: Literal["cpu", "cuda", "mps"] = DefaultSettings.DEVICE
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = (

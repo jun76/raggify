@@ -2,7 +2,7 @@ import enum
 import logging
 import os
 from dataclasses import fields
-from typing import Any
+from typing import Any, Optional
 
 import yaml
 
@@ -174,7 +174,7 @@ class ConfigManager:
         enum_cls: type[enum.Enum],
         raw: Any,
         default: enum.Enum,
-    ) -> enum.Enum:
+    ) -> Optional[enum.Enum]:
         """列挙値に変換する。
 
         Args:
@@ -189,7 +189,7 @@ class ConfigManager:
             return raw
 
         if raw is None:
-            return default
+            return None
 
         try:
             return enum_cls[raw]
