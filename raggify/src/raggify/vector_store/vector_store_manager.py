@@ -63,6 +63,7 @@ class VectorStoreManager:
 
         for modality, cont in self._conts.items():
             cont.index = self._create_index(modality)
+            logger.info(f"{modality} index created")
 
         # メタデータ専用ストアから fingerprint キャッシュを復元
         self._fp_cache = self._load_fp_cache(cache_load_limit)

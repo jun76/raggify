@@ -1,1 +1,1 @@
-# RAGgify
+# raggify

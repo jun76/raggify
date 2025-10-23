@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ..config import cfg
 from ..config.default_settings import RerankProvider
-from ..config.general_config import GeneralConfig
-from ..config.rerank_config import RerankConfig
 
 if TYPE_CHECKING:
     from .rerank_manager import RerankContainer, RerankManager
@@ -25,7 +24,7 @@ def create_rerank_manager() -> RerankManager:
     from .rerank_manager import RerankManager
 
     try:
-        match GeneralConfig.rerank_provider:
+        match cfg.general.rerank_provider:
             case RerankProvider.COHERE:
                 rerank = _cohere()
             case RerankProvider.FLAGEMBEDDING:
@@ -51,7 +50,7 @@ def _cohere() -> RerankContainer:
     return RerankContainer(
         provider_name=RerankProvider.COHERE,
         rerank=CohereRerank(
-            model=RerankConfig.cohere_rerank_model, top_n=RerankConfig.topk
+            model=cfg.rerank.cohere_rerank_model, top_n=cfg.rerank.topk
         ),
     )
 
@@ -69,6 +68,6 @@ def _flagembedding() -> RerankContainer:
     return RerankContainer(
         provider_name=RerankProvider.FLAGEMBEDDING,
         rerank=FlagEmbeddingReranker(
-            model=RerankConfig.flagembedding_rerank_model, top_n=RerankConfig.topk
+            model=cfg.rerank.flagembedding_rerank_model, top_n=cfg.rerank.topk
         ),
     )

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Iterable, Sequence
 
-from ...config.general_config import GeneralConfig
+from ...config import cfg
 from ...core.metadata import META_KEYS as MK
 from .structured import Structured
 
@@ -94,7 +94,7 @@ class SQLiteStructured(Structured):
         """
         import sqlite3
 
-        self._db_path = f"{GeneralConfig.project_name}_metas.db"
+        self._db_path = f"{cfg.project_name}_metas.db"
 
         try:
             self._sync_db = sqlite3.connect(self._db_path)

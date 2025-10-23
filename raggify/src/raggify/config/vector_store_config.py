@@ -3,8 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from pydantic import SecretStr
-
 from .default_settings import DefaultSettings
 
 
@@ -28,4 +26,4 @@ class VectorStoreConfig:
     pgvector_port: int = DefaultSettings.PGVECTOR_PORT
     pgvector_database: str = DefaultSettings.PGVECTOR_DATABASE
     pgvector_user: str = DefaultSettings.PGVECTOR_USER
-    pgvector_password: Optional[SecretStr] = DefaultSettings.PGVECTOR_PASSWORD
+    pgvector_password: Optional[str] = DefaultSettings.PGVECTOR_PASSWORD

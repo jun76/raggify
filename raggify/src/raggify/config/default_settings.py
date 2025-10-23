@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import os
 from enum import StrEnum, auto
 from typing import Literal, Optional
 
 from dotenv import load_dotenv
-from pydantic import SecretStr
 
 load_dotenv()
 
@@ -34,12 +32,15 @@ class DefaultSettings:
     API キーやパスワード等は予め .env ファイルに記述しておく。
     """
 
-    ##### General
+    ##### Meta
     PROJECT_NAME: str = "raggify"
     VERSION: str = "1.0"
+
+    ##### General
     KNOWLEDGEBASE_NAME: str = "default"
     HOST: str = "localhost"
     PORT: int = 8000
+    MCP: bool = False
     VECTOR_STORE_PROVIDER: VectorStoreProvider = VectorStoreProvider.CHROMA
     TEXT_EMBED_PROVIDER: EmbedProvider = EmbedProvider.HUGGINGFACE
     IMAGE_EMBED_PROVIDER: Optional[EmbedProvider] = EmbedProvider.CLIP
@@ -66,8 +67,7 @@ class DefaultSettings:
     PGVECTOR_PORT: int = 5432
     PGVECTOR_DATABASE: str = PROJECT_NAME
     PGVECTOR_USER: str = PROJECT_NAME
-    _raw = os.getenv("PGVECTOR_PASSWORD")
-    PGVECTOR_PASSWORD: Optional[SecretStr] = SecretStr(_raw) if _raw else None
+    PGVECTOR_PASSWORD: Optional[str] = None
 
     ##### Embedding
     # Text

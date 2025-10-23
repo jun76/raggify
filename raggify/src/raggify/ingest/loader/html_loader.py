@@ -8,7 +8,7 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 
-from ...config.general_config import GeneralConfig
+from ...config import cfg
 from ...core.exts import Exts
 from ...logger import logger
 from .loader import Loader
@@ -30,7 +30,7 @@ class HTMLLoader(Loader):
         load_asset: bool = True,
         req_per_sec: int = 2,
         timeout: int = 30,
-        user_agent: str = GeneralConfig.project_name,
+        user_agent: str = cfg.project_name,
         same_origin: bool = True,
     ):
         """HTML を読み込み、ノードを生成するためのクラス。
@@ -43,7 +43,7 @@ class HTMLLoader(Loader):
             load_asset (bool, optional): アセットを読み込むか。Defaults to True.
             req_per_sec (int): 秒間リクエスト数。Defaults to 2.
             timeout (int, optional): タイムアウト秒。Defaults to 30.
-            user_agent (str, optional): GET リクエスト時の user agent。Defaults to GeneralConfig.project_name.
+            user_agent (str, optional): GET リクエスト時の user agent。Defaults to cfg.project_name.
             same_origin (bool, optional): True なら同一オリジンのみ対象。Defaults to True.
         """
         Loader.__init__(self, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
@@ -208,7 +208,7 @@ class HTMLLoader(Loader):
         ext = Exts.get_ext(url)
         try:
             with tempfile.NamedTemporaryFile(
-                delete=False, prefix=f"{GeneralConfig.project_name}_", suffix=ext
+                delete=False, prefix=f"{cfg.project_name}_", suffix=ext
             ) as f:
                 f.write(body)
                 path = f.name

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from .config.general_config import GeneralConfig
+from .config.default_settings import DefaultSettings
 
 
 class Color:
@@ -50,4 +50,4 @@ logging.basicConfig(
     f"{Color.ResetAll}",
 )
 
-logger = logging.getLogger(GeneralConfig.project_name)
+logger = logging.getLogger(DefaultSettings.PROJECT_NAME)

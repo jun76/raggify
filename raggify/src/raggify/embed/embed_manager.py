@@ -39,6 +39,7 @@ class EmbedManager:
                 model=cont.embed.model_name,
                 modality=modality,
             )
+            logger.info(f"space_key: {cont.space_key} generated")
 
     @property
     def name(self) -> str:
@@ -230,7 +231,4 @@ class EmbedManager:
         Returns:
             str: 空間キー文字列
         """
-        space_key = self._sanitize_space_key(f"{provider}_{model}_{modality}")
-        logger.info(f"space_key [{space_key}] generated")
-
-        return space_key
+        return self._sanitize_space_key(f"{provider}_{model}_{modality}")

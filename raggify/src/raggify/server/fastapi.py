@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import threading
 import traceback
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -11,9 +12,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 
-from ..config.general_config import GeneralConfig
-from ..config.ingest_config import IngestConfig
-from ..config.rerank_config import RerankConfig
+from ..config import cfg
 from ..ingest import ingest
 from ..llama.core.schema import Modality
 from ..logger import logger
@@ -58,7 +57,33 @@ class URLRequest(BaseModel):
     url: str
 
 
-app = FastAPI(title=GeneralConfig.project_name, version=GeneralConfig.version)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """サーバ起動前後の処理用ライフスパン。
+
+    CLI のヘルプコマンド等を軽量に済ませるために初期化処理を遅延しているが、
+    サーバとして起動する場合はここで先に済ませておく。
+
+    Args:
+        app (FastAPI): サーバインスタンス
+    """
+    logger.info(f"{cfg.project_name} server is starting...")
+
+    _get_embed_manager()
+    _get_meta_store()
+    _get_vector_store()
+    _get_rerank_manager()
+    _get_file_loader()
+    _get_html_loader()
+
+    # リクエストの受付開始
+    yield
+
+    logger.info(f"{cfg.project_name} server is stopped.")
+
+
+# FastAPIインスタンスを作成し、lifespanを渡す
+app = FastAPI(title=cfg.project_name, version=cfg.version, lifespan=lifespan)
 
 _embed: Optional[EmbedManager] = None
 _meta_store: Optional[Structured] = None
@@ -67,7 +92,7 @@ _rerank: Optional[RerankManager] = None
 _file_loader: Optional[FileLoader] = None
 _html_loader: Optional[HTMLLoader] = None
 
-_request_lock = threading.Lock()
+_request_lock = threading.RLock()
 
 
 def _get_embed_manager() -> EmbedManager:
@@ -193,8 +218,8 @@ def _get_file_loader() -> FileLoader:
         if _file_loader is None:
             try:
                 _file_loader = FileLoader(
-                    chunk_size=IngestConfig.chunk_size,
-                    chunk_overlap=IngestConfig.chunk_overlap,
+                    chunk_size=cfg.ingest.chunk_size,
+                    chunk_overlap=cfg.ingest.chunk_overlap,
                     store=_get_vector_store(),
                 )
             except Exception as e:
@@ -223,11 +248,11 @@ def _get_html_loader() -> HTMLLoader:
         if _html_loader is None:
             try:
                 _html_loader = HTMLLoader(
-                    chunk_size=IngestConfig.chunk_size,
-                    chunk_overlap=IngestConfig.chunk_overlap,
+                    chunk_size=cfg.ingest.chunk_size,
+                    chunk_overlap=cfg.ingest.chunk_overlap,
                     file_loader=_get_file_loader(),
                     store=_get_vector_store(),
-                    user_agent=IngestConfig.user_agent,
+                    user_agent=cfg.ingest.user_agent,
                 )
             except Exception as e:
                 traceback.print_exc()
@@ -262,16 +287,13 @@ async def health() -> dict[str, Any]:
     """
     logger.info("exec /v1/health")
 
-    await run_in_threadpool(_request_lock.acquire)
-    try:
-        return {
-            "status": "ok",
-            "store": _get_vector_store().name,
-            "embed": _get_embed_manager().name,
-            "rerank": _get_rerank_manager().name,
-        }
-    finally:
-        _request_lock.release()
+    # lifespan で初期化済みのため常に read only
+    return {
+        "status": "ok",
+        "store": _get_vector_store().name,
+        "embed": _get_embed_manager().name,
+        "rerank": _get_rerank_manager().name,
+    }
 
 
 @app.post("/v1/upload", operation_id="upload")
@@ -291,7 +313,7 @@ async def upload(files: list[UploadFile] = File(...)) -> dict[str, Any]:
     logger.info("exec /v1/upload")
 
     try:
-        upload_dir = Path(IngestConfig.upload_dir).absolute()
+        upload_dir = Path(cfg.ingest.upload_dir).absolute()
         upload_dir.mkdir(parents=True, exist_ok=True)
     except Exception as e:
         traceback.print_exc()
@@ -364,7 +386,7 @@ async def query_text_text(payload: QueryTextRequest) -> dict[str, Any]:
             nodes = await aquery_text_text(
                 query=payload.query,
                 store=_get_vector_store(),
-                topk=payload.topk or RerankConfig.topk,
+                topk=payload.topk or cfg.rerank.topk,
                 rerank=_rerank,
             )
         except Exception as e:
@@ -405,7 +427,7 @@ async def query_text_image(payload: QueryTextRequest) -> dict[str, Any]:
             nodes = await aquery_text_image(
                 query=payload.query,
                 store=_get_vector_store(),
-                topk=payload.topk or RerankConfig.topk,
+                topk=payload.topk or cfg.rerank.topk,
                 rerank=_rerank,
             )
         except Exception as e:
@@ -446,7 +468,7 @@ async def query_image_image(payload: QueryMultimodalRequest) -> dict[str, Any]:
             nodes = await aquery_image_image(
                 path=payload.path,
                 store=_get_vector_store(),
-                topk=payload.topk or RerankConfig.topk,
+                topk=payload.topk or cfg.rerank.topk,
             )
         except Exception as e:
             traceback.print_exc()
@@ -486,7 +508,7 @@ async def query_text_audio(payload: QueryTextRequest) -> dict[str, Any]:
             nodes = await aquery_text_audio(
                 query=payload.query,
                 store=_get_vector_store(),
-                topk=payload.topk or RerankConfig.topk,
+                topk=payload.topk or cfg.rerank.topk,
                 rerank=_rerank,
             )
         except Exception as e:
@@ -527,7 +549,7 @@ async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
             nodes = await aquery_audio_audio(
                 path=payload.path,
                 store=_get_vector_store(),
-                topk=payload.topk or RerankConfig.topk,
+                topk=payload.topk or cfg.rerank.topk,
             )
         except Exception as e:
             traceback.print_exc()

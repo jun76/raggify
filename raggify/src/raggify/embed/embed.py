@@ -1,8 +1,7 @@
 from __future__ import annotations
 
+from ..config import cfg
 from ..config.default_settings import EmbedProvider
-from ..config.embed_config import EmbedConfig
-from ..config.general_config import GeneralConfig
 from ..llama.core.schema import Modality
 from .embed_manager import EmbedContainer, EmbedManager
 
@@ -20,8 +19,8 @@ def create_embed_manager() -> EmbedManager:
     """
     try:
         conts: dict[Modality, EmbedContainer] = {}
-        if GeneralConfig.text_embed_provider:
-            match GeneralConfig.text_embed_provider:
+        if cfg.general.text_embed_provider:
+            match cfg.general.text_embed_provider:
                 case EmbedProvider.OPENAI:
                     cont = _openai_text()
                 case EmbedProvider.COHERE:
@@ -33,12 +32,12 @@ def create_embed_manager() -> EmbedManager:
                 case _:
                     raise ValueError(
                         "unsupported text embed provider: "
-                        f"{GeneralConfig.text_embed_provider}"
+                        f"{cfg.general.text_embed_provider}"
                     )
             conts[Modality.TEXT] = cont
 
-        if GeneralConfig.image_embed_provider:
-            match GeneralConfig.image_embed_provider:
+        if cfg.general.image_embed_provider:
+            match cfg.general.image_embed_provider:
                 case EmbedProvider.COHERE:
                     cont = _cohere_image()
                 case EmbedProvider.CLIP:
@@ -48,18 +47,18 @@ def create_embed_manager() -> EmbedManager:
                 case _:
                     raise ValueError(
                         "unsupported image embed provider: "
-                        f"{GeneralConfig.image_embed_provider}"
+                        f"{cfg.general.image_embed_provider}"
                     )
             conts[Modality.IMAGE] = cont
 
-        if GeneralConfig.audio_embed_provider:
-            match GeneralConfig.audio_embed_provider:
+        if cfg.general.audio_embed_provider:
+            match cfg.general.audio_embed_provider:
                 case EmbedProvider.CLAP:
                     cont = _clap_audio()
                 case _:
                     raise ValueError(
                         "unsupported audio embed provider: "
-                        f"{GeneralConfig.audio_embed_provider}"
+                        f"{cfg.general.audio_embed_provider}"
                     )
             conts[Modality.AUDIO] = cont
     except Exception as e:
@@ -78,9 +77,9 @@ def _openai_text() -> EmbedContainer:
     return EmbedContainer(
         provider_name=EmbedProvider.OPENAI,
         embed=OpenAIEmbedding(
-            model=EmbedConfig.openai_embed_model_text,
-            api_base=GeneralConfig.openai_base_url,
-            # device=GeneralConfig.device,
+            model=cfg.embed.openai_embed_model_text,
+            api_base=cfg.general.openai_base_url,
+            # device=cfg.general.device,
         ),
     )
 
@@ -91,8 +90,8 @@ def _cohere_text() -> EmbedContainer:
     return EmbedContainer(
         provider_name=EmbedProvider.COHERE,
         embed=CohereEmbedding(
-            model_name=EmbedConfig.cohere_embed_model_text,
-            # device=GeneralConfig.device,
+            model_name=cfg.embed.cohere_embed_model_text,
+            # device=cfg.general.device,
         ),
     )
 
@@ -103,8 +102,8 @@ def _cohere_image() -> EmbedContainer:
     return EmbedContainer(
         provider_name=EmbedProvider.COHERE,
         embed=CohereEmbedding(
-            model_name=EmbedConfig.cohere_embed_model_image,
-            device=GeneralConfig.device,
+            model_name=cfg.embed.cohere_embed_model_image,
+            device=cfg.general.device,
         ),
     )
 
@@ -115,8 +114,8 @@ def _clip_text() -> EmbedContainer:
     return EmbedContainer(
         provider_name=EmbedProvider.CLIP,
         embed=ClipEmbedding(
-            model_name=EmbedConfig.clip_embed_model_text,
-            device=GeneralConfig.device,
+            model_name=cfg.embed.clip_embed_model_text,
+            device=cfg.general.device,
         ),
     )
 
@@ -127,8 +126,8 @@ def _clip_image() -> EmbedContainer:
     return EmbedContainer(
         provider_name=EmbedProvider.CLIP,
         embed=ClipEmbedding(
-            model_name=EmbedConfig.clip_embed_model_image,
-            device=GeneralConfig.device,
+            model_name=cfg.embed.clip_embed_model_image,
+            device=cfg.general.device,
         ),
     )
 
@@ -139,8 +138,8 @@ def _huggingface_text() -> EmbedContainer:
     return EmbedContainer(
         provider_name=EmbedProvider.HUGGINGFACE,
         embed=HuggingFaceEmbedding(
-            model_name=EmbedConfig.huggingface_embed_model_text,
-            device=GeneralConfig.device,
+            model_name=cfg.embed.huggingface_embed_model_text,
+            device=cfg.general.device,
         ),
     )
 
@@ -151,8 +150,8 @@ def _huggingface_image() -> EmbedContainer:
     return EmbedContainer(
         provider_name=EmbedProvider.HUGGINGFACE,
         embed=HuggingFaceEmbedding(
-            model_name=EmbedConfig.huggingface_embed_model_image,
-            device=GeneralConfig.device,
+            model_name=cfg.embed.huggingface_embed_model_image,
+            device=cfg.general.device,
             trust_remote_code=True,
         ),
     )
@@ -164,7 +163,7 @@ def _clap_audio() -> EmbedContainer:
     return EmbedContainer(
         provider_name=EmbedProvider.CLAP,
         embed=ClapEmbedding(
-            model_name=EmbedConfig.clap_embed_model_audio,
-            device=GeneralConfig.device,
+            model_name=cfg.embed.clap_embed_model_audio,
+            device=cfg.general.device,
         ),
     )

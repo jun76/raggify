@@ -1,10 +1,10 @@
 import enum
+import logging
 import os
 from dataclasses import fields
-from typing import Any, Optional, Union, get_args, get_origin
+from typing import Any
 
 import yaml
-from pydantic import SecretStr
 
 from raggify.config.default_settings import DefaultSettings
 from raggify.config.embed_config import EmbedConfig
@@ -13,7 +13,7 @@ from raggify.config.ingest_config import IngestConfig
 from raggify.config.rerank_config import RerankConfig
 from raggify.config.vector_store_config import VectorStoreConfig
 
-from ..logger import logger
+logger = logging.getLogger(__name__)
 
 
 class ConfigManager:
@@ -115,6 +115,14 @@ class ConfigManager:
     def rerank(self) -> RerankConfig:
         return self._rerank
 
+    @property
+    def project_name(self) -> str:
+        return DefaultSettings.PROJECT_NAME
+
+    @property
+    def version(self) -> str:
+        return DefaultSettings.VERSION
+
     def reload(self) -> None:
         """設定ファイルを再読み込みする。"""
         if os.path.exists(self._user_config_path):
@@ -125,7 +133,7 @@ class ConfigManager:
     def _apply_section(
         self,
         section: Any,
-        schema: type,
+        schema: type[Any],
         default_instance: Any,
     ) -> Any:
         """YAML セクションを dataclass インスタンスへ適用する。
@@ -146,9 +154,8 @@ class ConfigManager:
             current = getattr(default_instance, field.name)
             raw = section.get(field.name, current)
 
-            enum_cls = self._extract_enum(field.type)
-            if enum_cls is not None:
-                values[field.name] = self._load_enum(enum_cls, raw, current)
+            if isinstance(current, enum.Enum):
+                values[field.name] = self._load_enum(type(current), raw, current)
             else:
                 values[field.name] = raw
 
@@ -161,30 +168,6 @@ class ConfigManager:
             )
 
             return default_instance
-
-    def _extract_enum(self, type_hint: Any) -> Optional[type[enum.Enum]]:
-        """型ヒントから列挙型クラスを抽出する。
-
-        Args:
-            type_hint (Any): フィールドの型ヒント
-
-        Returns:
-            Optional[type[enum.Enum]]: 列挙型クラス。存在しない場合は None。
-        """
-        origin = get_origin(type_hint)
-        if origin is None:
-            return (
-                type_hint
-                if isinstance(type_hint, type) and issubclass(type_hint, enum.Enum)
-                else None
-            )
-
-        if origin is Union:
-            for arg in get_args(type_hint):
-                if isinstance(arg, type) and issubclass(arg, enum.Enum):
-                    return arg
-
-        return None
 
     def _load_enum(
         self,
@@ -232,9 +215,6 @@ class ConfigManager:
         serialized: dict[str, Any] = {}
         for field in fields(type(instance)):
             value = getattr(instance, field.name)
-            if isinstance(value, SecretStr):
-                continue
-
             if isinstance(value, enum.Enum):
                 serialized[field.name] = value.name
             else:
