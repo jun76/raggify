@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import os
 
+from pydantic import ValidationError
+
 from ..config import cfg
 from ..config.default_settings import EmbedProvider
 from ..llama.core.schema import Modality
@@ -67,8 +69,10 @@ def create_embed_manager() -> EmbedManager:
                         f"{cfg.general.audio_embed_provider}"
                     )
             conts[Modality.AUDIO] = cont
+    except (ValidationError, ValueError) as e:
+        raise RuntimeError(f"invalid settings") from e
     except Exception as e:
-        raise RuntimeError(f"failed to create embedding: {e}") from e
+        raise RuntimeError(f"failed to create embedding") from e
 
     if not conts:
         raise RuntimeError("no embedding providers are specified")

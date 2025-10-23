@@ -6,6 +6,7 @@ from typing import Any, Optional
 import streamlit as st
 
 from raggify.client import RestAPIClient
+from raggify.core import Exts
 
 from ..agent import AgentExecutionError, RagAgentManager
 from ..config.config import Config
@@ -70,7 +71,7 @@ def render_ragsearch_view(client: RestAPIClient) -> None:
 
     ref_file = st.file_uploader(
         "添付ファイル（任意）",
-        type=["png", "jpg", "jpeg", "gif", "bmp"] + ["wav", "mp3", "flac", "ogg"],
+        type=list(Exts.IMAGE | Exts.AUDIO),
         key="ragsearch_image",
     )
 

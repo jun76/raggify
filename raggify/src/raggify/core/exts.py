@@ -18,7 +18,8 @@ class Exts:
     IMAGE: set[str] = {".gif", ".jpg", PNG, ".jpeg", ".webp"}
 
     # マルチモーダル（音声）の埋め込みモデルに渡せる拡張子
-    AUDIO: set[str] = {".wav", ".mp3", ".flac", ".ogg"}
+    _DUMMY_AUDIO: set[str] = {".wav", ".flac", ".ogg"}
+    AUDIO: set[str] = {".wav"} | _DUMMY_AUDIO
 
     # サイトマップの抽出判定に使用する拡張子
     SITEMAP: set[str] = {".xml"}
@@ -52,6 +53,9 @@ class Exts:
         IMAGE | AUDIO | SITEMAP | _DEFAULT_FETCH_TARGET | _ADDITIONAL_FETCH_TARGET
     )
 
+    # デフォルトの reader に渡すとテキストとして解釈してしまうため除外して自前処理したいもの
+    DUMMY_MEDIA = _DUMMY_AUDIO
+
     @classmethod
     def endswith_exts(cls, s: str, exts: set[str]) -> bool:
         """文字列の末尾に指定の拡張子が含まれるか。
@@ -79,15 +83,20 @@ class Exts:
         return s.lower().endswith(ext.lower())
 
     @classmethod
-    def get_ext(cls, uri: str) -> str:
+    def get_ext(cls, uri: str, dot: bool = True) -> str:
         """ファイルパスまたは URL 文字列から拡張子を取得する。
 
         Args:
             uri (str): ファイルパスまたは URL
+            dot (bool, optional): ドットをつけるか。Defaults to True.
 
         Returns:
             str: 拡張子
         """
         parsed = urlparse(uri)
+        ext = os.path.splitext(parsed.path)[1].lower()
 
-        return os.path.splitext(parsed.path)[1].lower()
+        if not dot:
+            return ext.replace(".", "")
+
+        return ext

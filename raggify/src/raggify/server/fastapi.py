@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import threading
-import traceback
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
@@ -125,7 +124,6 @@ def _get_embed_manager(reload: bool = False) -> EmbedManager:
             try:
                 _embed = create_embed_manager()
             except Exception as e:
-                traceback.print_exc()
                 raise RuntimeError("failed to create embed manager") from e
 
             logger.info(f"{_embed.name} embed initialized")
@@ -154,7 +152,6 @@ def _get_meta_store(reload: bool = False) -> Structured:
             try:
                 _meta_store = create_meta_store()
             except Exception as e:
-                traceback.print_exc()
                 raise RuntimeError("failed to create meta store") from e
 
             logger.info("meta store initialized")
@@ -185,7 +182,6 @@ def _get_vector_store(reload: bool = False) -> VectorStoreManager:
                     embed=_get_embed_manager(), meta_store=_get_meta_store()
                 )
             except Exception as e:
-                traceback.print_exc()
                 raise RuntimeError("failed to create vector store manager") from e
 
             logger.info("vector store initialized")
@@ -214,7 +210,6 @@ def _get_rerank_manager(reload: bool = False) -> RerankManager:
             try:
                 _rerank = create_rerank_manager()
             except Exception as e:
-                traceback.print_exc()
                 raise RuntimeError("failed to create rerank manager") from e
 
             logger.info(f"{_rerank.name} rerank initialized")
@@ -247,7 +242,6 @@ def _get_file_loader(reload: bool = False) -> FileLoader:
                     store=_get_vector_store(),
                 )
             except Exception as e:
-                traceback.print_exc()
                 raise RuntimeError("failed to create file loader") from e
 
             logger.info("file loader initialized")
@@ -282,7 +276,6 @@ def _get_html_loader(reload: bool = False) -> HTMLLoader:
                     user_agent=cfg.ingest.user_agent,
                 )
             except Exception as e:
-                traceback.print_exc()
                 raise RuntimeError("failed to create HTML loader") from e
 
             logger.info("HTML loader initialized")
@@ -333,7 +326,7 @@ async def reload() -> dict[str, Any]:
     logger.info("exec /v1/reload")
 
     cfg.reload()
-    _setup()
+    _setup(True)
 
     return {"status": "ok"}
 
@@ -357,9 +350,8 @@ async def upload(files: list[UploadFile] = File(...)) -> dict[str, Any]:
     try:
         upload_dir = Path(cfg.ingest.upload_dir).absolute()
         upload_dir.mkdir(parents=True, exist_ok=True)
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"upload init failure: {e}") from e
+    except Exception:
+        raise HTTPException(status_code=500, detail=f"upload init failure")
 
     async with _request_lock:
         results = []
@@ -377,11 +369,8 @@ async def upload(files: list[UploadFile] = File(...)) -> dict[str, Any]:
                             break
                         await buf.write(chunk)
 
-            except Exception as e:
-                traceback.print_exc()
-                raise HTTPException(
-                    status_code=500, detail=f"upload failure: {e}"
-                ) from e
+            except Exception:
+                raise HTTPException(status_code=500, detail=f"upload failure")
             finally:
                 await f.close()
 
@@ -419,9 +408,8 @@ async def ingest_path(payload: PathRequest) -> dict[str, str]:
                 store=_get_vector_store(),
                 file_loader=_get_file_loader(),
             )
-        except Exception as e:
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
+        except Exception:
+            raise HTTPException(status_code=500, detail=f"ingest failure")
 
     return {"status": "ok"}
 
@@ -448,9 +436,8 @@ async def ingest_path_list(payload: PathRequest) -> dict[str, str]:
                 store=_get_vector_store(),
                 file_loader=_get_file_loader(),
             )
-        except Exception as e:
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
+        except Exception:
+            raise HTTPException(status_code=500, detail=f"ingest failure")
 
     return {"status": "ok"}
 
@@ -478,9 +465,8 @@ async def ingest_url(payload: URLRequest) -> dict[str, str]:
                 store=_get_vector_store(),
                 html_loader=_get_html_loader(),
             )
-        except Exception as e:
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
+        except Exception:
+            raise HTTPException(status_code=500, detail=f"ingest failure")
 
     return {"status": "ok"}
 
@@ -507,9 +493,8 @@ async def ingest_url_list(payload: PathRequest) -> dict[str, str]:
                 store=_get_vector_store(),
                 html_loader=_get_html_loader(),
             )
-        except Exception as e:
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
+        except Exception:
+            raise HTTPException(status_code=500, detail=f"ingest failure")
 
     return {"status": "ok"}
 
@@ -545,9 +530,8 @@ async def query_text_text(payload: QueryTextRequest) -> dict[str, Any]:
                 topk=payload.topk or cfg.rerank.topk,
                 rerank=_rerank,
             )
-        except Exception as e:
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"query failure: {e}") from e
+        except Exception:
+            raise HTTPException(status_code=500, detail=f"query failure")
 
     return {"documents": _nodes_to_response(nodes)}
 
@@ -583,9 +567,8 @@ async def query_text_image(payload: QueryTextRequest) -> dict[str, Any]:
                 topk=payload.topk or cfg.rerank.topk,
                 rerank=_rerank,
             )
-        except Exception as e:
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"query failure: {e}") from e
+        except Exception:
+            raise HTTPException(status_code=500, detail=f"query failure")
 
     return {"documents": _nodes_to_response(nodes)}
 
@@ -620,9 +603,8 @@ async def query_image_image(payload: QueryMultimodalRequest) -> dict[str, Any]:
                 store=_get_vector_store(),
                 topk=payload.topk or cfg.rerank.topk,
             )
-        except Exception as e:
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"query failure: {e}") from e
+        except Exception:
+            raise HTTPException(status_code=500, detail=f"query failure")
 
     return {"documents": _nodes_to_response(nodes)}
 
@@ -658,9 +640,8 @@ async def query_text_audio(payload: QueryTextRequest) -> dict[str, Any]:
                 topk=payload.topk or cfg.rerank.topk,
                 rerank=_rerank,
             )
-        except Exception as e:
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"query failure: {e}") from e
+        except Exception:
+            raise HTTPException(status_code=500, detail=f"query failure")
 
     return {"documents": _nodes_to_response(nodes)}
 
@@ -695,8 +676,7 @@ async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
                 store=_get_vector_store(),
                 topk=payload.topk or cfg.rerank.topk,
             )
-        except Exception as e:
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"query failure: {e}") from e
+        except Exception:
+            raise HTTPException(status_code=500, detail=f"query failure")
 
     return {"documents": _nodes_to_response(nodes)}

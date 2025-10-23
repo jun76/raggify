@@ -5,6 +5,7 @@ from typing import Any, Callable
 import streamlit as st
 
 from raggify.client import RestAPIClient
+from raggify.core import Exts
 
 from ..logger import logger
 from ..state import (
@@ -441,8 +442,8 @@ def _render_query_results_audio(title: str, result: dict[str, Any]) -> None:
 
         st.divider()
         try:
-            # FIXME: フォーマット決め打ち
-            st.audio(data=source, format="audio/mp3")
+            ext = Exts.get_ext(uri=source, dot=False)
+            st.audio(data=source, format=f"audio/{ext}")
         except Exception as e:
             logger.exception(e)
             st.warning("ファイル埋め込み音声等のため、表示できません。")

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from ...core.exts import Exts
 from ...logger import logger
 from .loader import Loader
+from .reader.dummy_media_reader import DummyMediaReader
 from .reader.pdf_reader import MultiPDFReader
 
 if TYPE_CHECKING:
@@ -37,6 +38,9 @@ class FileLoader(Loader):
 
         # 独自 reader の辞書。後段で SimpleDirectoryReader に渡す
         self._readers: dict[str, BaseReader] = {Exts.PDF: MultiPDFReader()}
+
+        for ext in Exts.DUMMY_MEDIA:
+            self._readers[ext] = DummyMediaReader()
 
     async def _aload_from_file(
         self,
