@@ -35,6 +35,7 @@ class DefaultSettings:
     ##### Meta
     PROJECT_NAME: str = "raggify"
     VERSION: str = "1.0"
+    USER_CONFIG_PATH: str = f"/etc/{PROJECT_NAME}/config.yaml"
 
     ##### General
     KNOWLEDGEBASE_NAME: str = "default"

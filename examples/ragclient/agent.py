@@ -9,7 +9,7 @@ from agents import Agent, RunContextWrapper, Runner, function_tool
 from pydantic import BaseModel, ConfigDict
 from typing_extensions import TypedDict
 
-from raggify.client.client import RestAPIClient
+from raggify.client import RestAPIClient
 
 from .logger import logger
 

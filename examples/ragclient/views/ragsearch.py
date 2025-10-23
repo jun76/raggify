@@ -5,7 +5,7 @@ from typing import Any, Optional
 
 import streamlit as st
 
-from raggify.client.client import RestAPIClient
+from raggify.client import RestAPIClient
 
 from ..agent import AgentExecutionError, RagAgentManager
 from ..config.config import Config

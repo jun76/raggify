@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from raggify.client.client import RestAPIClient
+from raggify.client import RestAPIClient
 
 __all__ = ["emojify_robot", "save_uploaded_files"]
 

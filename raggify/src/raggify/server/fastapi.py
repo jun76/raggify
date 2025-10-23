@@ -67,6 +67,7 @@ async def lifespan(app: FastAPI):
     Args:
         app (FastAPI): サーバインスタンス
     """
+    logger.setLevel(cfg.general.log_level)
     logger.info(f"{cfg.project_name} server is starting...")
 
     _get_embed_manager()
@@ -374,8 +375,8 @@ async def query_text_text(payload: QueryTextRequest) -> dict[str, Any]:
 
     if Modality.TEXT not in _get_embed_manager().modality:
         raise HTTPException(
-            status_code=501,
-            detail="text embeddings is not supported",
+            status_code=400,
+            detail="text embeddings is not available in current setting",
         )
 
     async with _request_lock:
@@ -412,8 +413,8 @@ async def query_text_image(payload: QueryTextRequest) -> dict[str, Any]:
 
     if Modality.IMAGE not in _get_embed_manager().modality:
         raise HTTPException(
-            status_code=501,
-            detail="image embeddings is not supported",
+            status_code=400,
+            detail="image embeddings is not available in current setting",
         )
 
     async with _request_lock:
@@ -450,8 +451,8 @@ async def query_image_image(payload: QueryMultimodalRequest) -> dict[str, Any]:
 
     if Modality.IMAGE not in _get_embed_manager().modality:
         raise HTTPException(
-            status_code=501,
-            detail="image embeddings is not supported",
+            status_code=400,
+            detail="image embeddings is not available in current setting",
         )
 
     async with _request_lock:
@@ -487,8 +488,8 @@ async def query_text_audio(payload: QueryTextRequest) -> dict[str, Any]:
 
     if Modality.AUDIO not in _get_embed_manager().modality:
         raise HTTPException(
-            status_code=501,
-            detail="audio embeddings is not supported",
+            status_code=400,
+            detail="audio embeddings is not available in current setting",
         )
 
     async with _request_lock:
@@ -525,8 +526,8 @@ async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
 
     if Modality.AUDIO not in _get_embed_manager().modality:
         raise HTTPException(
-            status_code=501,
-            detail="audio embeddings is not supported",
+            status_code=400,
+            detail="audio embeddings is not available in current setting",
         )
 
     async with _request_lock:

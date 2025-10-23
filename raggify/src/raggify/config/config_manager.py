@@ -32,7 +32,7 @@ class ConfigManager:
         self._ingest: IngestConfig
         self._rerank: RerankConfig
 
-        self._user_config_path = f"/etc/{DefaultSettings.PROJECT_NAME}/config.yaml"
+        self._user_config_path = DefaultSettings.USER_CONFIG_PATH
 
         if not os.path.exists(self._user_config_path):
             self._load_default()
@@ -122,6 +122,10 @@ class ConfigManager:
     @property
     def version(self) -> str:
         return DefaultSettings.VERSION
+
+    @property
+    def user_config_path(self) -> str:
+        return DefaultSettings.USER_CONFIG_PATH
 
     def reload(self) -> None:
         """設定ファイルを再読み込みする。"""

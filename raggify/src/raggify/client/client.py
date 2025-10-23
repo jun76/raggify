@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-import requests
+__all__ = ["RestAPIClient"]
 
 
 class RestAPIClient:
+    """raggify サーバの REST API を呼び出すクライアント"""
+
     def __init__(self, base_url: str) -> None:
-        """raggify サーバの REST API を呼び出すクライアント。
+        """コンストラクタ
 
         Args:
             base_url (str): raggify サーバへのベース URL
@@ -29,17 +31,25 @@ class RestAPIClient:
         Returns:
             dict[str, Any]: JSON 応答
         """
+        import requests
+
         url = f"{self._base_url}{endpoint}"
         try:
             response = requests.post(url, timeout=timeout, **kwargs)
             response.raise_for_status()
         except requests.RequestException as e:
-            raise RuntimeError("failed to call raggify server endpoint") from e
+            if e.response is not None:
+                detail = e.response.text
+            else:
+                detail = str(e)
+            raise RuntimeError(
+                f"failed to call raggify server endpoint: {detail}"
+            ) from e
 
         try:
             return response.json()
         except ValueError as e:
-            raise RuntimeError("raggify server response is not json") from e
+            raise RuntimeError(f"raggify server response is not json: {e}") from e
 
     def _post_json(self, endpoint: str, payload: dict[str, Any]) -> dict[str, Any]:
         """POST リクエストを送信し、JSON 応答を辞書で返す。

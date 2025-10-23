@@ -10,7 +10,7 @@ if __package__ is None or __package__ == "":
 
 import streamlit as st
 
-from raggify.client.client import RestAPIClient
+from raggify.client import RestAPIClient
 
 from .config.config import Config
 from .logger import logger

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any, Optional, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 import typer
 import uvicorn
@@ -10,12 +10,16 @@ from raggify.config import cfg
 from raggify.logger import logger
 
 if TYPE_CHECKING:
-    from raggify.client.client import RestAPIClient
+    from raggify.client import RestAPIClient
 
 __all__ = ["app"]
 
 
-app = typer.Typer()
+logger.setLevel(cfg.general.log_level)
+app = typer.Typer(
+    help="raggify CLI: Interface to ingest/query knowledge into/from raggify server. "
+    f"User config is {cfg.user_config_path}."
+)
 
 
 def _get_server_base_url() -> str:
@@ -26,7 +30,7 @@ def _get_server_base_url() -> str:
     Returns:
         str: ベース URL 文字列
     """
-    return f"http://{cfg.general.host}:{cfg.general.port}"
+    return f"http://{cfg.general.host}:{cfg.general.port}/v1"
 
 
 def _create_rest_client():
@@ -55,7 +59,7 @@ def server(
     port: int = typer.Option(cfg.general.port),
     mcp: bool = typer.Option(cfg.general.mcp),
 ):
-    """ローカルサーバとして常駐させる。
+    """ローカルサーバとして起動する。
 
     Args:
         host (str, optional): ホスト。Defaults to cfg.general.host.
@@ -100,55 +104,55 @@ def _execute_client_command(
     _echo_json(result)
 
 
-@app.command(help="Ingest from local path.")
+@app.command(name="ip", help="Ingest from local path.")
 def ingest_path(path: str):
     logger.info(f"path = {path}")
     _execute_client_command(lambda client: client.ingest_path(path))
 
 
-@app.command(help="Ingest from local-path list.")
+@app.command(name="ipl", help="Ingest from local-path list.")
 def ingest_path_list(list_path: str):
     logger.info(f"list_path = {list_path}")
     _execute_client_command(lambda client: client.ingest_path_list(list_path))
 
 
-@app.command(help="Ingest from URL.")
+@app.command(name="iu", help="Ingest from URL.")
 def ingest_url(url: str):
     logger.info(f"url = {url}")
     _execute_client_command(lambda client: client.ingest_url(url))
 
 
-@app.command(help="Ingest from URL list.")
+@app.command(name="iul", help="Ingest from URL list.")
 def ingest_url_list(list_path: str):
     logger.info(f"list_path = {list_path}")
     _execute_client_command(lambda client: client.ingest_url_list(list_path))
 
 
-@app.command(help="Search text documents by text query.")
+@app.command(name="qtt", help="Search text documents by text query.")
 def query_text_text(query: str, topk: int):
     logger.info(f"query = {query}, topk = {topk}")
     _execute_client_command(lambda client: client.query_text_text(query, topk))
 
 
-@app.command(help="Search image documents by text query.")
+@app.command(name="qti", help="Search image documents by text query.")
 def query_text_image(query: str, topk: int):
     logger.info(f"query = {query}, topk = {topk}")
     _execute_client_command(lambda client: client.query_text_image(query, topk))
 
 
-@app.command(help="Search image documents by image query.")
+@app.command(name="qii", help="Search image documents by image query.")
 def query_image_image(path: str, topk: int):
     logger.info(f"path = {path}, topk = {topk}")
     _execute_client_command(lambda client: client.query_image_image(path, topk))
 
 
-@app.command(help="Search audio documents by text query.")
+@app.command(name="qta", help="Search audio documents by text query.")
 def query_text_audio(query: str, topk: int):
     logger.info(f"query = {query}, topk = {topk}")
     _execute_client_command(lambda client: client.query_text_audio(query, topk))
 
 
-@app.command(help="Search audio documents by audio query.")
+@app.command(name="qaa", help="Search audio documents by audio query.")
 def query_audio_audio(path: str, topk: int):
     logger.info(f"path = {path}, topk = {topk}")
     _execute_client_command(lambda client: client.query_audio_audio(path, topk))

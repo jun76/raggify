@@ -4,7 +4,7 @@ from typing import Any, Callable
 
 import streamlit as st
 
-from raggify.client.client import RestAPIClient
+from raggify.client import RestAPIClient
 
 from ..logger import logger
 from ..state import (
