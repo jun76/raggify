@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from ..config import cfg
 from ..config.default_settings import EmbedProvider
 from ..llama.core.schema import Modality
@@ -93,6 +95,7 @@ def _cohere_text() -> EmbedContainer:
     return EmbedContainer(
         provider_name=EmbedProvider.COHERE,
         embed=CohereEmbedding(
+            api_key=os.getenv("COHERE_API_KEY"),  # 自動で読んでくれない
             model_name=cfg.embed.cohere_embed_model_text,
         ),
     )
@@ -104,6 +107,7 @@ def _cohere_image() -> EmbedContainer:
     return EmbedContainer(
         provider_name=EmbedProvider.COHERE,
         embed=CohereEmbedding(
+            api_key=os.getenv("COHERE_API_KEY"),  # 自動で読んでくれない
             model_name=cfg.embed.cohere_embed_model_image,
         ),
     )

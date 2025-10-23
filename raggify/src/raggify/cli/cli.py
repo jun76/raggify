@@ -33,7 +33,7 @@ def _get_server_base_url() -> str:
     return f"http://{cfg.general.host}:{cfg.general.port}/v1"
 
 
-def _create_rest_client():
+def _create_rest_client() -> RestAPIClient:
     """REST API クライアントを生成する。
 
     Returns:
@@ -53,12 +53,18 @@ def _echo_json(data: dict[str, Any]) -> None:
     typer.echo(json.dumps(data, ensure_ascii=False, indent=2))
 
 
+@app.command(help="Show version.")
+def version() -> None:
+    """バージョンコマンド"""
+    typer.echo(f"{cfg.project_name} version {cfg.version}")
+
+
 @app.command(help="Start as a local server.")
 def server(
     host: str = typer.Option(cfg.general.host),
     port: int = typer.Option(cfg.general.port),
     mcp: bool = typer.Option(cfg.general.mcp),
-):
+) -> None:
     """ローカルサーバとして起動する。
 
     Args:
@@ -98,7 +104,7 @@ def _execute_client_command(
         client = _create_rest_client()
         result = command_func(client, *args, **kwargs)
     except Exception as e:
-        typer.echo(f"error: {e}")
+        typer.echo(e)
         raise typer.Exit(code=1)
 
     _echo_json(result)

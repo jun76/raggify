@@ -21,7 +21,7 @@ dependencies = [
     "unstructured",
     "pillow",
     "llama-index-embeddings-openai",
-    "llama-index-embeddings-cohere",
+    "llama-index-embeddings-cohere @ git+https://github.com/run-llama/llama_index.git#subdirectory=llama-index-integrations/embeddings/llama-index-embeddings-cohere",
     "llama-index-embeddings-huggingface",
     "llama-index-embeddings-voyageai",
     "sentence-transformers==2.7.0",
