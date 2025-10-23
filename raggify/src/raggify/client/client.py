@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Callable, Optional
+
+import requests
 
 __all__ = ["RestAPIClient"]
 
@@ -17,12 +19,13 @@ class RestAPIClient:
         self._base_url = base_url.rstrip("/")
 
     def _make_request(
-        self, endpoint: str, timeout: int = 120, **kwargs
+        self, endpoint: str, func: Callable, timeout: int = 120, **kwargs
     ) -> dict[str, Any]:
         """共通のリクエスト処理とエラーハンドリング。
 
         Args:
             endpoint (str): エンドポイント
+            func (Callable): requests.post/get
             timeout (int, optional): タイムアウト（秒）Defaults to 120.
 
         Raises:
@@ -31,12 +34,10 @@ class RestAPIClient:
         Returns:
             dict[str, Any]: JSON 応答
         """
-        import requests
-
         url = f"{self._base_url}{endpoint}"
         try:
-            response = requests.post(url, timeout=timeout, **kwargs)
-            response.raise_for_status()
+            res = func(url, timeout=timeout, **kwargs)
+            res.raise_for_status()
         except requests.RequestException as e:
             if e.response is not None:
                 detail = e.response.text
@@ -47,9 +48,23 @@ class RestAPIClient:
             ) from e
 
         try:
-            return response.json()
+            return res.json()
         except ValueError as e:
             raise RuntimeError(f"raggify server response is not json: {e}") from e
+
+    def _get_json(self, endpoint: str) -> dict[str, Any]:
+        """GET リクエストを送信し、JSON 応答を辞書で返す。
+
+        Args:
+            endpoint (str): ベース URL からの相対パス
+
+        Raises:
+            RuntimeError: リクエスト失敗または JSON 解析失敗時
+
+        Returns:
+            dict[str, Any]: JSON 応答
+        """
+        return self._make_request(endpoint=endpoint, func=requests.get)
 
     def _post_json(self, endpoint: str, payload: dict[str, Any]) -> dict[str, Any]:
         """POST リクエストを送信し、JSON 応答を辞書で返す。
@@ -64,7 +79,7 @@ class RestAPIClient:
         Returns:
             dict[str, Any]: JSON 応答
         """
-        return self._make_request(endpoint, json=payload)
+        return self._make_request(endpoint=endpoint, func=requests.post, json=payload)
 
     def _post_form_data_json(
         self, endpoint: str, files: list[tuple[str, tuple[str, bytes, str]]]
@@ -81,7 +96,23 @@ class RestAPIClient:
         Returns:
             dict[str, Any]: JSON 応答
         """
-        return self._make_request(endpoint, files=files)
+        return self._make_request(endpoint=endpoint, func=requests.post, files=files)
+
+    def health(self) -> dict[str, str]:
+        """サーバの稼働状態を取得する。
+
+        Returns:
+            dict[str, str]: 応答データ
+        """
+        return self._get_json("/health")
+
+    def reload(self) -> dict[str, str]:
+        """サーバの設定ファイルをリロードする。
+
+        Returns:
+            dict[str, str]: 応答データ
+        """
+        return self._get_json("/reload")
 
     def ingest_path(self, path: str) -> dict[str, Any]:
         """パス指定の取り込み API を呼び出す。

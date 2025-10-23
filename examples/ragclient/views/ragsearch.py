@@ -45,7 +45,7 @@ def _save_reference_file(
 
     try:
         saved = save_uploaded_files(client, [file_obj])
-    except Exception as e:  # pragma: no cover - upload side effects
+    except Exception as e:
         st.session_state[session_key] = None
         raise AgentExecutionError(f"failed to upload reference file: {e}") from e
 

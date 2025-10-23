@@ -104,6 +104,18 @@ def _execute_client_command(
     _echo_json(result)
 
 
+@app.command(name="stat", help="Get server status.")
+def health():
+    logger.info("")
+    _execute_client_command(lambda client: client.health())
+
+
+@app.command(name="reload", help="Reload server config file.")
+def reload():
+    logger.info("")
+    _execute_client_command(lambda client: client.reload())
+
+
 @app.command(name="ip", help="Ingest from local path.")
 def ingest_path(path: str):
     logger.info(f"path = {path}")

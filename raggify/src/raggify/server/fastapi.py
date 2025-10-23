@@ -69,14 +69,7 @@ async def lifespan(app: FastAPI):
     """
     logger.setLevel(cfg.general.log_level)
     logger.info(f"{cfg.project_name} server is starting...")
-
-    _get_embed_manager()
-    _get_meta_store()
-    _get_vector_store()
-    _get_rerank_manager()
-    _get_file_loader()
-    _get_html_loader()
-
+    _setup()
     # リクエストの受付開始
     yield
 
@@ -97,8 +90,25 @@ _init_lock = threading.RLock()
 _request_lock = asyncio.Lock()
 
 
-def _get_embed_manager() -> EmbedManager:
+def _setup(reload: bool = False) -> None:
+    """各種インスタンスを生成
+
+    Args:
+        reload (bool, optional): 再生成するか。Defaults to False.
+    """
+    _get_embed_manager(reload)
+    _get_meta_store(reload)
+    _get_vector_store(reload)
+    _get_rerank_manager(reload)
+    _get_file_loader(reload)
+    _get_html_loader(reload)
+
+
+def _get_embed_manager(reload: bool = False) -> EmbedManager:
     """埋め込み管理のインスタンスを取得する。
+
+    Args:
+        reload (bool, optional): 再生成するか。Defaults to False.
 
     Raises:
         RuntimeError: インスタンス生成失敗
@@ -111,7 +121,7 @@ def _get_embed_manager() -> EmbedManager:
     global _embed
 
     with _init_lock:
-        if _embed is None:
+        if _embed is None or reload:
             try:
                 _embed = create_embed_manager()
             except Exception as e:
@@ -123,8 +133,11 @@ def _get_embed_manager() -> EmbedManager:
     return _embed
 
 
-def _get_meta_store() -> Structured:
+def _get_meta_store(reload: bool = False) -> Structured:
     """メタデータ用ストアのインスタンスを取得する。
+
+    Args:
+        reload (bool, optional): 再生成するか。Defaults to False.
 
     Raises:
         RuntimeError: インスタンス生成失敗
@@ -137,7 +150,7 @@ def _get_meta_store() -> Structured:
     global _meta_store
 
     with _init_lock:
-        if _meta_store is None:
+        if _meta_store is None or reload:
             try:
                 _meta_store = create_meta_store()
             except Exception as e:
@@ -149,8 +162,11 @@ def _get_meta_store() -> Structured:
     return _meta_store
 
 
-def _get_vector_store() -> VectorStoreManager:
+def _get_vector_store(reload: bool = False) -> VectorStoreManager:
     """ベクトルストア管理のインスタンスを取得する。
+
+    Args:
+        reload (bool, optional): 再生成するか。Defaults to False.
 
     Raises:
         RuntimeError: インスタンス生成失敗
@@ -163,7 +179,7 @@ def _get_vector_store() -> VectorStoreManager:
     global _vector_store
 
     with _init_lock:
-        if _vector_store is None:
+        if _vector_store is None or reload:
             try:
                 _vector_store = create_vector_store_manager(
                     embed=_get_embed_manager(), meta_store=_get_meta_store()
@@ -177,8 +193,11 @@ def _get_vector_store() -> VectorStoreManager:
     return _vector_store
 
 
-def _get_rerank_manager() -> RerankManager:
+def _get_rerank_manager(reload: bool = False) -> RerankManager:
     """リランク管理のインスタンスを取得する。
+
+    Args:
+        reload (bool, optional): 再生成するか。Defaults to False.
 
     Raises:
         RuntimeError: インスタンス生成失敗
@@ -191,7 +210,7 @@ def _get_rerank_manager() -> RerankManager:
     global _rerank
 
     with _init_lock:
-        if _rerank is None:
+        if _rerank is None or reload:
             try:
                 _rerank = create_rerank_manager()
             except Exception as e:
@@ -203,8 +222,11 @@ def _get_rerank_manager() -> RerankManager:
     return _rerank
 
 
-def _get_file_loader() -> FileLoader:
+def _get_file_loader(reload: bool = False) -> FileLoader:
     """ファイルローダーのインスタンスを取得する。
+
+    Args:
+        reload (bool, optional): 再生成するか。Defaults to False.
 
     Raises:
         RuntimeError: インスタンス生成失敗
@@ -217,7 +239,7 @@ def _get_file_loader() -> FileLoader:
     global _file_loader
 
     with _init_lock:
-        if _file_loader is None:
+        if _file_loader is None or reload:
             try:
                 _file_loader = FileLoader(
                     chunk_size=cfg.ingest.chunk_size,
@@ -233,8 +255,11 @@ def _get_file_loader() -> FileLoader:
     return _file_loader
 
 
-def _get_html_loader() -> HTMLLoader:
+def _get_html_loader(reload: bool = False) -> HTMLLoader:
     """HTML ローダーのインスタンスを取得する。
+
+    Args:
+        reload (bool, optional): 再生成するか。Defaults to False.
 
     Raises:
         RuntimeError: インスタンス生成失敗
@@ -247,7 +272,7 @@ def _get_html_loader() -> HTMLLoader:
     global _html_loader
 
     with _init_lock:
-        if _html_loader is None:
+        if _html_loader is None or reload:
             try:
                 _html_loader = HTMLLoader(
                     chunk_size=cfg.ingest.chunk_size,
@@ -282,7 +307,7 @@ def _nodes_to_response(nodes: list[NodeWithScore]) -> list[dict[str, Any]]:
 
 @app.get("/v1/health")
 async def health() -> dict[str, Any]:
-    """raggify の稼働状態を返却する。
+    """サーバの稼働状態を返却する。
 
     Returns:
         dict[str, Any]: 結果
@@ -296,6 +321,21 @@ async def health() -> dict[str, Any]:
             "embed": _get_embed_manager().name,
             "rerank": _get_rerank_manager().name,
         }
+
+
+@app.get("/v1/reload")
+async def reload() -> dict[str, Any]:
+    """サーバの設定ファイルをリロードする。
+
+    Returns:
+        dict[str, Any]: 結果
+    """
+    logger.info("exec /v1/reload")
+
+    cfg.reload()
+    _setup()
+
+    return {"status": "ok"}
 
 
 @app.post("/v1/upload", operation_id="upload")
@@ -354,6 +394,124 @@ async def upload(files: list[UploadFile] = File(...)) -> dict[str, Any]:
             )
 
         return {"files": results}
+
+
+@app.post("/v1/ingest/path", operation_id="ingest_path")
+async def ingest_path(payload: PathRequest) -> dict[str, str]:
+    """ローカルパス（ディレクトリ、ファイル）からコンテンツを収集、埋め込み、ストアに格納する。
+    ディレクトリの場合はツリーを下りながら複数ファイルを取り込む。
+
+    Args:
+        payload (PathRequest): 対象パス
+
+    Raises:
+        HTTPException: 収集処理に失敗
+
+    Returns:
+        dict[str, str]: 実行結果
+    """
+    logger.info("exec /v1/ingest/path")
+
+    async with _request_lock:
+        try:
+            await ingest.aingest_path(
+                path=payload.path,
+                store=_get_vector_store(),
+                file_loader=_get_file_loader(),
+            )
+        except Exception as e:
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
+
+    return {"status": "ok"}
+
+
+@app.post("/v1/ingest/path_list", operation_id="ingest_path_list")
+async def ingest_path_list(payload: PathRequest) -> dict[str, str]:
+    """path リストに記載の複数パスからコンテンツを収集、埋め込み、ストアに格納する。
+
+    Args:
+        payload (PathRequest): path リストのパス（テキストファイル。# で始まるコメント行・空行はスキップ）
+
+    Raises:
+        HTTPException: 収集処理に失敗
+
+    Returns:
+        dict[str, str]: 実行結果
+    """
+    logger.info("exec /v1/ingest/path_list")
+
+    async with _request_lock:
+        try:
+            await ingest.aingest_path_list(
+                list_path=payload.path,
+                store=_get_vector_store(),
+                file_loader=_get_file_loader(),
+            )
+        except Exception as e:
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
+
+    return {"status": "ok"}
+
+
+@app.post("/v1/ingest/url", operation_id="ingest_url")
+async def ingest_url(payload: URLRequest) -> dict[str, str]:
+    """URL からコンテンツを収集、埋め込み、ストアに格納する。
+    サイトマップ（.xml）の場合はツリーを下りながら複数サイトから取り込む。
+
+    Args:
+        payload (URLRequest): 対象 URL
+
+    Raises:
+        HTTPException: 収集処理に失敗
+
+    Returns:
+        dict[str, str]: 実行結果
+    """
+    logger.info("exec /v1/ingest/url")
+
+    async with _request_lock:
+        try:
+            await ingest.aingest_url(
+                url=payload.url,
+                store=_get_vector_store(),
+                html_loader=_get_html_loader(),
+            )
+        except Exception as e:
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
+
+    return {"status": "ok"}
+
+
+@app.post("/v1/ingest/url_list", operation_id="ingest_url_list")
+async def ingest_url_list(payload: PathRequest) -> dict[str, str]:
+    """URL リストに記載の複数サイトからコンテンツを収集、埋め込み、ストアに格納する。
+
+    Args:
+        payload (PathRequest): URL リストのパス（テキストファイル。# で始まるコメント行・空行はスキップ）
+
+    Raises:
+        HTTPException: 収集処理に失敗
+
+    Returns:
+        dict[str, str]: 実行結果
+    """
+    logger.info("exec /v1/ingest/url_list")
+
+    async with _request_lock:
+        try:
+            await ingest.aingest_url_list(
+                list_path=payload.path,
+                store=_get_vector_store(),
+                html_loader=_get_html_loader(),
+            )
+        except Exception as e:
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
+
+    return {"status": "ok"}
 
 
 @app.post("/v1/query/text_text", operation_id="query_text_text")
@@ -542,121 +700,3 @@ async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
             raise HTTPException(status_code=500, detail=f"query failure: {e}") from e
 
     return {"documents": _nodes_to_response(nodes)}
-
-
-@app.post("/v1/ingest/path", operation_id="ingest_path")
-async def ingest_path(payload: PathRequest) -> dict[str, str]:
-    """ローカルパス（ディレクトリ、ファイル）からコンテンツを収集、埋め込み、ストアに格納する。
-    ディレクトリの場合はツリーを下りながら複数ファイルを取り込む。
-
-    Args:
-        payload (PathRequest): 対象パス
-
-    Raises:
-        HTTPException: 収集処理に失敗
-
-    Returns:
-        dict[str, str]: 実行結果
-    """
-    logger.info("exec /v1/ingest/path")
-
-    async with _request_lock:
-        try:
-            await ingest.aingest_path(
-                path=payload.path,
-                store=_get_vector_store(),
-                file_loader=_get_file_loader(),
-            )
-        except Exception as e:
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
-
-    return {"status": "ok"}
-
-
-@app.post("/v1/ingest/path_list", operation_id="ingest_path_list")
-async def ingest_path_list(payload: PathRequest) -> dict[str, str]:
-    """path リストに記載の複数パスからコンテンツを収集、埋め込み、ストアに格納する。
-
-    Args:
-        payload (PathRequest): path リストのパス（テキストファイル。# で始まるコメント行・空行はスキップ）
-
-    Raises:
-        HTTPException: 収集処理に失敗
-
-    Returns:
-        dict[str, str]: 実行結果
-    """
-    logger.info("exec /v1/ingest/path_list")
-
-    async with _request_lock:
-        try:
-            await ingest.aingest_path_list(
-                list_path=payload.path,
-                store=_get_vector_store(),
-                file_loader=_get_file_loader(),
-            )
-        except Exception as e:
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
-
-    return {"status": "ok"}
-
-
-@app.post("/v1/ingest/url", operation_id="ingest_url")
-async def ingest_url(payload: URLRequest) -> dict[str, str]:
-    """URL からコンテンツを収集、埋め込み、ストアに格納する。
-    サイトマップ（.xml）の場合はツリーを下りながら複数サイトから取り込む。
-
-    Args:
-        payload (URLRequest): 対象 URL
-
-    Raises:
-        HTTPException: 収集処理に失敗
-
-    Returns:
-        dict[str, str]: 実行結果
-    """
-    logger.info("exec /v1/ingest/url")
-
-    async with _request_lock:
-        try:
-            await ingest.aingest_url(
-                url=payload.url,
-                store=_get_vector_store(),
-                html_loader=_get_html_loader(),
-            )
-        except Exception as e:
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
-
-    return {"status": "ok"}
-
-
-@app.post("/v1/ingest/url_list", operation_id="ingest_url_list")
-async def ingest_url_list(payload: PathRequest) -> dict[str, str]:
-    """URL リストに記載の複数サイトからコンテンツを収集、埋め込み、ストアに格納する。
-
-    Args:
-        payload (PathRequest): URL リストのパス（テキストファイル。# で始まるコメント行・空行はスキップ）
-
-    Raises:
-        HTTPException: 収集処理に失敗
-
-    Returns:
-        dict[str, str]: 実行結果
-    """
-    logger.info("exec /v1/ingest/url_list")
-
-    async with _request_lock:
-        try:
-            await ingest.aingest_url_list(
-                list_path=payload.path,
-                store=_get_vector_store(),
-                html_loader=_get_html_loader(),
-            )
-        except Exception as e:
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"ingest failure: {e}") from e
-
-    return {"status": "ok"}

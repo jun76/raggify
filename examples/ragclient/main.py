@@ -22,31 +22,18 @@ from .views.ragsearch import render_ragsearch_view
 from .views.search import render_search_view
 
 
-def _init_services() -> tuple[RestAPIClient, str]:
-    """設定を読み込み、API クライアントとヘルスチェック用 URL を初期化する。
-
-    Returns:
-        tuple[RestAPIClient, str]: API クライアントと
-            raggify サービスのヘルスチェック URL
-    """
-    client = RestAPIClient(Config.raggify_base_url)
-    raggify_health = Config.raggify_base_url.rstrip("/") + "/health"
-
-    return client, raggify_health
-
-
 def main() -> None:
     """Streamlit アプリのエントリポイント。"""
 
     st.set_page_config(page_title="RAG Client", page_icon="🧠", layout="wide")
     ensure_session_state()
 
-    client, raggify_health = _init_services()
+    client = RestAPIClient(Config.raggify_base_url)
 
     view = st.session_state.get("view", View.MAIN)
     match view:
         case View.MAIN:
-            render_main_menu(raggify_health)
+            render_main_menu(client)
         case View.INGEST:
             render_ingest_view(client)
         case View.SEARCH:
