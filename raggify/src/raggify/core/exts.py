@@ -18,15 +18,14 @@ class Exts:
     IMAGE: set[str] = {".gif", ".jpg", PNG, ".jpeg", ".webp"}
 
     # マルチモーダル（音声）の埋め込みモデルに渡せる拡張子
-    _DUMMY_AUDIO: set[str] = {".wav", ".flac", ".ogg"}
-    AUDIO: set[str] = {".wav"} | _DUMMY_AUDIO
+    _PASS_THROUGH_AUDIO: set[str] = {".wav", ".flac", ".ogg"}  # うち、独自処理するもの
+    AUDIO: set[str] = {".mp3"} | _PASS_THROUGH_AUDIO
 
     # サイトマップの抽出判定に使用する拡張子
     SITEMAP: set[str] = {".xml"}
 
-    ## Web ページから予想外のファイルや巨大な動画ファイルをフェッチしてこないように絞る
-    # 専用の reader が存在するもの
-    _DEFAULT_FETCH_TARGET: set[str] = {
+    # Web ページから予想外のファイルや巨大な動画ファイルをフェッチしてこないように絞る
+    _DEFAULT_FETCH_TARGET: set[str] = {  # うち、専用の reader が存在するもの
         ".hwp",
         PDF,
         ".docx",
@@ -40,21 +39,18 @@ class Exts:
         ".xls",
         ".xlsx",
     }
-
-    # その他にフェッチしたいもの
-    _ADDITIONAL_FETCH_TARGET: set[str] = {
+    _ADDITIONAL_FETCH_TARGET: set[str] = {  # その他にフェッチしたいもの
         ".txt",
         ".text",
         ".md",
         ".json",
     }
-
     FETCH_TARGET: set[str] = (
         IMAGE | AUDIO | SITEMAP | _DEFAULT_FETCH_TARGET | _ADDITIONAL_FETCH_TARGET
     )
 
     # デフォルトの reader に渡すとテキストとして解釈してしまうため除外して自前処理したいもの
-    DUMMY_MEDIA = _DUMMY_AUDIO
+    PASS_THROUGH_MEDIA = _PASS_THROUGH_AUDIO
 
     @classmethod
     def endswith_exts(cls, s: str, exts: set[str]) -> bool:

@@ -344,7 +344,7 @@ class HTMLLoader(Loader):
             return []
 
         if self._store.skip_update(url):
-            logger.info(f"skip loading: source exists ({url})")
+            logger.debug(f"skip loading: source exists ({url})")
             return []
 
         nodes = []
@@ -363,7 +363,7 @@ class HTMLLoader(Loader):
                 # アセットファイル
                 nodes.extend(await self._aload_html_asset_files(base_url=url))
 
-        logger.info(f"loaded {len(nodes)} nodes from {url}")
+        logger.debug(f"loaded {len(nodes)} nodes from {url}")
 
         return nodes
 

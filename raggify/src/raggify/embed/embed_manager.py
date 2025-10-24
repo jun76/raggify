@@ -39,7 +39,7 @@ class EmbedManager:
                 model=cont.embed.model_name,
                 modality=modality,
             )
-            logger.info(f"space_key: {cont.space_key} generated")
+            logger.debug(f"space_key: {cont.space_key} generated")
 
     @property
     def name(self) -> str:
@@ -126,7 +126,7 @@ class EmbedManager:
             list[Embedding]: 埋め込みベクトル
         """
         embed = self.get_container(Modality.TEXT).embed
-        logger.info(f"now batch embedding {len(texts)} texts...")
+        logger.debug(f"now batch embedding {len(texts)} texts...")
 
         return await embed.aget_text_embedding_batch(texts=texts, show_progress=True)
 
@@ -148,7 +148,7 @@ class EmbedManager:
         if not isinstance(embed, MultiModalEmbedding):
             raise RuntimeError("multimodal embed model is required")
 
-        logger.info(f"now batch embedding {len(paths)} images...")
+        logger.debug(f"now batch embedding {len(paths)} images...")
 
         return await embed.aget_image_embedding_batch(
             img_file_paths=paths, show_progress=True
@@ -172,7 +172,7 @@ class EmbedManager:
         if not isinstance(embed, AudioEmbedding):
             raise RuntimeError("audio embed model is required")
 
-        logger.info(f"now batch embedding {len(paths)} audios...")
+        logger.debug(f"now batch embedding {len(paths)} audios...")
 
         return await embed.aget_audio_embedding_batch(
             audio_file_paths=paths, show_progress=True

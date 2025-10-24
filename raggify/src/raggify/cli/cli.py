@@ -7,7 +7,7 @@ import typer
 import uvicorn
 
 from raggify.config import cfg
-from raggify.logger import logger
+from raggify.logger import console, logger
 
 if TYPE_CHECKING:
     from raggify.client import RestAPIClient
@@ -50,13 +50,13 @@ def _echo_json(data: dict[str, Any]) -> None:
     Args:
         data (dict[str, Any]): 出力データ
     """
-    typer.echo(json.dumps(data, ensure_ascii=False, indent=2))
+    console.print(json.dumps(data, ensure_ascii=False, indent=2))
 
 
 @app.command(help="Show version.")
 def version() -> None:
     """バージョンコマンド"""
-    typer.echo(f"{cfg.project_name} version {cfg.version}")
+    console.print(f"{cfg.project_name} version {cfg.version}")
 
 
 @app.command(help="Start as a local server.")
@@ -79,7 +79,7 @@ def server(
 
         _mcp.mount_http()
 
-    logger.info(f"up server @ host = {host}, port = {port}")
+    logger.debug(f"up server @ host = {host}, port = {port}")
     uvicorn.run(
         app=fastapi,
         host=host,
@@ -104,7 +104,10 @@ def _execute_client_command(
         client = _create_rest_client()
         result = command_func(client, *args, **kwargs)
     except Exception as e:
-        typer.echo(e)
+        console.print(e)
+        console.print(
+            f"❌ Command failed. If you haven't already started the server, run '{cfg.project_name} server'."
+        )
         raise typer.Exit(code=1)
 
     _echo_json(result)
@@ -112,67 +115,82 @@ def _execute_client_command(
 
 @app.command(name="stat", help="Get server status.")
 def health():
-    logger.info("")
+    logger.debug("")
     _execute_client_command(lambda client: client.health())
 
 
 @app.command(name="reload", help="Reload server config file.")
 def reload():
-    logger.info("")
+    logger.debug("")
     _execute_client_command(lambda client: client.reload())
 
 
-@app.command(name="ip", help="Ingest from local path.")
+@app.command(name="ip", help=f"Ingest from local Path.")
 def ingest_path(path: str):
-    logger.info(f"path = {path}")
+    logger.debug(f"path = {path}")
     _execute_client_command(lambda client: client.ingest_path(path))
 
 
-@app.command(name="ipl", help="Ingest from local-path list.")
+@app.command(name="ipl", help="Ingest from local Path List.")
 def ingest_path_list(list_path: str):
-    logger.info(f"list_path = {list_path}")
+    logger.debug(f"list_path = {list_path}")
     _execute_client_command(lambda client: client.ingest_path_list(list_path))
 
 
-@app.command(name="iu", help="Ingest from URL.")
+@app.command(name="iu", help="Ingest from Url.")
 def ingest_url(url: str):
-    logger.info(f"url = {url}")
+    logger.debug(f"url = {url}")
     _execute_client_command(lambda client: client.ingest_url(url))
 
 
-@app.command(name="iul", help="Ingest from URL list.")
+@app.command(name="iul", help="Ingest from Url List.")
 def ingest_url_list(list_path: str):
-    logger.info(f"list_path = {list_path}")
+    logger.debug(f"list_path = {list_path}")
     _execute_client_command(lambda client: client.ingest_url_list(list_path))
 
 
-@app.command(name="qtt", help="Search text documents by text query.")
+@app.command(
+    name="qtt",
+    help="Query by Text to search Text documents.",
+)
 def query_text_text(query: str, topk: int):
-    logger.info(f"query = {query}, topk = {topk}")
+    logger.debug(f"query = {query}, topk = {topk}")
     _execute_client_command(lambda client: client.query_text_text(query, topk))
 
 
-@app.command(name="qti", help="Search image documents by text query.")
+@app.command(
+    name="qti",
+    help="Query by Text to search Image documents.",
+)
 def query_text_image(query: str, topk: int):
-    logger.info(f"query = {query}, topk = {topk}")
+    logger.debug(f"query = {query}, topk = {topk}")
     _execute_client_command(lambda client: client.query_text_image(query, topk))
 
 
-@app.command(name="qii", help="Search image documents by image query.")
+@app.command(
+    name="qii",
+    help="Query by Image to search Image documents.",
+)
 def query_image_image(path: str, topk: int):
-    logger.info(f"path = {path}, topk = {topk}")
+    logger.debug(f"path = {path}, topk = {topk}")
     _execute_client_command(lambda client: client.query_image_image(path, topk))
 
 
-@app.command(name="qta", help="Search audio documents by text query.")
+@app.command(
+    name="qta",
+    help="Query by Text to search Audio documents.",
+)
 def query_text_audio(query: str, topk: int):
-    logger.info(f"query = {query}, topk = {topk}")
+    logger.debug(f"query = {query}, topk = {topk}")
     _execute_client_command(lambda client: client.query_text_audio(query, topk))
 
 
-@app.command(name="qaa", help="Search audio documents by audio query.")
+@app.command(
+    name="qaa",
+    help="Query by Audio to search Audio documents.",
+)
 def query_audio_audio(path: str, topk: int):
-    logger.info(f"path = {path}, topk = {topk}")
+    logger.debug(f"path = {path}, topk = {topk}")
     _execute_client_command(lambda client: client.query_audio_audio(path, topk))
 
 

@@ -15,7 +15,7 @@ class DummyMediaReader(BaseReader):
     """後段のデフォルトリーダーにテキストとして解釈・スプリットさせないためのダミーリーダー"""
 
     def lazy_load_data(self, path: str, extra_info: Any = None) -> Iterable[Document]:
-        """PDF ファイルを読み込み、テキストと画像のドキュメントをそれぞれ生成する。
+        """メディアファイルをダミーとして読み込み、ファイルパスを含むドキュメントを生成する。
 
         Args:
             path (str): ファイルパス
@@ -30,8 +30,10 @@ class DummyMediaReader(BaseReader):
             logger.warning(f"file not found: {path}")
             return []
 
-        if not Exts.endswith_exts(path, Exts.DUMMY_MEDIA):
-            logger.warning(f"unsupported ext. {' '.join(Exts.DUMMY_MEDIA)} is allowed.")
+        if not Exts.endswith_exts(path, Exts.PASS_THROUGH_MEDIA):
+            logger.warning(
+                f"unsupported ext for {path}. {' '.join(Exts.PASS_THROUGH_MEDIA)} is allowed."
+            )
             return []
 
         meta = BasicMetaData()
@@ -40,6 +42,6 @@ class DummyMediaReader(BaseReader):
 
         doc = Document(text=path, metadata=meta.to_dict())
 
-        logger.info(f"loaded 1 text doc from {path}")
+        logger.debug(f"loaded 1 text doc from {path}")
 
         return [doc]

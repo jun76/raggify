@@ -63,7 +63,7 @@ class VectorStoreManager:
 
         for modality, cont in self._conts.items():
             cont.index = self._create_index(modality)
-            logger.info(f"{modality} index created")
+            logger.debug(f"{modality} index created")
 
         # メタデータ専用ストアから fingerprint キャッシュを復元
         self._fp_cache = self._load_fp_cache(cache_load_limit)
@@ -137,7 +137,7 @@ class VectorStoreManager:
         # fingerprint が既存・同一のノードは upsert しない
         nodes = self._filter_nodes_by_fp(nodes)
         if len(nodes) == 0:
-            logger.info("skip upsert: no new nodes")
+            logger.debug("skip upsert: no new nodes")
             return
 
         text_nodes, image_nodes, audio_nodes = self._split_nodes_modality(nodes)
@@ -189,7 +189,7 @@ class VectorStoreManager:
             if source and fp:
                 fp_cache[source] = fp
 
-        logger.info(f"loaded {len(fp_cache)} fingerprint caches")
+        logger.debug(f"loaded {len(fp_cache)} fingerprint caches")
 
         return fp_cache
 
@@ -317,7 +317,7 @@ class VectorStoreManager:
         except Exception as e:
             raise RuntimeError("failed to upsert text") from e
 
-        logger.info(f"{len(valid_nodes)} text nodes are upserted")
+        logger.debug(f"{len(valid_nodes)} text nodes are upserted")
 
     async def _aupsert_fetched_content(
         self, nodes: Sequence[BaseNode], modality: Modality, aembed_func: Callable
@@ -392,7 +392,7 @@ class VectorStoreManager:
             for path in temp_file_paths:
                 os.remove(path)
 
-        logger.info(f"{len(valid_nodes)} {modality} nodes are upserted")
+        logger.debug(f"{len(valid_nodes)} {modality} nodes are upserted")
 
     async def _aupsert_image(self, nodes: list[ImageNode]) -> None:
         """画像を埋め込み、ストアに格納する。
@@ -476,7 +476,7 @@ class VectorStoreManager:
             # fingerprint キャッシュになければ追加（＝次回以降スキップ）
             if source not in self._fp_cache:
                 self._fp_cache[source] = self._get_lazy_fp(meta)
-                logger.info(f"new source detected. add cache: {source}")
+                logger.debug(f"new source detected. add cache: {source}")
 
     def _get_lazy_fp(self, meta: BasicMetaData) -> str:
         """fingerprint を取得する。
@@ -530,7 +530,7 @@ class VectorStoreManager:
             existing_fp = self._fp_cache.get(source, "")
             fp = self._get_lazy_fp(meta)
             if existing_fp == fp:
-                logger.info(f"skip document: identical fingerprint for {source}")
+                logger.debug(f"skip document: identical fingerprint for {source}")
                 continue
 
             filtered.append(node)

@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from ..config import cfg
 from ..ingest import ingest
 from ..llama.core.schema import Modality
-from ..logger import logger
+from ..logger import console, logger
 
 if TYPE_CHECKING:
     from llama_index.core.schema import NodeWithScore
@@ -67,12 +67,14 @@ async def lifespan(app: FastAPI):
         app (FastAPI): サーバインスタンス
     """
     logger.setLevel(cfg.general.log_level)
-    logger.info(f"{cfg.project_name} server is starting...")
+    console.print(f"⏳ {cfg.project_name} server is starting up.")
+
     _setup()
+    console.print(f"✅ now {cfg.project_name} server is online.")
+
     # リクエストの受付開始
     yield
-
-    logger.info(f"{cfg.project_name} server is stopped.")
+    console.print(f"🛑 now {cfg.project_name} server is stopped.")
 
 
 # FastAPIインスタンスを作成し、lifespanを渡す
@@ -124,9 +126,11 @@ def _get_embed_manager(reload: bool = False) -> EmbedManager:
             try:
                 _embed = create_embed_manager()
             except Exception as e:
-                raise RuntimeError("failed to create embed manager") from e
+                msg = "failed to create embed manager"
+                logger.error(f"{msg}: {e}", exc_info=True)
+                raise RuntimeError(msg) from e
 
-            logger.info(f"{_embed.name} embed initialized")
+            console.print(f"⏳ {_embed.name} embed initialized.")
 
     return _embed
 
@@ -152,9 +156,11 @@ def _get_meta_store(reload: bool = False) -> Structured:
             try:
                 _meta_store = create_meta_store()
             except Exception as e:
-                raise RuntimeError("failed to create meta store") from e
+                msg = "failed to create meta store"
+                logger.error(f"{msg}: {e}", exc_info=True)
+                raise RuntimeError(msg) from e
 
-            logger.info("meta store initialized")
+            console.print("⏳ meta store initialized.")
 
     return _meta_store
 
@@ -182,9 +188,11 @@ def _get_vector_store(reload: bool = False) -> VectorStoreManager:
                     embed=_get_embed_manager(), meta_store=_get_meta_store()
                 )
             except Exception as e:
-                raise RuntimeError("failed to create vector store manager") from e
+                msg = "failed to create vector store manager"
+                logger.error(f"{msg}: {e}", exc_info=True)
+                raise RuntimeError(msg) from e
 
-            logger.info("vector store initialized")
+            console.print(f"⏳ {_vector_store.name} vector store initialized.")
 
     return _vector_store
 
@@ -210,9 +218,11 @@ def _get_rerank_manager(reload: bool = False) -> RerankManager:
             try:
                 _rerank = create_rerank_manager()
             except Exception as e:
-                raise RuntimeError("failed to create rerank manager") from e
+                msg = "failed to create rerank manager"
+                logger.error(f"{msg}: {e}", exc_info=True)
+                raise RuntimeError(msg) from e
 
-            logger.info(f"{_rerank.name} rerank initialized")
+            console.print(f"⏳ {_rerank.name} rerank initialized.")
 
     return _rerank
 
@@ -242,9 +252,11 @@ def _get_file_loader(reload: bool = False) -> FileLoader:
                     store=_get_vector_store(),
                 )
             except Exception as e:
-                raise RuntimeError("failed to create file loader") from e
+                msg = "failed to create file loader"
+                logger.error(f"{msg}: {e}", exc_info=True)
+                raise RuntimeError(msg) from e
 
-            logger.info("file loader initialized")
+            console.print("⏳ file loader initialized.")
 
     return _file_loader
 
@@ -276,9 +288,11 @@ def _get_html_loader(reload: bool = False) -> HTMLLoader:
                     user_agent=cfg.ingest.user_agent,
                 )
             except Exception as e:
-                raise RuntimeError("failed to create HTML loader") from e
+                msg = "failed to create HTML loader"
+                logger.error(f"{msg}: {e}", exc_info=True)
+                raise RuntimeError(msg) from e
 
-            logger.info("HTML loader initialized")
+            console.print("⏳ HTML loader initialized.")
 
         return _html_loader
 
@@ -305,7 +319,7 @@ async def health() -> dict[str, Any]:
     Returns:
         dict[str, Any]: 結果
     """
-    logger.info("exec /v1/health")
+    logger.debug("exec /v1/health")
 
     async with _request_lock:
         return {
@@ -323,7 +337,7 @@ async def reload() -> dict[str, Any]:
     Returns:
         dict[str, Any]: 結果
     """
-    logger.info("exec /v1/reload")
+    logger.debug("exec /v1/reload")
 
     cfg.reload()
     _setup(True)
@@ -345,19 +359,23 @@ async def upload(files: list[UploadFile] = File(...)) -> dict[str, Any]:
     Returns:
         dict[str, Any]: 結果
     """
-    logger.info("exec /v1/upload")
+    logger.debug("exec /v1/upload")
 
     try:
         upload_dir = Path(cfg.ingest.upload_dir).absolute()
         upload_dir.mkdir(parents=True, exist_ok=True)
-    except Exception:
-        raise HTTPException(status_code=500, detail=f"upload init failure")
+    except Exception as e:
+        msg = "mkdir failure"
+        logger.error(f"{msg}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=msg)
 
     async with _request_lock:
         results = []
         for f in files:
             if f.filename is None:
-                raise HTTPException(status_code=400, detail="filename is not specified")
+                msg = "filename is not specified"
+                logger.error(msg)
+                raise HTTPException(status_code=400, detail=msg)
 
             try:
                 safe = Path(f.filename).name
@@ -368,9 +386,10 @@ async def upload(files: list[UploadFile] = File(...)) -> dict[str, Any]:
                         if not chunk:
                             break
                         await buf.write(chunk)
-
-            except Exception:
-                raise HTTPException(status_code=500, detail=f"upload failure")
+            except Exception as e:
+                msg = "write failure"
+                logger.error(f"{msg}: {e}", exc_info=True)
+                raise HTTPException(status_code=500, detail=msg)
             finally:
                 await f.close()
 
@@ -399,7 +418,7 @@ async def ingest_path(payload: PathRequest) -> dict[str, str]:
     Returns:
         dict[str, str]: 実行結果
     """
-    logger.info("exec /v1/ingest/path")
+    logger.debug("exec /v1/ingest/path")
 
     async with _request_lock:
         try:
@@ -408,8 +427,10 @@ async def ingest_path(payload: PathRequest) -> dict[str, str]:
                 store=_get_vector_store(),
                 file_loader=_get_file_loader(),
             )
-        except Exception:
-            raise HTTPException(status_code=500, detail=f"ingest failure")
+        except Exception as e:
+            msg = "ingest path failure"
+            logger.error(f"{msg}: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=msg)
 
     return {"status": "ok"}
 
@@ -427,7 +448,7 @@ async def ingest_path_list(payload: PathRequest) -> dict[str, str]:
     Returns:
         dict[str, str]: 実行結果
     """
-    logger.info("exec /v1/ingest/path_list")
+    logger.debug("exec /v1/ingest/path_list")
 
     async with _request_lock:
         try:
@@ -436,8 +457,10 @@ async def ingest_path_list(payload: PathRequest) -> dict[str, str]:
                 store=_get_vector_store(),
                 file_loader=_get_file_loader(),
             )
-        except Exception:
-            raise HTTPException(status_code=500, detail=f"ingest failure")
+        except Exception as e:
+            msg = "ingest path list failure"
+            logger.error(f"{msg}: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=msg)
 
     return {"status": "ok"}
 
@@ -456,7 +479,7 @@ async def ingest_url(payload: URLRequest) -> dict[str, str]:
     Returns:
         dict[str, str]: 実行結果
     """
-    logger.info("exec /v1/ingest/url")
+    logger.debug("exec /v1/ingest/url")
 
     async with _request_lock:
         try:
@@ -465,8 +488,9 @@ async def ingest_url(payload: URLRequest) -> dict[str, str]:
                 store=_get_vector_store(),
                 html_loader=_get_html_loader(),
             )
-        except Exception:
-            raise HTTPException(status_code=500, detail=f"ingest failure")
+        except Exception as e:
+            logger.error(f"ingest url failure: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"ingest url failure")
 
     return {"status": "ok"}
 
@@ -484,7 +508,7 @@ async def ingest_url_list(payload: PathRequest) -> dict[str, str]:
     Returns:
         dict[str, str]: 実行結果
     """
-    logger.info("exec /v1/ingest/url_list")
+    logger.debug("exec /v1/ingest/url_list")
 
     async with _request_lock:
         try:
@@ -493,8 +517,10 @@ async def ingest_url_list(payload: PathRequest) -> dict[str, str]:
                 store=_get_vector_store(),
                 html_loader=_get_html_loader(),
             )
-        except Exception:
-            raise HTTPException(status_code=500, detail=f"ingest failure")
+        except Exception as e:
+            msg = "ingest url list failure"
+            logger.error(f"{msg}: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=msg)
 
     return {"status": "ok"}
 
@@ -514,13 +540,12 @@ async def query_text_text(payload: QueryTextRequest) -> dict[str, Any]:
     """
     from ..retrieve.retrieve import aquery_text_text
 
-    logger.info("exec /v1/query/text_text")
+    logger.debug("exec /v1/query/text_text")
 
     if Modality.TEXT not in _get_embed_manager().modality:
-        raise HTTPException(
-            status_code=400,
-            detail="text embeddings is not available in current setting",
-        )
+        msg = "text embeddings is not available in current setting"
+        logger.error(msg)
+        raise HTTPException(status_code=400, detail=msg)
 
     async with _request_lock:
         try:
@@ -531,7 +556,9 @@ async def query_text_text(payload: QueryTextRequest) -> dict[str, Any]:
                 rerank=_rerank,
             )
         except Exception:
-            raise HTTPException(status_code=500, detail=f"query failure")
+            msg = "query text text failure"
+            logger.error(msg)
+            raise HTTPException(status_code=500, detail=msg)
 
     return {"documents": _nodes_to_response(nodes)}
 
@@ -551,13 +578,12 @@ async def query_text_image(payload: QueryTextRequest) -> dict[str, Any]:
     """
     from ..retrieve.retrieve import aquery_text_image
 
-    logger.info("exec /v1/query/text_image")
+    logger.debug("exec /v1/query/text_image")
 
     if Modality.IMAGE not in _get_embed_manager().modality:
-        raise HTTPException(
-            status_code=400,
-            detail="image embeddings is not available in current setting",
-        )
+        msg = "image embeddings is not available in current setting"
+        logger.error(msg)
+        raise HTTPException(status_code=400, detail=msg)
 
     async with _request_lock:
         try:
@@ -568,7 +594,9 @@ async def query_text_image(payload: QueryTextRequest) -> dict[str, Any]:
                 rerank=_rerank,
             )
         except Exception:
-            raise HTTPException(status_code=500, detail=f"query failure")
+            msg = "query text image failure"
+            logger.error(msg)
+            raise HTTPException(status_code=500, detail=msg)
 
     return {"documents": _nodes_to_response(nodes)}
 
@@ -588,13 +616,12 @@ async def query_image_image(payload: QueryMultimodalRequest) -> dict[str, Any]:
     """
     from ..retrieve.retrieve import aquery_image_image
 
-    logger.info("exec /v1/query/image_image")
+    logger.debug("exec /v1/query/image_image")
 
     if Modality.IMAGE not in _get_embed_manager().modality:
-        raise HTTPException(
-            status_code=400,
-            detail="image embeddings is not available in current setting",
-        )
+        msg = "image embeddings is not available in current setting"
+        logger.error(msg)
+        raise HTTPException(status_code=400, detail=msg)
 
     async with _request_lock:
         try:
@@ -604,7 +631,9 @@ async def query_image_image(payload: QueryMultimodalRequest) -> dict[str, Any]:
                 topk=payload.topk or cfg.rerank.topk,
             )
         except Exception:
-            raise HTTPException(status_code=500, detail=f"query failure")
+            msg = "query image image failure"
+            logger.error(msg)
+            raise HTTPException(status_code=500, detail=msg)
 
     return {"documents": _nodes_to_response(nodes)}
 
@@ -624,13 +653,12 @@ async def query_text_audio(payload: QueryTextRequest) -> dict[str, Any]:
     """
     from ..retrieve.retrieve import aquery_text_audio
 
-    logger.info("exec /v1/query/text_audio")
+    logger.debug("exec /v1/query/text_audio")
 
     if Modality.AUDIO not in _get_embed_manager().modality:
-        raise HTTPException(
-            status_code=400,
-            detail="audio embeddings is not available in current setting",
-        )
+        msg = "audio embeddings is not available in current setting"
+        logger.error(msg)
+        raise HTTPException(status_code=400, detail=msg)
 
     async with _request_lock:
         try:
@@ -641,7 +669,9 @@ async def query_text_audio(payload: QueryTextRequest) -> dict[str, Any]:
                 rerank=_rerank,
             )
         except Exception:
-            raise HTTPException(status_code=500, detail=f"query failure")
+            msg = "query text audio failure"
+            logger.error(msg)
+            raise HTTPException(status_code=500, detail=msg)
 
     return {"documents": _nodes_to_response(nodes)}
 
@@ -661,13 +691,12 @@ async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
     """
     from ..retrieve.retrieve import aquery_audio_audio
 
-    logger.info("exec /v1/query/audio_audio")
+    logger.debug("exec /v1/query/audio_audio")
 
     if Modality.AUDIO not in _get_embed_manager().modality:
-        raise HTTPException(
-            status_code=400,
-            detail="audio embeddings is not available in current setting",
-        )
+        msg = "audio embeddings is not available in current setting"
+        logger.error(msg)
+        raise HTTPException(status_code=400, detail=msg)
 
     async with _request_lock:
         try:
@@ -677,6 +706,8 @@ async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
                 topk=payload.topk or cfg.rerank.topk,
             )
         except Exception:
-            raise HTTPException(status_code=500, detail=f"query failure")
+            msg = "query audio audio failure"
+            logger.error(msg)
+            raise HTTPException(status_code=500, detail=msg)
 
     return {"documents": _nodes_to_response(nodes)}

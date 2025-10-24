@@ -51,7 +51,7 @@ class MultiPDFReader(BaseReader):
         finally:
             pdf.close()
 
-        logger.info(
+        logger.debug(
             f"loaded {len(text_docs)} text docs, {len(image_docs)} image docs from {path}"
         )
 

@@ -39,8 +39,9 @@ class FileLoader(Loader):
         # 独自 reader の辞書。後段で SimpleDirectoryReader に渡す
         self._readers: dict[str, BaseReader] = {Exts.PDF: MultiPDFReader()}
 
-        for ext in Exts.DUMMY_MEDIA:
-            self._readers[ext] = DummyMediaReader()
+        dummy_reader = DummyMediaReader()
+        for ext in Exts.PASS_THROUGH_MEDIA:
+            self._readers[ext] = dummy_reader
 
     async def _aload_from_file(
         self,
@@ -83,7 +84,7 @@ class FileLoader(Loader):
         except Exception as e:
             raise RuntimeError(f"failed to generate nodes from file: {path}") from e
 
-        logger.info(f"loaded {len(all_nodes)} nodes from {path}")
+        logger.debug(f"loaded {len(all_nodes)} nodes from {path}")
 
         return all_nodes
 
@@ -132,7 +133,7 @@ class FileLoader(Loader):
                     continue
 
                 if self._store.skip_update(path):
-                    logger.info(f"skip loading: source exists ({path})")
+                    logger.debug(f"skip loading: source exists ({path})")
                     continue
 
                 nodes.extend(
@@ -147,7 +148,7 @@ class FileLoader(Loader):
                 logger.exception(e)
                 continue
 
-        logger.info(f"loaded {len(nodes)} nodes from {root}")
+        logger.debug(f"loaded {len(nodes)} nodes from {root}")
 
         return nodes
 

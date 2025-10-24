@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 
+from rich.console import Console
+
 from .config.default_settings import DefaultSettings
 
 
@@ -51,3 +53,4 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(DefaultSettings.PROJECT_NAME)
+console = Console()

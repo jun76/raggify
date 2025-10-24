@@ -54,7 +54,7 @@ async def aquery_text_text(
         return nwss
 
     nwss = await rerank.arerank(nodes=nwss, query=query)
-    logger.info(f"reranked {len(nwss)} nodes")
+    logger.debug(f"reranked {len(nwss)} nodes")
 
     return nwss
 
@@ -109,7 +109,7 @@ async def aquery_text_image(
         return nwss
 
     nwss = await rerank.arerank(nodes=nwss, query=query)
-    logger.info(f"reranked {len(nwss)} nodes")
+    logger.debug(f"reranked {len(nwss)} nodes")
 
     return nwss
 
@@ -149,7 +149,7 @@ async def aquery_image_image(
         logger.warning("empty nodes")
         return []
 
-    logger.info(f"got {len(nwss)} nodes")
+    logger.debug(f"got {len(nwss)} nodes")
 
     return nwss
 
@@ -195,7 +195,7 @@ async def aquery_text_audio(
         return nwss
 
     nwss = await rerank.arerank(nodes=nwss, query=query)
-    logger.info(f"reranked {len(nwss)} nodes")
+    logger.debug(f"reranked {len(nwss)} nodes")
 
     return nwss
 
@@ -227,6 +227,6 @@ async def aquery_audio_audio(
         logger.warning("empty nodes")
         return []
 
-    logger.info(f"got {len(nwss)} nodes")
+    logger.debug(f"got {len(nwss)} nodes")
 
     return nwss
