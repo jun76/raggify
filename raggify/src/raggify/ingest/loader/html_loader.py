@@ -9,6 +9,7 @@ from urllib.parse import urljoin, urlparse
 import requests
 
 from ...config import cfg
+from ...config.default_settings import DefaultSettings as DS
 from ...core.exts import Exts
 from ...logger import logger
 from .loader import Loader
@@ -23,34 +24,34 @@ if TYPE_CHECKING:
 class HTMLLoader(Loader):
     def __init__(
         self,
-        chunk_size: int,
-        chunk_overlap: int,
         file_loader: FileLoader,
         store: VectorStoreManager,
+        chunk_size: int = DS.CHUNK_SIZE,
+        chunk_overlap: int = DS.CHUNK_OVERLAP,
         load_asset: bool = True,
         req_per_sec: int = 2,
         timeout: int = 30,
-        user_agent: str = cfg.project_name,
+        user_agent: str = DS.USER_AGENT,
         same_origin: bool = True,
     ):
         """HTML を読み込み、ノードを生成するためのクラス。
 
         Args:
-            chunk_size (int): チャンクサイズ
-            chunk_overlap (int): チャンク重複語数
             file_loader (FileLoader): ファイル読み込み用
             store (VectorStoreManager): 登録済みソースの判定に使用
+            chunk_size (int, optional): チャンクサイズ。Defaults to DS.CHUNK_SIZE.
+            chunk_overlap (int, optional): チャンク重複語数。Defaults to DS.CHUNK_OVERLAP.
             load_asset (bool, optional): アセットを読み込むか。Defaults to True.
-            req_per_sec (int): 秒間リクエスト数。Defaults to 2.
+            req_per_sec (int, optional): 秒間リクエスト数。Defaults to 2.
             timeout (int, optional): タイムアウト秒。Defaults to 30.
-            user_agent (str, optional): GET リクエスト時の user agent。Defaults to cfg.project_name.
-            same_origin (bool, optional): True なら同一オリジンのみ対象。Defaults to True.
+            user_agent (str, optional): GET リクエスト時の user agent。Defaults to DS.USER_AGENT.
+            same_origin (bool, optional): 同一オリジンのみ対象とするか。Defaults to True.
         """
         Loader.__init__(self, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
         self._file_loader = file_loader
+        self._store = store
         self._load_asset = load_asset
         self._req_per_sec = req_per_sec
-        self._store = store
         self._timeout = timeout
         self._user_agent = user_agent
         self._same_origin = same_origin
@@ -415,20 +416,18 @@ class HTMLLoader(Loader):
 
         return nodes
 
-    async def aload_from_url_list(
+    async def aload_from_urls(
         self,
-        list_path: str,
+        urls: list[str],
     ) -> list[BaseNode]:
-        """URL リストに記載の複数サイトからコンテンツを取得し、ノードを生成する。
+        """URL リスト内の複数サイトからコンテンツを取得し、ノードを生成する。
 
         Args:
-            list_path (str): URL リストのパス（テキストファイル。# で始まるコメント行・空行はスキップ）
+            urls (list[str]): URL リスト
 
         Returns:
             list[BaseNode]: 生成したノード
         """
-        urls = self._read_sources_from_file(list_path)
-
         # 最上位ループの一つ。キャッシュを空にしてから使う。
         self._source_cache.clear()
         nodes = []

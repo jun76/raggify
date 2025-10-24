@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Sequence
+
 
 class Loader:
     def __init__(self, chunk_size: int, chunk_overlap: int) -> None:
@@ -16,25 +18,3 @@ class Loader:
         # 同一ソースに対して何度もフェッチがかかる場合がある。それを避けるため、
         # Loader クラス内にも独自のキャッシュを持つ。
         self._source_cache: set[str] = set()
-
-    def _read_sources_from_file(self, path: str) -> list[str]:
-        """空行・コメントを除外して source リストを読み込む。
-
-        Args:
-            path: source 列挙ファイルのパス
-
-        Returns:
-            list[str]: source のリスト
-
-        Raises:
-            RuntimeError: ソースリストの読み込みに失敗した場合
-        """
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return [
-                    stripped
-                    for ln in f
-                    if (stripped := ln.strip()) and not stripped.startswith("#")
-                ]
-        except OSError as e:
-            raise RuntimeError(f"failed to read source list from {path}") from e

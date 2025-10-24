@@ -4,6 +4,7 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from ...config.default_settings import DefaultSettings as DS
 from ...core.exts import Exts
 from ...logger import logger
 from .loader import Loader
@@ -22,16 +23,16 @@ if TYPE_CHECKING:
 class FileLoader(Loader):
     def __init__(
         self,
-        chunk_size: int,
-        chunk_overlap: int,
         store: VectorStoreManager,
+        chunk_size: int = DS.CHUNK_SIZE,
+        chunk_overlap: int = DS.CHUNK_OVERLAP,
     ) -> None:
         """ローカルファイルを読み込み、ノードを生成するためのクラス。
 
         Args:
-            chunk_size (int): チャンクサイズ
-            chunk_overlap (int): チャンク重複語数
             store (VectorStoreManager): 登録済みソースの判定に使用
+            chunk_size (int, optional): チャンクサイズ。Defaults to DS.CHUNK_SIZE.
+            chunk_overlap (int, optional): チャンク重複語数。Defaults to DS.CHUNK_OVERLAP.
         """
         Loader.__init__(self, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
         self._store = store
@@ -155,20 +156,18 @@ class FileLoader(Loader):
 
         return nodes
 
-    async def aload_from_path_list(
+    async def aload_from_paths(
         self,
-        list_path: str,
+        paths: list[str],
     ) -> list[BaseNode]:
-        """path リストに記載の複数パスからコンテンツを取得し、ノードを生成する。
+        """パスリスト内の複数パスからコンテンツを取得し、ノードを生成する。
 
         Args:
-            list_path (str): path リストのパス（テキストファイル。# で始まるコメント行・空行はスキップ）
+            paths (list[str]): パスリスト
 
         Returns:
             list[BaseNode]: 生成したノード
         """
-        paths = self._read_sources_from_file(list_path)
-
         # 最上位ループ。キャッシュを空にしてから使う。
         self._source_cache.clear()
         nodes = []
