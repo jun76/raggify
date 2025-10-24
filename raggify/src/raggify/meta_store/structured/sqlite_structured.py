@@ -86,15 +86,18 @@ UNION_ALL = " UNION ALL "
 class SQLiteStructured(Structured):
     """SQLite3 管理クラス"""
 
-    def __init__(self) -> None:
+    def __init__(self, path: str) -> None:
         """コンストラクタ
+
+        Args:
+            path (str): データベースファイルのパス
 
         Raises:
             RuntimeError: 初期化失敗
         """
         import sqlite3
 
-        self._db_path = f"{cfg.project_name}_metas.db"
+        self._db_path = path
 
         try:
             self._sync_db = sqlite3.connect(self._db_path)

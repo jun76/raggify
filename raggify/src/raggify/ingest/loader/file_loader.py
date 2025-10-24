@@ -98,6 +98,9 @@ class FileLoader(Loader):
         Args:
             root (str): 対象パス
 
+        Raises:
+            ValueError: パスの指定誤り等
+
         Returns:
             list[BaseNode]: 生成したノード
         """
@@ -105,7 +108,7 @@ class FileLoader(Loader):
         from llama_index.core.readers.file.base import SimpleDirectoryReader
 
         try:
-            path = Path(root)
+            path = Path(root).absolute()
             reader = SimpleDirectoryReader(
                 input_dir=root if path.is_dir() else None,
                 input_files=[root] if path.is_file() else None,
@@ -122,7 +125,7 @@ class FileLoader(Loader):
             paths = reader.list_resources()
         except Exception as e:
             logger.exception(e)
-            return []
+            raise ValueError("failed to load from path") from e
 
         # 最上位ループ内で複数ソースをまたいで _source_cache を共有したいため
         # ここでは _source_cache.clear() しないこと。

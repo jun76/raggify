@@ -412,7 +412,7 @@ def _render_query_results_image(title: str, result: dict[str, Any]) -> None:
         try:
             st.image(source, width="content")
         except Exception as e:
-            logger.exception(e)
+            logger.warning(f"failed to render result image: {e}")
             st.warning("ファイル埋め込み画像等のため、表示できません。")
 
         st.markdown("##### ソース")
@@ -445,7 +445,7 @@ def _render_query_results_audio(title: str, result: dict[str, Any]) -> None:
             ext = Exts.get_ext(uri=source, dot=False)
             st.audio(data=source, format=f"audio/{ext}")
         except Exception as e:
-            logger.exception(e)
+            logger.warning(f"failed to render result audio: {e}")
             st.warning("ファイル埋め込み音声等のため、表示できません。")
 
         st.markdown("##### ソース")

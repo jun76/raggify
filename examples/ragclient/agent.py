@@ -15,6 +15,9 @@ from .logger import logger
 
 __all__ = ["AgentExecutionError", "RagAgentManager"]
 
+# 決め打ち
+_TOPK = 10
+
 
 class AgentExecutionError(RuntimeError):
     """openai-agents 実行時の例外ラッパー"""
@@ -22,11 +25,6 @@ class AgentExecutionError(RuntimeError):
 
 class _TextSearchArgs(TypedDict, total=False):
     query: str
-    topk: int
-
-
-class _MultiModalSearchArgs(TypedDict, total=False):
-    topk: int
 
 
 class _RagAgentContext(BaseModel):
@@ -35,36 +33,40 @@ class _RagAgentContext(BaseModel):
     file_path: Optional[str] = None
 
 
-def _format_documents(payload: dict[str, Any]) -> str:
-    """検索結果ドキュメントを短い文字列へ整形する。
+def _format_documents(payload: dict[str, Any]) -> dict[str, Any]:
+    """検索結果ドキュメントを辞書形式へ整形する。
 
     Args:
         payload (dict[str, Any]): 検索 API の応答ペイロード
 
     Returns:
-        str: 各ドキュメントの概要をまとめた文字列
+        dict[str, Any]: 各ドキュメントの概要をまとめた辞書
     """
     docs = payload.get("documents") or []
     if not docs:
-        return "No documents were retrieved."
+        return {"1": "No documents were retrieved."}
 
-    lines: list[str] = []
-    for idx, doc in enumerate(docs[:5], start=1):
-        metadata = doc.get("metadata") or {}
-        source = metadata.get("file_path") or metadata.get("url") or "unknown source"
-        text = (doc.get("text") or "").strip().replace("\n", " ")
-        score = doc.get("score")
-        score_text = f"{score:.3f}" if isinstance(score, (int, float)) else "N/A"
-        lines.append(f"{idx}. score={score_text} source={source}\n{text[:200]}")
+    summary_dict = {}
+    for idx, doc in enumerate(docs):
+        sub_dict = {}
+        meta = doc.get("metadata") or {}
+        sub_dict["source"] = (
+            meta.get("url") or meta.get("file_path") or meta.get("url") or "unknown"
+        )
+        sub_dict["text"] = doc.get("text", "").strip().replace("\n", " ")
+        sub_dict["score"] = doc.get("score", "")
+        summary_dict[idx] = sub_dict
 
-    return "\n".join(lines)
+    return summary_dict
 
 
-def _format_response(title: str, payload: dict[str, Any]) -> str:
+def _format_response(type: str, query: str, topk: int, payload: dict[str, Any]) -> str:
     """検索結果を JSON 文字列としてまとめる。
 
     Args:
-        title (str): 結果種別を示すタイトル
+        type (str): 結果種別を示すタイトル
+        query (str): クエリ文字列またはファイルパス
+        topk (int): 取得件数
         payload (dict[str, Any]): 検索 API の応答ペイロード
 
     Returns:
@@ -72,7 +74,7 @@ def _format_response(title: str, payload: dict[str, Any]) -> str:
     """
     summary = _format_documents(payload)
     result = json.dumps(
-        {"title": title, "summary": summary, "raw": payload},
+        {"type": type, "query": query, "topk": topk, "summary": summary},
         ensure_ascii=False,
         indent=2,
     )
@@ -102,9 +104,8 @@ async def tool_search_text_text(
     if not query:
         raise ValueError("query is required")
 
-    topk = args.get("topk")
-    response = ctx.context.client.query_text_text(query, topk)
-    return _format_response("text_text", response)
+    response = ctx.context.client.query_text_text(query, _TOPK)
+    return _format_response("text_text", query, _TOPK, response)
 
 
 @function_tool
@@ -128,21 +129,16 @@ async def tool_search_text_image(
     if not query:
         raise ValueError("query is required")
 
-    topk = args.get("topk")
-    response = ctx.context.client.query_text_image(query, topk)
-    return _format_response("text_image", response)
+    response = ctx.context.client.query_text_image(query, _TOPK)
+    return _format_response("text_image", query, _TOPK, response)
 
 
 @function_tool
-async def tool_search_image_image(
-    ctx: RunContextWrapper[_RagAgentContext],
-    args: _MultiModalSearchArgs,
-) -> str:
+async def tool_search_image_image(ctx: RunContextWrapper[_RagAgentContext]) -> str:
     """アップロード済み画像を基に画像ドキュメントを検索する。
 
     Args:
         ctx (RunContextWrapper[_RagAgentContext]): 実行時コンテキスト
-        args (_MultiModalSearchArgs): 検索パラメータ
 
     Raises:
         ValueError: 参照画像が未登録の場合
@@ -150,12 +146,12 @@ async def tool_search_image_image(
     Returns:
         str: 検索結果要約を含む JSON 文字列
     """
-    if not ctx.context.file_path:
+    query = ctx.context.file_path
+    if not query:
         raise ValueError("file_path is not provided in context")
 
-    topk = args.get("topk")
-    response = ctx.context.client.query_image_image(ctx.context.file_path, topk)
-    return _format_response("image_image", response)
+    response = ctx.context.client.query_image_image(query, _TOPK)
+    return _format_response("image_image", query, _TOPK, response)
 
 
 @function_tool
@@ -179,21 +175,16 @@ async def tool_search_text_audio(
     if not query:
         raise ValueError("query is required")
 
-    topk = args.get("topk")
-    response = ctx.context.client.query_text_audio(query, topk)
-    return _format_response("text_audio", response)
+    response = ctx.context.client.query_text_audio(query, _TOPK)
+    return _format_response("text_audio", query, _TOPK, response)
 
 
 @function_tool
-async def tool_search_audio_audio(
-    ctx: RunContextWrapper[_RagAgentContext],
-    args: _MultiModalSearchArgs,
-) -> str:
+async def tool_search_audio_audio(ctx: RunContextWrapper[_RagAgentContext]) -> str:
     """アップロード済み音声を基に音声ドキュメントを検索する。
 
     Args:
         ctx (RunContextWrapper[_RagAgentContext]): 実行時コンテキスト
-        args (_MultiModalSearchArgs): 検索パラメータ
 
     Raises:
         ValueError: 参照音声が未登録の場合
@@ -201,12 +192,12 @@ async def tool_search_audio_audio(
     Returns:
         str: 検索結果要約を含む JSON 文字列
     """
-    if not ctx.context.file_path:
+    query = ctx.context.file_path
+    if not query:
         raise ValueError("file_path is not provided in context")
 
-    topk = args.get("topk")
-    response = ctx.context.client.query_audio_audio(ctx.context.file_path, topk)
-    return _format_response("audio_audio", response)
+    response = ctx.context.client.query_audio_audio(query, _TOPK)
+    return _format_response("audio_audio", query, _TOPK, response)
 
 
 _TOOLSET = [

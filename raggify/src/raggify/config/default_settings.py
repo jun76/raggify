@@ -71,6 +71,9 @@ class DefaultSettings:
     PGVECTOR_USER: str = PROJECT_NAME
     PGVECTOR_PASSWORD: Optional[str] = None
 
+    ##### Meta Store
+    META_STORE_PATH: str = f"{PROJECT_NAME}_metas.db"
+
     ##### Embedding
     # Text
     OPENAI_EMBED_MODEL_TEXT: str = "text-embedding-3-small"

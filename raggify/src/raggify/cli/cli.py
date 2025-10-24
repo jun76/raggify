@@ -61,9 +61,9 @@ def version() -> None:
 
 @app.command(help="Start as a local server.")
 def server(
-    host: str = typer.Option(cfg.general.host),
-    port: int = typer.Option(cfg.general.port),
-    mcp: bool = typer.Option(cfg.general.mcp),
+    host: str = typer.Option(default=cfg.general.host, help="Server hostname."),
+    port: int = typer.Option(default=cfg.general.port, help="Server port number."),
+    mcp: bool = typer.Option(default=cfg.general.mcp, help="Up server also as MCP."),
 ) -> None:
     """ローカルサーバとして起動する。
 
@@ -86,6 +86,11 @@ def server(
         port=port,
         log_level=cfg.general.log_level.lower(),
     )
+
+
+@app.command(help=f"Show current config file.")
+def config() -> None:
+    _echo_json(cfg.get_dict())
 
 
 # 以下、REST API Client のラッパーコマンドを定義
@@ -119,77 +124,100 @@ def health():
     _execute_client_command(lambda client: client.health())
 
 
-@app.command(name="reload", help="Reload server config file.")
+@app.command(name="reload", help="Reload config file.")
 def reload():
     logger.debug("")
     _execute_client_command(lambda client: client.reload())
 
 
 @app.command(name="ip", help=f"Ingest from local Path.")
-def ingest_path(path: str):
+def ingest_path(path: str = typer.Argument(help="Target path.")):
     logger.debug(f"path = {path}")
     _execute_client_command(lambda client: client.ingest_path(path))
 
 
 @app.command(name="ipl", help="Ingest from local Path List.")
-def ingest_path_list(list_path: str):
+def ingest_path_list(
+    list_path: str = typer.Argument(
+        help="Target path-list path. The list can include comment(#) or blank line."
+    ),
+):
     logger.debug(f"list_path = {list_path}")
     _execute_client_command(lambda client: client.ingest_path_list(list_path))
 
 
 @app.command(name="iu", help="Ingest from Url.")
-def ingest_url(url: str):
+def ingest_url(url: str = typer.Argument(help="Target url.")):
     logger.debug(f"url = {url}")
     _execute_client_command(lambda client: client.ingest_url(url))
 
 
 @app.command(name="iul", help="Ingest from Url List.")
-def ingest_url_list(list_path: str):
+def ingest_url_list(
+    list_path: str = typer.Argument(
+        help="Target url-list path. The list can include comment(#) or blank line."
+    ),
+):
     logger.debug(f"list_path = {list_path}")
     _execute_client_command(lambda client: client.ingest_url_list(list_path))
 
 
 @app.command(
     name="qtt",
-    help="Query by Text to search Text documents.",
+    help="Query Text -> Text documents.",
 )
-def query_text_text(query: str, topk: int):
+def query_text_text(
+    query: str = typer.Argument(help="Query string."),
+    topk: int = typer.Option(default=cfg.rerank.topk, help="Show top-k results."),
+):
     logger.debug(f"query = {query}, topk = {topk}")
     _execute_client_command(lambda client: client.query_text_text(query, topk))
 
 
 @app.command(
     name="qti",
-    help="Query by Text to search Image documents.",
+    help="Query Text -> Image documents.",
 )
-def query_text_image(query: str, topk: int):
+def query_text_image(
+    query: str = typer.Argument(help="Query string."),
+    topk: int = typer.Option(default=cfg.rerank.topk, help="Show top-k results."),
+):
     logger.debug(f"query = {query}, topk = {topk}")
     _execute_client_command(lambda client: client.query_text_image(query, topk))
 
 
 @app.command(
     name="qii",
-    help="Query by Image to search Image documents.",
+    help="Query Image -> Image documents.",
 )
-def query_image_image(path: str, topk: int):
+def query_image_image(
+    path: str = typer.Argument(help="Query image path."),
+    topk: int = typer.Option(default=cfg.rerank.topk, help="Show top-k results."),
+):
     logger.debug(f"path = {path}, topk = {topk}")
     _execute_client_command(lambda client: client.query_image_image(path, topk))
 
 
 @app.command(
     name="qta",
-    help="Query by Text to search Audio documents.",
+    help="Query Text -> Audio documents.",
 )
-def query_text_audio(query: str, topk: int):
+def query_text_audio(
+    query: str = typer.Argument(help="Query string."),
+    topk: int = typer.Option(default=cfg.rerank.topk, help="Show top-k results."),
+):
     logger.debug(f"query = {query}, topk = {topk}")
     _execute_client_command(lambda client: client.query_text_audio(query, topk))
 
 
 @app.command(
     name="qaa",
-    help="Query by Audio to search Audio documents.",
+    help="Query Audio -> Audio documents.",
 )
-def query_audio_audio(path: str, topk: int):
+def query_audio_audio(
+    path: str = typer.Argument(help="Query audio path."),
+    topk: int = typer.Option(default=cfg.rerank.topk, help="Show top-k results."),
+):
     logger.debug(f"path = {path}, topk = {topk}")
     _execute_client_command(lambda client: client.query_audio_audio(path, topk))
 

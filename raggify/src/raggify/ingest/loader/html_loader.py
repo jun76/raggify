@@ -294,16 +294,20 @@ class HTMLLoader(Loader):
     async def _aload_html_asset_files(
         self,
         base_url: str,
+        html: Optional[str] = None,
     ) -> list[BaseNode]:
         """HTML を読み込み、アセットファイルからノードを生成する。
 
         Args:
             base_url (str): 対象 URL
+            html (str): プリフェッチした html
 
         Returns:
             list[BaseNode]: 生成したノード
         """
-        html = await self._afetch_text(base_url)
+        if html is None:
+            html = await self._afetch_text(base_url)
+
         urls = self._gather_asset_links(
             html=html, base_url=base_url, allowed_exts=Exts.FETCH_TARGET
         )
@@ -356,12 +360,20 @@ class HTMLLoader(Loader):
             else:
                 nodes.append(node)
         else:
+            # Not Found ページを ingest しないように下見
+            html = await self._afetch_text(url)
+            if not html:
+                logger.warning(f"failed to fetch html from {url}, skipped")
+                return []
+
             # 本文テキスト
             nodes.extend(await self._aload_html_text(url))
 
             if self._load_asset:
                 # アセットファイル
-                nodes.extend(await self._aload_html_asset_files(base_url=url))
+                nodes.extend(
+                    await self._aload_html_asset_files(base_url=url, html=html)
+                )
 
         logger.debug(f"loaded {len(nodes)} nodes from {url}")
 

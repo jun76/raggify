@@ -67,10 +67,9 @@ async def lifespan(app: FastAPI):
         app (FastAPI): サーバインスタンス
     """
     logger.setLevel(cfg.general.log_level)
-    console.print(f"⏳ {cfg.project_name} server is starting up.")
 
+    # 初期化処理
     _setup()
-    console.print(f"✅ now {cfg.project_name} server is online.")
 
     # リクエストの受付開始
     yield
@@ -97,12 +96,16 @@ def _setup(reload: bool = False) -> None:
     Args:
         reload (bool, optional): 再生成するか。Defaults to False.
     """
+    console.print(f"⏳ {cfg.project_name} server is starting up.")
+
     _get_embed_manager(reload)
     _get_meta_store(reload)
     _get_vector_store(reload)
     _get_rerank_manager(reload)
     _get_file_loader(reload)
     _get_html_loader(reload)
+
+    console.print(f"✅ now {cfg.project_name} server is online.")
 
 
 def _get_embed_manager(reload: bool = False) -> EmbedManager:

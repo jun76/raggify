@@ -10,6 +10,7 @@ from raggify.config.default_settings import DefaultSettings
 from raggify.config.embed_config import EmbedConfig
 from raggify.config.general_config import GeneralConfig
 from raggify.config.ingest_config import IngestConfig
+from raggify.config.meta_store_config import MetaStoreConfig
 from raggify.config.rerank_config import RerankConfig
 from raggify.config.vector_store_config import VectorStoreConfig
 
@@ -28,6 +29,7 @@ class ConfigManager:
         """コンストラクタ"""
         self._general: GeneralConfig
         self._vector_store: VectorStoreConfig
+        self._meta_store: MetaStoreConfig
         self._embed: EmbedConfig
         self._ingest: IngestConfig
         self._rerank: RerankConfig
@@ -44,6 +46,7 @@ class ConfigManager:
         """デフォルトの設定値を読み込む。"""
         self._general = GeneralConfig()
         self._vector_store = VectorStoreConfig()
+        self._meta_store = MetaStoreConfig()
         self._embed = EmbedConfig()
         self._ingest = IngestConfig()
         self._rerank = RerankConfig()
@@ -64,6 +67,9 @@ class ConfigManager:
         self._vector_store = self._apply_section(
             data.get("vector_store"), VectorStoreConfig, self._vector_store
         )
+        self._meta_store = self._apply_section(
+            data.get("meta_store"), MetaStoreConfig, self._meta_store
+        )
         self._embed = self._apply_section(data.get("embed"), EmbedConfig, self._embed)
         self._ingest = self._apply_section(
             data.get("ingest"), IngestConfig, self._ingest
@@ -73,7 +79,7 @@ class ConfigManager:
         )
 
     def _write_user_config(self) -> None:
-        """デフォルトの設定値を設定ファイルに書き出す。"""
+        """現状の設定値を設定ファイルに書き出す。"""
         config_dir = os.path.dirname(self._user_config_path)
         try:
             os.makedirs(config_dir, exist_ok=True)
@@ -81,14 +87,7 @@ class ConfigManager:
             logger.warning(f"failed to prepare config directory: {e}")
             return
 
-        data = {
-            "general": self._serialize_dataclass(self._general),
-            "vector_store": self._serialize_dataclass(self._vector_store),
-            "embed": self._serialize_dataclass(self._embed),
-            "ingest": self._serialize_dataclass(self._ingest),
-            "rerank": self._serialize_dataclass(self._rerank),
-        }
-
+        data = self.get_dict()
         try:
             with open(self._user_config_path, "w", encoding="utf-8") as fp:
                 yaml.safe_dump(data, fp, sort_keys=False, allow_unicode=True)
@@ -102,6 +101,10 @@ class ConfigManager:
     @property
     def vector_store(self) -> VectorStoreConfig:
         return self._vector_store
+
+    @property
+    def meta_store(self) -> MetaStoreConfig:
+        return self._meta_store
 
     @property
     def embed(self) -> EmbedConfig:
@@ -133,6 +136,25 @@ class ConfigManager:
             self._read_user_config()
         else:
             logger.warning(f"{self._user_config_path} is not found.")
+
+    def save(self) -> None:
+        """現状の設定をファイルに保存する。"""
+        self._write_user_config()
+
+    def get_dict(self) -> dict[str, Any]:
+        """現状の設定を辞書形式で返す。
+
+        Returns:
+            dict[str, Any]: 設定の辞書
+        """
+        return {
+            "general": self._serialize_dataclass(self._general),
+            "vector_store": self._serialize_dataclass(self._vector_store),
+            "meta_store": self._serialize_dataclass(self._meta_store),
+            "embed": self._serialize_dataclass(self._embed),
+            "ingest": self._serialize_dataclass(self._ingest),
+            "rerank": self._serialize_dataclass(self._rerank),
+        }
 
     def _apply_section(
         self,
