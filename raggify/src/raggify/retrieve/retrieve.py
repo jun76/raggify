@@ -3,11 +3,11 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING, Optional
 
-from .. import runtime
 from ..config.default_settings import DefaultSettings as DS
 from ..llama.core.indices.multi_modal.retriever import AudioRetriever
 from ..llama.core.schema import Modality
 from ..logger import logger
+from ..runtime import get_runtime as rt
 
 if TYPE_CHECKING:
     from llama_index.core.schema import NodeWithScore
@@ -61,14 +61,14 @@ async def aquery_text_text(
 
     Args:
         query (str): クエリ文字列
-        store (VectorStoreManager): ベクトルストア
+        store (Optional[VectorStoreManager]): ベクトルストア。Defaults to None.
         topk (int, optional): 取得件数。Defaults to DS.TOPK.
         rerank (Optional[RerankManager], optional): リランカー管理。Defaults to None.
 
     Returns:
         list[NodeWithScore]: 検索結果のリスト
     """
-    store = store or runtime.get_vector_store()
+    store = store or rt().vector_store
 
     index = store.get_index(Modality.TEXT)
     if index is None:
@@ -82,7 +82,7 @@ async def aquery_text_text(
         logger.warning("empty nodes")
         return []
 
-    rerank = rerank or runtime.get_rerank_manager()
+    rerank = rerank or rt().rerank_manager
     if rerank is None:
         return nwss
 
@@ -127,7 +127,7 @@ async def aquery_text_image(
 
     Args:
         query (str): クエリ文字列
-        store (VectorStoreManager): ベクトルストア
+        store (Optional[VectorStoreManager]): ベクトルストア。Defaults to None.
         topk (int, optional): 取得件数。Defaults to DS.TOPK.
         rerank (Optional[RerankManager], optional): リランカー管理。Defaults to None.
 
@@ -139,7 +139,7 @@ async def aquery_text_image(
     """
     from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
 
-    store = store or runtime.get_vector_store()
+    store = store or rt().vector_store
 
     index = store.get_index(Modality.IMAGE)
     if index is None:
@@ -165,7 +165,7 @@ async def aquery_text_image(
         logger.warning("empty nodes")
         return []
 
-    rerank = rerank or runtime.get_rerank_manager()
+    rerank = rerank or rt().rerank_manager
     if rerank is None:
         return nwss
 
@@ -202,7 +202,7 @@ async def aquery_image_image(
 
     Args:
         path (str): クエリ画像の ローカルパス
-        store (VectorStoreManager): ベクトルストア
+        store (Optional[VectorStoreManager]): ベクトルストア。Defaults to None.
         topk (int, optional): 取得件数。Defaults to DS.TOPK.
 
     Returns:
@@ -210,7 +210,7 @@ async def aquery_image_image(
     """
     from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
 
-    store = store or runtime.get_vector_store()
+    store = store or rt().vector_store
 
     index = store.get_index(Modality.IMAGE)
     if index is None:
@@ -270,7 +270,7 @@ async def aquery_text_audio(
 
     Args:
         query (str): クエリ文字列
-        store (VectorStoreManager): ベクトルストア
+        store (Optional[VectorStoreManager]): ベクトルストア。Defaults to None.
         topk (int, optional): 取得件数。Defaults to DS.TOPK.
         rerank (Optional[RerankManager], optional): リランカー管理。Defaults to None.
 
@@ -280,7 +280,7 @@ async def aquery_text_audio(
     Returns:
         list[NodeWithScore]: 検索結果のリスト
     """
-    store = store or runtime.get_vector_store()
+    store = store or rt().vector_store
 
     index = store.get_index(Modality.AUDIO)
     if index is None:
@@ -299,7 +299,7 @@ async def aquery_text_audio(
         logger.warning("empty nodes")
         return []
 
-    rerank = rerank or runtime.get_rerank_manager()
+    rerank = rerank or rt().rerank_manager
     if rerank is None:
         return nwss
 
@@ -336,13 +336,13 @@ async def aquery_audio_audio(
 
     Args:
         path (str): クエリ音声の ローカルパス
-        store (VectorStoreManager): ベクトルストア
+        store (Optional[VectorStoreManager]): ベクトルストア。Defaults to None.
         topk (int, optional): 取得件数。Defaults to DS.TOPK.
 
     Returns:
         list[NodeWithScore]: 検索結果のリスト
     """
-    store = store or runtime.get_vector_store()
+    store = store or rt().vector_store
 
     index = store.get_index(Modality.AUDIO)
     if index is None:

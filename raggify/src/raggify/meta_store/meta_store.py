@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..config import cfg
+from ..config.config_manager import ConfigManager
 
 if TYPE_CHECKING:
     from .structured.structured import Structured
@@ -10,8 +10,11 @@ if TYPE_CHECKING:
 __all__ = ["create_meta_store"]
 
 
-def create_meta_store() -> Structured:
+def create_meta_store(cfg: ConfigManager) -> Structured:
     """メタデータ用ストアのインスタンスを生成する。
+
+    Args:
+        cfg (ConfigManager): 設定管理
 
     Raises:
         RuntimeError: インスタンス生成に失敗

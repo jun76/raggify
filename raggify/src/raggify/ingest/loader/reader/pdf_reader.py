@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, Iterable
 from llama_index.core.readers.base import BaseReader
 from llama_index.core.schema import Document
 
-from ....config import cfg
 from ....core.exts import Exts
 from ....logger import logger
 
@@ -138,7 +137,7 @@ class MultiPDFReader(BaseReader):
 
                     with tempfile.NamedTemporaryFile(
                         delete=False,
-                        prefix=f"{cfg.project_name}_",
+                        prefix="__TEMP_",
                         suffix=Exts.PNG,
                     ) as f:
                         pix.save(f.name)

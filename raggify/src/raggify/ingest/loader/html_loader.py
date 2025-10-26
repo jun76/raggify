@@ -8,7 +8,6 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 
-from ...config import cfg
 from ...config.default_settings import DefaultSettings as DS
 from ...core.exts import Exts
 from ...logger import logger
@@ -209,7 +208,7 @@ class HTMLLoader(Loader):
         ext = Exts.get_ext(url)
         try:
             with tempfile.NamedTemporaryFile(
-                delete=False, prefix=f"{cfg.project_name}_", suffix=ext
+                delete=False, prefix="__TEMP_", suffix=ext
             ) as f:
                 f.write(body)
                 path = f.name

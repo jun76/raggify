@@ -3,7 +3,6 @@ from typing import Any
 
 from llama_index.core.schema import NodeWithScore
 
-from raggify import runtime
 from raggify.ingest import ingest_url_list
 from raggify.retrieve import query_text_text
 
@@ -21,9 +20,7 @@ lst = [
     "https://developers.llamaindex.ai/python/examples/embeddings/voyageai/",
 ]
 
-runtime.reload()
-
-ingest_url_list(lst=lst)
+ingest_url_list(lst)
 
 nodes = query_text_text(query="voyage")
 

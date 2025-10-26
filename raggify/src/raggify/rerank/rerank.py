@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..config import cfg
+from ..config.config_manager import ConfigManager
 from ..config.default_settings import RerankProvider
 
 if TYPE_CHECKING:
@@ -12,8 +12,11 @@ if TYPE_CHECKING:
 __all__ = ["create_rerank_manager"]
 
 
-def create_rerank_manager() -> RerankManager:
+def create_rerank_manager(cfg: ConfigManager) -> RerankManager:
     """リランク管理のインスタンスを生成する。
+
+    Args:
+        cfg (ConfigManager): 設定管理
 
     Raises:
         RuntimeError: インスタンス生成に失敗
@@ -26,9 +29,9 @@ def create_rerank_manager() -> RerankManager:
     try:
         match cfg.general.rerank_provider:
             case RerankProvider.COHERE:
-                rerank = _cohere()
+                rerank = _cohere(cfg)
             case RerankProvider.FLAGEMBEDDING:
-                rerank = _flagembedding()
+                rerank = _flagembedding(cfg)
             case _:
                 rerank = None
 
@@ -37,12 +40,8 @@ def create_rerank_manager() -> RerankManager:
         raise RuntimeError(f"failed to create rerank: {e}") from e
 
 
-def _cohere() -> RerankContainer:
-    """リランク管理生成ヘルパー
-
-    Returns:
-        RerankContainer: コンテナ
-    """
+# 以下、プロバイダ毎のコンテナ生成ヘルパー
+def _cohere(cfg: ConfigManager) -> RerankContainer:
     from llama_index.postprocessor.cohere_rerank import CohereRerank
 
     from .rerank_manager import RerankContainer
@@ -55,12 +54,7 @@ def _cohere() -> RerankContainer:
     )
 
 
-def _flagembedding() -> RerankContainer:
-    """リランク管理生成ヘルパー
-
-    Returns:
-        RerankContainer: コンテナ
-    """
+def _flagembedding(cfg: ConfigManager) -> RerankContainer:
     from llama_index.postprocessor.flag_embedding_reranker import FlagEmbeddingReranker
 
     from .rerank_manager import RerankContainer

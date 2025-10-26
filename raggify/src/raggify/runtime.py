@@ -3,7 +3,7 @@ from __future__ import annotations
 import threading
 from typing import Optional
 
-from .config import cfg
+from .config.config_manager import ConfigManager
 from .embed.embed import create_embed_manager
 from .embed.embed_manager import EmbedManager
 from .ingest.loader.file_loader import FileLoader
@@ -15,145 +15,147 @@ from .rerank.rerank_manager import RerankManager
 from .vector_store.vector_store import create_vector_store_manager
 from .vector_store.vector_store_manager import VectorStoreManager
 
-__all__ = [
-    "reload",
-    "get_embed_manager",
-    "get_meta_store",
-    "get_vector_store",
-    "get_rerank_manager",
-    "get_file_loader",
-    "get_html_loader",
-]
-
-_init_lock = threading.RLock()
-
-_embed_manager: Optional[EmbedManager] = None
-_meta_store: Optional[Structured] = None
-_vector_store: Optional[VectorStoreManager] = None
-_rerank_manager: Optional[RerankManager] = None
-_file_loader: Optional[FileLoader] = None
-_html_loader: Optional[HTMLLoader] = None
+__all__ = ["get_runtime"]
 
 
-def reload(reload_config: bool = True) -> None:
-    """既存のリソースを破棄し、必要に応じて設定を再読み込みする。
+_runtime: Runtime | None = None
+_lock = threading.Lock()
 
-    Args:
-        reload_config (bool, optional): True の場合、ConfigManager もリロードする。Defaults to True.
-    """
-    global _embed_manager, _meta_store, _vector_store, _rerank_manager
-    global _file_loader, _html_loader
 
-    with _init_lock:
+class Runtime:
+    """実行時プロセスのコンテキストで各種インスタンスを維持管理するためのクラス。"""
+
+    def __init__(self) -> None:
+        """コンストラクタ"""
+        self._cfg: Optional[ConfigManager] = None
+        self._embed_manager: Optional[EmbedManager] = None
+        self._meta_store: Optional[Structured] = None
+        self._vector_store: Optional[VectorStoreManager] = None
+        self._rerank_manager: Optional[RerankManager] = None
+        self._file_loader: Optional[FileLoader] = None
+        self._html_loader: Optional[HTMLLoader] = None
+
+    def reload(self, reload_config: bool = True) -> None:
+        """既存のリソースを破棄し、必要に応じて設定を再読み込みする。
+
+        Args:
+            reload_config (bool, optional): ConfigManager もリロードするか。Defaults to True.
+        """
         if reload_config:
-            cfg.reload()
+            self.cfg.reload()
 
-        _embed_manager = None
-        _meta_store = None
-        _vector_store = None
-        _rerank_manager = None
-        _file_loader = None
-        _html_loader = None
+        self._embed_manager = None
+        self._meta_store = None
+        self._vector_store = None
+        self._rerank_manager = None
+        self._file_loader = None
+        self._html_loader = None
 
+    @property
+    def cfg(self) -> ConfigManager:
+        if self._cfg is None:
+            self._cfg = ConfigManager()
 
-def get_embed_manager() -> EmbedManager:
-    """EmbedManager を取得する。
+        return self._cfg
 
-    Returns:
-        EmbedManager: 初期化済みの EmbedManager
-    """
-    global _embed_manager
+    @property
+    def embed_manager(self) -> EmbedManager:
+        """EmbedManager を取得する。
 
-    with _init_lock:
-        if _embed_manager is None:
-            _embed_manager = create_embed_manager()
+        Returns:
+            EmbedManager: 初期化済みの EmbedManager
+        """
+        if self._embed_manager is None:
+            self._embed_manager = create_embed_manager(self.cfg)
 
-    return _embed_manager
+        return self._embed_manager
 
+    @property
+    def meta_store(self) -> Structured:
+        """Structured メタストアを取得する。
 
-def get_meta_store() -> Structured:
-    """Structured メタストアを取得する。
+        Returns:
+            Structured: 初期化済みメタストア
+        """
+        if self._meta_store is None:
+            self._meta_store = create_meta_store(self.cfg)
 
-    Returns:
-        Structured: 初期化済みメタストア
-    """
-    global _meta_store
+        return self._meta_store
 
-    with _init_lock:
-        if _meta_store is None:
-            _meta_store = create_meta_store()
+    @property
+    def vector_store(self) -> VectorStoreManager:
+        """VectorStoreManager を取得する。
 
-    return _meta_store
-
-
-def get_vector_store() -> VectorStoreManager:
-    """VectorStoreManager を取得する。
-
-    Returns:
-        VectorStoreManager: 初期化済みベクトルストアマネージャ
-    """
-    global _vector_store
-
-    with _init_lock:
-        if _vector_store is None:
-            _vector_store = create_vector_store_manager(
-                embed=get_embed_manager(),
-                meta_store=get_meta_store(),
+        Returns:
+            VectorStoreManager: 初期化済みベクトルストアマネージャ
+        """
+        if self._vector_store is None:
+            self._vector_store = create_vector_store_manager(
+                cfg=self.cfg,
+                embed=self.embed_manager,
+                meta_store=self.meta_store,
             )
 
-    return _vector_store
+        return self._vector_store
 
+    @property
+    def rerank_manager(self) -> RerankManager:
+        """RerankManager を取得する。
 
-def get_rerank_manager() -> RerankManager:
-    """RerankManager を取得する。
+        Returns:
+            RerankManager: 初期化済みリランクマネージャ
+        """
+        if self._rerank_manager is None:
+            self._rerank_manager = create_rerank_manager(self.cfg)
 
-    Returns:
-        RerankManager: 初期化済みリランクマネージャ
-    """
-    global _rerank_manager
+        return self._rerank_manager
 
-    with _init_lock:
-        if _rerank_manager is None:
-            _rerank_manager = create_rerank_manager()
+    @property
+    def file_loader(self) -> FileLoader:
+        """FileLoader を取得する。
 
-    return _rerank_manager
-
-
-def get_file_loader() -> FileLoader:
-    """FileLoader を取得する。
-
-    Returns:
-        FileLoader: 初期化済みファイルローダー
-    """
-    global _file_loader
-
-    with _init_lock:
-        if _file_loader is None:
-            _file_loader = FileLoader(
-                chunk_size=cfg.ingest.chunk_size,
-                chunk_overlap=cfg.ingest.chunk_overlap,
-                store=get_vector_store(),
+        Returns:
+            FileLoader: 初期化済みファイルローダー
+        """
+        if self._file_loader is None:
+            self._file_loader = FileLoader(
+                chunk_size=self.cfg.ingest.chunk_size,
+                chunk_overlap=self.cfg.ingest.chunk_overlap,
+                store=self.vector_store,
             )
 
-    return _file_loader
+        return self._file_loader
 
+    @property
+    def html_loader(self) -> HTMLLoader:
+        """HTMLLoader を取得する。
 
-def get_html_loader() -> HTMLLoader:
-    """HTMLLoader を取得する。
-
-    Returns:
-        HTMLLoader: 初期化済み HTML ローダー
-    """
-    global _html_loader
-
-    with _init_lock:
-        if _html_loader is None:
-            _html_loader = HTMLLoader(
-                chunk_size=cfg.ingest.chunk_size,
-                chunk_overlap=cfg.ingest.chunk_overlap,
-                file_loader=get_file_loader(),
-                store=get_vector_store(),
-                user_agent=cfg.ingest.user_agent,
+        Returns:
+            HTMLLoader: 初期化済み HTML ローダー
+        """
+        if self._html_loader is None:
+            self._html_loader = HTMLLoader(
+                chunk_size=self.cfg.ingest.chunk_size,
+                chunk_overlap=self.cfg.ingest.chunk_overlap,
+                file_loader=self.file_loader,
+                store=self.vector_store,
+                user_agent=self.cfg.ingest.user_agent,
             )
 
-    return _html_loader
+        return self._html_loader
+
+
+def get_runtime() -> Runtime:
+    """ランタイムシングルトンの getter。
+
+    Returns:
+        Runtime: ランタイム
+    """
+    global _runtime
+
+    if _runtime is None:
+        with _lock:
+            if _runtime is None:
+                _runtime = Runtime()
+
+    return _runtime

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..config import cfg
+from ..config.config_manager import ConfigManager
 from ..config.default_settings import VectorStoreProvider
 from ..llama.core.schema import Modality
 
@@ -15,12 +15,14 @@ __all__ = ["create_vector_store_manager"]
 
 
 def create_vector_store_manager(
+    cfg: ConfigManager,
     embed: EmbedManager,
     meta_store: Structured,
 ) -> VectorStoreManager:
     """ベクトルストア管理のインスタンスを生成する。
 
     Args:
+        cfg (ConfigManager): 設定管理
         embed (EmbedManager): 埋め込み管理
         meta_store (Structured): メタデータ管理
 
@@ -35,13 +37,13 @@ def create_vector_store_manager(
     try:
         conts: dict[Modality, VectorStoreContainer] = {}
         if cfg.general.text_embed_provider:
-            conts[Modality.TEXT] = _create_container(embed.space_key_text)
+            conts[Modality.TEXT] = _create_container(cfg, embed.space_key_text)
 
         if cfg.general.image_embed_provider:
-            conts[Modality.IMAGE] = _create_container(embed.space_key_image)
+            conts[Modality.IMAGE] = _create_container(cfg, embed.space_key_image)
 
         if cfg.general.audio_embed_provider:
-            conts[Modality.AUDIO] = _create_container(embed.space_key_audio)
+            conts[Modality.AUDIO] = _create_container(cfg, embed.space_key_audio)
     except Exception as e:
         raise RuntimeError(f"failed to create vector store: {e}") from e
 
@@ -57,7 +59,7 @@ def create_vector_store_manager(
     )
 
 
-def _create_container(space_key: str) -> VectorStoreContainer:
+def _create_container(cfg: ConfigManager, space_key: str) -> VectorStoreContainer:
     """空間キー毎のベクトルストアコンテナを生成する。
 
     Args:
@@ -69,12 +71,12 @@ def _create_container(space_key: str) -> VectorStoreContainer:
     Returns:
         VectorStoreContainer: コンテナ
     """
-    table_name = _generate_table_name(space_key)
+    table_name = _generate_table_name(cfg, space_key)
     match cfg.general.vector_store_provider:
         case VectorStoreProvider.PGVECTOR:
-            cont = _pgvector(table_name)
+            cont = _pgvector(cfg, table_name)
         case VectorStoreProvider.CHROMA:
-            cont = _chroma(table_name)
+            cont = _chroma(cfg, table_name)
         case _:
             raise RuntimeError(
                 f"unsupported vector store: {cfg.general.vector_store_provider}"
@@ -83,10 +85,11 @@ def _create_container(space_key: str) -> VectorStoreContainer:
     return cont
 
 
-def _generate_table_name(space_key: str) -> str:
+def _generate_table_name(cfg: ConfigManager, space_key: str) -> str:
     """テーブル名を生成する。
 
     Args:
+        cfg (ConfigManager): 設定管理
         space_key (str): 空間キー
 
     Returns:
@@ -96,18 +99,7 @@ def _generate_table_name(space_key: str) -> str:
 
 
 # 以下、プロバイダ毎のコンテナ生成ヘルパー
-def _pgvector(table_name: str) -> VectorStoreContainer:
-    """ベクトルストアコンテナ生成ヘルパー
-
-    Args:
-        table_name (str): テーブル名
-
-    Raise:
-        ValueError: パスワード未指定
-
-    Returns:
-        VectorStoreContainer: コンテナ
-    """
+def _pgvector(cfg: ConfigManager, table_name: str) -> VectorStoreContainer:
     from llama_index.vector_stores.postgres import PGVectorStore
 
     from .vector_store_manager import VectorStoreContainer
@@ -130,18 +122,7 @@ def _pgvector(table_name: str) -> VectorStoreContainer:
     )
 
 
-def _chroma(table_name: str) -> VectorStoreContainer:
-    """ベクトルストアコンテナ生成ヘルパー
-
-    Args:
-        table_name (str): テーブル名
-
-    Raises:
-        RuntimeError: パラメータ指定漏れ
-
-    Returns:
-        VectorStoreContainer: コンテナ
-    """
+def _chroma(cfg: ConfigManager, table_name: str) -> VectorStoreContainer:
     import chromadb
     from llama_index.vector_stores.chroma import ChromaVectorStore
 

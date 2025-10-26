@@ -3,8 +3,8 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING, Optional, Sequence
 
-from .. import runtime
 from ..logger import logger
+from ..runtime import get_runtime as rt
 
 if TYPE_CHECKING:
     from ..vector_store.vector_store_manager import VectorStoreManager
@@ -71,8 +71,8 @@ async def aingest_path(
         store (Optional[VectorStoreManager]): ベクトルストア。Defaults to None.
         file_loader (Optional[FileLoader]): ファイル読み込み用。Defaults to None.
     """
-    store = store or runtime.get_vector_store()
-    file_loader = file_loader or runtime.get_file_loader()
+    store = store or rt().vector_store
+    file_loader = file_loader or rt().file_loader
 
     nodes = await file_loader.aload_from_path(path)
     await store.aupsert_nodes(nodes)
@@ -114,8 +114,8 @@ async def aingest_path_list(
     if isinstance(lst, str):
         lst = _read_list(lst)
 
-    store = store or runtime.get_vector_store()
-    file_loader = file_loader or runtime.get_file_loader()
+    store = store or rt().vector_store
+    file_loader = file_loader or rt().file_loader
 
     nodes = await file_loader.aload_from_paths(list(lst))
     await store.aupsert_nodes(nodes)
@@ -150,8 +150,8 @@ async def aingest_url(
         store (Optional[VectorStoreManager]): ベクトルストア。Defaults to None.
         html_loader (Optional[HTMLLoader]): HTML 読み込み用。Defaults to None.
     """
-    store = store or runtime.get_vector_store()
-    html_loader = html_loader or runtime.get_html_loader()
+    store = store or rt().vector_store
+    html_loader = html_loader or rt().html_loader
 
     nodes = await html_loader.aload_from_url(url)
     await store.aupsert_nodes(nodes)
@@ -193,8 +193,8 @@ async def aingest_url_list(
     if isinstance(lst, str):
         lst = _read_list(lst)
 
-    store = store or runtime.get_vector_store()
-    html_loader = html_loader or runtime.get_html_loader()
+    store = store or rt().vector_store
+    html_loader = html_loader or rt().html_loader
 
     nodes = await html_loader.aload_from_urls(list(lst))
     await store.aupsert_nodes(nodes)

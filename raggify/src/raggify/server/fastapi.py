@@ -10,11 +10,10 @@ import aiofiles
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
-from .. import runtime
-from ..config import cfg
 from ..ingest import ingest
 from ..llama.core.schema import Modality
 from ..logger import console, logger
+from ..runtime import get_runtime as rt
 
 if TYPE_CHECKING:
     from llama_index.core.schema import NodeWithScore
@@ -58,18 +57,18 @@ async def lifespan(app: FastAPI):
     Args:
         app (FastAPI): サーバインスタンス
     """
-    logger.setLevel(cfg.general.log_level)
+    logger.setLevel(rt().cfg.general.log_level)
 
     # 初期化処理
     _setup()
 
     # リクエストの受付開始
     yield
-    console.print(f"🛑 now {cfg.project_name} server is stopped.")
+    console.print(f"🛑 now {rt().cfg.project_name} server is stopped.")
 
 
 # FastAPIインスタンスを作成し、lifespanを渡す
-app = FastAPI(title=cfg.project_name, version=cfg.version, lifespan=lifespan)
+app = FastAPI(title=rt().cfg.project_name, version=rt().cfg.version, lifespan=lifespan)
 
 _request_lock = asyncio.Lock()
 
@@ -80,19 +79,19 @@ def _setup(reload: bool = False) -> None:
     Args:
         reload (bool, optional): 再生成するか。Defaults to False.
     """
-    console.print(f"⏳ {cfg.project_name} server is starting up.")
+    console.print(f"⏳ {rt().cfg.project_name} server is starting up.")
 
     if reload:
-        runtime.reload()
+        rt().reload()
 
-    runtime.get_embed_manager()
-    runtime.get_meta_store()
-    runtime.get_vector_store()
-    runtime.get_rerank_manager()
-    runtime.get_file_loader()
-    runtime.get_html_loader()
+    rt().embed_manager
+    rt().meta_store
+    rt().vector_store
+    rt().rerank_manager
+    rt().file_loader
+    rt().html_loader
 
-    console.print(f"✅ now {cfg.project_name} server is online.")
+    console.print(f"✅ now {rt().cfg.project_name} server is online.")
 
 
 def _nodes_to_response(nodes: list[NodeWithScore]) -> list[dict[str, Any]]:
@@ -122,9 +121,9 @@ async def health() -> dict[str, Any]:
     async with _request_lock:
         return {
             "status": "ok",
-            "store": runtime.get_vector_store().name,
-            "embed": runtime.get_embed_manager().name,
-            "rerank": runtime.get_rerank_manager().name,
+            "store": rt().vector_store.name,
+            "embed": rt().embed_manager.name,
+            "rerank": rt().rerank_manager.name,
         }
 
 
@@ -159,7 +158,7 @@ async def upload(files: list[UploadFile] = File(...)) -> dict[str, Any]:
     logger.debug("exec /v1/upload")
 
     try:
-        upload_dir = Path(cfg.ingest.upload_dir).absolute()
+        upload_dir = Path(rt().cfg.ingest.upload_dir).absolute()
         upload_dir.mkdir(parents=True, exist_ok=True)
     except Exception as e:
         msg = "mkdir failure"
@@ -323,7 +322,7 @@ async def query_text_text(payload: QueryTextRequest) -> dict[str, Any]:
 
     logger.debug("exec /v1/query/text_text")
 
-    if Modality.TEXT not in runtime.get_embed_manager().modality:
+    if Modality.TEXT not in rt().embed_manager.modality:
         msg = "text embeddings is not available in current setting"
         logger.error(msg)
         raise HTTPException(status_code=400, detail=msg)
@@ -332,7 +331,7 @@ async def query_text_text(payload: QueryTextRequest) -> dict[str, Any]:
         try:
             nodes = await aquery_text_text(
                 query=payload.query,
-                topk=payload.topk or cfg.rerank.topk,
+                topk=payload.topk or rt().cfg.rerank.topk,
             )
         except Exception:
             msg = "query text text failure"
@@ -359,7 +358,7 @@ async def query_text_image(payload: QueryTextRequest) -> dict[str, Any]:
 
     logger.debug("exec /v1/query/text_image")
 
-    if Modality.IMAGE not in runtime.get_embed_manager().modality:
+    if Modality.IMAGE not in rt().embed_manager.modality:
         msg = "image embeddings is not available in current setting"
         logger.error(msg)
         raise HTTPException(status_code=400, detail=msg)
@@ -368,7 +367,7 @@ async def query_text_image(payload: QueryTextRequest) -> dict[str, Any]:
         try:
             nodes = await aquery_text_image(
                 query=payload.query,
-                topk=payload.topk or cfg.rerank.topk,
+                topk=payload.topk or rt().cfg.rerank.topk,
             )
         except Exception:
             msg = "query text image failure"
@@ -395,7 +394,7 @@ async def query_image_image(payload: QueryMultimodalRequest) -> dict[str, Any]:
 
     logger.debug("exec /v1/query/image_image")
 
-    if Modality.IMAGE not in runtime.get_embed_manager().modality:
+    if Modality.IMAGE not in rt().embed_manager.modality:
         msg = "image embeddings is not available in current setting"
         logger.error(msg)
         raise HTTPException(status_code=400, detail=msg)
@@ -404,7 +403,7 @@ async def query_image_image(payload: QueryMultimodalRequest) -> dict[str, Any]:
         try:
             nodes = await aquery_image_image(
                 path=payload.path,
-                topk=payload.topk or cfg.rerank.topk,
+                topk=payload.topk or rt().cfg.rerank.topk,
             )
         except Exception:
             msg = "query image image failure"
@@ -431,7 +430,7 @@ async def query_text_audio(payload: QueryTextRequest) -> dict[str, Any]:
 
     logger.debug("exec /v1/query/text_audio")
 
-    if Modality.AUDIO not in runtime.get_embed_manager().modality:
+    if Modality.AUDIO not in rt().embed_manager.modality:
         msg = "audio embeddings is not available in current setting"
         logger.error(msg)
         raise HTTPException(status_code=400, detail=msg)
@@ -440,7 +439,7 @@ async def query_text_audio(payload: QueryTextRequest) -> dict[str, Any]:
         try:
             nodes = await aquery_text_audio(
                 query=payload.query,
-                topk=payload.topk or cfg.rerank.topk,
+                topk=payload.topk or rt().cfg.rerank.topk,
             )
         except Exception:
             msg = "query text audio failure"
@@ -467,7 +466,7 @@ async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
 
     logger.debug("exec /v1/query/audio_audio")
 
-    if Modality.AUDIO not in runtime.get_embed_manager().modality:
+    if Modality.AUDIO not in rt().embed_manager.modality:
         msg = "audio embeddings is not available in current setting"
         logger.error(msg)
         raise HTTPException(status_code=400, detail=msg)
@@ -476,7 +475,7 @@ async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
         try:
             nodes = await aquery_audio_audio(
                 path=payload.path,
-                topk=payload.topk or cfg.rerank.topk,
+                topk=payload.topk or rt().cfg.rerank.topk,
             )
         except Exception:
             msg = "query audio audio failure"

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Iterable, Sequence
 
-from ...config import cfg
 from ...core.metadata import META_KEYS as MK
 from .structured import Structured
 
