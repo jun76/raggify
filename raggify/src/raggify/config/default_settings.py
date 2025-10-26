@@ -58,7 +58,7 @@ class DefaultSettings:
     CHECK_UPDATE: bool = False
 
     # Chroma
-    CHROMA_PERSIST_DIR: str = f"{PROJECT_NAME}_db"
+    CHROMA_PERSIST_DIR: str = f"/etc/{PROJECT_NAME}/{PROJECT_NAME}_db"
     CHROMA_HOST: Optional[str] = None
     CHROMA_PORT: Optional[int] = None
     CHROMA_TENANT: Optional[str] = None
@@ -72,7 +72,7 @@ class DefaultSettings:
     PGVECTOR_PASSWORD: Optional[str] = None
 
     ##### Meta Store
-    META_STORE_PATH: str = f"{PROJECT_NAME}_metas.db"
+    META_STORE_PATH: str = f"/etc/{PROJECT_NAME}/{PROJECT_NAME}_metas.db"
 
     ##### Embedding
     # Text

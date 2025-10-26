@@ -1,18 +1,17 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Optional
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Optional
 
 from ..config.default_settings import DefaultSettings as DS
 from ..llama.core.indices.multi_modal.retriever import AudioRetriever
 from ..llama.core.schema import Modality
 from ..logger import logger
-from ..runtime import get_runtime as rt
 
 if TYPE_CHECKING:
-    from llama_index.core.schema import NodeWithScore
-
     from ..rerank.rerank_manager import RerankManager
+    from ..runtime import Runtime
     from ..vector_store.vector_store_manager import VectorStoreManager
 
 __all__ = [
@@ -26,7 +25,27 @@ __all__ = [
     "aquery_text_audio",
     "query_audio_audio",
     "aquery_audio_audio",
+    "ResultNode",
 ]
+
+
+# 独自形式（実質、NodeWithScore のサブセット）
+@dataclass
+class ResultNode:
+    text: str
+    metadata: dict[str, Any]
+    score: float | None
+
+
+def _rt() -> Runtime:
+    """遅延ロード用ゲッター。
+
+    Returns:
+        Runtime: ランタイム
+    """
+    from ..runtime import get_runtime
+
+    return get_runtime()
 
 
 def query_text_text(
@@ -34,7 +53,7 @@ def query_text_text(
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
     rerank: Optional[RerankManager] = None,
-) -> list[NodeWithScore]:
+) -> list[ResultNode]:
     """クエリ文字列によるテキストドキュメント検索。
 
     Args:
@@ -44,7 +63,7 @@ def query_text_text(
         rerank (Optional[RerankManager], optional): リランカー管理。Defaults to None.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[ResultNode]: 検索結果のリスト
     """
     return asyncio.run(
         aquery_text_text(query=query, store=store, topk=topk, rerank=rerank)
@@ -56,7 +75,7 @@ async def aquery_text_text(
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
     rerank: Optional[RerankManager] = None,
-) -> list[NodeWithScore]:
+) -> list[ResultNode]:
     """クエリ文字列によるテキストドキュメント非同期検索。
 
     Args:
@@ -66,9 +85,9 @@ async def aquery_text_text(
         rerank (Optional[RerankManager], optional): リランカー管理。Defaults to None.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[ResultNode]: 検索結果のリスト
     """
-    store = store or rt().vector_store
+    store = store or _rt().vector_store
 
     index = store.get_index(Modality.TEXT)
     if index is None:
@@ -82,14 +101,20 @@ async def aquery_text_text(
         logger.warning("empty nodes")
         return []
 
-    rerank = rerank or rt().rerank_manager
+    rerank = rerank or _rt().rerank_manager
     if rerank is None:
-        return nwss
+        return [
+            ResultNode(text=nws.text, metadata=nws.metadata, score=nws.score)
+            for nws in nwss
+        ]
 
     nwss = await rerank.arerank(nodes=nwss, query=query)
     logger.debug(f"reranked {len(nwss)} nodes")
 
-    return nwss
+    return [
+        ResultNode(text=nws.text, metadata=nws.metadata, score=nws.score)
+        for nws in nwss
+    ]
 
 
 def query_text_image(
@@ -97,7 +122,7 @@ def query_text_image(
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
     rerank: Optional[RerankManager] = None,
-) -> list[NodeWithScore]:
+) -> list[ResultNode]:
     """クエリ文字列による画像ドキュメント検索。
 
     Args:
@@ -110,7 +135,7 @@ def query_text_image(
         RuntimeError: テキスト --> 画像埋め込み非対応
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[ResultNode]: 検索結果のリスト
     """
     return asyncio.run(
         aquery_text_image(query=query, store=store, topk=topk, rerank=rerank)
@@ -122,7 +147,7 @@ async def aquery_text_image(
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
     rerank: Optional[RerankManager] = None,
-) -> list[NodeWithScore]:
+) -> list[ResultNode]:
     """クエリ文字列による画像ドキュメント非同期検索。
 
     Args:
@@ -135,11 +160,11 @@ async def aquery_text_image(
         RuntimeError: テキスト --> 画像埋め込み非対応
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[ResultNode]: 検索結果のリスト
     """
     from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
 
-    store = store or rt().vector_store
+    store = store or _rt().vector_store
 
     index = store.get_index(Modality.IMAGE)
     if index is None:
@@ -165,21 +190,27 @@ async def aquery_text_image(
         logger.warning("empty nodes")
         return []
 
-    rerank = rerank or rt().rerank_manager
+    rerank = rerank or _rt().rerank_manager
     if rerank is None:
-        return nwss
+        return [
+            ResultNode(text=nws.text, metadata=nws.metadata, score=nws.score)
+            for nws in nwss
+        ]
 
     nwss = await rerank.arerank(nodes=nwss, query=query)
     logger.debug(f"reranked {len(nwss)} nodes")
 
-    return nwss
+    return [
+        ResultNode(text=nws.text, metadata=nws.metadata, score=nws.score)
+        for nws in nwss
+    ]
 
 
 def query_image_image(
     path: str,
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
-) -> list[NodeWithScore]:
+) -> list[ResultNode]:
     """クエリ画像による画像ドキュメント検索。
 
     Args:
@@ -188,7 +219,7 @@ def query_image_image(
         topk (int, optional): 取得件数。Defaults to DS.TOPK.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[ResultNode]: 検索結果のリスト
     """
     return asyncio.run(aquery_image_image(path=path, store=store, topk=topk))
 
@@ -197,7 +228,7 @@ async def aquery_image_image(
     path: str,
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
-) -> list[NodeWithScore]:
+) -> list[ResultNode]:
     """クエリ画像による画像ドキュメント非同期検索。
 
     Args:
@@ -206,11 +237,11 @@ async def aquery_image_image(
         topk (int, optional): 取得件数。Defaults to DS.TOPK.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[ResultNode]: 検索結果のリスト
     """
     from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
 
-    store = store or rt().vector_store
+    store = store or _rt().vector_store
 
     index = store.get_index(Modality.IMAGE)
     if index is None:
@@ -232,7 +263,10 @@ async def aquery_image_image(
 
     logger.debug(f"got {len(nwss)} nodes")
 
-    return nwss
+    return [
+        ResultNode(text=nws.text, metadata=nws.metadata, score=nws.score)
+        for nws in nwss
+    ]
 
 
 def query_text_audio(
@@ -240,7 +274,7 @@ def query_text_audio(
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
     rerank: Optional[RerankManager] = None,
-) -> list[NodeWithScore]:
+) -> list[ResultNode]:
     """クエリ文字列による音声ドキュメント検索。
 
     Args:
@@ -253,7 +287,7 @@ def query_text_audio(
         RuntimeError: テキスト --> 音声埋め込み非対応
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[ResultNode]: 検索結果のリスト
     """
     return asyncio.run(
         aquery_text_audio(query=query, store=store, topk=topk, rerank=rerank)
@@ -265,7 +299,7 @@ async def aquery_text_audio(
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
     rerank: Optional[RerankManager] = None,
-) -> list[NodeWithScore]:
+) -> list[ResultNode]:
     """クエリ文字列による音声ドキュメント非同期検索。
 
     Args:
@@ -278,9 +312,9 @@ async def aquery_text_audio(
         RuntimeError: テキスト --> 音声埋め込み非対応
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[ResultNode]: 検索結果のリスト
     """
-    store = store or rt().vector_store
+    store = store or _rt().vector_store
 
     index = store.get_index(Modality.AUDIO)
     if index is None:
@@ -299,21 +333,24 @@ async def aquery_text_audio(
         logger.warning("empty nodes")
         return []
 
-    rerank = rerank or rt().rerank_manager
+    rerank = rerank or _rt().rerank_manager
     if rerank is None:
         return nwss
 
     nwss = await rerank.arerank(nodes=nwss, query=query)
     logger.debug(f"reranked {len(nwss)} nodes")
 
-    return nwss
+    return [
+        ResultNode(text=nws.text, metadata=nws.metadata, score=nws.score)
+        for nws in nwss
+    ]
 
 
 def query_audio_audio(
     path: str,
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
-) -> list[NodeWithScore]:
+) -> list[ResultNode]:
     """クエリ音声による音声ドキュメント検索。
 
     Args:
@@ -322,7 +359,7 @@ def query_audio_audio(
         topk (int, optional): 取得件数。Defaults to DS.TOPK.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[ResultNode]: 検索結果のリスト
     """
     return asyncio.run(aquery_audio_audio(path=path, store=store, topk=topk))
 
@@ -331,7 +368,7 @@ async def aquery_audio_audio(
     path: str,
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
-) -> list[NodeWithScore]:
+) -> list[ResultNode]:
     """クエリ音声による音声ドキュメント非同期検索。
 
     Args:
@@ -340,9 +377,9 @@ async def aquery_audio_audio(
         topk (int, optional): 取得件数。Defaults to DS.TOPK.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[ResultNode]: 検索結果のリスト
     """
-    store = store or rt().vector_store
+    store = store or _rt().vector_store
 
     index = store.get_index(Modality.AUDIO)
     if index is None:
@@ -358,4 +395,7 @@ async def aquery_audio_audio(
 
     logger.debug(f"got {len(nwss)} nodes")
 
-    return nwss
+    return [
+        ResultNode(text=nws.text, metadata=nws.metadata, score=nws.score)
+        for nws in nwss
+    ]

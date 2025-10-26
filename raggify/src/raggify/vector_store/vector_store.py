@@ -115,7 +115,7 @@ def _pgvector(cfg: ConfigManager, table_name: str) -> VectorStoreContainer:
             port=str(cfg.vector_store.pgvector_port),
             database=cfg.vector_store.pgvector_database,
             user=cfg.vector_store.pgvector_user,
-            password=cfg.vector_store.pgvector_password,
+            password=sec,
             table_name=table_name,
         ),
         table_name=table_name,

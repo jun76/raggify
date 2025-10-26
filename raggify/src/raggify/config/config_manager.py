@@ -6,13 +6,13 @@ from typing import Any, Optional
 
 import yaml
 
-from raggify.config.default_settings import DefaultSettings
-from raggify.config.embed_config import EmbedConfig
-from raggify.config.general_config import GeneralConfig
-from raggify.config.ingest_config import IngestConfig
-from raggify.config.meta_store_config import MetaStoreConfig
-from raggify.config.rerank_config import RerankConfig
-from raggify.config.vector_store_config import VectorStoreConfig
+from ..config.default_settings import DefaultSettings
+from ..config.embed_config import EmbedConfig
+from ..config.general_config import GeneralConfig
+from ..config.ingest_config import IngestConfig
+from ..config.meta_store_config import MetaStoreConfig
+from ..config.rerank_config import RerankConfig
+from ..config.vector_store_config import VectorStoreConfig
 
 logger = logging.getLogger(__name__)
 

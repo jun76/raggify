@@ -4,9 +4,9 @@ import asyncio
 from typing import TYPE_CHECKING, Optional, Sequence
 
 from ..logger import logger
-from ..runtime import get_runtime as rt
 
 if TYPE_CHECKING:
+    from ..runtime import Runtime
     from ..vector_store.vector_store_manager import VectorStoreManager
     from .loader.file_loader import FileLoader
     from .loader.html_loader import HTMLLoader
@@ -21,6 +21,17 @@ __all__ = [
     "ingest_url_list",
     "aingest_url_list",
 ]
+
+
+def _rt() -> Runtime:
+    """遅延ロード用ゲッター。
+
+    Returns:
+        Runtime: ランタイム
+    """
+    from ..runtime import get_runtime
+
+    return get_runtime()
 
 
 def _read_list(path: str) -> list[str]:
@@ -71,8 +82,8 @@ async def aingest_path(
         store (Optional[VectorStoreManager]): ベクトルストア。Defaults to None.
         file_loader (Optional[FileLoader]): ファイル読み込み用。Defaults to None.
     """
-    store = store or rt().vector_store
-    file_loader = file_loader or rt().file_loader
+    store = store or _rt().vector_store
+    file_loader = file_loader or _rt().file_loader
 
     nodes = await file_loader.aload_from_path(path)
     await store.aupsert_nodes(nodes)
@@ -114,8 +125,8 @@ async def aingest_path_list(
     if isinstance(lst, str):
         lst = _read_list(lst)
 
-    store = store or rt().vector_store
-    file_loader = file_loader or rt().file_loader
+    store = store or _rt().vector_store
+    file_loader = file_loader or _rt().file_loader
 
     nodes = await file_loader.aload_from_paths(list(lst))
     await store.aupsert_nodes(nodes)
@@ -150,8 +161,8 @@ async def aingest_url(
         store (Optional[VectorStoreManager]): ベクトルストア。Defaults to None.
         html_loader (Optional[HTMLLoader]): HTML 読み込み用。Defaults to None.
     """
-    store = store or rt().vector_store
-    html_loader = html_loader or rt().html_loader
+    store = store or _rt().vector_store
+    html_loader = html_loader or _rt().html_loader
 
     nodes = await html_loader.aload_from_url(url)
     await store.aupsert_nodes(nodes)
@@ -193,8 +204,8 @@ async def aingest_url_list(
     if isinstance(lst, str):
         lst = _read_list(lst)
 
-    store = store or rt().vector_store
-    html_loader = html_loader or rt().html_loader
+    store = store or _rt().vector_store
+    html_loader = html_loader or _rt().html_loader
 
     nodes = await html_loader.aload_from_urls(list(lst))
     await store.aupsert_nodes(nodes)

@@ -6,8 +6,9 @@ from .fastapi import app as fastapi
 
 __all__ = ["app"]
 
+
 def _get_cfg():
-    from raggify.runtime import get_runtime
+    from ..runtime import get_runtime
 
     return get_runtime().cfg
 

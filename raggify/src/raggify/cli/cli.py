@@ -6,20 +6,30 @@ from typing import TYPE_CHECKING, Any, Protocol
 import typer
 import uvicorn
 
-from raggify.logger import console, logger
-from raggify.runtime import get_runtime
+from ..logger import console, logger
 
 if TYPE_CHECKING:
-    from raggify.client import RestAPIClient
+    from ..client import RestAPIClient
+    from ..config.config_manager import ConfigManager
 
 __all__ = ["app"]
 
-_cfg = get_runtime().cfg
 
-logger.setLevel(_cfg.general.log_level)
+def _cfg() -> ConfigManager:
+    """遅延ロード用ゲッター。
+
+    Returns:
+        ConfigManager: 設定管理
+    """
+    from ..runtime import get_runtime
+
+    return get_runtime().cfg
+
+
+logger.setLevel(_cfg().general.log_level)
 app = typer.Typer(
     help="raggify CLI: Interface to ingest/query knowledge into/from raggify server. "
-    f"User config is {_cfg.user_config_path}."
+    f"User config is {_cfg().user_config_path}."
 )
 
 
@@ -31,7 +41,7 @@ def _get_server_base_url() -> str:
     Returns:
         str: ベース URL 文字列
     """
-    return f"http://{_cfg.general.host}:{_cfg.general.port}/v1"
+    return f"http://{_cfg().general.host}:{_cfg().general.port}/v1"
 
 
 def _create_rest_client() -> RestAPIClient:
@@ -57,14 +67,14 @@ def _echo_json(data: dict[str, Any]) -> None:
 @app.command(help="Show version.")
 def version() -> None:
     """バージョンコマンド"""
-    console.print(f"{_cfg.project_name} version {_cfg.version}")
+    console.print(f"{_cfg().project_name} version {_cfg().version}")
 
 
 @app.command(help="Start as a local server.")
 def server(
-    host: str = typer.Option(default=_cfg.general.host, help="Server hostname."),
-    port: int = typer.Option(default=_cfg.general.port, help="Server port number."),
-    mcp: bool = typer.Option(default=_cfg.general.mcp, help="Up server also as MCP."),
+    host: str = typer.Option(default=_cfg().general.host, help="Server hostname."),
+    port: int = typer.Option(default=_cfg().general.port, help="Server port number."),
+    mcp: bool = typer.Option(default=_cfg().general.mcp, help="Up server also as MCP."),
 ) -> None:
     """ローカルサーバとして起動する。
 
@@ -85,13 +95,13 @@ def server(
         app=fastapi,
         host=host,
         port=port,
-        log_level=_cfg.general.log_level.lower(),
+        log_level=_cfg().general.log_level.lower(),
     )
 
 
 @app.command(help=f"Show current config file.")
 def config() -> None:
-    _echo_json(_cfg.get_dict())
+    _echo_json(_cfg().get_dict())
 
 
 # 以下、REST API Client のラッパーコマンドを定義
@@ -99,7 +109,7 @@ def config() -> None:
 
 class ClientCommand(Protocol):
     def __call__(
-        self, client: "RestAPIClient", *args: Any, **kwargs: Any
+        self, client: RestAPIClient, *args: Any, **kwargs: Any
     ) -> dict[str, Any]: ...
 
 
@@ -112,7 +122,7 @@ def _execute_client_command(
     except Exception as e:
         console.print(e)
         console.print(
-            f"❌ Command failed. If you haven't already started the server, run '{_cfg.project_name} server'."
+            f"❌ Command failed. If you haven't already started the server, run '{_cfg().project_name} server'."
         )
         raise typer.Exit(code=1)
 
@@ -169,7 +179,7 @@ def ingest_url_list(
 )
 def query_text_text(
     query: str = typer.Argument(help="Query string."),
-    topk: int = typer.Option(default=_cfg.rerank.topk, help="Show top-k results."),
+    topk: int = typer.Option(default=_cfg().rerank.topk, help="Show top-k results."),
 ):
     logger.debug(f"query = {query}, topk = {topk}")
     _execute_client_command(lambda client: client.query_text_text(query, topk))
@@ -181,7 +191,7 @@ def query_text_text(
 )
 def query_text_image(
     query: str = typer.Argument(help="Query string."),
-    topk: int = typer.Option(default=_cfg.rerank.topk, help="Show top-k results."),
+    topk: int = typer.Option(default=_cfg().rerank.topk, help="Show top-k results."),
 ):
     logger.debug(f"query = {query}, topk = {topk}")
     _execute_client_command(lambda client: client.query_text_image(query, topk))
@@ -193,7 +203,7 @@ def query_text_image(
 )
 def query_image_image(
     path: str = typer.Argument(help="Query image path."),
-    topk: int = typer.Option(default=_cfg.rerank.topk, help="Show top-k results."),
+    topk: int = typer.Option(default=_cfg().rerank.topk, help="Show top-k results."),
 ):
     logger.debug(f"path = {path}, topk = {topk}")
     _execute_client_command(lambda client: client.query_image_image(path, topk))
@@ -205,7 +215,7 @@ def query_image_image(
 )
 def query_text_audio(
     query: str = typer.Argument(help="Query string."),
-    topk: int = typer.Option(default=_cfg.rerank.topk, help="Show top-k results."),
+    topk: int = typer.Option(default=_cfg().rerank.topk, help="Show top-k results."),
 ):
     logger.debug(f"query = {query}, topk = {topk}")
     _execute_client_command(lambda client: client.query_text_audio(query, topk))
@@ -217,7 +227,7 @@ def query_text_audio(
 )
 def query_audio_audio(
     path: str = typer.Argument(help="Query audio path."),
-    topk: int = typer.Option(default=_cfg.rerank.topk, help="Show top-k results."),
+    topk: int = typer.Option(default=_cfg().rerank.topk, help="Show top-k results."),
 ):
     logger.debug(f"path = {path}, topk = {topk}")
     _execute_client_command(lambda client: client.query_audio_audio(path, topk))

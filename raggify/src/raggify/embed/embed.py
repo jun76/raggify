@@ -148,6 +148,8 @@ def _clip_text(cfg: ConfigManager) -> EmbedContainer:
 def _clip_image(cfg: ConfigManager) -> EmbedContainer:
     from llama_index.embeddings.clip import ClipEmbedding
 
+    from .embed_manager import EmbedContainer
+
     return EmbedContainer(
         provider_name=EmbedProvider.CLIP,
         embed=ClipEmbedding(
