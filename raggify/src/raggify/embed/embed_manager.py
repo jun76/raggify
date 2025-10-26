@@ -19,6 +19,7 @@ class EmbedContainer:
 
     provider_name: str
     embed: BaseEmbedding
+    dim: int
     space_key: str = ""
 
 
@@ -128,7 +129,12 @@ class EmbedManager:
         embed = self.get_container(Modality.TEXT).embed
         logger.debug(f"now batch embedding {len(texts)} texts...")
 
-        return await embed.aget_text_embedding_batch(texts=texts, show_progress=True)
+        dims = await embed.aget_text_embedding_batch(texts=texts, show_progress=True)
+
+        if dims:
+            logger.debug(f"dim = {len(dims[0])}, len = {len(dims)}")
+
+        return dims
 
     async def aembed_image(self, paths: list[ImageType]) -> list[Embedding]:
         """画像の埋め込みベクトルを取得する。
@@ -150,9 +156,14 @@ class EmbedManager:
 
         logger.debug(f"now batch embedding {len(paths)} images...")
 
-        return await embed.aget_image_embedding_batch(
+        dims = await embed.aget_image_embedding_batch(
             img_file_paths=paths, show_progress=True
         )
+
+        if dims:
+            logger.debug(f"dim = {len(dims[0])}, len = {len(dims)}")
+
+        return dims
 
     async def aembed_audio(self, paths: list[AudioType]) -> list[Embedding]:
         """音声の埋め込みベクトルを取得する。
@@ -174,9 +185,14 @@ class EmbedManager:
 
         logger.debug(f"now batch embedding {len(paths)} audios...")
 
-        return await embed.aget_audio_embedding_batch(
+        dims = await embed.aget_audio_embedding_batch(
             audio_file_paths=paths, show_progress=True
         )
+
+        if dims:
+            logger.debug(f"dim = {len(dims[0])}, len = {len(dims)}")
+
+        return dims
 
     def _sanitize_space_key(self, space_key: str) -> str:
         """制約にマッチするよう space_key 文字列を整形する。

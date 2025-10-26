@@ -94,12 +94,16 @@ def _openai_text(cfg: ConfigManager) -> EmbedContainer:
 
     from .embed_manager import EmbedContainer
 
+    dim = cfg.embed.openai_embed_model_text["dim"]
+
     return EmbedContainer(
         provider_name=EmbedProvider.OPENAI,
         embed=OpenAIEmbedding(
-            model=cfg.embed.openai_embed_model_text,
+            model=cfg.embed.openai_embed_model_text["name"],
             api_base=cfg.general.openai_base_url,
+            dimensions=dim,
         ),
+        dim=dim,
     )
 
 
@@ -112,8 +116,9 @@ def _cohere_text(cfg: ConfigManager) -> EmbedContainer:
         provider_name=EmbedProvider.COHERE,
         embed=CohereEmbedding(
             api_key=os.getenv("COHERE_API_KEY"),
-            model_name=cfg.embed.cohere_embed_model_text,
+            model_name=cfg.embed.cohere_embed_model_text["name"],
         ),
+        dim=cfg.embed.cohere_embed_model_text["dim"],
     )
 
 
@@ -126,8 +131,9 @@ def _cohere_image(cfg: ConfigManager) -> EmbedContainer:
         provider_name=EmbedProvider.COHERE,
         embed=CohereEmbedding(
             api_key=os.getenv("COHERE_API_KEY"),
-            model_name=cfg.embed.cohere_embed_model_image,
+            model_name=cfg.embed.cohere_embed_model_image["name"],
         ),
+        dim=cfg.embed.cohere_embed_model_image["dim"],
     )
 
 
@@ -139,9 +145,10 @@ def _clip_text(cfg: ConfigManager) -> EmbedContainer:
     return EmbedContainer(
         provider_name=EmbedProvider.CLIP,
         embed=ClipEmbedding(
-            model_name=cfg.embed.clip_embed_model_text,
+            model_name=cfg.embed.clip_embed_model_text["name"],
             device=cfg.general.device,
         ),
+        dim=cfg.embed.clip_embed_model_text["dim"],
     )
 
 
@@ -153,9 +160,10 @@ def _clip_image(cfg: ConfigManager) -> EmbedContainer:
     return EmbedContainer(
         provider_name=EmbedProvider.CLIP,
         embed=ClipEmbedding(
-            model_name=cfg.embed.clip_embed_model_image,
+            model_name=cfg.embed.clip_embed_model_image["name"],
             device=cfg.general.device,
         ),
+        dim=cfg.embed.clip_embed_model_image["dim"],
     )
 
 
@@ -167,9 +175,10 @@ def _huggingface_text(cfg: ConfigManager) -> EmbedContainer:
     return EmbedContainer(
         provider_name=EmbedProvider.HUGGINGFACE,
         embed=HuggingFaceEmbedding(
-            model_name=cfg.embed.huggingface_embed_model_text,
+            model_name=cfg.embed.huggingface_embed_model_text["name"],
             device=cfg.general.device,
         ),
+        dim=cfg.embed.huggingface_embed_model_text["dim"],
     )
 
 
@@ -181,10 +190,11 @@ def _huggingface_image(cfg: ConfigManager) -> EmbedContainer:
     return EmbedContainer(
         provider_name=EmbedProvider.HUGGINGFACE,
         embed=HuggingFaceEmbedding(
-            model_name=cfg.embed.huggingface_embed_model_image,
+            model_name=cfg.embed.huggingface_embed_model_image["name"],
             device=cfg.general.device,
             trust_remote_code=True,
         ),
+        dim=cfg.embed.huggingface_embed_model_image["dim"],
     )
 
 
@@ -195,9 +205,10 @@ def _clap_audio(cfg: ConfigManager) -> EmbedContainer:
     return EmbedContainer(
         provider_name=EmbedProvider.CLAP,
         embed=ClapEmbedding(
-            model_name=cfg.embed.clap_embed_model_audio,
+            model_name=cfg.embed.clap_embed_model_audio["name"],
             device=cfg.general.device,
         ),
+        dim=cfg.embed.clap_embed_model_audio["dim"],
     )
 
 
@@ -206,13 +217,17 @@ def _voyage_text(cfg: ConfigManager) -> EmbedContainer:
 
     from .embed_manager import EmbedContainer
 
+    dim = cfg.embed.voyage_embed_model_text["dim"]
+
     return EmbedContainer(
         provider_name=EmbedProvider.VOYAGE,
         embed=VoyageEmbedding(
             api_key=os.getenv("VOYAGE_API_KEY"),
-            model_name=cfg.embed.voyage_embed_model_text,
+            model_name=cfg.embed.voyage_embed_model_text["name"],
             truncation=False,
+            output_dimension=dim,
         ),
+        dim=dim,
     )
 
 
@@ -221,11 +236,15 @@ def _voyage_image(cfg: ConfigManager) -> EmbedContainer:
 
     from .embed_manager import EmbedContainer
 
+    dim = cfg.embed.voyage_embed_model_image["dim"]
+
     return EmbedContainer(
         provider_name=EmbedProvider.VOYAGE,
         embed=VoyageEmbedding(
             api_key=os.getenv("VOYAGE_API_KEY"),
-            model_name=cfg.embed.voyage_embed_model_image,
+            model_name=cfg.embed.voyage_embed_model_image["name"],
             truncation=False,
+            output_dimension=dim,
         ),
+        dim=dim,
     )

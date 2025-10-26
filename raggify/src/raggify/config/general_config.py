@@ -18,7 +18,7 @@ class GeneralConfig:
     port: int = DefaultSettings.PORT
     mcp: bool = DefaultSettings.MCP
     vector_store_provider: VectorStoreProvider = DefaultSettings.VECTOR_STORE_PROVIDER
-    text_embed_provider: EmbedProvider = DefaultSettings.TEXT_EMBED_PROVIDER
+    text_embed_provider: Optional[EmbedProvider] = DefaultSettings.TEXT_EMBED_PROVIDER
     image_embed_provider: Optional[EmbedProvider] = DefaultSettings.IMAGE_EMBED_PROVIDER
     audio_embed_provider: Optional[EmbedProvider] = DefaultSettings.AUDIO_EMBED_PROVIDER
     rerank_provider: Optional[RerankProvider] = DefaultSettings.RERANK_PROVIDER

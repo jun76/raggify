@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import StrEnum, auto
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from dotenv import load_dotenv
 
@@ -44,7 +44,7 @@ class DefaultSettings:
     PORT: int = 8000
     MCP: bool = False
     VECTOR_STORE_PROVIDER: VectorStoreProvider = VectorStoreProvider.CHROMA
-    TEXT_EMBED_PROVIDER: EmbedProvider = EmbedProvider.HUGGINGFACE
+    TEXT_EMBED_PROVIDER: Optional[EmbedProvider] = EmbedProvider.HUGGINGFACE
     IMAGE_EMBED_PROVIDER: Optional[EmbedProvider] = EmbedProvider.CLIP
     AUDIO_EMBED_PROVIDER: Optional[EmbedProvider] = EmbedProvider.CLAP
     RERANK_PROVIDER: RerankProvider = RerankProvider.FLAGEMBEDDING
@@ -76,22 +76,32 @@ class DefaultSettings:
 
     ##### Embedding
     # Text
-    OPENAI_EMBED_MODEL_TEXT: str = "text-embedding-3-small"
-    COHERE_EMBED_MODEL_TEXT: str = "embed-v4.0"
-    CLIP_EMBED_MODEL_TEXT: str = "ViT-B/32"
-    HUGGINGFACE_EMBED_MODEL_TEXT: str = "intfloat/multilingual-e5-base"
-    VOYAGE_EMBED_MODEL_TEXT: str = "voyage-3.5"
+    OPENAI_EMBED_MODEL_TEXT: dict[str, Any] = {
+        "name": "text-embedding-3-small",
+        "dim": 1536,
+    }
+    COHERE_EMBED_MODEL_TEXT: dict[str, Any] = {"name": "embed-v4.0", "dim": 1536}
+    CLIP_EMBED_MODEL_TEXT: dict[str, Any] = {"name": "ViT-B/32", "dim": 512}
+    HUGGINGFACE_EMBED_MODEL_TEXT: dict[str, Any] = {
+        "name": "intfloat/multilingual-e5-base",
+        "dim": 1536,
+    }
+    VOYAGE_EMBED_MODEL_TEXT: dict[str, Any] = {"name": "voyage-3.5", "dim": 2048}
 
     # Image
-    COHERE_EMBED_MODEL_IMAGE: str = "embed-v4.0"
-    CLIP_EMBED_MODEL_IMAGE: str = "ViT-B/32"
-    HUGGINGFACE_EMBED_MODEL_IMAGE: str = "llamaindex/vdr-2b-multi-v1"
-    VOYAGE_EMBED_MODEL_IMAGE: str = "voyage-multimodal-3"
+    COHERE_EMBED_MODEL_IMAGE: dict[str, Any] = {"name": "embed-v4.0", "dim": 1536}
+    CLIP_EMBED_MODEL_IMAGE: dict[str, Any] = {"name": "ViT-B/32", "dim": 512}
+    HUGGINGFACE_EMBED_MODEL_IMAGE: dict[str, Any] = {
+        "name": "llamaindex/vdr-2b-multi-v1",
+        "dim": 1536,
+    }
+    VOYAGE_EMBED_MODEL_IMAGE: dict[str, Any] = {
+        "name": "voyage-multimodal-3",
+        "dim": 1024,
+    }
 
     # Audio
-    CLAP_EMBED_MODEL_AUDIO: Literal[
-        "effect_short", "effect_varlen", "music", "speech", "general"
-    ] = "effect_varlen"
+    CLAP_EMBED_MODEL_AUDIO: dict[str, Any] = {"name": "effect_varlen", "dim": 512}
 
     ##### Ingest
     CHUNK_SIZE: int = 500

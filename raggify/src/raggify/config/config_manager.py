@@ -182,6 +182,8 @@ class ConfigManager:
 
             if isinstance(current, enum.Enum):
                 values[field.name] = self._load_enum(type(current), raw, current)
+            elif isinstance(current, dict):
+                values[field.name] = self._merge_dict(current, raw)
             else:
                 values[field.name] = raw
 
@@ -228,6 +230,28 @@ class ConfigManager:
                 )
 
                 return default
+
+    def _merge_dict(self, default: dict[str, Any], raw: Any) -> dict[str, Any]:
+        """辞書の設定値をマージする。
+
+        Args:
+            default (dict[str, Any]): 既定値
+            raw (Any): YAML から取得した raw 値
+
+        Returns:
+            dict[str, Any]: マージ後の辞書
+        """
+        if raw is None:
+            return dict(default)
+
+        if not isinstance(raw, dict):
+            logger.warning(f"invalid dict value '{raw}'. using default.")
+            return dict(default)
+
+        return {
+            **default,
+            **{k: v for k, v in raw.items() if v is not None},
+        }
 
     def _serialize_dataclass(self, instance: Any) -> dict[str, Any]:
         """dataclass インスタンスを YAML 書き込み用 dict に変換する。

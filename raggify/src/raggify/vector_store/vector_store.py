@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
 from ..config.default_settings import VectorStoreProvider
+from ..config.vector_store_config import VectorStoreConfig
 from ..llama.core.schema import Modality
 
 if TYPE_CHECKING:
@@ -37,13 +38,25 @@ def create_vector_store_manager(
     try:
         conts: dict[Modality, VectorStoreContainer] = {}
         if cfg.general.text_embed_provider:
-            conts[Modality.TEXT] = _create_container(cfg, embed.space_key_text)
+            conts[Modality.TEXT] = _create_container(
+                cfg=cfg,
+                space_key=embed.space_key_text,
+                dim=embed.get_container(Modality.TEXT).dim,
+            )
 
         if cfg.general.image_embed_provider:
-            conts[Modality.IMAGE] = _create_container(cfg, embed.space_key_image)
+            conts[Modality.IMAGE] = _create_container(
+                cfg=cfg,
+                space_key=embed.space_key_image,
+                dim=embed.get_container(Modality.IMAGE).dim,
+            )
 
         if cfg.general.audio_embed_provider:
-            conts[Modality.AUDIO] = _create_container(cfg, embed.space_key_audio)
+            conts[Modality.AUDIO] = _create_container(
+                cfg=cfg,
+                space_key=embed.space_key_audio,
+                dim=embed.get_container(Modality.AUDIO).dim,
+            )
     except Exception as e:
         raise RuntimeError(f"failed to create vector store: {e}") from e
 
@@ -59,11 +72,15 @@ def create_vector_store_manager(
     )
 
 
-def _create_container(cfg: ConfigManager, space_key: str) -> VectorStoreContainer:
+def _create_container(
+    cfg: ConfigManager, space_key: str, dim: int
+) -> VectorStoreContainer:
     """空間キー毎のベクトルストアコンテナを生成する。
 
     Args:
+        cfg (ConfigManager): 設定管理
         space_key (str): 空間キー
+        dim (int): 埋め込み次元
 
     Raises:
         RuntimeError: サポート外のプロバイダ
@@ -74,9 +91,9 @@ def _create_container(cfg: ConfigManager, space_key: str) -> VectorStoreContaine
     table_name = _generate_table_name(cfg, space_key)
     match cfg.general.vector_store_provider:
         case VectorStoreProvider.PGVECTOR:
-            cont = _pgvector(cfg, table_name)
+            cont = _pgvector(cfg=cfg.vector_store, table_name=table_name, dim=dim)
         case VectorStoreProvider.CHROMA:
-            cont = _chroma(cfg, table_name)
+            cont = _chroma(cfg=cfg.vector_store, table_name=table_name, dim=dim)
         case _:
             raise RuntimeError(
                 f"unsupported vector store: {cfg.general.vector_store_provider}"
@@ -99,45 +116,45 @@ def _generate_table_name(cfg: ConfigManager, space_key: str) -> str:
 
 
 # 以下、プロバイダ毎のコンテナ生成ヘルパー
-def _pgvector(cfg: ConfigManager, table_name: str) -> VectorStoreContainer:
+def _pgvector(
+    cfg: VectorStoreConfig, table_name: str, dim: int
+) -> VectorStoreContainer:
     from llama_index.vector_stores.postgres import PGVectorStore
 
     from .vector_store_manager import VectorStoreContainer
 
-    sec = cfg.vector_store.pgvector_password
+    sec = cfg.pgvector_password
     if sec is None:
         raise ValueError("pgvector_password must be specified")
 
     return VectorStoreContainer(
         provider_name=VectorStoreProvider.PGVECTOR,
         store=PGVectorStore.from_params(
-            host=cfg.vector_store.pgvector_host,
-            port=str(cfg.vector_store.pgvector_port),
-            database=cfg.vector_store.pgvector_database,
-            user=cfg.vector_store.pgvector_user,
+            host=cfg.pgvector_host,
+            port=str(cfg.pgvector_port),
+            database=cfg.pgvector_database,
+            user=cfg.pgvector_user,
             password=sec,
             table_name=table_name,
+            embed_dim=dim,
         ),
         table_name=table_name,
     )
 
 
-def _chroma(cfg: ConfigManager, table_name: str) -> VectorStoreContainer:
+def _chroma(cfg: VectorStoreConfig, table_name: str, dim: int) -> VectorStoreContainer:
     import chromadb
     from llama_index.vector_stores.chroma import ChromaVectorStore
 
     from .vector_store_manager import VectorStoreContainer
 
-    if (
-        cfg.vector_store.chroma_host is not None
-        and cfg.vector_store.chroma_port is not None
-    ):
+    if cfg.chroma_host is not None and cfg.chroma_port is not None:
         client = chromadb.HttpClient(
-            host=cfg.vector_store.chroma_host,
-            port=cfg.vector_store.chroma_port,
+            host=cfg.chroma_host,
+            port=cfg.chroma_port,
         )
-    elif cfg.vector_store.chroma_persist_dir:
-        client = chromadb.PersistentClient(path=cfg.vector_store.chroma_persist_dir)
+    elif cfg.chroma_persist_dir:
+        client = chromadb.PersistentClient(path=cfg.chroma_persist_dir)
     else:
         raise RuntimeError("persist_directory or host + port must be specified")
 
