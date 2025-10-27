@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-LOGGER_NAME = "ragclient"
+LOGGER_NAME = "rag"
 
 
 class Color:
