@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import asyncio
 from typing import TYPE_CHECKING, Optional, Sequence
 
+from ..core.event import async_loop_runner
 from ..logger import logger
 
 if TYPE_CHECKING:
@@ -66,7 +66,9 @@ def ingest_path(
         store (Optional[VectorStoreManager]): ベクトルストア。Defaults to None.
         file_loader (Optional[FileLoader]): ファイル読み込み用。Defaults to None.
     """
-    asyncio.run(aingest_path(path=path, store=store, file_loader=file_loader))
+    async_loop_runner.run(
+        lambda: aingest_path(path=path, store=store, file_loader=file_loader)
+    )
 
 
 async def aingest_path(
@@ -101,8 +103,8 @@ def ingest_path_list(
         store (Optional[VectorStoreManager]): ベクトルストア。Defaults to None.
         file_loader (Optional[FileLoader]): ファイル読み込み用。Defaults to None.
     """
-    asyncio.run(
-        aingest_path_list(
+    async_loop_runner.run(
+        lambda: aingest_path_list(
             lst=lst,
             store=store,
             file_loader=file_loader,
@@ -145,7 +147,9 @@ def ingest_url(
         store (Optional[VectorStoreManager]): ベクトルストア。Defaults to None.
         html_loader (Optional[HTMLLoader]): HTML 読み込み用。Defaults to None.
     """
-    asyncio.run(aingest_url(url=url, store=store, html_loader=html_loader))
+    async_loop_runner.run(
+        lambda: aingest_url(url=url, store=store, html_loader=html_loader)
+    )
 
 
 async def aingest_url(
@@ -180,8 +184,8 @@ def ingest_url_list(
         store (Optional[VectorStoreManager]): ベクトルストア。Defaults to None.
         html_loader (Optional[HTMLLoader]): HTML 読み込み用。Defaults to None.
     """
-    asyncio.run(
-        aingest_url_list(
+    async_loop_runner.run(
+        lambda: aingest_url_list(
             lst=lst,
             store=store,
             html_loader=html_loader,

@@ -82,48 +82,48 @@ class DefaultSettings:
     ##### Embedding
     # Text
     OPENAI_EMBED_MODEL_TEXT: dict[str, Any] = {
-        ModelKey.NAME: "text-embedding-3-small",
-        ModelKey.DIM: 1536,
+        ModelKey.NAME.value: "text-embedding-3-small",
+        ModelKey.DIM.value: 1536,
     }
     COHERE_EMBED_MODEL_TEXT: dict[str, Any] = {
-        ModelKey.NAME: "embed-v4.0",
-        ModelKey.DIM: 1536,
+        ModelKey.NAME.value: "embed-v4.0",
+        ModelKey.DIM.value: 1536,
     }
     CLIP_EMBED_MODEL_TEXT: dict[str, Any] = {
-        ModelKey.NAME: "ViT-B/32",
-        ModelKey.DIM: 512,
+        ModelKey.NAME.value: "ViT-B/32",
+        ModelKey.DIM.value: 512,
     }
     HUGGINGFACE_EMBED_MODEL_TEXT: dict[str, Any] = {
-        ModelKey.NAME: "intfloat/multilingual-e5-base",
-        ModelKey.DIM: 768,
+        ModelKey.NAME.value: "intfloat/multilingual-e5-base",
+        ModelKey.DIM.value: 768,
     }
     VOYAGE_EMBED_MODEL_TEXT: dict[str, Any] = {
-        ModelKey.NAME: "voyage-3.5",
-        ModelKey.DIM: 2048,
+        ModelKey.NAME.value: "voyage-3.5",
+        ModelKey.DIM.value: 2048,
     }
 
     # Image
     COHERE_EMBED_MODEL_IMAGE: dict[str, Any] = {
-        ModelKey.NAME: "embed-v4.0",
-        ModelKey.DIM: 1536,
+        ModelKey.NAME.value: "embed-v4.0",
+        ModelKey.DIM.value: 1536,
     }
     CLIP_EMBED_MODEL_IMAGE: dict[str, Any] = {
-        ModelKey.NAME: "ViT-B/32",
-        ModelKey.DIM: 512,
+        ModelKey.NAME.value: "ViT-B/32",
+        ModelKey.DIM.value: 512,
     }
     HUGGINGFACE_EMBED_MODEL_IMAGE: dict[str, Any] = {
-        ModelKey.NAME: "llamaindex/vdr-2b-multi-v1",
-        ModelKey.DIM: 1536,
+        ModelKey.NAME.value: "llamaindex/vdr-2b-multi-v1",
+        ModelKey.DIM.value: 1536,
     }
     VOYAGE_EMBED_MODEL_IMAGE: dict[str, Any] = {
-        ModelKey.NAME: "voyage-multimodal-3",
-        ModelKey.DIM: 1024,
+        ModelKey.NAME.value: "voyage-multimodal-3",
+        ModelKey.DIM.value: 1024,
     }
 
     # Audio
     CLAP_EMBED_MODEL_AUDIO: dict[str, Any] = {
-        ModelKey.NAME: "effect_varlen",
-        ModelKey.DIM: 512,
+        ModelKey.NAME.value: "effect_varlen",
+        ModelKey.DIM.value: 512,
     }
 
     ##### Ingest

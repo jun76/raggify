@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import asyncio
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Optional
 
 from ..config.default_settings import DefaultSettings as DS
+from ..core.event import async_loop_runner
 from ..llama.core.indices.multi_modal.retriever import AudioRetriever
 from ..llama.core.schema import Modality
 from ..logger import logger
@@ -65,8 +65,8 @@ def query_text_text(
     Returns:
         list[ResultNode]: 検索結果のリスト
     """
-    return asyncio.run(
-        aquery_text_text(query=query, store=store, topk=topk, rerank=rerank)
+    return async_loop_runner.run(
+        lambda: aquery_text_text(query=query, store=store, topk=topk, rerank=rerank)
     )
 
 
@@ -137,8 +137,8 @@ def query_text_image(
     Returns:
         list[ResultNode]: 検索結果のリスト
     """
-    return asyncio.run(
-        aquery_text_image(query=query, store=store, topk=topk, rerank=rerank)
+    return async_loop_runner.run(
+        lambda: aquery_text_image(query=query, store=store, topk=topk, rerank=rerank)
     )
 
 
@@ -221,7 +221,9 @@ def query_image_image(
     Returns:
         list[ResultNode]: 検索結果のリスト
     """
-    return asyncio.run(aquery_image_image(path=path, store=store, topk=topk))
+    return async_loop_runner.run(
+        lambda: aquery_image_image(path=path, store=store, topk=topk)
+    )
 
 
 async def aquery_image_image(
@@ -289,8 +291,8 @@ def query_text_audio(
     Returns:
         list[ResultNode]: 検索結果のリスト
     """
-    return asyncio.run(
-        aquery_text_audio(query=query, store=store, topk=topk, rerank=rerank)
+    return async_loop_runner.run(
+        lambda: aquery_text_audio(query=query, store=store, topk=topk, rerank=rerank)
     )
 
 
@@ -361,7 +363,9 @@ def query_audio_audio(
     Returns:
         list[ResultNode]: 検索結果のリスト
     """
-    return asyncio.run(aquery_audio_audio(path=path, store=store, topk=topk))
+    return async_loop_runner.run(
+        lambda: aquery_audio_audio(path=path, store=store, topk=topk)
+    )
 
 
 async def aquery_audio_audio(
