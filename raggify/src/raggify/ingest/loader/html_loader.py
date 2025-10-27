@@ -251,25 +251,40 @@ class HTMLLoader(Loader):
         return TextNode(text=url, metadata=meta.to_dict())
 
     async def _aload_html_text(
-        self, url: str, base_url: Optional[str] = None
+        self,
+        url: str,
+        base_url: Optional[str] = None,
+        html: Optional[str] = None,
     ) -> list[BaseNode]:
         """HTML を読み込み、テキスト部分からノードを生成する。
 
         Args:
             url (str): 対象 URL
             base_url (Optional[str], optional): source の取得元を指定する場合。Defaults to None.
+            html (Optional[str], optional): 事前に取得済みの HTML 文字列。Defaults to None.
 
         Returns:
             list[BaseNode]: 生成したノード
         """
+        import html2text
         from llama_index.core.node_parser import SentenceSplitter
-        from llama_index.readers.web.simple_web.base import SimpleWebPageReader
+        from llama_index.core.schema import Document
 
         from ...core.metadata import BasicMetaData
 
+        if html is None:
+            html = await self._afetch_text(url)
+            if not html:
+                return []
+
         try:
-            reader = SimpleWebPageReader(html_to_text=True)
-            doc = await reader.aload_data([url])
+            text = html2text.html2text(html)
+            doc = [
+                Document(
+                    text=text,
+                    metadata={"url": url},
+                )
+            ]
 
             splitter = SentenceSplitter(
                 chunk_size=self._chunk_size,
@@ -312,15 +327,20 @@ class HTMLLoader(Loader):
             html=html, base_url=base_url, allowed_exts=Exts.FETCH_TARGET
         )
 
+        # キャッシュにないURLのみを対象
+        urls_to_fetch = [url for url in urls if url not in self._source_cache]
+
+        tasks = [
+            self._aload_direct_linked_file(url=url, base_url=base_url)
+            for url in urls_to_fetch
+        ]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
         # 最上位ループ内で複数ソースをまたいで _source_cache を共有したいため
         # ここでは _source_cache.clear() しないこと。
         nodes = []
-        for url in urls:
-            if url in self._source_cache:
-                continue
-
-            node = await self._aload_direct_linked_file(url=url, base_url=base_url)
-            if node is None:
+        for url, node in zip(urls_to_fetch, results):
+            if isinstance(node, Exception) or node is None:
                 logger.warning(f"failed to fetch from {url}, skipped")
                 continue
 
@@ -367,7 +387,7 @@ class HTMLLoader(Loader):
                 return []
 
             # 本文テキスト
-            nodes.extend(await self._aload_html_text(url))
+            nodes.extend(await self._aload_html_text(url=url, html=html))
 
             if self._load_asset:
                 # アセットファイル

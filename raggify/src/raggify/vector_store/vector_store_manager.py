@@ -9,9 +9,8 @@ from typing import TYPE_CHECKING, Callable, Optional, Sequence
 from llama_index.core.schema import ImageNode, TextNode
 
 from ..core.exts import Exts
-from ..core.metadata import META_KEYS
-from ..core.metadata import META_KEYS as MK
 from ..core.metadata import BasicMetaData
+from ..core.metadata import MetaKeys as MK
 from ..embed.embed_manager import EmbedManager, Modality
 from ..llama.core.schema import AudioNode
 from ..logger import logger
@@ -237,11 +236,11 @@ class VectorStoreManager:
             bool: 画像ノードなら True
         """
         # ファイルパスか URL の末尾に画像ファイルの拡張子が含まれるものを画像ノードとする
-        path = node.metadata.get(META_KEYS.FILE_PATH, "")
-        url = node.metadata.get(META_KEYS.URL, "")
+        path = node.metadata.get(MK.FILE_PATH, "")
+        url = node.metadata.get(MK.URL, "")
 
         # 独自 reader を使用し、temp_file_path に画像ファイルの拡張子が含まれるものも抽出
-        temp_file_path = node.metadata.get(META_KEYS.TEMP_FILE_PATH, "")
+        temp_file_path = node.metadata.get(MK.TEMP_FILE_PATH, "")
 
         return (
             Exts.endswith_exts(path, Exts.IMAGE)
@@ -258,9 +257,9 @@ class VectorStoreManager:
         Returns:
             bool: 音声ノードなら True
         """
-        path = node.metadata.get(META_KEYS.FILE_PATH, "")
-        url = node.metadata.get(META_KEYS.URL, "")
-        temp_file_path = node.metadata.get(META_KEYS.TEMP_FILE_PATH, "")
+        path = node.metadata.get(MK.FILE_PATH, "")
+        url = node.metadata.get(MK.URL, "")
+        temp_file_path = node.metadata.get(MK.TEMP_FILE_PATH, "")
 
         return (
             Exts.endswith_exts(path, Exts.AUDIO)

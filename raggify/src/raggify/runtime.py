@@ -46,9 +46,8 @@ class Runtime:
             self.cfg.reload()
 
         self.close()
-        self._embed_manager = None
-        self._rerank_manager = None
 
+    # 以下、シングルトンのインスタンス取得用
     @property
     def cfg(self) -> ConfigManager:
         if self._cfg is None:
@@ -58,11 +57,6 @@ class Runtime:
 
     @property
     def embed_manager(self) -> EmbedManager:
-        """EmbedManager を取得する。
-
-        Returns:
-            EmbedManager: 初期化済みの EmbedManager
-        """
         if self._embed_manager is None:
             self._embed_manager = create_embed_manager(self.cfg)
 
@@ -70,11 +64,6 @@ class Runtime:
 
     @property
     def meta_store(self) -> Structured:
-        """Structured メタストアを取得する。
-
-        Returns:
-            Structured: 初期化済みメタストア
-        """
         if self._meta_store is None:
             self._meta_store = create_meta_store(self.cfg)
 
@@ -82,11 +71,6 @@ class Runtime:
 
     @property
     def vector_store(self) -> VectorStoreManager:
-        """VectorStoreManager を取得する。
-
-        Returns:
-            VectorStoreManager: 初期化済みベクトルストアマネージャ
-        """
         if self._vector_store is None:
             self._vector_store = create_vector_store_manager(
                 cfg=self.cfg,
@@ -98,11 +82,6 @@ class Runtime:
 
     @property
     def rerank_manager(self) -> RerankManager:
-        """RerankManager を取得する。
-
-        Returns:
-            RerankManager: 初期化済みリランクマネージャ
-        """
         if self._rerank_manager is None:
             self._rerank_manager = create_rerank_manager(self.cfg)
 
@@ -110,11 +89,6 @@ class Runtime:
 
     @property
     def file_loader(self) -> FileLoader:
-        """FileLoader を取得する。
-
-        Returns:
-            FileLoader: 初期化済みファイルローダー
-        """
         if self._file_loader is None:
             self._file_loader = FileLoader(
                 chunk_size=self.cfg.ingest.chunk_size,
@@ -126,11 +100,6 @@ class Runtime:
 
     @property
     def html_loader(self) -> HTMLLoader:
-        """HTMLLoader を取得する。
-
-        Returns:
-            HTMLLoader: 初期化済み HTML ローダー
-        """
         if self._html_loader is None:
             self._html_loader = HTMLLoader(
                 chunk_size=self.cfg.ingest.chunk_size,
@@ -144,11 +113,11 @@ class Runtime:
 
     def close(self) -> None:
         """保持しているリソースを解放する。"""
+        self._embed_manager = None
+        self._vector_store = None
+        self._rerank_manager = None
         self._file_loader = None
         self._html_loader = None
-
-        if self._vector_store is not None:
-            self._vector_store = None
 
         if self._meta_store is not None:
             try:
@@ -174,7 +143,9 @@ def get_runtime() -> Runtime:
 
 
 def _shutdown_runtime() -> None:
+    """ランタイムの終了処理"""
     global _runtime
+
     if _runtime is not None:
         try:
             _runtime.close()

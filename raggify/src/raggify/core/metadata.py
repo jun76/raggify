@@ -4,7 +4,7 @@ from dataclasses import asdict, dataclass
 from typing import Any, Optional
 
 
-class META_KEYS_FROM:
+class MetaKeysFrom:
     # ライブラリ側定義ラベル（字列変更不可）
     ## SimpleDirectoryReader
     FILE_PATH = "file_path"
@@ -14,7 +14,7 @@ class META_KEYS_FROM:
     FILE_LASTMOD_AT = "last_modified_date"
 
 
-class META_KEYS(META_KEYS_FROM):
+class MetaKeys(MetaKeysFrom):
     # 正規化し、アプリ側で付与するラベル
     ## ノード内に保持する（＝BasicMetaData に含まれる）メタデータ
     CHUNK_NO = "chunk_no"
@@ -92,18 +92,18 @@ class BasicMetaData:
         data = meta or {}
 
         return cls(
-            file_path=data.get(META_KEYS.FILE_PATH, ""),
-            file_type=data.get(META_KEYS.FILE_TYPE, ""),
-            file_size=data.get(META_KEYS.FILE_SIZE, 0),
-            file_created_at=data.get(META_KEYS.FILE_CREATED_AT, ""),
-            file_lastmod_at=data.get(META_KEYS.FILE_LASTMOD_AT, ""),
-            chunk_no=data.get(META_KEYS.CHUNK_NO, 0),
-            url=data.get(META_KEYS.URL, ""),
-            base_source=data.get(META_KEYS.BASE_SOURCE, ""),
-            temp_file_path=data.get(META_KEYS.TEMP_FILE_PATH, ""),
-            node_lastmod_at=data.get(META_KEYS.NODE_LASTMOD_AT, 0),
-            page_no=data.get(META_KEYS.PAGE_NO, 0),
-            asset_no=data.get(META_KEYS.ASSET_NO, 0),
+            file_path=data.get(MetaKeys.FILE_PATH, ""),
+            file_type=data.get(MetaKeys.FILE_TYPE, ""),
+            file_size=data.get(MetaKeys.FILE_SIZE, 0),
+            file_created_at=data.get(MetaKeys.FILE_CREATED_AT, ""),
+            file_lastmod_at=data.get(MetaKeys.FILE_LASTMOD_AT, ""),
+            chunk_no=data.get(MetaKeys.CHUNK_NO, 0),
+            url=data.get(MetaKeys.URL, ""),
+            base_source=data.get(MetaKeys.BASE_SOURCE, ""),
+            temp_file_path=data.get(MetaKeys.TEMP_FILE_PATH, ""),
+            node_lastmod_at=data.get(MetaKeys.NODE_LASTMOD_AT, 0),
+            page_no=data.get(MetaKeys.PAGE_NO, 0),
+            asset_no=data.get(MetaKeys.ASSET_NO, 0),
         )
 
     def to_dict(self) -> dict[str, Any]:

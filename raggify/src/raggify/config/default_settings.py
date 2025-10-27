@@ -27,6 +27,11 @@ class RerankProvider(StrEnum):
     COHERE = auto()
 
 
+class ModelKey:
+    NAME = "name"
+    DIM = "dim"
+
+
 class DefaultSettings:
     """各種設定値のデフォルト値管理クラス
 
@@ -77,31 +82,49 @@ class DefaultSettings:
     ##### Embedding
     # Text
     OPENAI_EMBED_MODEL_TEXT: dict[str, Any] = {
-        "name": "text-embedding-3-small",
-        "dim": 1536,
+        ModelKey.NAME: "text-embedding-3-small",
+        ModelKey.DIM: 1536,
     }
-    COHERE_EMBED_MODEL_TEXT: dict[str, Any] = {"name": "embed-v4.0", "dim": 1536}
-    CLIP_EMBED_MODEL_TEXT: dict[str, Any] = {"name": "ViT-B/32", "dim": 512}
+    COHERE_EMBED_MODEL_TEXT: dict[str, Any] = {
+        ModelKey.NAME: "embed-v4.0",
+        ModelKey.DIM: 1536,
+    }
+    CLIP_EMBED_MODEL_TEXT: dict[str, Any] = {
+        ModelKey.NAME: "ViT-B/32",
+        ModelKey.DIM: 512,
+    }
     HUGGINGFACE_EMBED_MODEL_TEXT: dict[str, Any] = {
-        "name": "intfloat/multilingual-e5-base",
-        "dim": 1536,
+        ModelKey.NAME: "intfloat/multilingual-e5-base",
+        ModelKey.DIM: 768,
     }
-    VOYAGE_EMBED_MODEL_TEXT: dict[str, Any] = {"name": "voyage-3.5", "dim": 2048}
+    VOYAGE_EMBED_MODEL_TEXT: dict[str, Any] = {
+        ModelKey.NAME: "voyage-3.5",
+        ModelKey.DIM: 2048,
+    }
 
     # Image
-    COHERE_EMBED_MODEL_IMAGE: dict[str, Any] = {"name": "embed-v4.0", "dim": 1536}
-    CLIP_EMBED_MODEL_IMAGE: dict[str, Any] = {"name": "ViT-B/32", "dim": 512}
+    COHERE_EMBED_MODEL_IMAGE: dict[str, Any] = {
+        ModelKey.NAME: "embed-v4.0",
+        ModelKey.DIM: 1536,
+    }
+    CLIP_EMBED_MODEL_IMAGE: dict[str, Any] = {
+        ModelKey.NAME: "ViT-B/32",
+        ModelKey.DIM: 512,
+    }
     HUGGINGFACE_EMBED_MODEL_IMAGE: dict[str, Any] = {
-        "name": "llamaindex/vdr-2b-multi-v1",
-        "dim": 1536,
+        ModelKey.NAME: "llamaindex/vdr-2b-multi-v1",
+        ModelKey.DIM: 1536,
     }
     VOYAGE_EMBED_MODEL_IMAGE: dict[str, Any] = {
-        "name": "voyage-multimodal-3",
-        "dim": 1024,
+        ModelKey.NAME: "voyage-multimodal-3",
+        ModelKey.DIM: 1024,
     }
 
     # Audio
-    CLAP_EMBED_MODEL_AUDIO: dict[str, Any] = {"name": "effect_varlen", "dim": 512}
+    CLAP_EMBED_MODEL_AUDIO: dict[str, Any] = {
+        ModelKey.NAME: "effect_varlen",
+        ModelKey.DIM: 512,
+    }
 
     ##### Ingest
     CHUNK_SIZE: int = 500

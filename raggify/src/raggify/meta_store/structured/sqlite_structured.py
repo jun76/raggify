@@ -1,14 +1,13 @@
 from __future__ import annotations
 
+import sqlite3
 import threading
 from typing import TYPE_CHECKING, Any, Iterable, Optional, Sequence
 
-from ...core.metadata import META_KEYS as MK
+from ...core.metadata import MetaKeys as MK
 from .structured import Structured
 
 if TYPE_CHECKING:
-    import sqlite3
-
     from ...core.metadata import BasicMetaData
 
 # メタデータ管理テーブルの create 用
@@ -103,8 +102,6 @@ class SQLiteStructured(Structured):
         Raises:
             RuntimeError: 初期化失敗
         """
-        import sqlite3
-
         self._db_path = path
         self._owner_thread_id = threading.get_ident()
         self._sync_db: Optional[sqlite3.Connection] = None
@@ -309,8 +306,6 @@ class SQLiteStructured(Structured):
 
     def close(self) -> None:
         """SQLite 接続をクローズする。"""
-        import sqlite3
-
         conn = self._sync_db
         if conn is None:
             return

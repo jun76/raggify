@@ -34,7 +34,7 @@ __all__ = [
 class ResultNode:
     text: str
     metadata: dict[str, Any]
-    score: float | None
+    score: Optional[float] = None
 
 
 def _rt() -> Runtime:

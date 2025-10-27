@@ -194,48 +194,6 @@ class EmbedManager:
 
         return dims
 
-    def _sanitize_space_key(self, space_key: str) -> str:
-        """制約にマッチするよう space_key 文字列を整形する。
-
-        制約（AND）：
-            Chroma
-                containing 3-512 characters from [a-zA-Z0-9._-],
-                starting and ending with a character in [a-zA-Z0-9]
-
-            SQLite
-                念のため英数とアンダースコア以外は '_'
-
-        Args:
-            space_key (str): 整形前の space_key
-
-        Returns:
-            str: 整形後の space_key
-        """
-        allowed = set(
-            "abcdefghijklmnopqrstuvwxyz" "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "0123456789" "_"
-        )
-
-        # 許可されない文字は '_' に置換
-        chars = [ch if ch in allowed else "_" for ch in space_key]
-
-        # 長すぎる場合は 512 にトリム
-        if len(chars) > 512:
-            chars = chars[:512]
-
-        # 先頭・末尾を英数字にする（英数字でなければ '0' に置換）
-        def is_alnum(ch: str) -> bool:
-            return ("0" <= ch <= "9") or ("a" <= ch <= "z") or ("A" <= ch <= "Z")
-
-        if not chars:
-            chars = list("000")
-        else:
-            if not is_alnum(chars[0]):
-                chars[0] = "0"
-            if not is_alnum(chars[-1]):
-                chars[-1] = "0"
-
-        return "".join(chars)
-
     def _generate_space_key(self, provider: str, model: str, modality: Modality) -> str:
         """空間キー文字列を生成する。
 
@@ -246,5 +204,19 @@ class EmbedManager:
 
         Returns:
             str: 空間キー文字列
+
+        Note:
+            元々プレーンテキストにしていたが、63 字の上限に引っかかる例が出てきたためダイジェスト化
+
+            キー制約（AND）：
+                Chroma
+                    containing 3-512 characters from [a-zA-Z0-9._-],
+                    starting and ending with a character in [a-zA-Z0-9]
+                PGVector
+                    maximum length of 63 characters
+                SQLite
+                    念のため英数とアンダースコア以外は '_'
         """
-        return self._sanitize_space_key(f"{provider}_{model}_{modality}")
+        import hashlib
+
+        return hashlib.md5(f"{provider}{model}{modality}".encode()).hexdigest()
