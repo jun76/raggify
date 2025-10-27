@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable, Sequence
+import threading
+from typing import TYPE_CHECKING, Any, Iterable, Optional, Sequence
 
 from ...core.metadata import META_KEYS as MK
 from .structured import Structured
 
 if TYPE_CHECKING:
+    import sqlite3
+
     from ...core.metadata import BasicMetaData
 
 # メタデータ管理テーブルの create 用
@@ -85,6 +88,12 @@ UNION_ALL = " UNION ALL "
 class SQLiteStructured(Structured):
     """SQLite3 管理クラス"""
 
+    def _connection(self) -> sqlite3.Connection:
+        if self._sync_db is None:
+            raise RuntimeError("metadata store connection is closed")
+
+        return self._sync_db
+
     def __init__(self, path: str) -> None:
         """コンストラクタ
 
@@ -97,6 +106,8 @@ class SQLiteStructured(Structured):
         import sqlite3
 
         self._db_path = path
+        self._owner_thread_id = threading.get_ident()
+        self._sync_db: Optional[sqlite3.Connection] = None
 
         try:
             self._sync_db = sqlite3.connect(self._db_path)
@@ -108,7 +119,7 @@ class SQLiteStructured(Structured):
     def __del__(self) -> None:
         """デストラクタ"""
 
-        self._sync_db.close()
+        self.close()
 
     def _prepare_with(self, table_name: str) -> None:
         """指定のテーブルが存在しない場合、予め作成する。
@@ -119,9 +130,11 @@ class SQLiteStructured(Structured):
         Raises:
             RuntimeError: テーブル作成失敗
         """
+        conn = self._connection()
+
         try:
-            self._sync_db.execute("BEGIN")
-            self._sync_db.execute(
+            conn.execute("BEGIN")
+            conn.execute(
                 DDL_CREATE_METADATA.format(
                     table_name=table_name,
                     file_path=MK.FILE_PATH,
@@ -138,25 +151,25 @@ class SQLiteStructured(Structured):
                     fingerprint=MK.FINGERPRINT,
                 )
             )
-            self._sync_db.execute(
+            conn.execute(
                 DDL_IDX_FINGERPRINT.format(
                     table_name=table_name, fingerprint=MK.FINGERPRINT
                 )
             )
-            self._sync_db.execute(
+            conn.execute(
                 DDL_IDX_NODE_LASTMOD_AT.format(
                     table_name=table_name, node_lastmod_at=MK.NODE_LASTMOD_AT
                 )
             )
-            self._sync_db.execute(
+            conn.execute(
                 DDL_IDX_BASE_SOURCE.format(
                     table_name=table_name,
                     base_source=MK.BASE_SOURCE,
                 )
             )
-            self._sync_db.commit()
+            conn.commit()
         except Exception as e:
-            self._sync_db.rollback()
+            conn.rollback()
             raise RuntimeError("failed to exec DDL queries") from e
 
         self._created.append(table_name)
@@ -279,9 +292,11 @@ class SQLiteStructured(Structured):
             col_csv=col_csv, union_all=UNION_ALL.join(parts), limit=limit
         )
 
+        conn = self._connection()
+
         try:
-            with self._sync_db:
-                cur = self._sync_db.cursor()
+            with conn:
+                cur = conn.cursor()
                 try:
                     cur.execute(query)
                     res = cur.fetchall()
@@ -291,3 +306,19 @@ class SQLiteStructured(Structured):
             raise RuntimeError("failed to exec query") from e
 
         return res
+
+    def close(self) -> None:
+        """SQLite 接続をクローズする。"""
+        import sqlite3
+
+        conn = self._sync_db
+        if conn is None:
+            return
+
+        try:
+            conn.close()
+        except sqlite3.ProgrammingError:
+            if threading.get_ident() == self._owner_thread_id:
+                raise
+        finally:
+            self._sync_db = None

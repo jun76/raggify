@@ -56,3 +56,8 @@ class Structured(ABC):
             list[tuple]: 取得したレコード群
         """
         ...
+
+    def close(self) -> None:
+        """リソースを解放する。"""
+        # 具体的な実装はサブクラスで必要に応じて上書きする
+        return None

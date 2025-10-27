@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import atexit
 import threading
 from typing import Optional
 
@@ -44,12 +45,9 @@ class Runtime:
         if reload_config:
             self.cfg.reload()
 
+        self.close()
         self._embed_manager = None
-        self._meta_store = None
-        self._vector_store = None
         self._rerank_manager = None
-        self._file_loader = None
-        self._html_loader = None
 
     @property
     def cfg(self) -> ConfigManager:
@@ -144,6 +142,20 @@ class Runtime:
 
         return self._html_loader
 
+    def close(self) -> None:
+        """保持しているリソースを解放する。"""
+        self._file_loader = None
+        self._html_loader = None
+
+        if self._vector_store is not None:
+            self._vector_store = None
+
+        if self._meta_store is not None:
+            try:
+                self._meta_store.close()
+            finally:
+                self._meta_store = None
+
 
 def get_runtime() -> Runtime:
     """ランタイムシングルトンの getter。
@@ -159,3 +171,15 @@ def get_runtime() -> Runtime:
                 _runtime = Runtime()
 
     return _runtime
+
+
+def _shutdown_runtime() -> None:
+    global _runtime
+    if _runtime is not None:
+        try:
+            _runtime.close()
+        finally:
+            _runtime = None
+
+
+atexit.register(_shutdown_runtime)
