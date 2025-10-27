@@ -84,7 +84,7 @@ def render_main_menu(client: RestAPIClient) -> None:
     Args:
         client (RestAPIClient): raggify API クライアント
     """
-    st.title("📚 RAG Client")
+    st.title("📚 RAG システム")
     _render_status_section(client)
 
     st.subheader("🧭 メニュー")

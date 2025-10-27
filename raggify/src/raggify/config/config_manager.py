@@ -37,10 +37,7 @@ class ConfigManager:
         self._rerank: RerankConfig
 
         self._user_config_path = DefaultSettings.USER_CONFIG_PATH
-
-        if not os.path.exists(self._user_config_path):
-            self._load_default()
-            self._write_user_config()
+        self.write_default_if_not_exist()
 
         self._read_user_config()
 
@@ -95,6 +92,12 @@ class ConfigManager:
                 yaml.safe_dump(data, fp, sort_keys=False, allow_unicode=True)
         except OSError as e:
             logger.warning(f"failed to write config file: {e}")
+
+    def write_default_if_not_exist(self) -> None:
+        """設定ファイルが存在しない場合は書き出す。"""
+        if not os.path.exists(self._user_config_path):
+            self._load_default()
+            self._write_user_config()
 
     @property
     def general(self) -> GeneralConfig:

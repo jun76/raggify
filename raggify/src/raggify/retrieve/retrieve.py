@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
+
+from llama_index.core.schema import NodeWithScore
 
 from ..config.default_settings import DefaultSettings as DS
 from ..core.event import async_loop_runner
@@ -25,16 +26,7 @@ __all__ = [
     "aquery_text_audio",
     "query_audio_audio",
     "aquery_audio_audio",
-    "ResultNode",
 ]
-
-
-# 独自形式（実質、NodeWithScore のサブセット）
-@dataclass
-class ResultNode:
-    text: str
-    metadata: dict[str, Any]
-    score: Optional[float] = None
 
 
 def _rt() -> Runtime:
@@ -53,7 +45,7 @@ def query_text_text(
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
     rerank: Optional[RerankManager] = None,
-) -> list[ResultNode]:
+) -> list[NodeWithScore]:
     """クエリ文字列によるテキストドキュメント検索。
 
     Args:
@@ -63,7 +55,7 @@ def query_text_text(
         rerank (Optional[RerankManager], optional): リランカー管理。Defaults to None.
 
     Returns:
-        list[ResultNode]: 検索結果のリスト
+        list[NodeWithScore]: 検索結果のリスト
     """
     return async_loop_runner.run(
         lambda: aquery_text_text(query=query, store=store, topk=topk, rerank=rerank)
@@ -75,7 +67,7 @@ async def aquery_text_text(
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
     rerank: Optional[RerankManager] = None,
-) -> list[ResultNode]:
+) -> list[NodeWithScore]:
     """クエリ文字列によるテキストドキュメント非同期検索。
 
     Args:
@@ -85,7 +77,7 @@ async def aquery_text_text(
         rerank (Optional[RerankManager], optional): リランカー管理。Defaults to None.
 
     Returns:
-        list[ResultNode]: 検索結果のリスト
+        list[NodeWithScore]: 検索結果のリスト
     """
     store = store or _rt().vector_store
 
@@ -103,18 +95,12 @@ async def aquery_text_text(
 
     rerank = rerank or _rt().rerank_manager
     if rerank is None:
-        return [
-            ResultNode(text=nws.text, metadata=nws.metadata, score=nws.score)
-            for nws in nwss
-        ]
+        return nwss
 
     nwss = await rerank.arerank(nodes=nwss, query=query)
     logger.debug(f"reranked {len(nwss)} nodes")
 
-    return [
-        ResultNode(text=nws.text, metadata=nws.metadata, score=nws.score)
-        for nws in nwss
-    ]
+    return nwss
 
 
 def query_text_image(
@@ -122,7 +108,7 @@ def query_text_image(
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
     rerank: Optional[RerankManager] = None,
-) -> list[ResultNode]:
+) -> list[NodeWithScore]:
     """クエリ文字列による画像ドキュメント検索。
 
     Args:
@@ -135,7 +121,7 @@ def query_text_image(
         RuntimeError: テキスト --> 画像埋め込み非対応
 
     Returns:
-        list[ResultNode]: 検索結果のリスト
+        list[NodeWithScore]: 検索結果のリスト
     """
     return async_loop_runner.run(
         lambda: aquery_text_image(query=query, store=store, topk=topk, rerank=rerank)
@@ -147,7 +133,7 @@ async def aquery_text_image(
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
     rerank: Optional[RerankManager] = None,
-) -> list[ResultNode]:
+) -> list[NodeWithScore]:
     """クエリ文字列による画像ドキュメント非同期検索。
 
     Args:
@@ -160,7 +146,7 @@ async def aquery_text_image(
         RuntimeError: テキスト --> 画像埋め込み非対応
 
     Returns:
-        list[ResultNode]: 検索結果のリスト
+        list[NodeWithScore]: 検索結果のリスト
     """
     from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
 
@@ -192,25 +178,19 @@ async def aquery_text_image(
 
     rerank = rerank or _rt().rerank_manager
     if rerank is None:
-        return [
-            ResultNode(text=nws.text, metadata=nws.metadata, score=nws.score)
-            for nws in nwss
-        ]
+        return nwss
 
     nwss = await rerank.arerank(nodes=nwss, query=query)
     logger.debug(f"reranked {len(nwss)} nodes")
 
-    return [
-        ResultNode(text=nws.text, metadata=nws.metadata, score=nws.score)
-        for nws in nwss
-    ]
+    return nwss
 
 
 def query_image_image(
     path: str,
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
-) -> list[ResultNode]:
+) -> list[NodeWithScore]:
     """クエリ画像による画像ドキュメント検索。
 
     Args:
@@ -219,7 +199,7 @@ def query_image_image(
         topk (int, optional): 取得件数。Defaults to DS.TOPK.
 
     Returns:
-        list[ResultNode]: 検索結果のリスト
+        list[NodeWithScore]: 検索結果のリスト
     """
     return async_loop_runner.run(
         lambda: aquery_image_image(path=path, store=store, topk=topk)
@@ -230,7 +210,7 @@ async def aquery_image_image(
     path: str,
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
-) -> list[ResultNode]:
+) -> list[NodeWithScore]:
     """クエリ画像による画像ドキュメント非同期検索。
 
     Args:
@@ -239,7 +219,7 @@ async def aquery_image_image(
         topk (int, optional): 取得件数。Defaults to DS.TOPK.
 
     Returns:
-        list[ResultNode]: 検索結果のリスト
+        list[NodeWithScore]: 検索結果のリスト
     """
     from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
 
@@ -265,10 +245,7 @@ async def aquery_image_image(
 
     logger.debug(f"got {len(nwss)} nodes")
 
-    return [
-        ResultNode(text=nws.text, metadata=nws.metadata, score=nws.score)
-        for nws in nwss
-    ]
+    return nwss
 
 
 def query_text_audio(
@@ -276,7 +253,7 @@ def query_text_audio(
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
     rerank: Optional[RerankManager] = None,
-) -> list[ResultNode]:
+) -> list[NodeWithScore]:
     """クエリ文字列による音声ドキュメント検索。
 
     Args:
@@ -289,7 +266,7 @@ def query_text_audio(
         RuntimeError: テキスト --> 音声埋め込み非対応
 
     Returns:
-        list[ResultNode]: 検索結果のリスト
+        list[NodeWithScore]: 検索結果のリスト
     """
     return async_loop_runner.run(
         lambda: aquery_text_audio(query=query, store=store, topk=topk, rerank=rerank)
@@ -301,7 +278,7 @@ async def aquery_text_audio(
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
     rerank: Optional[RerankManager] = None,
-) -> list[ResultNode]:
+) -> list[NodeWithScore]:
     """クエリ文字列による音声ドキュメント非同期検索。
 
     Args:
@@ -314,7 +291,7 @@ async def aquery_text_audio(
         RuntimeError: テキスト --> 音声埋め込み非対応
 
     Returns:
-        list[ResultNode]: 検索結果のリスト
+        list[NodeWithScore]: 検索結果のリスト
     """
     store = store or _rt().vector_store
 
@@ -342,17 +319,14 @@ async def aquery_text_audio(
     nwss = await rerank.arerank(nodes=nwss, query=query)
     logger.debug(f"reranked {len(nwss)} nodes")
 
-    return [
-        ResultNode(text=nws.text, metadata=nws.metadata, score=nws.score)
-        for nws in nwss
-    ]
+    return nwss
 
 
 def query_audio_audio(
     path: str,
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
-) -> list[ResultNode]:
+) -> list[NodeWithScore]:
     """クエリ音声による音声ドキュメント検索。
 
     Args:
@@ -361,7 +335,7 @@ def query_audio_audio(
         topk (int, optional): 取得件数。Defaults to DS.TOPK.
 
     Returns:
-        list[ResultNode]: 検索結果のリスト
+        list[NodeWithScore]: 検索結果のリスト
     """
     return async_loop_runner.run(
         lambda: aquery_audio_audio(path=path, store=store, topk=topk)
@@ -372,7 +346,7 @@ async def aquery_audio_audio(
     path: str,
     store: Optional[VectorStoreManager] = None,
     topk: int = DS.TOPK,
-) -> list[ResultNode]:
+) -> list[NodeWithScore]:
     """クエリ音声による音声ドキュメント非同期検索。
 
     Args:
@@ -381,7 +355,7 @@ async def aquery_audio_audio(
         topk (int, optional): 取得件数。Defaults to DS.TOPK.
 
     Returns:
-        list[ResultNode]: 検索結果のリスト
+        list[NodeWithScore]: 検索結果のリスト
     """
     store = store or _rt().vector_store
 
@@ -399,7 +373,4 @@ async def aquery_audio_audio(
 
     logger.debug(f"got {len(nwss)} nodes")
 
-    return [
-        ResultNode(text=nws.text, metadata=nws.metadata, score=nws.score)
-        for nws in nwss
-    ]
+    return nwss

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Optional
 
 from .config.config_manager import ConfigManager
 
-if TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:
     from .embed.embed_manager import EmbedManager
     from .ingest.loader.file_loader import FileLoader
     from .ingest.loader.html_loader import HTMLLoader
@@ -100,9 +100,9 @@ class Runtime:
             from .ingest.loader.file_loader import FileLoader
 
             self._file_loader = FileLoader(
+                store=self.vector_store,
                 chunk_size=self.cfg.ingest.chunk_size,
                 chunk_overlap=self.cfg.ingest.chunk_overlap,
-                store=self.vector_store,
             )
 
         return self._file_loader
@@ -113,11 +113,15 @@ class Runtime:
             from .ingest.loader.html_loader import HTMLLoader
 
             self._html_loader = HTMLLoader(
-                chunk_size=self.cfg.ingest.chunk_size,
-                chunk_overlap=self.cfg.ingest.chunk_overlap,
                 file_loader=self.file_loader,
                 store=self.vector_store,
+                chunk_size=self.cfg.ingest.chunk_size,
+                chunk_overlap=self.cfg.ingest.chunk_overlap,
+                load_asset=self.cfg.ingest.load_asset,
+                req_per_sec=self.cfg.ingest.req_per_sec,
+                timeout_sec=self.cfg.ingest.timeout_sec,
                 user_agent=self.cfg.ingest.user_agent,
+                same_origin=self.cfg.ingest.same_origin,
             )
 
         return self._html_loader

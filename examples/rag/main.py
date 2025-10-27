@@ -6,7 +6,7 @@ from pathlib import Path
 
 if __package__ is None or __package__ == "":
     sys.path.append(str(Path(__file__).resolve().parent.parent))
-    __package__ = "ragclient"
+    __package__ = "rag"
 
 import streamlit as st
 
@@ -25,7 +25,7 @@ from .views.search import render_search_view
 def main() -> None:
     """Streamlit アプリのエントリポイント。"""
 
-    st.set_page_config(page_title="RAG Client", page_icon="🧠", layout="wide")
+    st.set_page_config(page_title="RAG システム", page_icon="🧠", layout="wide")
     ensure_session_state()
 
     client = RestAPIClient(Config.raggify_base_url)

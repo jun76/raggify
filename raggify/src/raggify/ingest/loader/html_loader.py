@@ -27,11 +27,11 @@ class HTMLLoader(Loader):
         store: VectorStoreManager,
         chunk_size: int = DS.CHUNK_SIZE,
         chunk_overlap: int = DS.CHUNK_OVERLAP,
-        load_asset: bool = True,
-        req_per_sec: int = 2,
-        timeout: int = 30,
+        load_asset: bool = DS.LOAD_ASSET,
+        req_per_sec: int = DS.REQ_PER_SEC,
+        timeout_sec: int = DS.TIMEOUT_SEC,
         user_agent: str = DS.USER_AGENT,
-        same_origin: bool = True,
+        same_origin: bool = DS.SAME_ORIGIN,
     ):
         """HTML を読み込み、ノードを生成するためのクラス。
 
@@ -40,18 +40,18 @@ class HTMLLoader(Loader):
             store (VectorStoreManager): 登録済みソースの判定に使用
             chunk_size (int, optional): チャンクサイズ。Defaults to DS.CHUNK_SIZE.
             chunk_overlap (int, optional): チャンク重複語数。Defaults to DS.CHUNK_OVERLAP.
-            load_asset (bool, optional): アセットを読み込むか。Defaults to True.
-            req_per_sec (int, optional): 秒間リクエスト数。Defaults to 2.
-            timeout (int, optional): タイムアウト秒。Defaults to 30.
+            load_asset (bool, optional): アセットを読み込むか。Defaults to DS.LOAD_ASSET.
+            req_per_sec (int, optional): 秒間リクエスト数。Defaults to DS.REQ_PER_SEC.
+            timeout_sec (int, optional): タイムアウト秒。Defaults to DS.TIMEOUT_SEC.
             user_agent (str, optional): GET リクエスト時の user agent。Defaults to DS.USER_AGENT.
-            same_origin (bool, optional): 同一オリジンのみ対象とするか。Defaults to True.
+            same_origin (bool, optional): 同一オリジンのみ対象とするか。Defaults to DS.SAME_ORIGIN.
         """
         Loader.__init__(self, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
         self._file_loader = file_loader
         self._store = store
         self._load_asset = load_asset
         self._req_per_sec = req_per_sec
-        self._timeout = timeout
+        self._timeout_sec = timeout_sec
         self._user_agent = user_agent
         self._same_origin = same_origin
 
@@ -75,7 +75,7 @@ class HTMLLoader(Loader):
             res = await asyncio.to_thread(
                 requests.get,
                 url,
-                timeout=self._timeout,
+                timeout=self._timeout_sec,
                 headers=headers,
             )
             res.raise_for_status()
@@ -196,6 +196,11 @@ class HTMLLoader(Loader):
             res = await self._arequest_get(url)
         except Exception as e:
             logger.exception(e)
+            return None
+
+        content_type = (res.headers.get("Content-Type") or "").lower()
+        if "text/html" in content_type:
+            logger.warning(f"skip asset (unexpected content-type): {content_type}")
             return None
 
         body = res.content or b""
@@ -327,6 +332,12 @@ class HTMLLoader(Loader):
             html=html, base_url=base_url, allowed_exts=Exts.FETCH_TARGET
         )
 
+        if not urls:
+            logger.info("no asset files found")
+            return []
+
+        logger.info(f"{len(urls)} asset files found")
+
         # キャッシュにないURLのみを対象
         urls_to_fetch = [url for url in urls if url not in self._source_cache]
 
@@ -352,6 +363,7 @@ class HTMLLoader(Loader):
 
             # 取得済みキャッシュに追加
             self._source_cache.add(url)
+            logger.debug(f"add asset: {url}")
 
         return nodes
 

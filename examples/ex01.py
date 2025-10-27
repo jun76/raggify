@@ -1,15 +1,17 @@
 import json
 
 from raggify.ingest import ingest_url_list
-from raggify.retrieve import query_text_image
+from raggify.retrieve import query_text_text
 
 urls = [
-    "https://developers.llamaindex.ai/python/examples/multi_modal/multi_modal_retrieval/",
+    "https://en.wikipedia.org/wiki/Harry_Potter_(film_series)",
+    "https://en.wikipedia.org/wiki/Star_Wars_(film)",
+    "https://en.wikipedia.org/wiki/Forrest_Gump",
 ]
 
-
 ingest_url_list(urls)
-nodes = query_text_image(query="what is the main character in Batman", topk=3)
+
+nodes = query_text_text(query="Half-Blood Prince")
 
 for node in nodes:
     print(

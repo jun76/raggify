@@ -108,6 +108,7 @@ def server(
 
 @app.command(help=f"Show current config file.")
 def config() -> None:
+    _cfg().write_default_if_not_exist()
     _echo_json(_cfg().get_dict())
 
 

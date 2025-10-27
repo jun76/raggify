@@ -1,5 +1,4 @@
 from .retrieve import (
-    ResultNode,
     aquery_audio_audio,
     aquery_image_image,
     aquery_text_audio,
@@ -13,7 +12,6 @@ from .retrieve import (
 )
 
 __all__ = [
-    "ResultNode",
     "aquery_audio_audio",
     "aquery_image_image",
     "aquery_text_audio",

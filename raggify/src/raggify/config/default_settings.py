@@ -127,10 +127,16 @@ class DefaultSettings:
     }
 
     ##### Ingest
+    # General
     CHUNK_SIZE: int = 500
     CHUNK_OVERLAP: int = 50
+    UPLOAD_DIR: str = f"/etc/{PROJECT_NAME}/upload"
+    # Web
     USER_AGENT: str = PROJECT_NAME
-    UPLOAD_DIR: str = "upload"
+    LOAD_ASSET: bool = True
+    REQ_PER_SEC: int = 2
+    TIMEOUT_SEC: int = 30
+    SAME_ORIGIN: bool = True
 
     ##### Rerank
     FLAGEMBEDDING_RERANK_MODEL: str = "BAAI/bge-reranker-v2-m3"
