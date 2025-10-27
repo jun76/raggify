@@ -126,9 +126,13 @@ class EmbedManager:
         Returns:
             list[Embedding]: 埋め込みベクトル
         """
-        embed = self.get_container(Modality.TEXT).embed
-        logger.debug(f"now batch embedding {len(texts)} texts...")
+        if Modality.TEXT not in self.modality:
+            logger.warning("no text embedding is specified")
+            return []
 
+        embed = self.get_container(Modality.TEXT).embed
+
+        logger.debug(f"now batch embedding {len(texts)} texts...")
         dims = await embed.aget_text_embedding_batch(texts=texts, show_progress=True)
 
         if dims:
@@ -150,12 +154,15 @@ class EmbedManager:
         """
         from llama_index.core.embeddings.multi_modal_base import MultiModalEmbedding
 
+        if Modality.IMAGE not in self.modality:
+            logger.warning("no image embedding is specified")
+            return []
+
         embed = self.get_container(Modality.IMAGE).embed
         if not isinstance(embed, MultiModalEmbedding):
             raise RuntimeError("multimodal embed model is required")
 
         logger.debug(f"now batch embedding {len(paths)} images...")
-
         dims = await embed.aget_image_embedding_batch(
             img_file_paths=paths, show_progress=True
         )
@@ -179,12 +186,15 @@ class EmbedManager:
         """
         from ..llama.embeddings.multi_modal_base import AudioEmbedding
 
+        if Modality.AUDIO not in self.modality:
+            logger.warning("no audio embedding is specified")
+            return []
+
         embed = self.get_container(Modality.AUDIO).embed
         if not isinstance(embed, AudioEmbedding):
             raise RuntimeError("audio embed model is required")
 
         logger.debug(f"now batch embedding {len(paths)} audios...")
-
         dims = await embed.aget_audio_embedding_batch(
             audio_file_paths=paths, show_progress=True
         )

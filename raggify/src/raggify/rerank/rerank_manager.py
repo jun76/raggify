@@ -54,7 +54,7 @@ class RerankManager:
             RuntimeError: リランカーが処理に失敗した場合
         """
         if self._cont is None:
-            logger.warning("rerank provider is not specified")
+            logger.info("rerank provider is not specified")
             return nodes
 
         try:

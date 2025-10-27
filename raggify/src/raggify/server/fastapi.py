@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import warnings
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Optional
@@ -25,6 +26,12 @@ logging.getLogger("PIL.Image").setLevel(logging.WARNING)
 logging.getLogger("PIL.PngImagePlugin").setLevel(logging.WARNING)
 logging.getLogger("openai._base_client").setLevel(logging.WARNING)
 logging.getLogger("unstructured.trace").setLevel(logging.WARNING)
+
+warnings.filterwarnings(
+    "ignore",
+    message="The 'validate_default' attribute with value True was provided to the `Field\\(\\)` function.*",
+    category=UserWarning,
+)
 
 
 class QueryTextRequest(BaseModel):

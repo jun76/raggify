@@ -2,19 +2,18 @@ from __future__ import annotations
 
 import atexit
 import threading
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from .config.config_manager import ConfigManager
-from .embed.embed import create_embed_manager
-from .embed.embed_manager import EmbedManager
-from .ingest.loader.file_loader import FileLoader
-from .ingest.loader.html_loader import HTMLLoader
-from .meta_store.meta_store import create_meta_store
-from .meta_store.structured.structured import Structured
-from .rerank.rerank import create_rerank_manager
-from .rerank.rerank_manager import RerankManager
-from .vector_store.vector_store import create_vector_store_manager
-from .vector_store.vector_store_manager import VectorStoreManager
+
+if TYPE_CHECKING:  # pragma: no cover
+    from .embed.embed_manager import EmbedManager
+    from .ingest.loader.file_loader import FileLoader
+    from .ingest.loader.html_loader import HTMLLoader
+    from .meta_store.structured.structured import Structured
+    from .rerank.rerank_manager import RerankManager
+    from .vector_store.vector_store_manager import VectorStoreManager
+
 
 __all__ = ["get_runtime"]
 
@@ -58,6 +57,8 @@ class Runtime:
     @property
     def embed_manager(self) -> EmbedManager:
         if self._embed_manager is None:
+            from .embed.embed import create_embed_manager
+
             self._embed_manager = create_embed_manager(self.cfg)
 
         return self._embed_manager
@@ -65,6 +66,8 @@ class Runtime:
     @property
     def meta_store(self) -> Structured:
         if self._meta_store is None:
+            from .meta_store.meta_store import create_meta_store
+
             self._meta_store = create_meta_store(self.cfg)
 
         return self._meta_store
@@ -72,6 +75,8 @@ class Runtime:
     @property
     def vector_store(self) -> VectorStoreManager:
         if self._vector_store is None:
+            from .vector_store.vector_store import create_vector_store_manager
+
             self._vector_store = create_vector_store_manager(
                 cfg=self.cfg,
                 embed=self.embed_manager,
@@ -83,6 +88,8 @@ class Runtime:
     @property
     def rerank_manager(self) -> RerankManager:
         if self._rerank_manager is None:
+            from .rerank.rerank import create_rerank_manager
+
             self._rerank_manager = create_rerank_manager(self.cfg)
 
         return self._rerank_manager
@@ -90,6 +97,8 @@ class Runtime:
     @property
     def file_loader(self) -> FileLoader:
         if self._file_loader is None:
+            from .ingest.loader.file_loader import FileLoader
+
             self._file_loader = FileLoader(
                 chunk_size=self.cfg.ingest.chunk_size,
                 chunk_overlap=self.cfg.ingest.chunk_overlap,
@@ -101,6 +110,8 @@ class Runtime:
     @property
     def html_loader(self) -> HTMLLoader:
         if self._html_loader is None:
+            from .ingest.loader.html_loader import HTMLLoader
+
             self._html_loader = HTMLLoader(
                 chunk_size=self.cfg.ingest.chunk_size,
                 chunk_overlap=self.cfg.ingest.chunk_overlap,

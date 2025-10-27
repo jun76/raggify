@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 from typing import TYPE_CHECKING, Any, Protocol
 
 import typer
@@ -25,6 +26,12 @@ def _cfg() -> ConfigManager:
 
     return get_runtime().cfg
 
+
+warnings.filterwarnings(
+    "ignore",
+    message="The 'validate_default' attribute with value True was provided to the `Field\\(\\)` function.*",
+    category=UserWarning,
+)
 
 logger.setLevel(_cfg().general.log_level)
 app = typer.Typer(

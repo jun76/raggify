@@ -299,10 +299,8 @@ class VectorStoreManager:
 
         try:
             vecs = await self._embed.aembed_text(texts)
-            if len(vecs) != len(texts):
-                raise RuntimeError(
-                    f"embedding count mismatch: expected {len(texts)}, got {len(vecs)}"
-                )
+            if not vecs:
+                return
 
             for node, vec in zip(valid_nodes, vecs):
                 node.embedding = vec
@@ -371,10 +369,8 @@ class VectorStoreManager:
 
         try:
             vecs = await aembed_func(file_paths)
-            if len(vecs) != len(file_paths):
-                raise RuntimeError(
-                    f"embedding count mismatch: expected {len(file_paths)}, got {len(vecs)}"
-                )
+            if not vecs:
+                return
 
             for node, vec in zip(valid_nodes, vecs):
                 node.embedding = vec

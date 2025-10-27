@@ -1,7 +1,7 @@
 import json
 
 from raggify.ingest import ingest_url_list
-from raggify.retrieve import query_text_audio
+from raggify.retrieve import query_text_image
 
 urls = [
     "https://developers.llamaindex.ai/python/examples/embeddings/openai/",
@@ -11,7 +11,7 @@ urls = [
 
 
 ingest_url_list(urls)
-nodes = query_text_audio(query="voyage")
+nodes = query_text_image(query="voyage")
 
 for node in nodes:
     print(
