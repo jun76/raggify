@@ -330,10 +330,14 @@ class HTMLLoader(Loader):
         # キャッシュにないURLのみを対象
         urls_to_fetch = [url for url in urls if url not in self._source_cache]
 
-        tasks = [
-            self._aload_direct_linked_file(url=url, base_url=base_url)
-            for url in urls_to_fetch
-        ]
+        # セマフォで同時実行数を制限
+        semaphore = asyncio.Semaphore(self._req_per_sec)
+
+        async def fetch_with_limit(url: str) -> Optional[BaseNode]:
+            async with semaphore:
+                return await self._aload_direct_linked_file(url=url, base_url=base_url)
+
+        tasks = [fetch_with_limit(url) for url in urls_to_fetch]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # 最上位ループ内で複数ソースをまたいで _source_cache を共有したいため

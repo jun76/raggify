@@ -27,9 +27,9 @@ class RerankProvider(StrEnum):
     COHERE = auto()
 
 
-class ModelKey:
-    NAME = "name"
-    DIM = "dim"
+class ModelKey(StrEnum):
+    NAME = auto()
+    DIM = auto()
 
 
 class DefaultSettings:

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Sequence
-
 
 class Loader:
     def __init__(self, chunk_size: int, chunk_overlap: int) -> None:

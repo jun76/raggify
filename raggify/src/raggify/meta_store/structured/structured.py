@@ -59,5 +59,4 @@ class Structured(ABC):
 
     def close(self) -> None:
         """リソースを解放する。"""
-        # 具体的な実装はサブクラスで必要に応じて上書きする
         return None

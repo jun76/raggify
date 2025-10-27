@@ -219,4 +219,4 @@ class EmbedManager:
         """
         import hashlib
 
-        return hashlib.md5(f"{provider}{model}{modality}".encode()).hexdigest()
+        return hashlib.md5(f"{provider}:{model}:{modality}".encode()).hexdigest()
