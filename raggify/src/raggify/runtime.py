@@ -35,16 +35,44 @@ class Runtime:
         self._file_loader: Optional[FileLoader] = None
         self._html_loader: Optional[HTMLLoader] = None
 
-    def reload(self, reload_config: bool = True) -> None:
-        """既存のリソースを破棄し、必要に応じて設定を再読み込みする。
+    def build(self) -> None:
+        self._release()
+        self.touch()
+
+    def rebuild(self) -> None:
+        # メモリ上の設定値を生かす
+        self._release(False)
+        self.touch()
+
+    def _release(self, with_cfg: bool = True) -> None:
+        """既存のリソースを破棄する。
 
         Args:
-            reload_config (bool, optional): ConfigManager もリロードするか。Defaults to True.
+            with_cfg (bool, optional): メモリ上の設定値も破棄するか。Defaults to True.
         """
-        if reload_config:
-            self.cfg.reload()
+        if with_cfg:
+            self._cfg = None
 
-        self.close()
+        self._embed_manager = None
+        self._vector_store = None
+        self._rerank_manager = None
+        self._file_loader = None
+        self._html_loader = None
+
+        if self._meta_store is not None:
+            try:
+                self._meta_store.close()
+            finally:
+                self._meta_store = None
+
+    def touch(self) -> None:
+        """各シングルトンの生成が未だであれば生成する。"""
+        self.embed_manager
+        self.meta_store
+        self.vector_store
+        self.rerank_manager
+        self.file_loader
+        self.html_loader
 
     # 以下、シングルトンのインスタンス取得用
     @property
@@ -126,20 +154,6 @@ class Runtime:
 
         return self._html_loader
 
-    def close(self) -> None:
-        """保持しているリソースを解放する。"""
-        self._embed_manager = None
-        self._vector_store = None
-        self._rerank_manager = None
-        self._file_loader = None
-        self._html_loader = None
-
-        if self._meta_store is not None:
-            try:
-                self._meta_store.close()
-            finally:
-                self._meta_store = None
-
 
 def get_runtime() -> Runtime:
     """ランタイムシングルトンの getter。
@@ -163,7 +177,7 @@ def _shutdown_runtime() -> None:
 
     if _runtime is not None:
         try:
-            _runtime.close()
+            _runtime._release()
         finally:
             _runtime = None
 

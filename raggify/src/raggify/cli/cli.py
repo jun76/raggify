@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import warnings
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -108,8 +109,10 @@ def server(
 
 @app.command(help=f"Show current config file.")
 def config() -> None:
-    _cfg().write_default_if_not_exist()
     _echo_json(_cfg().get_dict())
+
+    if not os.path.exists(_cfg().user_config_path):
+        _cfg().write_yaml()
 
 
 # 以下、REST API Client のラッパーコマンドを定義

@@ -49,12 +49,12 @@ class DefaultSettings:
     PORT: int = 8000
     MCP: bool = False
     VECTOR_STORE_PROVIDER: VectorStoreProvider = VectorStoreProvider.CHROMA
-    TEXT_EMBED_PROVIDER: Optional[EmbedProvider] = EmbedProvider.HUGGINGFACE
-    IMAGE_EMBED_PROVIDER: Optional[EmbedProvider] = EmbedProvider.CLIP
-    AUDIO_EMBED_PROVIDER: Optional[EmbedProvider] = EmbedProvider.CLAP
-    RERANK_PROVIDER: RerankProvider = RerankProvider.FLAGEMBEDDING
+    TEXT_EMBED_PROVIDER: Optional[EmbedProvider] = EmbedProvider.OPENAI
+    IMAGE_EMBED_PROVIDER: Optional[EmbedProvider] = EmbedProvider.COHERE
+    AUDIO_EMBED_PROVIDER: Optional[EmbedProvider] = None
+    RERANK_PROVIDER: RerankProvider = RerankProvider.COHERE
     OPENAI_BASE_URL: Optional[str] = None
-    DEVICE: Literal["cpu", "cuda", "mps"] = "cuda"
+    DEVICE: Literal["cpu", "cuda", "mps"] = "cpu"
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "DEBUG"
 
     ##### Vector Store

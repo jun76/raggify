@@ -9,6 +9,7 @@ from ..config.config_manager import ConfigManager
 from ..config.default_settings import EmbedProvider
 from ..config.default_settings import ModelKey as MK
 from ..llama.core.schema import Modality
+from ..logger import logger
 
 if TYPE_CHECKING:
     from .embed_manager import EmbedContainer, EmbedManager
@@ -139,7 +140,13 @@ def _cohere_image(cfg: ConfigManager) -> EmbedContainer:
 
 
 def _clip_text(cfg: ConfigManager) -> EmbedContainer:
-    from llama_index.embeddings.clip import ClipEmbedding
+    try:
+        from llama_index.embeddings.clip import ClipEmbedding
+    except ImportError as e:
+        logger.error(
+            "llama-index-embeddings-clip not found. Try install with [local] option."
+        )
+        raise e
 
     from .embed_manager import EmbedContainer
 
@@ -154,7 +161,13 @@ def _clip_text(cfg: ConfigManager) -> EmbedContainer:
 
 
 def _clip_image(cfg: ConfigManager) -> EmbedContainer:
-    from llama_index.embeddings.clip import ClipEmbedding
+    try:
+        from llama_index.embeddings.clip import ClipEmbedding
+    except ImportError as e:
+        logger.error(
+            "llama-index-embeddings-clip not found. Try install with [local] option."
+        )
+        raise e
 
     from .embed_manager import EmbedContainer
 
@@ -169,7 +182,13 @@ def _clip_image(cfg: ConfigManager) -> EmbedContainer:
 
 
 def _huggingface_text(cfg: ConfigManager) -> EmbedContainer:
-    from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+    try:
+        from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+    except ImportError as e:
+        logger.error(
+            "llama-index-embeddings-huggingface not found. Try install with [local] option."
+        )
+        raise e
 
     from .embed_manager import EmbedContainer
 
@@ -184,7 +203,13 @@ def _huggingface_text(cfg: ConfigManager) -> EmbedContainer:
 
 
 def _huggingface_image(cfg: ConfigManager) -> EmbedContainer:
-    from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+    try:
+        from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+    except ImportError as e:
+        logger.error(
+            "llama-index-embeddings-huggingface not found. Try install with [local] option."
+        )
+        raise e
 
     from .embed_manager import EmbedContainer
 
@@ -200,7 +225,12 @@ def _huggingface_image(cfg: ConfigManager) -> EmbedContainer:
 
 
 def _clap_audio(cfg: ConfigManager) -> EmbedContainer:
-    from ..llama.embeddings.clap import ClapEmbedding
+    try:
+        from ..llama.embeddings.clap import ClapEmbedding
+    except ImportError as e:
+        logger.error("laion-clap not found. Try install with [local] option.")
+        raise e
+
     from .embed_manager import EmbedContainer
 
     return EmbedContainer(

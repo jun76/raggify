@@ -37,11 +37,13 @@ class ConfigManager:
         self._rerank: RerankConfig
 
         self._user_config_path = DefaultSettings.USER_CONFIG_PATH
-        self.write_default_if_not_exist()
+        if not os.path.exists(self._user_config_path):
+            self.load_default()
+            self.write_yaml()
 
-        self._read_user_config()
+        self.read_yaml()
 
-    def _load_default(self) -> None:
+    def load_default(self) -> None:
         """デフォルトの設定値を読み込む。"""
         self._general = GeneralConfig()
         self._vector_store = VectorStoreConfig()
@@ -50,9 +52,9 @@ class ConfigManager:
         self._ingest = IngestConfig()
         self._rerank = RerankConfig()
 
-    def _read_user_config(self) -> None:
+    def read_yaml(self) -> None:
         """設定ファイルから設定値を読み込む。"""
-        self._load_default()
+        self.load_default()
         try:
             with open(self._user_config_path, "r", encoding="utf-8") as fp:
                 data = yaml.safe_load(fp) or {}
@@ -77,7 +79,7 @@ class ConfigManager:
             data.get("rerank"), RerankConfig, self._rerank
         )
 
-    def _write_user_config(self) -> None:
+    def write_yaml(self) -> None:
         """現状の設定値を設定ファイルに書き出す。"""
         config_dir = os.path.dirname(self._user_config_path)
         try:
@@ -92,12 +94,6 @@ class ConfigManager:
                 yaml.safe_dump(data, fp, sort_keys=False, allow_unicode=True)
         except OSError as e:
             logger.warning(f"failed to write config file: {e}")
-
-    def write_default_if_not_exist(self) -> None:
-        """設定ファイルが存在しない場合は書き出す。"""
-        if not os.path.exists(self._user_config_path):
-            self._load_default()
-            self._write_user_config()
 
     @property
     def general(self) -> GeneralConfig:
@@ -134,17 +130,6 @@ class ConfigManager:
     @property
     def user_config_path(self) -> str:
         return DefaultSettings.USER_CONFIG_PATH
-
-    def reload(self) -> None:
-        """設定ファイルを再読み込みする。"""
-        if os.path.exists(self._user_config_path):
-            self._read_user_config()
-        else:
-            logger.warning(f"{self._user_config_path} is not found.")
-
-    def save(self) -> None:
-        """現状の設定をファイルに保存する。"""
-        self._write_user_config()
 
     def get_dict(self) -> dict[str, Any]:
         """現状の設定を辞書形式で返す。

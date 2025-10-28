@@ -9,12 +9,12 @@ from typing import Any, Optional
 
 import aiofiles
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from llama_index.core.schema import NodeWithScore
 from pydantic import BaseModel
 
 from ..ingest import ingest
 from ..llama.core.schema import Modality
 from ..logger import console, logger
-from ..retrieve.retrieve import ResultNode
 from ..runtime import get_runtime as _rt
 
 __all__ = ["app"]
@@ -80,32 +80,18 @@ app = FastAPI(
 _request_lock = asyncio.Lock()
 
 
-def _setup(reload: bool = False) -> None:
-    """各種インスタンスを生成
-
-    Args:
-        reload (bool, optional): 再生成するか。Defaults to False.
-    """
+def _setup() -> None:
+    """各種インスタンスを生成"""
     console.print(f"⏳ {_rt().cfg.project_name} server is starting up.")
-
-    if reload:
-        _rt().reload()
-
-    _rt().embed_manager
-    _rt().meta_store
-    _rt().vector_store
-    _rt().rerank_manager
-    _rt().file_loader
-    _rt().html_loader
-
+    _rt().build()
     console.print(f"✅ now {_rt().cfg.project_name} server is online.")
 
 
-def _nodes_to_response(nodes: list[ResultNode]) -> list[dict[str, Any]]:
-    """ResultNode リストを JSON 返却可能な辞書リストへ変換する。
+def _nodes_to_response(nodes: list[NodeWithScore]) -> list[dict[str, Any]]:
+    """NodeWithScore リストを JSON 返却可能な辞書リストへ変換する。
 
     Args:
-        nodes (list[ResultNode]): 変換対象ノード
+        nodes (list[NodeWithScore]): 変換対象ノード
 
     Returns:
         list[dict[str, Any]]: JSON 変換済みノードリスト
@@ -143,7 +129,7 @@ async def reload() -> dict[str, Any]:
     """
     logger.debug("exec /v1/reload")
 
-    _setup(True)
+    _setup()
 
     return {"status": "ok"}
 

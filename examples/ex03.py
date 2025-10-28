@@ -1,5 +1,3 @@
-import json
-
 from raggify.ingest import ingest_path_list
 from raggify.retrieve import query_text_audio
 
@@ -13,11 +11,3 @@ paths = [
 ingest_path_list(paths)
 
 nodes = query_text_audio(query="phone call")
-
-for node in nodes:
-    print(
-        json.dumps(
-            obj={"text": node.text, "metadata": node.metadata, "score": node.score},
-            indent=2,
-        )
-    )
