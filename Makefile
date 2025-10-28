@@ -1,3 +1,3 @@
 install:
-	uv sync
-	uv tool install -e '.[local, exam]'
+	uv sync --all-extras
+	uv tool install --reinstall -e '.[local, exam]'

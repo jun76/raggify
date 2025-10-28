@@ -4,7 +4,7 @@ import enum
 import logging
 import os
 from dataclasses import fields
-from typing import Any, Optional
+from typing import Any, Optional, get_args, get_origin, get_type_hints
 
 import yaml
 
@@ -166,11 +166,17 @@ class ConfigManager:
             return default_instance
 
         values: dict[str, Any] = {}
+        type_hints = get_type_hints(schema)
         for field in fields(schema):
             current = getattr(default_instance, field.name)
             raw = section.get(field.name, current)
 
-            if isinstance(current, enum.Enum):
+            annotation = type_hints.get(field.name, field.type)
+            enum_cls = self._extract_enum_type(annotation)
+            if enum_cls is not None:
+                default_enum = current if isinstance(current, enum.Enum) else None
+                values[field.name] = self._load_enum(enum_cls, raw, default_enum)
+            elif isinstance(current, enum.Enum):
                 values[field.name] = self._load_enum(type(current), raw, current)
             elif isinstance(current, dict):
                 values[field.name] = self._merge_dict(current, raw)
@@ -191,17 +197,17 @@ class ConfigManager:
         self,
         enum_cls: type[enum.Enum],
         raw: Any,
-        default: enum.Enum,
+        default: Optional[enum.Enum],
     ) -> Optional[enum.Enum]:
         """列挙値に変換する。
 
         Args:
             enum_cls (type[enum.Enum]): 対象列挙型
             raw (Any): YAML から取得した raw 値
-            default (enum.Enum): 変換失敗時に使用する既定値
+        default (Optional[enum.Enum]): 変換失敗時に使用する既定値
 
         Returns:
-            enum.Enum: 変換後の列挙値
+            Optional[enum.Enum]: 変換後の列挙値
         """
         if isinstance(raw, enum_cls):
             return raw
@@ -261,3 +267,26 @@ class ConfigManager:
                 serialized[field.name] = value
 
         return serialized
+
+    def _extract_enum_type(self, annotation: Any) -> Optional[type[enum.Enum]]:
+        """型ヒントから列挙型を抽出する。
+
+        Args:
+            annotation (Any): フィールドの型ヒント
+
+        Returns:
+            Optional[type[enum.Enum]]: 列挙型または None
+        """
+        if isinstance(annotation, type) and issubclass(annotation, enum.Enum):
+            return annotation
+
+        origin = get_origin(annotation)
+        if origin is None:
+            return None
+
+        for arg in get_args(annotation):
+            enum_cls = self._extract_enum_type(arg)
+            if enum_cls is not None:
+                return enum_cls
+
+        return None

@@ -245,7 +245,7 @@ class RagAgentManager:
             name="rag_assistant",
             instructions=(
                 "You are a search agent. "
-                "Always respond to the user in Japanese. "
+                "Always respond to the user in English. "
                 "Before answering, you must use the provided tools to search the knowledge base. "
                 "If reference images or audio files are available, their paths are stored in file_path. "
                 "When relevant documents are found, include the file paths in the answer. "

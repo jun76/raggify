@@ -62,6 +62,11 @@ local = [
     "llama-index-embeddings-clip",
     "llama-index-embeddings-huggingface",
     "llama-index-postprocessor-flag-embedding-reranker",
+    "openai-whisper @ git+https://github.com/openai/whisper.git",
+    "sentence-transformers==2.7.0",
+    "torch==2.9.0",
+    "torchaudio==2.9.0",
+    "torchvision==0.24.0",
 ]
 exam = [
     "openai-agents",
