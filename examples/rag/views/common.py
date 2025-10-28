@@ -8,30 +8,30 @@ __all__ = ["emojify_robot", "save_uploaded_files"]
 
 
 def emojify_robot(s: str) -> str:
-    """ロボットの絵文字がテキストとして表示されないように整形
-    参考：https://github.com/streamlit/streamlit/issues/11390
+    """Ensure the robot emoji renders properly instead of plain text.
+    Reference: https://github.com/streamlit/streamlit/issues/11390
 
     Args:
-        s (str): ロボットの絵文字を含むかもしれない文字列
+        s (str): String that may contain the robot emoji.
 
     Returns:
-        str: 整形後の文字列
+        str: Updated string with proper emoji presentation.
     """
     return s.replace("\U0001f916", "\U0001f916" + "\ufe0f")  # 🤖
 
 
 def save_uploaded_files(client: RestAPIClient, files: list[Any]) -> list[str]:
-    """アップロード済みファイルを保存し、raggify 上の保存パスを返す。
+    """Persist uploaded files and return their paths on raggify.
 
     Args:
-        client (RestAPIClient): raggify API クライアント
-        files (list[Any]): Streamlit のアップロードファイルオブジェクト
+        client (RestAPIClient): raggify API client.
+        files (list[Any]): Uploaded file objects from Streamlit.
 
     Returns:
-        list[str]: 保存したファイルパス一覧
+        list[str]: List of saved file paths.
 
     Raises:
-        RuntimeError: 応答データが不正な場合
+        RuntimeError: Raised when the response payload is invalid.
     """
     payload: list[tuple[str, bytes, Optional[str]]] = []
     for uploaded in files:

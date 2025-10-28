@@ -1,7 +1,10 @@
 <img alt="Image" src="https://github.com/user-attachments/assets/ae21fe3a-0dff-4538-8e63-d92ebdbaa682" />
-Raggify is a Python library for building multimodal retrieval-augmented generation systems that run locally or as a service. It bundles ingest pipelines for files, web pages, and URL lists, normalizes metadata, and persists fingerprints to avoid redundant upserts. Out of the box it prepares embeddings across text, image, and audio modalities and orchestrates vector stores through llama-index. A Typer CLI and REST client simplify ingestion and querying flows, while the FastAPI server exposes production-ready endpoints for applications. Async helpers keep pipelines responsive, and configuration dataclasses make it easy to tune providers, hardware targets, and rerankers for your deployment.
+
+**Raggify** is a Python library for building multimodal retrieval-augmented generation systems that run locally or as a service. It bundles ingest pipelines for files, web pages, and URL lists, normalizes metadata, and persists fingerprints to avoid redundant upserts. Out of the box it prepares **embeddings across text, image, and audio modalities and orchestrates vector stores through llama-index**.
 
 ## 🔎Overview
+
+A Typer CLI and REST client simplify ingestion and querying flows, while the FastAPI server exposes production-ready endpoints for applications. Async helpers keep pipelines responsive, and configuration dataclasses make it easy to tune providers, hardware targets, and rerankers for your deployment.
 
 ## 💻How to Install
 
@@ -53,13 +56,13 @@ url = "https://developers.llamaindex.ai/python/examples/multi_modal/multi_modal_
 ingest_url(url)
 
 nodes = query_text_image(query="what is the main character in Batman")
-
-...
 ```
 
 #### examples/ex03.py
 
-Ingest from some local files, then, search audio documents by text query.
+Ingest from some local files, then, search audio documents by text query.\
+⚠️ Audio features (Local CLAP) is not included in default option.
+Please install with [local] option to use them.
 
 ```python
 from raggify.ingest import ingest_path_list

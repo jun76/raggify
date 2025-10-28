@@ -43,18 +43,18 @@ def _render_search_section(
     result_key: SearchResult,
     result_renderer: Callable[[dict[str, Any]], None],
 ) -> None:
-    """共通の検索フォーム描画処理を実行する。
+    """Render a shared search form block.
 
     Args:
-        title (str): セクションタイトル
-        caption (str): 入力補足テキスト
-        input_func (Callable[[], Any]): 入力ウィジェット生成関数
-        button_label (str): 検索ボタンのラベル
-        button_callback (Callable[..., None]): 検索コールバック
-        button_args (Callable[[Any], tuple]): コールバックへ渡す引数生成関数
-        feedback_key (FeedBack): フィードバック表示用キー
-        result_key (SearchResult): 検索結果格納キー
-        result_renderer (Callable[[dict[str, Any]], None]): 検索結果描画関数
+        title (str): Section title.
+        caption (str): Helper text displayed under the title.
+        input_func (Callable[[], Any]): Callable that renders the input widget.
+        button_label (str): Label for the search button.
+        button_callback (Callable[..., None]): Callback executed on submit.
+        button_args (Callable[[Any], tuple]): Callable that builds callback args.
+        feedback_key (FeedBack): Feedback state key.
+        result_key (SearchResult): Session key for the search result.
+        result_renderer (Callable[[dict[str, Any]], None]): Renderer for results.
     """
     st.subheader(title)
     if caption:
@@ -74,16 +74,16 @@ def _render_search_section(
 
 
 def _render_search_view_text_text(client: RestAPIClient) -> None:
-    """テキスト→テキスト検索を描画する。
+    """Render the text-to-text search section.
 
     Args:
-        client (RestAPIClient): raggify API クライアント
+        client (RestAPIClient): raggify API client.
     """
     _render_search_section(
-        title="📝→📝 テキストでテキストを検索",
-        caption="検索ワードに似た文脈を検索します。 例：「就業規則　一覧」",
-        input_func=lambda: st.text_input("検索ワード", key="text_text_query"),
-        button_label="🔎 検索",
+        title="📝→📝 Search text with text",
+        caption="Find passages similar to the search query. Example: \"employment rules summary\"",
+        input_func=lambda: st.text_input("Search query", key="text_text_query"),
+        button_label="🔎 Search",
         button_callback=run_text_text_search_callback,
         button_args=lambda query: (
             client,
@@ -93,21 +93,21 @@ def _render_search_view_text_text(client: RestAPIClient) -> None:
         ),
         feedback_key=FeedBack.FB_SEARCH_TEXT_TEXT,
         result_key=SearchResult.SR_SEARCH_TEXT_TEXT,
-        result_renderer=lambda data: _render_query_results_text("📝 検索結果", data),
+        result_renderer=lambda data: _render_query_results_text("📝 Search results", data),
     )
 
 
 def _render_search_view_text_image(client: RestAPIClient) -> None:
-    """テキスト→画像検索を描画する。
+    """Render the text-to-image search section.
 
     Args:
-        client (RestAPIClient): raggify API クライアント
+        client (RestAPIClient): raggify API client.
     """
     _render_search_section(
-        title="📝→🖼️ テキストで画像を検索",
-        caption="検索ワードに似た画像を検索します。 例：「談笑している男女」",
-        input_func=lambda: st.text_input("検索ワード", key="text_image_query"),
-        button_label="🔎 検索",
+        title="📝→🖼️ Search images with text",
+        caption="Find images similar to the search query. Example: \"friends having a conversation\"",
+        input_func=lambda: st.text_input("Search query", key="text_image_query"),
+        button_label="🔎 Search",
         button_callback=run_text_image_search_callback,
         button_args=lambda query: (
             client,
@@ -117,23 +117,23 @@ def _render_search_view_text_image(client: RestAPIClient) -> None:
         ),
         feedback_key=FeedBack.FB_SEARCH_TEXT_IMAGE,
         result_key=SearchResult.SR_SEARCH_TEXT_IMAGE,
-        result_renderer=lambda data: _render_query_results_image("🖼️ 検索結果", data),
+        result_renderer=lambda data: _render_query_results_image("🖼️ Search results", data),
     )
 
 
 def _render_search_view_image_image(client: RestAPIClient) -> None:
-    """画像→画像検索を描画する。
+    """Render the image-to-image search section.
 
     Args:
-        client (RestAPIClient): raggify API クライアント
+        client (RestAPIClient): raggify API client.
     """
     _render_search_section(
-        title="🖼️→🖼️ 画像で画像を検索",
-        caption="アップロードした画像に似た画像を検索します。",
+        title="🖼️→🖼️ Search images with an image",
+        caption="Upload an image to find similar images.",
         input_func=lambda: st.file_uploader(
-            "検索したい画像を選択", key="image_query_uploader"
+            "Select an image to search", key="image_query_uploader"
         ),
-        button_label="🔎 検索",
+        button_label="🔎 Search",
         button_callback=run_image_image_search_callback,
         button_args=lambda file_obj: (
             client,
@@ -143,21 +143,21 @@ def _render_search_view_image_image(client: RestAPIClient) -> None:
         ),
         feedback_key=FeedBack.FB_SEARCH_IMAGE_IMAGE,
         result_key=SearchResult.SR_SEARCH_IMAGE_IMAGE,
-        result_renderer=lambda data: _render_query_results_image("🖼️ 検索結果", data),
+        result_renderer=lambda data: _render_query_results_image("🖼️ Search results", data),
     )
 
 
 def _render_search_view_text_audio(client: RestAPIClient) -> None:
-    """テキスト→音声検索を描画する。
+    """Render the text-to-audio search section.
 
     Args:
-        client (RestAPIClient): raggify API クライアント
+        client (RestAPIClient): raggify API client.
     """
     _render_search_section(
-        title="📝→🎤 テキストで音声を検索",
-        caption="検索ワードに似た音声を検索します。 例：「車のクラクション」",
-        input_func=lambda: st.text_input("検索ワード", key="text_audio_query"),
-        button_label="🔎 検索",
+        title="📝→🎤 Search audio with text",
+        caption="Find audio similar to the query. Example: \"car horn\"",
+        input_func=lambda: st.text_input("Search query", key="text_audio_query"),
+        button_label="🔎 Search",
         button_callback=run_text_audio_search_callback,
         button_args=lambda query: (
             client,
@@ -167,23 +167,23 @@ def _render_search_view_text_audio(client: RestAPIClient) -> None:
         ),
         feedback_key=FeedBack.FB_SEARCH_TEXT_AUDIO,
         result_key=SearchResult.SR_SEARCH_TEXT_AUDIO,
-        result_renderer=lambda data: _render_query_results_audio("🎤 検索結果", data),
+        result_renderer=lambda data: _render_query_results_audio("🎤 Search results", data),
     )
 
 
 def _render_search_view_audio_audio(client: RestAPIClient) -> None:
-    """音声→音声検索を描画する。
+    """Render the audio-to-audio search section.
 
     Args:
-        client (RestAPIClient): raggify API クライアント
+        client (RestAPIClient): raggify API client.
     """
     _render_search_section(
-        title="🎤→🎤 音声で音声を検索",
-        caption="アップロードした音声に似た音声を検索します。",
+        title="🎤→🎤 Search audio with audio",
+        caption="Upload audio to find similar clips.",
         input_func=lambda: st.file_uploader(
-            "検索したい音声を選択", key="audio_query_uploader"
+            "Select audio to search", key="audio_query_uploader"
         ),
-        button_label="🔎 検索",
+        button_label="🔎 Search",
         button_callback=run_audio_audio_search_callback,
         button_args=lambda file_obj: (
             client,
@@ -193,7 +193,7 @@ def _render_search_view_audio_audio(client: RestAPIClient) -> None:
         ),
         feedback_key=FeedBack.FB_SEARCH_AUDIO_AUDIO,
         result_key=SearchResult.SR_SEARCH_AUDIO_AUDIO,
-        result_renderer=lambda data: _render_query_results_audio("🎤 検索結果", data),
+        result_renderer=lambda data: _render_query_results_audio("🎤 Search results", data),
     )
 
 
@@ -203,31 +203,25 @@ def _run_text_search(
     result_key: SearchResult,
     feedback_key: FeedBack,
 ) -> None:
-    """テキスト系検索を実行する。
+    """Execute a text-based search."""
 
-    Args:
-        func (Callable[[str], dict[str, Any]]): query_text または query_text_multi
-        query (str): 検索クエリ
-        result_key (SearchResult): 検索結果を保持するセッションキー
-        feedback_key (FeedBack): フィードバック表示用キー
-    """
     clear_feedback(feedback_key)
     clear_search_result(result_key)
 
     text = (query or "").strip()
     if not text:
-        set_feedback(feedback_key, "warning", "クエリを入力してください")
+        set_feedback(feedback_key, "warning", "Enter a query.")
         return
 
     try:
-        with st.spinner("検索中です..."):
+        with st.spinner("Searching..."):
             result = func(text)
     except Exception as e:
         logger.exception(e)
-        set_feedback(feedback_key, "error", f"検索に失敗しました: {e}")
+        set_feedback(feedback_key, "error", f"Search failed: {e}")
     else:
         set_search_result(result_key, result)
-        set_feedback(feedback_key, "success", "検索が完了しました")
+        set_feedback(feedback_key, "success", "Search completed.")
 
 
 def run_text_text_search_callback(
@@ -236,14 +230,7 @@ def run_text_text_search_callback(
     result_key: SearchResult,
     feedback_key: FeedBack,
 ) -> None:
-    """クエリ文字列によるテキストドキュメント検索 API を呼び出す。
-
-    Args:
-        client (RestAPIClient): raggify API クライアント
-        query (str): 検索クエリ
-        result_key (SearchResult): 検索結果を保持するセッションキー
-        feedback_key (FeedBack): フィードバック表示用キー
-    """
+    """Call the text-to-text search API."""
     _run_text_search(
         func=client.query_text_text,
         query=query,
@@ -258,14 +245,7 @@ def run_text_image_search_callback(
     result_key: SearchResult,
     feedback_key: FeedBack,
 ) -> None:
-    """クエリ文字列による画像ドキュメント検索 API を呼び出す。
-
-    Args:
-        client (RestAPIClient): raggify API クライアント
-        query (str): 検索クエリ
-        result_key (SearchResult): 検索結果を保持するセッションキー
-        feedback_key (FeedBack): フィードバック表示用キー
-    """
+    """Call the text-to-image search API."""
     _run_text_search(
         func=client.query_text_image,
         query=query,
@@ -280,31 +260,31 @@ def run_image_image_search_callback(
     result_key: SearchResult,
     feedback_key: FeedBack,
 ) -> None:
-    """クエリ画像による画像ドキュメント検索 API を呼び出す。
+    """Call the image-to-image search API.
 
     Args:
-        client (RestAPIClient): raggify API クライアント
-        file_obj (Any): アップロードされた画像ファイル
-        result_key (SearchResult): 検索結果を保持するセッションキー
-        feedback_key (FeedBack): フィードバック表示用キー
+        client (RestAPIClient): raggify API client.
+        file_obj (Any): Uploaded image file.
+        result_key (SearchResult): Session key used for the result.
+        feedback_key (FeedBack): Feedback state key.
     """
     clear_feedback(feedback_key)
     clear_search_result(result_key)
 
     if file_obj is None:
-        set_feedback(feedback_key, "warning", "画像が選択されていません")
+        set_feedback(feedback_key, "warning", "No image selected.")
         return
 
     try:
-        with st.spinner("画像検索中です..."):
+        with st.spinner("Searching images..."):
             saved = save_uploaded_files(client, [file_obj])[0]
             result = client.query_image_image(saved)
     except Exception as e:
         logger.exception(e)
-        set_feedback(feedback_key, "error", f"画像検索に失敗しました: {e}")
+        set_feedback(feedback_key, "error", f"Image search failed: {e}")
     else:
         set_search_result(result_key, result)
-        set_feedback(feedback_key, "success", "検索が完了しました")
+        set_feedback(feedback_key, "success", "Search completed.")
 
 
 def run_text_audio_search_callback(
@@ -313,14 +293,7 @@ def run_text_audio_search_callback(
     result_key: SearchResult,
     feedback_key: FeedBack,
 ) -> None:
-    """クエリ文字列による音声ドキュメント検索 API を呼び出す。
-
-    Args:
-        client (RestAPIClient): raggify API クライアント
-        query (str): 検索クエリ
-        result_key (SearchResult): 検索結果を保持するセッションキー
-        feedback_key (FeedBack): フィードバック表示用キー
-    """
+    """Call the text-to-audio search API."""
     _run_text_search(
         func=client.query_text_audio,
         query=query,
@@ -335,44 +308,40 @@ def run_audio_audio_search_callback(
     result_key: SearchResult,
     feedback_key: FeedBack,
 ) -> None:
-    """クエリ音声による音声ドキュメント検索 API を呼び出す。
+    """Call the audio-to-audio search API.
 
     Args:
-        client (RestAPIClient): raggify API クライアント
-        file_obj (Any): アップロードされた音声ファイル
-        result_key (SearchResult): 検索結果を保持するセッションキー
-        feedback_key (FeedBack): フィードバック表示用キー
+        client (RestAPIClient): raggify API client.
+        file_obj (Any): Uploaded audio file.
+        result_key (SearchResult): Session key used for the result.
+        feedback_key (FeedBack): Feedback state key.
     """
     clear_feedback(feedback_key)
     clear_search_result(result_key)
 
     if file_obj is None:
-        set_feedback(feedback_key, "warning", "音声が選択されていません")
+        set_feedback(feedback_key, "warning", "No audio file selected.")
         return
 
     try:
-        with st.spinner("音声検索中です..."):
+        with st.spinner("Searching audio..."):
             saved = save_uploaded_files(client, [file_obj])[0]
             result = client.query_audio_audio(saved)
     except Exception as e:
         logger.exception(e)
-        set_feedback(feedback_key, "error", f"音声検索に失敗しました: {e}")
+        set_feedback(feedback_key, "error", f"Audio search failed: {e}")
     else:
         set_search_result(result_key, result)
-        set_feedback(feedback_key, "success", "検索が完了しました")
+        set_feedback(feedback_key, "success", "Search completed.")
 
 
 def _render_query_results_text(title: str, result: dict[str, Any]) -> None:
-    """テキスト検索結果を描画する。
+    """Render text search results."""
 
-    Args:
-        title (str): セクションタイトル
-        result (dict[str, Any]): raggify からの検索結果
-    """
     st.subheader(title)
     documents = result.get("documents") if isinstance(result, dict) else None
     if not documents:
-        st.info("該当するドキュメントはありません")
+        st.info("No matching documents.")
         return
 
     for doc in documents:
@@ -382,63 +351,53 @@ def _render_query_results_text(title: str, result: dict[str, Any]) -> None:
             metadata.get("base_source", "")
             or metadata.get("url", "")
             or metadata.get("file_path", "")
-        )  # 優先順
+        )  # Priority order
 
         st.divider()
-        st.markdown("#### 本文")
+        st.markdown("#### Content")
         st.write(content)
-        st.markdown("##### ソース")
+        st.markdown("##### Source")
         st.write(source)
 
 
 def _render_query_results_image(title: str, result: dict[str, Any]) -> None:
-    """画像検索結果を描画する。
-
-    Args:
-        title (str): セクションタイトル
-        result (dict[str, Any]): raggify からの検索結果
-    """
+    """Render image search results."""
     st.subheader(title)
     documents = result.get("documents") if isinstance(result, dict) else None
     if not documents:
-        st.info("該当する画像はありません")
+        st.info("No matching images.")
         return
 
     for doc in documents:
         metadata = doc.get("metadata", {})
-        source = metadata.get("url", "") or metadata.get("file_path", "")  # 優先順
+        source = metadata.get("url", "") or metadata.get("file_path", "")  # Priority order
 
         st.divider()
         try:
             st.image(source, width="content")
         except Exception as e:
             logger.warning(f"failed to render result image: {e}")
-            st.warning("ファイル埋め込み画像等のため、表示できません。")
+            st.warning("Unable to display the embedded file.")
 
-        st.markdown("##### ソース")
+        st.markdown("##### Source")
         st.write(source)
 
         base_source = metadata.get("base_source", "")
         if base_source and source != base_source:
-            st.write(f"出典：{base_source}")
+            st.write(f"Reference: {base_source}")
 
 
 def _render_query_results_audio(title: str, result: dict[str, Any]) -> None:
-    """音声検索結果を描画する。
-
-    Args:
-        title (str): セクションタイトル
-        result (dict[str, Any]): raggify からの検索結果
-    """
+    """Render audio search results."""
     st.subheader(title)
     documents = result.get("documents") if isinstance(result, dict) else None
     if not documents:
-        st.info("該当する音声はありません")
+        st.info("No matching audio.")
         return
 
     for doc in documents:
         metadata = doc.get("metadata", {})
-        source = metadata.get("url", "") or metadata.get("file_path", "")  # 優先順
+        source = metadata.get("url", "") or metadata.get("file_path", "")  # Priority order
 
         st.divider()
         try:
@@ -446,37 +405,34 @@ def _render_query_results_audio(title: str, result: dict[str, Any]) -> None:
             st.audio(data=source, format=f"audio/{ext}")
         except Exception as e:
             logger.warning(f"failed to render result audio: {e}")
-            st.warning("ファイル埋め込み音声等のため、表示できません。")
+            st.warning("Unable to play the embedded file.")
 
-        st.markdown("##### ソース")
+        st.markdown("##### Source")
         st.write(source)
 
         base_source = metadata.get("base_source", "")
         if base_source and source != base_source:
-            st.write(f"出典：{base_source}")
+            st.write(f"Reference: {base_source}")
 
 
 def render_search_view(client: RestAPIClient) -> None:
-    """検索画面を描画する。
+    """Render the search view."""
 
-    Args:
-        client (RestAPIClient): raggify API クライアント
-    """
-    st.title("🔎 検索")
+    st.title("🔎 Search")
     st.button(
-        "⬅️ メニューに戻る", key="search_back", on_click=set_view, args=(View.MAIN,)
+        "⬅️ Back to menu", key="search_back", on_click=set_view, args=(View.MAIN,)
     )
     st.divider()
 
     choice_map: dict[str, Callable[[RestAPIClient], None]] = {
-        "ﾃｷｽﾄ📝 → ﾃｷｽﾄ📝": _render_search_view_text_text,
-        "ﾃｷｽﾄ📝 → 画像🖼️": _render_search_view_text_image,
-        "画像🖼️ → 画像🖼️": _render_search_view_image_image,
-        "ﾃｷｽﾄ📝 → 音声🎤": _render_search_view_text_audio,
-        "音声🎤 → 音声🎤": _render_search_view_audio_audio,
+        "Text 📝 → Text 📝": _render_search_view_text_text,
+        "Text 📝 → Image 🖼️": _render_search_view_text_image,
+        "Image 🖼️ → Image 🖼️": _render_search_view_image_image,
+        "Text 📝 → Audio 🎤": _render_search_view_text_audio,
+        "Audio 🎤 → Audio 🎤": _render_search_view_audio_audio,
     }
     choice = st.sidebar.selectbox(
-        "検索オプションを選択して下さい。", list(choice_map.keys())
+        "Choose a search option.", list(choice_map.keys())
     )
 
     renderer = choice_map.get(choice)

@@ -23,9 +23,9 @@ from .views.search import render_search_view
 
 
 def main() -> None:
-    """Streamlit アプリのエントリポイント。"""
+    """Entry point for the Streamlit application."""
 
-    st.set_page_config(page_title="RAG システム", page_icon="🧠", layout="wide")
+    st.set_page_config(page_title="RAG System", page_icon="🧠", layout="wide")
     ensure_session_state()
 
     client = RestAPIClient(Config.raggify_base_url)
@@ -43,11 +43,11 @@ def main() -> None:
         case View.ADMIN:
             render_admin_view(client)
         case _:
-            st.error("未定義の画面です")
+            st.error("The requested view is not defined.")
 
 
 if __name__ == "__main__":
-    # ログレベルを設定
+    # Set the logger level
     log_level = getattr(logging, Config.log_level.upper(), logging.INFO)
     logger.setLevel(log_level)
     main()

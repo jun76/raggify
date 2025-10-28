@@ -27,27 +27,27 @@ __all__ = [
 def register_local_path_callback(
     client: RestAPIClient, path_value: str, feedback_key: FeedBack
 ) -> None:
-    """ローカルパス取り込みを実行する。
+    """Run ingestion for a local path.
 
     Args:
-        client (RestAPIClient): raggify API クライアント
-        path_value (str): 取り込み対象パス
-        feedback_key (FeedBack): フィードバック表示用キー
+        client (RestAPIClient): raggify API client.
+        path_value (str): Target path for ingestion.
+        feedback_key (FeedBack): Feedback state key.
     """
     clear_feedback(feedback_key)
     path = (path_value or "").strip()
     if not path:
-        set_feedback(feedback_key, "warning", "パスを入力してください")
+        set_feedback(feedback_key, "warning", "Enter a path.")
         return
 
     try:
-        with st.spinner("パスを取り込み中です..."):
+        with st.spinner("Registering path..."):
             client.ingest_path(path)
     except Exception as e:
         logger.exception(e)
-        set_feedback(feedback_key, "error", f"パスの取り込みに失敗しました: {e}")
+        set_feedback(feedback_key, "error", f"Failed to register path: {e}")
     else:
-        set_feedback(feedback_key, "success", "パスの取り込みが完了しました")
+        set_feedback(feedback_key, "success", "Path registration completed.")
 
 
 def register_path_list_callback(
@@ -55,59 +55,57 @@ def register_path_list_callback(
     file_obj: Any,
     feedback_key: FeedBack,
 ) -> None:
-    """ローカルパスリスト取り込みを実行する。
+    """Run ingestion for a local path list file.
 
     Args:
-        client (RestAPIClient): raggify API クライアント
-        file_obj (Any): アップロードされたパスリストファイル
-        feedback_key (FeedBack): フィードバック表示用キー
+        client (RestAPIClient): raggify API client.
+        file_obj (Any): Uploaded path list file.
+        feedback_key (FeedBack): Feedback state key.
     """
     clear_feedback(feedback_key)
     if file_obj is None:
-        set_feedback(feedback_key, "warning", "パスリストが選択されていません")
+        set_feedback(feedback_key, "warning", "No path list selected.")
         return
 
     try:
-        with st.spinner("パスリストを取り込み中です..."):
+        with st.spinner("Registering path list..."):
             saved = save_uploaded_files(client, [file_obj])[0]
             client.ingest_path_list(saved)
     except Exception as e:
         logger.exception(e)
-        set_feedback(feedback_key, "error", f"パスリストの取り込みに失敗しました: {e}")
+        set_feedback(feedback_key, "error", f"Failed to register path list: {e}")
     else:
-        set_feedback(feedback_key, "success", "パスリストの取り込みが完了しました")
+        set_feedback(feedback_key, "success", "Path list registration completed.")
 
 
 def render_admin_view(client: RestAPIClient) -> None:
-    """管理者メニュー画面を描画する。
+    """Render the administrator menu view.
 
     Args:
-        client (RestAPIClient): raggify API クライアント
+        client (RestAPIClient): raggify API client.
     """
-    st.title("🛠️ 管理メニュー")
+    st.title("🛠️ Admin Menu")
     st.button(
-        "⬅️ メニューに戻る", key="admin_back", on_click=set_view, args=(View.MAIN,)
+        "⬅️ Back to menu", key="admin_back", on_click=set_view, args=(View.MAIN,)
     )
 
     st.divider()
-    st.subheader("🗂️ raggify ローカルパスを指定して登録")
-    st.caption("raggify 側に配置済みのファイルやフォルダからナレッジ登録します。")
-    path_value = st.text_input("対象パス", key="admin_path")
+    st.subheader("🗂️ Register a local raggify path")
+    st.caption("Register knowledge from files or folders already placed on the raggify host.")
+    path_value = st.text_input("Target path", key="admin_path")
     st.button(
-        "🗂️ 登録",
+        "🗂️ Register",
         on_click=register_local_path_callback,
         args=(client, path_value, FeedBack.FB_ADMIN_PATH),
     )
     display_feedback(FeedBack.FB_ADMIN_PATH)
 
     st.divider()
-    st.subheader("📄 raggify ローカルパスリストをアップロードして登録")
-    st.caption(
-        "raggify 側に配置済みのファイルやフォルダ名のリスト（*.txt）からナレッジ登録します。"
-    )
-    path_list = st.file_uploader("パスリストを選択", key="admin_path_list")
+    st.subheader("📄 Upload a raggify path list")
+    st.caption("Register knowledge from a text file (*.txt) listing local files or folders on the raggify host.")
+    path_list = st.file_uploader("Select a path list", key="admin_path_list")
     st.button(
-        "📄 登録",
+        "📄 Register",
         on_click=register_path_list_callback,
         args=(client, path_list, FeedBack.FB_ADMIN_PATH_LIST),
     )

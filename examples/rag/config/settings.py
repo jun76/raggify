@@ -10,9 +10,9 @@ load_dotenv()
 
 
 class Settings:
-    """各種設定値のデフォルト値管理クラス
+    """Default values for the example configuration.
 
-    API キーは予め .env ファイルに記述しておく。
+    Place API keys in the .env file beforehand.
     """
 
     RAGGIFY_BASE_URL: str = "http://localhost:8000/v1"

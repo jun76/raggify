@@ -16,13 +16,13 @@ __all__ = ["render_main_menu"]
 def _summarize_status(
     raggify_stat: Optional[dict[str, Any]],
 ) -> dict[str, str]:
-    """ヘルスチェック結果を表示用テキストへまとめる。
+    """Summarize the health check result into display text.
 
     Args:
-        raggify_stat (Optional[dict[str, Any]]): raggify の状態
+        raggify_stat (Optional[dict[str, Any]]): raggify status payload.
 
     Returns:
-        dict[str, str]: サービスの状態表示テキスト
+        dict[str, str]: Service status description.
     """
     return {
         "raggify": (
@@ -42,10 +42,10 @@ def _summarize_status(
 
 
 def _refresh_status(client: RestAPIClient) -> None:
-    """サービス状態を再取得し、セッションステートへ保存する。
+    """Refresh service status and store it in the session state.
 
     Args:
-        client (RestAPIClient): raggify API クライアント
+        client (RestAPIClient): raggify API client.
     """
     try:
         raggify_stat = client.health()
@@ -55,42 +55,42 @@ def _refresh_status(client: RestAPIClient) -> None:
     except Exception:
         logger.warning("raggify is not ready")
 
-        _DEFAULT_STATUS_TEXT = "不明"
+        _DEFAULT_STATUS_TEXT = "Unknown"
         st.session_state["status_texts"] = {"raggify": _DEFAULT_STATUS_TEXT}
 
 
 def _render_status_section(client: RestAPIClient) -> None:
-    """メインメニューに表示するステータスセクションを描画する。
+    """Render the status section for the main menu.
 
     Args:
-        client (RestAPIClient): raggify API クライアント
+        client (RestAPIClient): raggify API client.
     """
     if st.session_state.get("status_dirty", False):
         _refresh_status(client)
 
-    st.subheader("🩺 サービスステータス")
+    st.subheader("🩺 Service status")
     texts = st.session_state["status_texts"]
-    st.write(f"RAG サーバー: {texts['raggify']}")
+    st.write(f"RAG server: {texts['raggify']}")
     st.button(
-        "🔄 最新情報を取得",
+        "🔄 Refresh status",
         on_click=_refresh_status,
         args=(client,),
     )
 
 
 def render_main_menu(client: RestAPIClient) -> None:
-    """メインメニュー画面を描画する。
+    """Render the main menu view.
 
     Args:
-        client (RestAPIClient): raggify API クライアント
+        client (RestAPIClient): raggify API client.
     """
-    st.title("📚 RAG システム")
+    st.title("📚 RAG System")
     _render_status_section(client)
 
-    st.subheader("🧭 メニュー")
-    st.button("📝 ナレッジ登録へ", on_click=set_view, args=(View.INGEST,))
-    st.button("🔍 ＤＢ検索画面へ", on_click=set_view, args=(View.SEARCH,))
+    st.subheader("🧭 Menu")
+    st.button("📝 Go to ingestion", on_click=set_view, args=(View.INGEST,))
+    st.button("🔍 Go to DB search", on_click=set_view, args=(View.SEARCH,))
     st.button(
-        emojify_robot("🤖 RAG 検索画面へ"), on_click=set_view, args=(View.RAGSEARCH,)
+        emojify_robot("🤖 Go to RAG search"), on_click=set_view, args=(View.RAGSEARCH,)
     )
-    st.button("🛠️ 管理メニューへ", on_click=set_view, args=(View.ADMIN,))
+    st.button("🛠️ Go to admin menu", on_click=set_view, args=(View.ADMIN,))

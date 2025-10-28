@@ -27,18 +27,18 @@ def _save_reference_file(
     file_obj: Optional[Any],
     session_key: RagSearchSessionKey,
 ) -> Optional[str]:
-    """アップロードファイルを raggify に保存しパスを返す。
+    """Upload a reference file to raggify and return its saved path.
 
     Args:
-        client (RestAPIClient): raggify API クライアント
-        file_obj (Optional[Any]): アップロードされたファイルオブジェクト
-        session_key (RagSearchSessionKey): セッションステートに保存するキー
+        client (RestAPIClient): raggify API client.
+        file_obj (Optional[Any]): Uploaded file object.
+        session_key (RagSearchSessionKey): Session key used to store the path.
 
     Raises:
-        AgentExecutionError: ファイルのアップロードに失敗した場合
+        AgentExecutionError: Raised when the upload fails.
 
     Returns:
-        Optional[str]: 保存されたファイルパス。アップロードが無ければ None
+        Optional[str]: Saved file path, or None when no file is uploaded.
     """
     if file_obj is None:
         st.session_state[session_key] = None
@@ -56,21 +56,21 @@ def _save_reference_file(
 
 
 def render_ragsearch_view(client: RestAPIClient) -> None:
-    """RAG 検索画面を描画する。
+    """Render the RAG search view.
 
     Args:
-        client (RestAPIClient): raggify API クライアント
+        client (RestAPIClient): raggify API client.
     """
-    st.title(emojify_robot("🤖 RAG 検索"))
+    st.title(emojify_robot("🤖 RAG Search"))
     st.button(
-        "⬅️ メニューに戻る", key="ragsearch_back", on_click=set_view, args=(View.MAIN,)
+        "⬅️ Back to menu", key="ragsearch_back", on_click=set_view, args=(View.MAIN,)
     )
     st.divider()
 
-    question = st.text_area("質問文", key="ragsearch_question")
+    question = st.text_area("Question", key="ragsearch_question")
 
     ref_file = st.file_uploader(
-        "添付ファイル（任意）",
+        "Attachment (optional)",
         type=list(Exts.IMAGE | Exts.AUDIO),
         key="ragsearch_image",
     )
@@ -78,9 +78,9 @@ def render_ragsearch_view(client: RestAPIClient) -> None:
     if RagSearchSessionKey.ANSWER not in st.session_state:
         st.session_state[RagSearchSessionKey.ANSWER] = None
 
-    if st.button(emojify_robot("🤖 送信"), key="ragsearch_submit"):
+    if st.button(emojify_robot("🤖 Submit"), key="ragsearch_submit"):
         if not question.strip():
-            st.warning("質問文を入力してください")
+            st.warning("Enter a question.")
         else:
             file_path = None
             try:
@@ -93,20 +93,20 @@ def render_ragsearch_view(client: RestAPIClient) -> None:
             else:
                 manager = RagAgentManager(client=client, model=Config.openai_llm_model)
                 try:
-                    with st.spinner("RAG 検索を実行しています..."):
+                    with st.spinner("Running RAG search..."):
                         answer = manager.run(
                             question=question,
                             file_path=file_path,
                         )
                 except AgentExecutionError as e:
                     st.session_state[RagSearchSessionKey.ANSWER] = None
-                    st.error(f"RAG 検索に失敗しました: {e}")
+                    st.error(f"Failed to run RAG search: {e}")
                 else:
                     st.session_state[RagSearchSessionKey.ANSWER] = emojify_robot(answer)
-                    st.success("RAG 検索が完了しました")
+                    st.success("RAG search completed.")
 
     final_answer: Optional[str] = st.session_state.get(RagSearchSessionKey.ANSWER)
     if final_answer:
         st.divider()
-        st.header("🧠 最終回答")
+        st.header("🧠 Final answer")
         st.write(final_answer, unsafe_allow_html=True)

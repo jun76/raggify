@@ -15,12 +15,12 @@ from .logger import logger
 
 __all__ = ["AgentExecutionError", "RagAgentManager"]
 
-# 決め打ち
+# Fixed configuration
 _TOPK = 10
 
 
 class AgentExecutionError(RuntimeError):
-    """openai-agents 実行時の例外ラッパー"""
+    """Wrapper exception raised during openai-agents execution."""
 
 
 class _TextSearchArgs(TypedDict, total=False):
@@ -34,13 +34,13 @@ class _RagAgentContext(BaseModel):
 
 
 def _format_documents(payload: dict[str, Any]) -> dict[str, Any]:
-    """検索結果ドキュメントを辞書形式へ整形する。
+    """Format search documents into a plain dictionary response.
 
     Args:
-        payload (dict[str, Any]): 検索 API の応答ペイロード
+        payload (dict[str, Any]): Response payload returned from the search API.
 
     Returns:
-        dict[str, Any]: 各ドキュメントの概要をまとめた辞書
+        dict[str, Any]: Summary dictionary per document.
     """
     docs = payload.get("documents") or []
     if not docs:
@@ -61,16 +61,16 @@ def _format_documents(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _format_response(type: str, query: str, topk: int, payload: dict[str, Any]) -> str:
-    """検索結果を JSON 文字列としてまとめる。
+    """Summarize search results as a JSON string.
 
     Args:
-        type (str): 結果種別を示すタイトル
-        query (str): クエリ文字列またはファイルパス
-        topk (int): 取得件数
-        payload (dict[str, Any]): 検索 API の応答ペイロード
+        type (str): Title describing the result type.
+        query (str): Search query or reference file path.
+        topk (int): Number of retrieved documents.
+        payload (dict[str, Any]): Response payload returned from the search API.
 
     Returns:
-        str: まとめられた検索結果 JSON 文字列
+        str: JSON string that summarizes the search results.
     """
     summary = _format_documents(payload)
     result = json.dumps(
@@ -88,17 +88,17 @@ async def tool_search_text_text(
     ctx: RunContextWrapper[_RagAgentContext],
     args: _TextSearchArgs,
 ) -> str:
-    """テキストクエリでテキストドキュメントを検索する。
+    """Search text documents by a text query.
 
     Args:
-        ctx (RunContextWrapper[_RagAgentContext]): 実行時コンテキスト
-        args (_TextSearchArgs): 検索パラメータ
+        ctx (RunContextWrapper[_RagAgentContext]): Execution context.
+        args (_TextSearchArgs): Search parameters.
 
     Raises:
-        ValueError: クエリ文字列が指定されていない場合
+        ValueError: Raised when the query string is missing.
 
     Returns:
-        str: 検索結果要約を含む JSON 文字列
+        str: JSON string that summarizes the search results.
     """
     query = args.get("query")
     if not query:
@@ -113,17 +113,17 @@ async def tool_search_text_image(
     ctx: RunContextWrapper[_RagAgentContext],
     args: _TextSearchArgs,
 ) -> str:
-    """テキストクエリで画像ドキュメントを検索する。
+    """Search image documents by a text query.
 
     Args:
-        ctx (RunContextWrapper[_RagAgentContext]): 実行時コンテキスト
-        args (_TextSearchArgs): 検索パラメータ
+        ctx (RunContextWrapper[_RagAgentContext]): Execution context.
+        args (_TextSearchArgs): Search parameters.
 
     Raises:
-        ValueError: クエリ文字列が指定されていない場合
+        ValueError: Raised when the query string is missing.
 
     Returns:
-        str: 検索結果要約を含む JSON 文字列
+        str: JSON string that summarizes the search results.
     """
     query = args.get("query")
     if not query:
@@ -135,16 +135,16 @@ async def tool_search_text_image(
 
 @function_tool
 async def tool_search_image_image(ctx: RunContextWrapper[_RagAgentContext]) -> str:
-    """アップロード済み画像を基に画像ドキュメントを検索する。
+    """Search image documents based on an uploaded reference image.
 
     Args:
-        ctx (RunContextWrapper[_RagAgentContext]): 実行時コンテキスト
+        ctx (RunContextWrapper[_RagAgentContext]): Execution context.
 
     Raises:
-        ValueError: 参照画像が未登録の場合
+        ValueError: Raised when no reference image is registered.
 
     Returns:
-        str: 検索結果要約を含む JSON 文字列
+        str: JSON string that summarizes the search results.
     """
     query = ctx.context.file_path
     if not query:
@@ -159,17 +159,17 @@ async def tool_search_text_audio(
     ctx: RunContextWrapper[_RagAgentContext],
     args: _TextSearchArgs,
 ) -> str:
-    """テキストクエリで音声ドキュメントを検索する。
+    """Search audio documents by a text query.
 
     Args:
-        ctx (RunContextWrapper[_RagAgentContext]): 実行時コンテキスト
-        args (_TextSearchArgs): 検索パラメータ
+        ctx (RunContextWrapper[_RagAgentContext]): Execution context.
+        args (_TextSearchArgs): Search parameters.
 
     Raises:
-        ValueError: クエリ文字列が指定されていない場合
+        ValueError: Raised when the query string is missing.
 
     Returns:
-        str: 検索結果要約を含む JSON 文字列
+        str: JSON string that summarizes the search results.
     """
     query = args.get("query")
     if not query:
@@ -181,16 +181,16 @@ async def tool_search_text_audio(
 
 @function_tool
 async def tool_search_audio_audio(ctx: RunContextWrapper[_RagAgentContext]) -> str:
-    """アップロード済み音声を基に音声ドキュメントを検索する。
+    """Search audio documents based on an uploaded reference audio file.
 
     Args:
-        ctx (RunContextWrapper[_RagAgentContext]): 実行時コンテキスト
+        ctx (RunContextWrapper[_RagAgentContext]): Execution context.
 
     Raises:
-        ValueError: 参照音声が未登録の場合
+        ValueError: Raised when no reference audio is registered.
 
     Returns:
-        str: 検索結果要約を含む JSON 文字列
+        str: JSON string that summarizes the search results.
     """
     query = ctx.context.file_path
     if not query:
@@ -211,7 +211,7 @@ _TOOLSET = [
 
 @dataclass
 class RagAgentManager:
-    """openai-agents を用いた RAG 検索の実行を管理するクラス。"""
+    """Manager that runs RAG searches using openai-agents."""
 
     client: RestAPIClient
     model: str
@@ -223,19 +223,19 @@ class RagAgentManager:
         file_path: Optional[str] = None,
         max_turns: int = 5,
     ) -> str:
-        """エージェントを実行し最終回答を返す。
+        """Run the agent and return the final answer.
 
         Args:
-            question (str): ユーザからの質問文
-            file_path (Optional[str]): 参照画像ファイルの保存パス
-            max_turns (int): エージェントの最大ターン数
+            question (str): User question text.
+            file_path (Optional[str]): Saved path to the reference file.
+            max_turns (int): Maximum number of agent turns.
 
         Raises:
-            ValueError: 質問文が空の場合
-            AgentExecutionError: エージェント実行に失敗した場合
+            ValueError: Raised when the question is empty.
+            AgentExecutionError: Raised when the agent execution fails.
 
         Returns:
-            str: エージェントが生成した最終回答
+            str: Final answer generated by the agent.
         """
         if question.strip() == "":
             raise ValueError("question must not be empty")
@@ -244,14 +244,13 @@ class RagAgentManager:
         agent = Agent(
             name="rag_assistant",
             instructions=(
-                "あなたは検索エージェントです。"
-                "ユーザからの質問に対し、日本語で回答して下さい。"
-                "回答する前に、提供されているツールを使用して必ずナレッジベースを検索して下さい。"
-                "検索の際に使用できる参考画像や音声がある場合は file_path に格納されています。"
-                "関連文書が見つかった場合は、ファイルパスを回答に含めて下さい。"
-                "ただし、スコアは回答に含めないで下さい。"
-                "その他、関連文書が見つからない場合やエラー時は"
-                "「該当するドキュメントが見つかりませんでした。」とだけ回答下さい。"
+                "You are a search agent. "
+                "Always respond to the user in Japanese. "
+                "Before answering, you must use the provided tools to search the knowledge base. "
+                "If reference images or audio files are available, their paths are stored in file_path. "
+                "When relevant documents are found, include the file paths in the answer. "
+                "Do not include scores in the answer. "
+                'If no relevant documents are found or an error occurs, reply with "No relevant documents were found." only.'
             ),
             tools=_TOOLSET,  # type: ignore
             model=self.model,

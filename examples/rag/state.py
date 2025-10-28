@@ -67,9 +67,9 @@ class SearchResult(StrEnum):
 
 
 def ensure_session_state() -> None:
-    """Streamlit のセッション状態を初期化する。"""
+    """Initialize the Streamlit session state."""
 
-    _DEFAULT_STATUS_TEXT = "不明"
+    _DEFAULT_STATUS_TEXT = "Unknown"
     current_view = st.session_state.get("view")
     if current_view is None:
         st.session_state["view"] = View.MAIN
@@ -97,10 +97,10 @@ def ensure_session_state() -> None:
 
 
 def set_view(view: View) -> None:
-    """表示する画面を更新する。
+    """Update the currently displayed view.
 
     Args:
-        view (View): 遷移先ビュー識別子
+        view (View): Destination view identifier.
     """
     st.session_state["view"] = view
     if view == View.MAIN:
@@ -108,30 +108,30 @@ def set_view(view: View) -> None:
 
 
 def set_feedback(key: FeedBack | str, category: str, message: str) -> None:
-    """フィードバックメッセージをセッションに設定する。
+    """Store a feedback message in the session.
 
     Args:
-        key (FeedBack | str): セッションステートのキー
-        category (str): 表示カテゴリ
-        message (str): 表示メッセージ
+        key (FeedBack | str): Session state key.
+        category (str): Message category.
+        message (str): Message text.
     """
     st.session_state[key] = {"category": category, "message": message}
 
 
 def clear_feedback(key: FeedBack | str) -> None:
-    """指定キーのフィードバックメッセージを消去する。
+    """Clear the feedback message stored under the given key.
 
     Args:
-        key (FeedBack | str): セッションステートのキー
+        key (FeedBack | str): Session state key.
     """
     st.session_state[key] = None
 
 
 def display_feedback(key: FeedBack | str) -> None:
-    """保持しているフィードバックメッセージを Streamlit 上に表示する。
+    """Render the stored feedback message on Streamlit.
 
     Args:
-        key (FeedBack | str): セッションステートのキー
+        key (FeedBack | str): Session state key.
     """
     payload = st.session_state.get(key)
     if not payload:
@@ -155,19 +155,16 @@ def display_feedback(key: FeedBack | str) -> None:
 def set_search_result(
     key: SearchResult | str, result: Optional[dict[str, Any]]
 ) -> None:
-    """検索結果をセッションに保存する。
+    """Store the search result in the session.
 
     Args:
-        key (SearchResult | str): セッションステートのキー
-        result (Optional[dict[str, Any]]): 保存する検索結果
+        key (SearchResult | str): Session state key.
+        result (Optional[dict[str, Any]]): Search result to store.
     """
     st.session_state[key] = result
 
 
 def clear_search_result(key: SearchResult | str) -> None:
-    """保持している検索結果を消去する。
+    """Clear the stored search result."""
 
-    Args:
-        key (SearchResult | str): セッションステートのキー
-    """
     st.session_state[key] = None
