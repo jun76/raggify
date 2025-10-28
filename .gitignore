@@ -9,6 +9,5 @@ AGENTS.md
 temp
 raggify_db
 raggify_metas.db
-uv.lock
 .venv
 .zshrc
