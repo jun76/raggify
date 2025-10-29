@@ -1,6 +1,6 @@
 # Raggify
 
-<img alt="Image" src="https://github.com/user-attachments/assets/ae21fe3a-0dff-4538-8e63-d92ebdbaa682" />
+<img width="1024" height="1024" alt="Image" src="https://github.com/user-attachments/assets/054137c8-fb20-40bf-9fc2-fb31737a6d30" />
 
 **Raggify** is a Python library for building multimodal retrieval-augmented generation systems that run locally or as a service. It bundles ingest pipelines for files, web pages, and URL lists, normalizes metadata, and persists fingerprints to avoid redundant upserts. Out of the box it prepares embeddings across text, **image, and audio modalities (not via text)** and orchestrates vector stores through llama-index.
 
@@ -148,13 +148,21 @@ from raggify.runtime import get_runtime
 
 rt = get_runtime()
 rt.cfg.general.vector_store_provider = VectorStoreProvider.PGVECTOR
-rt.cfg.general.audio_embed_provider = EmbedProvider.CLAP
 rt.cfg.ingest.chunk_size = 300
 rt.cfg.ingest.same_origin = False
 rt.rebuild()
 
 ingest_url("http://some.site.com")
 ```
+
+⚠️ To use pgvector,
+
+- start postgresql server
+- exec examples/init_pgdb.sh
+  - for the first time.
+  - If you want to reset db (drop table), exec ./init_pgdb.sh --reset
+- set `pgvector_password` at /etc/raggify/config.yaml
+  - init_pgdb.sh set `raggify` as default password, so write it.
 
 # 💻 as REST API Server
 
@@ -339,4 +347,12 @@ from llama_index.core.schema import NodeWithScore
 
 # See Also
 
+## Home Page
+
 - [マルチモーダルでローカルな RAG 基盤サーバを作ってみた](https://qiita.com/jun76/items/f2e392f530e24a6a8903)
+
+## Logo and Branding
+
+The Raggify logo © 2025 Jun.  
+You may use it to refer to the Raggify open-source project,  
+but commercial or misleading usage is not allowed.
