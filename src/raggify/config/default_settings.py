@@ -50,9 +50,9 @@ class DefaultSettings:
     MCP: bool = False
     VECTOR_STORE_PROVIDER: VectorStoreProvider = VectorStoreProvider.CHROMA
     TEXT_EMBED_PROVIDER: Optional[EmbedProvider] = EmbedProvider.OPENAI
-    IMAGE_EMBED_PROVIDER: Optional[EmbedProvider] = EmbedProvider.COHERE
+    IMAGE_EMBED_PROVIDER: Optional[EmbedProvider] = EmbedProvider.VOYAGE
     AUDIO_EMBED_PROVIDER: Optional[EmbedProvider] = None
-    RERANK_PROVIDER: RerankProvider = RerankProvider.COHERE
+    RERANK_PROVIDER: Optional[RerankProvider] = None
     OPENAI_BASE_URL: Optional[str] = None
     DEVICE: Literal["cpu", "cuda", "mps"] = "cpu"
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "DEBUG"
