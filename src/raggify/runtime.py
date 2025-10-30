@@ -7,9 +7,11 @@ from typing import TYPE_CHECKING, Optional
 from .config.config_manager import ConfigManager
 
 if TYPE_CHECKING:
+    from .document_store.document_store_manager import DocumentStoreManager
     from .embed.embed_manager import EmbedManager
     from .ingest.loader.file_loader import FileLoader
     from .ingest.loader.html_loader import HTMLLoader
+    from .ingest_cache_store.ingest_cache_store_manager import IngestCacheStoreManager
     from .meta_store.structured.structured import Structured
     from .rerank.rerank_manager import RerankManager
     from .vector_store.vector_store_manager import VectorStoreManager
@@ -31,6 +33,8 @@ class Runtime:
         self._embed_manager: Optional[EmbedManager] = None
         self._meta_store: Optional[Structured] = None
         self._vector_store: Optional[VectorStoreManager] = None
+        self._document_store: Optional[DocumentStoreManager] = None
+        self._ingest_cache_store: Optional[IngestCacheStoreManager] = None
         self._rerank_manager: Optional[RerankManager] = None
         self._file_loader: Optional[FileLoader] = None
         self._html_loader: Optional[HTMLLoader] = None
@@ -55,6 +59,8 @@ class Runtime:
 
         self._embed_manager = None
         self._vector_store = None
+        self._document_store = None
+        self._ingest_cache_store = None
         self._rerank_manager = None
         self._file_loader = None
         self._html_loader = None
@@ -70,6 +76,8 @@ class Runtime:
         self.embed_manager
         self.meta_store
         self.vector_store
+        self.document_store
+        self.ingest_cache_store
         self.rerank_manager
         self.file_loader
         self.html_loader
@@ -112,6 +120,30 @@ class Runtime:
             )
 
         return self._vector_store
+
+    @property
+    def document_store(self) -> DocumentStoreManager:
+        if self._document_store is None:
+            from .document_store.document_store import create_document_store_manager
+
+            self._document_store = create_document_store_manager(
+                cfg=self.cfg, embed=self.embed_manager
+            )
+
+        return self._document_store
+
+    @property
+    def ingest_cache_store(self) -> IngestCacheStoreManager:
+        if self._ingest_cache_store is None:
+            from .ingest_cache_store.ingest_cache_store import (
+                create_ingest_cache_store_manager,
+            )
+
+            self._ingest_cache_store = create_ingest_cache_store_manager(
+                cfg=self.cfg, embed=self.embed_manager
+            )
+
+        return self._ingest_cache_store
 
     @property
     def rerank_manager(self) -> RerankManager:

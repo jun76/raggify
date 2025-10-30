@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -12,22 +11,22 @@ from .reader.dummy_media_reader import DummyMediaReader
 from .reader.pdf_reader import MultiPDFReader
 
 if TYPE_CHECKING:
-    from llama_index.core.node_parser.interface import MetadataAwareTextSplitter
     from llama_index.core.readers.base import BaseReader
-    from llama_index.core.readers.file.base import SimpleDirectoryReader
-    from llama_index.core.schema import BaseNode
+    from llama_index.core.schema import Document
 
     from ...vector_store.vector_store_manager import VectorStoreManager
 
 
 class FileLoader(Loader):
+    """ローカルファイルを読み込み、ドキュメントを生成するためのクラス。"""
+
     def __init__(
         self,
         store: VectorStoreManager,
         chunk_size: int = DS.CHUNK_SIZE,
         chunk_overlap: int = DS.CHUNK_OVERLAP,
     ) -> None:
-        """ローカルファイルを読み込み、ノードを生成するためのクラス。
+        """コンストラクタ
 
         Args:
             store (VectorStoreManager): 登録済みソースの判定に使用
@@ -44,56 +43,11 @@ class FileLoader(Loader):
         for ext in Exts.PASS_THROUGH_MEDIA:
             self._readers[ext] = dummy_reader
 
-    async def _aload_from_file(
-        self,
-        path: str,
-        reader: SimpleDirectoryReader,
-        splitter: MetadataAwareTextSplitter,
-    ) -> list[BaseNode]:
-        """ファイルからノードを生成する。
-
-        Args:
-            path (str): ファイルパス
-            reader (SimpleDirectoryReader): ファイルリーダ
-            splitter (MetadataAwareTextSplitter): テキストスプリッタ
-
-        Raises:
-            RuntimeError: ノードの生成に失敗
-
-        Returns:
-            list[BaseNode]: 生成したノード
-        """
-        from ...core.metadata import BasicMetaData
-
-        try:
-            docs = await reader.aload_file(
-                input_file=Path(path),
-                file_metadata=reader.file_metadata,
-                file_extractor=reader.file_extractor,
-            )
-
-            all_nodes = []
-            for doc in docs:
-                nodes = await splitter.aget_nodes_from_documents([doc])
-                for i, node in enumerate(nodes):
-                    meta = BasicMetaData().from_dict(node.metadata)
-                    meta.chunk_no = i
-                    meta.node_lastmod_at = time.time()
-                    node.metadata = meta.to_dict()
-
-                all_nodes.extend(nodes)
-        except Exception as e:
-            raise RuntimeError(f"failed to generate nodes from file: {path}") from e
-
-        logger.debug(f"loaded {len(all_nodes)} nodes from {path}")
-
-        return all_nodes
-
     async def aload_from_path(
         self,
         root: str,
-    ) -> list[BaseNode]:
-        """ローカルパス（ディレクトリ、ファイル）からコンテンツを取り込み、ノードを生成する。
+    ) -> tuple[list[Document], list[Document], list[Document]]:
+        """ローカルパス（ディレクトリ、ファイル）からコンテンツを取り込み、ドキュメントを生成する。
         ディレクトリの場合はツリーを下りながら複数ファイルを取り込む。
 
         Args:
@@ -103,9 +57,9 @@ class FileLoader(Loader):
             ValueError: パスの指定誤り等
 
         Returns:
-            list[BaseNode]: 生成したノード
+            tuple[list[Document], list[Document], list[Document]]:
+                テキストドキュメント、画像ドキュメント、音声ドキュメント
         """
-        from llama_index.core.node_parser import SentenceSplitter
         from llama_index.core.readers.file.base import SimpleDirectoryReader
 
         try:
@@ -117,66 +71,33 @@ class FileLoader(Loader):
                 file_extractor=self._readers,
             )
 
-            splitter = SentenceSplitter(
-                chunk_size=self._chunk_size,
-                chunk_overlap=self._chunk_overlap,
-                include_metadata=True,
-            )
-
-            paths = reader.list_resources()
+            docs = await reader.aload_data(show_progress=True)
         except Exception as e:
             logger.exception(e)
             raise ValueError("failed to load from path") from e
 
-        # 最上位ループ内で複数ソースをまたいで _source_cache を共有したいため
-        # ここでは _source_cache.clear() しないこと。
-        nodes = []
-        for path in paths:
-            try:
-                if path in self._source_cache:
-                    continue
-
-                if self._store.skip_update(path):
-                    logger.debug(f"skip loading: source exists ({path})")
-                    continue
-
-                nodes.extend(
-                    await self._aload_from_file(
-                        path=path, reader=reader, splitter=splitter
-                    )
-                )
-
-                # 取得済みキャッシュに追加
-                self._source_cache.add(path)
-            except Exception as e:
-                logger.exception(e)
-                continue
-
-        logger.debug(f"loaded {len(nodes)} nodes from {root}")
-
-        return nodes
+        return self._split_docs_modality(docs)
 
     async def aload_from_paths(
         self,
         paths: list[str],
-    ) -> list[BaseNode]:
-        """パスリスト内の複数パスからコンテンツを取得し、ノードを生成する。
+    ) -> tuple[list[Document], list[Document], list[Document]]:
+        """パスリスト内の複数パスからコンテンツを取得し、ドキュメントを生成する。
 
         Args:
             paths (list[str]): パスリスト
 
         Returns:
-            list[BaseNode]: 生成したノード
+            tuple[list[Document], list[Document], list[Document]]:
+                テキストドキュメント、画像ドキュメント、音声ドキュメント
         """
-        # 最上位ループ。キャッシュを空にしてから使う。
-        self._source_cache.clear()
-        nodes = []
+        docs = []
         for path in paths:
             try:
                 temp = await self.aload_from_path(path)
-                nodes.extend(temp)
+                docs.extend(temp)
             except Exception as e:
                 logger.exception(e)
                 continue
 
-        return nodes
+        return self._split_docs_modality(docs)

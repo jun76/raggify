@@ -13,6 +13,16 @@ class VectorStoreProvider(StrEnum):
     PGVECTOR = auto()
 
 
+class DocumentStoreProvider(StrEnum):
+    PGVECTOR = auto()
+    REDIS = auto()
+
+
+class IngestCacheStoreProvider(StrEnum):
+    PGVECTOR = auto()
+    REDIS = auto()
+
+
 class EmbedProvider(StrEnum):
     CLIP = auto()
     OPENAI = auto()
@@ -27,7 +37,7 @@ class RerankProvider(StrEnum):
     COHERE = auto()
 
 
-class ModelKey(StrEnum):
+class EmbedModel(StrEnum):
     NAME = auto()
     DIM = auto()
 
@@ -40,7 +50,7 @@ class DefaultSettings:
 
     ##### Meta
     PROJECT_NAME: str = "raggify"
-    VERSION: str = "1.0"
+    VERSION: str = "0.1.0"
     USER_CONFIG_PATH: str = f"/etc/{PROJECT_NAME}/config.yaml"
 
     ##### General
@@ -49,6 +59,10 @@ class DefaultSettings:
     PORT: int = 8000
     MCP: bool = False
     VECTOR_STORE_PROVIDER: VectorStoreProvider = VectorStoreProvider.CHROMA
+    DOCUMENT_STORE_PROVIDER: DocumentStoreProvider = DocumentStoreProvider.REDIS
+    INGEST_CACHE_STORE_PROVIDER: IngestCacheStoreProvider = (
+        IngestCacheStoreProvider.REDIS
+    )
     TEXT_EMBED_PROVIDER: Optional[EmbedProvider] = EmbedProvider.OPENAI
     IMAGE_EMBED_PROVIDER: Optional[EmbedProvider] = EmbedProvider.VOYAGE
     AUDIO_EMBED_PROVIDER: Optional[EmbedProvider] = None
@@ -76,54 +90,69 @@ class DefaultSettings:
     PGVECTOR_USER: str = PROJECT_NAME
     PGVECTOR_PASSWORD: Optional[str] = None
 
+    ##### Document Store
+    # PGVector
+    # same as vector store settings
+
+    # Redis
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+
+    ##### Ingest Cache Store
+    # PGVector
+    # same as vector store settings
+
+    # Redis
+    # same as document store settings
+
     ##### Meta Store
     META_STORE_PATH: str = f"/etc/{PROJECT_NAME}/{PROJECT_NAME}_metas.db"
 
     ##### Embedding
     # Text
     OPENAI_EMBED_MODEL_TEXT: dict[str, Any] = {
-        ModelKey.NAME.value: "text-embedding-3-small",
-        ModelKey.DIM.value: 1536,
+        EmbedModel.NAME.value: "text-embedding-3-small",
+        EmbedModel.DIM.value: 1536,
     }
     COHERE_EMBED_MODEL_TEXT: dict[str, Any] = {
-        ModelKey.NAME.value: "embed-v4.0",
-        ModelKey.DIM.value: 1536,
+        EmbedModel.NAME.value: "embed-v4.0",
+        EmbedModel.DIM.value: 1536,
     }
     CLIP_EMBED_MODEL_TEXT: dict[str, Any] = {
-        ModelKey.NAME.value: "ViT-B/32",
-        ModelKey.DIM.value: 512,
+        EmbedModel.NAME.value: "ViT-B/32",
+        EmbedModel.DIM.value: 512,
     }
     HUGGINGFACE_EMBED_MODEL_TEXT: dict[str, Any] = {
-        ModelKey.NAME.value: "intfloat/multilingual-e5-base",
-        ModelKey.DIM.value: 768,
+        EmbedModel.NAME.value: "intfloat/multilingual-e5-base",
+        EmbedModel.DIM.value: 768,
     }
     VOYAGE_EMBED_MODEL_TEXT: dict[str, Any] = {
-        ModelKey.NAME.value: "voyage-3.5",
-        ModelKey.DIM.value: 2048,
+        EmbedModel.NAME.value: "voyage-3.5",
+        EmbedModel.DIM.value: 2048,
     }
 
     # Image
     COHERE_EMBED_MODEL_IMAGE: dict[str, Any] = {
-        ModelKey.NAME.value: "embed-v4.0",
-        ModelKey.DIM.value: 1536,
+        EmbedModel.NAME.value: "embed-v4.0",
+        EmbedModel.DIM.value: 1536,
     }
     CLIP_EMBED_MODEL_IMAGE: dict[str, Any] = {
-        ModelKey.NAME.value: "ViT-B/32",
-        ModelKey.DIM.value: 512,
+        EmbedModel.NAME.value: "ViT-B/32",
+        EmbedModel.DIM.value: 512,
     }
     HUGGINGFACE_EMBED_MODEL_IMAGE: dict[str, Any] = {
-        ModelKey.NAME.value: "llamaindex/vdr-2b-multi-v1",
-        ModelKey.DIM.value: 1536,
+        EmbedModel.NAME.value: "llamaindex/vdr-2b-multi-v1",
+        EmbedModel.DIM.value: 1536,
     }
     VOYAGE_EMBED_MODEL_IMAGE: dict[str, Any] = {
-        ModelKey.NAME.value: "voyage-multimodal-3",
-        ModelKey.DIM.value: 1024,
+        EmbedModel.NAME.value: "voyage-multimodal-3",
+        EmbedModel.DIM.value: 1024,
     }
 
     # Audio
     CLAP_EMBED_MODEL_AUDIO: dict[str, Any] = {
-        ModelKey.NAME.value: "effect_varlen",
-        ModelKey.DIM.value: 512,
+        EmbedModel.NAME.value: "effect_varlen",
+        EmbedModel.DIM.value: 512,
     }
 
     ##### Ingest

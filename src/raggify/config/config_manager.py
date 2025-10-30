@@ -9,8 +9,10 @@ from typing import Any, Optional, get_args, get_origin, get_type_hints
 import yaml
 
 from ..config.default_settings import DefaultSettings
+from ..config.document_store_config import DocumentStoreConfig
 from ..config.embed_config import EmbedConfig
 from ..config.general_config import GeneralConfig
+from ..config.ingest_cache_store_config import IngestCacheStoreConfig
 from ..config.ingest_config import IngestConfig
 from ..config.meta_store_config import MetaStoreConfig
 from ..config.rerank_config import RerankConfig
@@ -31,6 +33,8 @@ class ConfigManager:
         """コンストラクタ"""
         self._general: GeneralConfig
         self._vector_store: VectorStoreConfig
+        self._document_store: DocumentStoreConfig
+        self._ingest_cache_store: IngestCacheStoreConfig
         self._meta_store: MetaStoreConfig
         self._embed: EmbedConfig
         self._ingest: IngestConfig
@@ -47,6 +51,8 @@ class ConfigManager:
         """デフォルトの設定値を読み込む。"""
         self._general = GeneralConfig()
         self._vector_store = VectorStoreConfig()
+        self._document_store = DocumentStoreConfig()
+        self._ingest_cache_store = IngestCacheStoreConfig()
         self._meta_store = MetaStoreConfig()
         self._embed = EmbedConfig()
         self._ingest = IngestConfig()
@@ -67,6 +73,16 @@ class ConfigManager:
         )
         self._vector_store = self._apply_section(
             data.get("vector_store"), VectorStoreConfig, self._vector_store
+        )
+        self._document_store = self._apply_section(
+            data.get("document_store"),
+            DocumentStoreConfig,
+            self._document_store,
+        )
+        self._document_store = self._apply_section(
+            data.get("ingest_cache_store"),
+            IngestCacheStoreConfig,
+            self._ingest_cache_store,
         )
         self._meta_store = self._apply_section(
             data.get("meta_store"), MetaStoreConfig, self._meta_store
@@ -102,6 +118,14 @@ class ConfigManager:
     @property
     def vector_store(self) -> VectorStoreConfig:
         return self._vector_store
+
+    @property
+    def document_store(self) -> DocumentStoreConfig:
+        return self._document_store
+
+    @property
+    def ingest_cache_store(self) -> IngestCacheStoreConfig:
+        return self._ingest_cache_store
 
     @property
     def meta_store(self) -> MetaStoreConfig:
@@ -140,6 +164,8 @@ class ConfigManager:
         return {
             "general": self._serialize_dataclass(self._general),
             "vector_store": self._serialize_dataclass(self._vector_store),
+            "document_store": self._serialize_dataclass(self._document_store),
+            "ingest_cache_store": self._serialize_dataclass(self._ingest_cache_store),
             "meta_store": self._serialize_dataclass(self._meta_store),
             "embed": self._serialize_dataclass(self._embed),
             "ingest": self._serialize_dataclass(self._ingest),

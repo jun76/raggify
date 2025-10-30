@@ -14,7 +14,7 @@ from ...logger import logger
 from .loader import Loader
 
 if TYPE_CHECKING:
-    from llama_index.core.schema import BaseNode
+    from llama_index.core.schema import Document
 
     from ...vector_store.vector_store_manager import VectorStoreManager
     from .file_loader import FileLoader
@@ -33,7 +33,7 @@ class HTMLLoader(Loader):
         user_agent: str = DS.USER_AGENT,
         same_origin: bool = DS.SAME_ORIGIN,
     ):
-        """HTML を読み込み、ノードを生成するためのクラス。
+        """HTML を読み込み、ドキュメントを生成するためのクラス。
 
         Args:
             file_loader (FileLoader): ファイル読み込み用
@@ -225,18 +225,16 @@ class HTMLLoader(Loader):
 
     async def _aload_direct_linked_file(
         self, url: str, base_url: Optional[str] = None
-    ) -> Optional[BaseNode]:
-        """直リンクのファイルからノードを生成する。
+    ) -> Optional[Document]:
+        """直リンクのファイルからドキュメントを生成する。
 
         Args:
             url (str): 対象 URL
             base_url (Optional[str], optional): source の取得元を指定する場合。Defaults to None.
 
         Returns:
-            Optional[BaseNode]: 生成したノード
+            Optional[Document]: 生成したドキュメント
         """
-        from llama_index.core.schema import TextNode
-
         from ...core.metadata import BasicMetaData
 
         temp_file_path = await self._adownload_direct_linked_file(
@@ -253,77 +251,21 @@ class HTMLLoader(Loader):
         meta.temp_file_path = temp_file_path  # 削除用
         meta.node_lastmod_at = time.time()
 
-        return TextNode(text=url, metadata=meta.to_dict())
-
-    async def _aload_html_text(
-        self,
-        url: str,
-        base_url: Optional[str] = None,
-        html: Optional[str] = None,
-    ) -> list[BaseNode]:
-        """HTML を読み込み、テキスト部分からノードを生成する。
-
-        Args:
-            url (str): 対象 URL
-            base_url (Optional[str], optional): source の取得元を指定する場合。Defaults to None.
-            html (Optional[str], optional): 事前に取得済みの HTML 文字列。Defaults to None.
-
-        Returns:
-            list[BaseNode]: 生成したノード
-        """
-        import html2text
-        from llama_index.core.node_parser import SentenceSplitter
-        from llama_index.core.schema import Document
-
-        from ...core.metadata import BasicMetaData
-
-        if html is None:
-            html = await self._afetch_text(url)
-            if not html:
-                return []
-
-        try:
-            text = html2text.html2text(html)
-            doc = [
-                Document(
-                    text=text,
-                    metadata={"url": url},
-                )
-            ]
-
-            splitter = SentenceSplitter(
-                chunk_size=self._chunk_size,
-                chunk_overlap=self._chunk_overlap,
-                include_metadata=True,
-            )
-            nodes = splitter.get_nodes_from_documents(doc)
-        except Exception as e:
-            logger.exception(e)
-            return []
-
-        for i, node in enumerate(nodes):
-            meta = BasicMetaData()
-            meta.chunk_no = i
-            meta.url = url
-            meta.base_source = base_url or ""
-            meta.node_lastmod_at = time.time()
-            node.metadata = meta.to_dict()
-
-        return nodes
+        return Document(text=url, metadata=meta.to_dict())
 
     async def _aload_html_asset_files(
         self,
         base_url: str,
         html: Optional[str] = None,
-    ) -> list[BaseNode]:
-        """HTML を読み込み、アセットファイルからノードを生成する。
+    ) -> list[Document]:
+        """HTML を読み込み、アセットファイルからドキュメントを生成する。
 
         Args:
             base_url (str): 対象 URL
             html (str): プリフェッチした html
 
         Returns:
-            list[BaseNode]: 生成したノード
+            list[Document]: 生成したドキュメント
         """
         if html is None:
             html = await self._afetch_text(base_url)
@@ -338,47 +280,42 @@ class HTMLLoader(Loader):
 
         logger.info(f"{len(urls)} asset files found")
 
-        # キャッシュにないURLのみを対象
-        urls_to_fetch = [url for url in urls if url not in self._source_cache]
-
         # セマフォで同時実行数を制限
         semaphore = asyncio.Semaphore(self._req_per_sec)
 
-        async def fetch_with_limit(url: str) -> Optional[BaseNode]:
+        async def fetch_with_limit(url: str) -> Optional[Document]:
             async with semaphore:
                 return await self._aload_direct_linked_file(url=url, base_url=base_url)
 
-        tasks = [fetch_with_limit(url) for url in urls_to_fetch]
+        tasks = [fetch_with_limit(url) for url in urls]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        # 最上位ループ内で複数ソースをまたいで _source_cache を共有したいため
-        # ここでは _source_cache.clear() しないこと。
-        nodes = []
-        for url, node in zip(urls_to_fetch, results):
-            if isinstance(node, Exception) or node is None:
+        docs = []
+        for url, doc in zip(urls, results):
+            if isinstance(doc, Exception) or doc is None:
                 logger.warning(f"failed to fetch from {url}, skipped")
                 continue
 
-            nodes.append(node)
+            docs.append(doc)
 
-            # 取得済みキャッシュに追加
-            self._source_cache.add(url)
-            logger.debug(f"add asset: {url}")
-
-        return nodes
+        return docs
 
     async def _aload_from_site(
         self,
         url: str,
-    ) -> list[BaseNode]:
-        """単一サイトからコンテンツを取得し、ノードを生成する。
+    ) -> list[Document]:
+        """単一サイトからコンテンツを取得し、ドキュメントを生成する。
 
         Args:
             url (str): 対象 URL
 
         Returns:
-            list[BaseNode]: 生成したノード
+            list[Document]: 生成したドキュメント
         """
+        import html2text
+
+        from ...core.metadata import MetaKeys as MK
+
         if urlparse(url).scheme not in {"http", "https"}:
             logger.error("invalid URL. expected http(s)://*")
             return []
@@ -387,14 +324,14 @@ class HTMLLoader(Loader):
             logger.debug(f"skip loading: source exists ({url})")
             return []
 
-        nodes = []
+        docs = []
         if Exts.endswith_exts(url, Exts.FETCH_TARGET):
             # 直リンクファイル
-            node = await self._aload_direct_linked_file(url)
-            if node is None:
+            doc = await self._aload_direct_linked_file(url)
+            if doc is None:
                 logger.warning(f"failed to fetch from {url}, skipped")
             else:
-                nodes.append(node)
+                docs.append(doc)
         else:
             # Not Found ページを ingest しないように下見
             html = await self._afetch_text(url)
@@ -403,36 +340,38 @@ class HTMLLoader(Loader):
                 return []
 
             # 本文テキスト
-            nodes.extend(await self._aload_html_text(url=url, html=html))
+            text = html2text.html2text(html)
+            doc = Document(text=text, metadata={MK.URL: url})
+            docs.append(doc)
 
             if self._load_asset:
                 # アセットファイル
-                nodes.extend(
-                    await self._aload_html_asset_files(base_url=url, html=html)
-                )
+                docs.extend(await self._aload_html_asset_files(base_url=url, html=html))
 
-        logger.debug(f"loaded {len(nodes)} nodes from {url}")
+        logger.debug(f"loaded {len(docs)} docs from {url}")
 
-        return nodes
+        return docs
 
     async def aload_from_url(
         self,
         url: str,
-    ) -> list[BaseNode]:
-        """URL からコンテンツを取得し、ノードを生成する。
+    ) -> tuple[list[Document], list[Document], list[Document]]:
+        """URL からコンテンツを取得し、ドキュメントを生成する。
         サイトマップ（.xml）の場合はツリーを下りながら複数サイトから取り込む。
 
         Args:
             url (str): 対象 URL
 
         Returns:
-            list[BaseNode]: 生成したノード
+            tuple[list[Document], list[Document], list[Document]]:
+                テキストドキュメント、画像ドキュメント、音声ドキュメント
         """
         from llama_index.readers.web.sitemap.base import SitemapReader
 
         # サイトマップ以外は単一のサイトとして読み込み
         if not Exts.endswith_exts(url, Exts.SITEMAP):
-            return await self._aload_from_site(url)
+            docs = await self._aload_from_site(url)
+            return self._split_docs_modality(docs)
 
         # 以下、サイトマップの解析と読み込み
         try:
@@ -440,34 +379,31 @@ class HTMLLoader(Loader):
             urls = loader._parse_sitemap(url)
         except Exception as e:
             logger.exception(e)
-            return []
+            return [], [], []
 
-        # 最上位ループの一つ。キャッシュを空にしてから使う。
-        self._source_cache.clear()
-        nodes = []
+        docs = []
         for url in urls:
             temp = await self._aload_from_site(url)
-            nodes.extend(temp)
+            docs.extend(temp)
 
-        return nodes
+        return self._split_docs_modality(docs)
 
     async def aload_from_urls(
         self,
         urls: list[str],
-    ) -> list[BaseNode]:
-        """URL リスト内の複数サイトからコンテンツを取得し、ノードを生成する。
+    ) -> tuple[list[Document], list[Document], list[Document]]:
+        """URL リスト内の複数サイトからコンテンツを取得し、ドキュメントを生成する。
 
         Args:
             urls (list[str]): URL リスト
 
         Returns:
-            list[BaseNode]: 生成したノード
+            tuple[list[Document], list[Document], list[Document]]:
+                テキストドキュメント、画像ドキュメント、音声ドキュメント
         """
-        # 最上位ループの一つ。キャッシュを空にしてから使う。
-        self._source_cache.clear()
-        nodes = []
+        docs = []
         for url in urls:
             temp = await self.aload_from_url(url)
-            nodes.extend(temp)
+            docs.extend(temp)
 
-        return nodes
+        return self._split_docs_modality(docs)

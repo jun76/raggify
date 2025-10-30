@@ -5,7 +5,9 @@ from typing import Literal, Optional
 
 from .default_settings import (
     DefaultSettings,
+    DocumentStoreProvider,
     EmbedProvider,
+    IngestCacheStoreProvider,
     RerankProvider,
     VectorStoreProvider,
 )
@@ -18,6 +20,12 @@ class GeneralConfig:
     port: int = DefaultSettings.PORT
     mcp: bool = DefaultSettings.MCP
     vector_store_provider: VectorStoreProvider = DefaultSettings.VECTOR_STORE_PROVIDER
+    document_store_provider: DocumentStoreProvider = (
+        DefaultSettings.DOCUMENT_STORE_PROVIDER
+    )
+    ingest_cache_store_provider: IngestCacheStoreProvider = (
+        DefaultSettings.INGEST_CACHE_STORE_PROVIDER
+    )
     text_embed_provider: Optional[EmbedProvider] = DefaultSettings.TEXT_EMBED_PROVIDER
     image_embed_provider: Optional[EmbedProvider] = DefaultSettings.IMAGE_EMBED_PROVIDER
     audio_embed_provider: Optional[EmbedProvider] = DefaultSettings.AUDIO_EMBED_PROVIDER
