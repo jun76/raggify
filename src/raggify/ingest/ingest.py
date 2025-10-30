@@ -1,19 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Sequence
-
-from llama_index.core.ingestion import IngestionPipeline
+from typing import TYPE_CHECKING, Sequence
 
 from ..core.event import async_loop_runner
 from ..embed.embed_manager import Modality
 from ..logger import logger
 
 if TYPE_CHECKING:
-    from llama_index.core.ingestion.cache import IngestionCache
-    from llama_index.core.schema import TransformComponent
-    from llama_index.core.storage.docstore.types import BaseDocumentStore
-    from llama_index.core.vector_stores.types import BasePydanticVectorStore
+    from llama_index.core.schema import ImageNode, TextNode
 
+    from ..llama.core.schema import AudioNode
     from ..runtime import Runtime
 
 
@@ -59,29 +55,86 @@ def _read_list(path: str) -> list[str]:
     return lst
 
 
-def _create_pipeline(
-    transformations: list[TransformComponent],
-    vector_store: Optional[BasePydanticVectorStore],
-    docstore: Optional[BaseDocumentStore],
-    cache: Optional[IngestionCache],
-) -> IngestionPipeline:
-    """モダリティ毎の IngestionPipeline を構築する。
+async def _aupsert_nodes(
+    text_nodes: list[TextNode],
+    image_nodes: list[ImageNode],
+    audio_nodes: list[AudioNode],
+):
+    """ノードをアップサートする。
 
     Args:
-        transformations (list[TransformComponent]): 変換一式
-        vector_store (Optional[BasePydanticVectorStore]): ベクトルストア
-        docstore (Optional[BaseDocumentStore]): ドキュメントストア
-        cache (Optional[IngestionCache]): ingestion キャッシュ
-
-    Returns:
-        IngestionPipeline: パイプライン
+        text_nodes (list[TextNode]): テキストノード
+        image_nodes (list[ImageNode]): 画像ノード
+        audio_nodes (list[AudioNode]): 音声ノード
     """
-    return IngestionPipeline(
-        transformations=transformations,
-        vector_store=vector_store,
-        docstore=docstore,
-        cache=cache,
+    import asyncio
+
+    from llama_index.core.ingestion import IngestionPipeline
+    from llama_index.core.node_parser import SentenceSplitter
+
+    from .transform import (
+        AddChunkIndexTransform,
+        make_audio_embed_transform,
+        make_image_embed_transform,
+        make_text_embed_transform,
     )
+
+    rt = _rt()
+    embed = rt.embed_manager
+    vs = rt.vector_store
+    ics = rt.ingest_cache_store
+
+    tasks = []
+
+    # 後段パイプ。テキスト分割とモダリティ毎の埋め込み＋ストア格納。
+    # キャッシュ管理も。
+    if text_nodes:
+        text_pipe = IngestionPipeline(
+            transformations=[
+                SentenceSplitter(
+                    chunk_size=rt.cfg.ingest.chunk_size,
+                    chunk_overlap=rt.cfg.ingest.chunk_overlap,
+                    include_metadata=True,
+                ),
+                AddChunkIndexTransform(),
+                make_text_embed_transform(
+                    embed=embed,
+                    model_stamp=embed.get_container(Modality.TEXT).embed.model_name,
+                ),
+            ],
+            vector_store=vs.get_container(Modality.TEXT).store,
+            cache=ics.get_container(Modality.TEXT).store,
+        )
+        tasks.append(text_pipe.arun(nodes=text_nodes))
+
+    if image_nodes:
+        image_pipe = IngestionPipeline(
+            transformations=[
+                make_image_embed_transform(
+                    embed=embed,
+                    model_stamp=embed.get_container(Modality.IMAGE).embed.model_name,
+                ),
+            ],
+            vector_store=vs.get_container(Modality.IMAGE).store,
+            cache=ics.get_container(Modality.IMAGE).store,
+        )
+        tasks.append(image_pipe.arun(nodes=image_nodes))
+
+    if audio_nodes:
+        audio_pipe = IngestionPipeline(
+            transformations=[
+                make_audio_embed_transform(
+                    embed=embed,
+                    model_stamp=embed.get_container(Modality.AUDIO).embed.model_name,
+                ),
+            ],
+            vector_store=vs.get_container(Modality.AUDIO).store,
+            cache=ics.get_container(Modality.AUDIO).store,
+        )
+        tasks.append(audio_pipe.arun(nodes=audio_nodes))
+
+    if tasks:
+        await asyncio.gather(*tasks)
 
 
 def ingest_path(path: str) -> None:
@@ -101,29 +154,12 @@ async def aingest_path(path: str) -> None:
     Args:
         path (str): 対象パス
     """
-    from .trans import AddChunkIndexTransform
-
-    vs = _rt().vector_store
-    embed = _rt().embed_manager
-    ds = _rt().document_store
-    ics = _rt().ingest_cache_store
     file_loader = _rt().file_loader
 
-    text_docs, image_docs, audio_docs = await file_loader.aload_from_path(path)
-
-    text_pipeline = _create_pipeline(
-        transformations=[
-            AddChunkIndexTransform(),
-            embed.get_container(Modality.TEXT).embed,
-        ],
-        vector_store=vs.get_container(Modality.TEXT).store,
-        docstore=ds.get_container(Modality.TEXT).store,
-        cache=ics.get_container(Modality.TEXT).store,
+    text_nodes, image_nodes, audio_nodes = await file_loader.aload_from_path(path)
+    await _aupsert_nodes(
+        text_nodes=text_nodes, image_nodes=image_nodes, audio_nodes=audio_nodes
     )
-
-    await text_pipeline.arun(documents=text_docs)
-    await image_pipeline.arun(documents=image_docs)
-    await audio_pipeline.arun(documents=audio_docs)
 
 
 def ingest_path_list(lst: str | Sequence[str]) -> None:
@@ -144,11 +180,12 @@ async def aingest_path_list(lst: str | Sequence[str]) -> None:
     if isinstance(lst, str):
         lst = _read_list(lst)
 
-    store = _rt().vector_store
     file_loader = _rt().file_loader
 
-    nodes = await file_loader.aload_from_paths(list(lst))
-    await store.aupsert_nodes(nodes)
+    text_nodes, image_nodes, audio_nodes = await file_loader.aload_from_paths(list(lst))
+    await _aupsert_nodes(
+        text_nodes=text_nodes, image_nodes=image_nodes, audio_nodes=audio_nodes
+    )
 
 
 def ingest_url(url: str) -> None:
@@ -168,11 +205,12 @@ async def aingest_url(url: str) -> None:
     Args:
         url (str): 対象 URL
     """
-    store = _rt().vector_store
     html_loader = _rt().html_loader
 
-    nodes = await html_loader.aload_from_url(url)
-    await store.aupsert_nodes(nodes)
+    text_nodes, image_nodes, audio_nodes = await html_loader.aload_from_url(url)
+    await _aupsert_nodes(
+        text_nodes=text_nodes, image_nodes=image_nodes, audio_nodes=audio_nodes
+    )
 
 
 def ingest_url_list(lst: str | Sequence[str]) -> None:
@@ -193,8 +231,9 @@ async def aingest_url_list(lst: str | Sequence[str]) -> None:
     if isinstance(lst, str):
         lst = _read_list(lst)
 
-    store = _rt().vector_store
     html_loader = _rt().html_loader
 
-    nodes = await html_loader.aload_from_urls(list(lst))
-    await store.aupsert_nodes(nodes)
+    text_nodes, image_nodes, audio_nodes = await html_loader.aload_from_urls(list(lst))
+    await _aupsert_nodes(
+        text_nodes=text_nodes, image_nodes=image_nodes, audio_nodes=audio_nodes
+    )

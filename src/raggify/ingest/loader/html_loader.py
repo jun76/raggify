@@ -14,41 +14,37 @@ from ...logger import logger
 from .loader import Loader
 
 if TYPE_CHECKING:
-    from llama_index.core.schema import Document
+    from llama_index.core.schema import Document, ImageNode, TextNode
 
-    from ...vector_store.vector_store_manager import VectorStoreManager
+    from ...document_store.document_store_manager import DocumentStoreManager
+    from ...llama.core.schema import AudioNode
     from .file_loader import FileLoader
 
 
 class HTMLLoader(Loader):
     def __init__(
         self,
+        document_store: DocumentStoreManager,
         file_loader: FileLoader,
-        store: VectorStoreManager,
-        chunk_size: int = DS.CHUNK_SIZE,
-        chunk_overlap: int = DS.CHUNK_OVERLAP,
         load_asset: bool = DS.LOAD_ASSET,
         req_per_sec: int = DS.REQ_PER_SEC,
         timeout_sec: int = DS.TIMEOUT_SEC,
         user_agent: str = DS.USER_AGENT,
         same_origin: bool = DS.SAME_ORIGIN,
     ):
-        """HTML を読み込み、ドキュメントを生成するためのクラス。
+        """HTML を読み込み、ノードを生成するためのクラス。
 
         Args:
+            document_store (DocumentStoreManager): ドキュメントストア管理
             file_loader (FileLoader): ファイル読み込み用
-            store (VectorStoreManager): 登録済みソースの判定に使用
-            chunk_size (int, optional): チャンクサイズ。Defaults to DS.CHUNK_SIZE.
-            chunk_overlap (int, optional): チャンク重複語数。Defaults to DS.CHUNK_OVERLAP.
             load_asset (bool, optional): アセットを読み込むか。Defaults to DS.LOAD_ASSET.
             req_per_sec (int, optional): 秒間リクエスト数。Defaults to DS.REQ_PER_SEC.
             timeout_sec (int, optional): タイムアウト秒。Defaults to DS.TIMEOUT_SEC.
             user_agent (str, optional): GET リクエスト時の user agent。Defaults to DS.USER_AGENT.
             same_origin (bool, optional): 同一オリジンのみ対象とするか。Defaults to DS.SAME_ORIGIN.
         """
-        Loader.__init__(self, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+        super().__init__(document_store)
         self._file_loader = file_loader
-        self._store = store
         self._load_asset = load_asset
         self._req_per_sec = req_per_sec
         self._timeout_sec = timeout_sec
@@ -320,10 +316,6 @@ class HTMLLoader(Loader):
             logger.error("invalid URL. expected http(s)://*")
             return []
 
-        if self._store.skip_update(url):
-            logger.debug(f"skip loading: source exists ({url})")
-            return []
-
         docs = []
         if Exts.endswith_exts(url, Exts.FETCH_TARGET):
             # 直リンクファイル
@@ -355,23 +347,23 @@ class HTMLLoader(Loader):
     async def aload_from_url(
         self,
         url: str,
-    ) -> tuple[list[Document], list[Document], list[Document]]:
-        """URL からコンテンツを取得し、ドキュメントを生成する。
+    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
+        """URL からコンテンツを取得し、ノードを生成する。
         サイトマップ（.xml）の場合はツリーを下りながら複数サイトから取り込む。
 
         Args:
             url (str): 対象 URL
 
         Returns:
-            tuple[list[Document], list[Document], list[Document]]:
-                テキストドキュメント、画像ドキュメント、音声ドキュメント
+            tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
+                テキストノード、画像ノード、音声ノード
         """
         from llama_index.readers.web.sitemap.base import SitemapReader
 
         # サイトマップ以外は単一のサイトとして読み込み
         if not Exts.endswith_exts(url, Exts.SITEMAP):
             docs = await self._aload_from_site(url)
-            return self._split_docs_modality(docs)
+            return await self._asplit_docs_modality(docs)
 
         # 以下、サイトマップの解析と読み込み
         try:
@@ -386,24 +378,24 @@ class HTMLLoader(Loader):
             temp = await self._aload_from_site(url)
             docs.extend(temp)
 
-        return self._split_docs_modality(docs)
+        return await self._asplit_docs_modality(docs)
 
     async def aload_from_urls(
         self,
         urls: list[str],
-    ) -> tuple[list[Document], list[Document], list[Document]]:
-        """URL リスト内の複数サイトからコンテンツを取得し、ドキュメントを生成する。
+    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
+        """URL リスト内の複数サイトからコンテンツを取得し、ノードを生成する。
 
         Args:
             urls (list[str]): URL リスト
 
         Returns:
-            tuple[list[Document], list[Document], list[Document]]:
-                テキストドキュメント、画像ドキュメント、音声ドキュメント
+            tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
+                テキストノード、画像ノード、音声ノード
         """
         docs = []
         for url in urls:
             temp = await self.aload_from_url(url)
             docs.extend(temp)
 
-        return self._split_docs_modality(docs)
+        return await self._asplit_docs_modality(docs)

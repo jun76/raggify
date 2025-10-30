@@ -16,11 +16,13 @@ class VectorStoreProvider(StrEnum):
 class DocumentStoreProvider(StrEnum):
     PGVECTOR = auto()
     REDIS = auto()
+    DEFAULT = auto()
 
 
 class IngestCacheStoreProvider(StrEnum):
     PGVECTOR = auto()
     REDIS = auto()
+    DEFAULT = auto()
 
 
 class EmbedProvider(StrEnum):

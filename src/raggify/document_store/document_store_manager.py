@@ -1,36 +1,27 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
-
-from ..embed.embed_manager import Modality
 
 if TYPE_CHECKING:
     from llama_index.core.storage.docstore.keyval_docstore import KVDocumentStore
-
-
-@dataclass
-class DocumentStoreContainer:
-    """モダリティ毎のドキュメントストア関連パラメータを集約"""
-
-    provider_name: str
-    store: KVDocumentStore
-    table_name: str
 
 
 class DocumentStoreManager:
     """ドキュメントストアの管理クラス。"""
 
     def __init__(
-        self,
-        conts: dict[Modality, DocumentStoreContainer],
+        self, provider_name: str, store: KVDocumentStore, table_name: str
     ) -> None:
         """コンストラクタ
 
         Args:
-            conts (dict[Modality, DocumentStoreContainer]): ドキュメントストアコンテナの辞書
+            provider_name (str): プロバイダ名
+            store (KVDocumentStore): ドキュメントストア
+            table_name (str): テーブル名
         """
-        self._conts = conts
+        self._provider_name = provider_name
+        self._store = store
+        self._table_name = table_name
 
     @property
     def name(self) -> str:
@@ -39,31 +30,22 @@ class DocumentStoreManager:
         Returns:
             str: プロバイダ名
         """
-        return ", ".join([cont.provider_name for cont in self._conts.values()])
+        return self._provider_name
 
     @property
-    def modality(self) -> set[Modality]:
-        """このドキュメントストアがサポートするモダリティ一覧。
+    def store(self) -> KVDocumentStore:
+        """ドキュメントストア。
 
         Returns:
-            set[Modality]: モダリティ一覧
+            KVDocumentStore: ドキュメントストア
         """
-        return set(self._conts.keys())
+        return self._store
 
-    def get_container(self, modality: Modality) -> DocumentStoreContainer:
-        """モダリティ別のドキュメントストアコンテナを取得する。
-
-        Args:
-            modality (Modality): モダリティ
-
-        Raises:
-            RuntimeError: 未初期化
+    @property
+    def table_name(self) -> str:
+        """テーブル名。
 
         Returns:
-            DocumentStoreContainer: ドキュメントストアコンテナ
+            str: テーブル名
         """
-        cont = self._conts.get(modality)
-        if cont is None:
-            raise RuntimeError(f"store {modality} is not initialized")
-
-        return cont
+        return self._table_name

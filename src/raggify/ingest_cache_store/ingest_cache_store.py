@@ -4,6 +4,7 @@ from ..config.config_manager import ConfigManager
 from ..config.default_settings import IngestCacheStoreProvider
 from ..config.ingest_cache_store_config import IngestCacheStoreConfig
 from ..llama.core.schema import Modality
+from ..logger import logger
 
 if TYPE_CHECKING:
     from ..embed.embed_manager import EmbedManager
@@ -18,7 +19,7 @@ __all__ = ["create_ingest_cache_store_manager"]
 def create_ingest_cache_store_manager(
     cfg: ConfigManager, embed: EmbedManager
 ) -> IngestCacheStoreManager:
-    """ドキュメントストア管理のインスタンスを生成する。
+    """インジェストキャッシュ管理のインスタンスを生成する。
 
     Args:
         cfg (ConfigManager): 設定管理
@@ -28,7 +29,7 @@ def create_ingest_cache_store_manager(
         RuntimeError: インスタンス生成に失敗またはプロバイダ指定漏れ
 
     Returns:
-        IngestCacheStoreManager: ドキュメントストア管理
+        IngestCacheStoreManager: インジェストキャッシュ管理
     """
     from .ingest_cache_store_manager import IngestCacheStoreManager
 
@@ -58,7 +59,7 @@ def create_ingest_cache_store_manager(
 
 
 def _create_container(cfg: ConfigManager, space_key: str) -> IngestCacheStoreContainer:
-    """空間キー毎のドキュメントストアコンテナを生成する。
+    """空間キー毎のコンテナを生成する。
 
     Args:
         cfg (ConfigManager): 設定管理
@@ -77,9 +78,10 @@ def _create_container(cfg: ConfigManager, space_key: str) -> IngestCacheStoreCon
         case IngestCacheStoreProvider.PGVECTOR:
             cont = _pgvector(cfg=cfg.ingest_cache_store, table_name=table_name)
         case _:
-            raise RuntimeError(
-                f"unsupported vector store: {cfg.general.ingest_cache_store_provider}"
+            logger.warning(
+                f"unsupported ingest cache store: {cfg.general.ingest_cache_store_provider}, use default"
             )
+            return _default(table_name)
 
     return cont
 
@@ -94,7 +96,11 @@ def _generate_table_name(cfg: ConfigManager, space_key: str) -> str:
     Returns:
         str: テーブル名
     """
-    return f"{cfg.project_name}__{cfg.general.knowledgebase_name}__{space_key}"
+    import hashlib
+
+    return hashlib.md5(
+        f"{cfg.project_name}:{cfg.general.knowledgebase_name}:{space_key}:ics".encode()
+    ).hexdigest()
 
 
 # 以下、プロバイダ毎のコンテナ生成ヘルパー
@@ -139,6 +145,22 @@ def _pgvector(
                 user=cfg.pgvector_user,
                 password=sec,
             ),
+            collection=table_name,
+        ),
+        table_name=table_name,
+    )
+
+
+def _default(table_name: str) -> IngestCacheStoreContainer:
+    from llama_index.core.ingestion import IngestionCache
+    from llama_index.core.storage.kvstore import SimpleKVStore
+
+    from .ingest_cache_store_manager import IngestCacheStoreContainer
+
+    return IngestCacheStoreContainer(
+        provider_name=IngestCacheStoreProvider.DEFAULT,
+        store=IngestionCache(
+            cache=SimpleKVStore(),
             collection=table_name,
         ),
         table_name=table_name,

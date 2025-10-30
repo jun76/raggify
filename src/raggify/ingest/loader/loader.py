@@ -1,46 +1,58 @@
 from __future__ import annotations
 
-from llama_index.core.schema import Document
+from typing import TYPE_CHECKING
+
+from llama_index.core.schema import Document, ImageNode, TextNode
 
 from ...core.exts import Exts
 from ...core.metadata import MetaKeys as MK
+from ...llama.core.schema import AudioNode
+
+if TYPE_CHECKING:
+    from ...document_store.document_store_manager import DocumentStoreManager
 
 
 class Loader:
-    def __init__(self, chunk_size: int, chunk_overlap: int) -> None:
-        """ローダー基底クラス。
+    """ローダー基底クラス"""
+
+    def __init__(self, document_store: DocumentStoreManager) -> None:
+        """コンストラクタ
 
         Args:
-            chunk_size (int): チャンクサイズ
-            chunk_overlap (int): チャンク重複語数
+            document_store (DocumentStoreManager): ドキュメントストア管理
         """
-        self._chunk_size = chunk_size
-        self._chunk_overlap = chunk_overlap
+        self._document_store = document_store
 
-    def _split_docs_modality(
+    async def _asplit_docs_modality(
         self, docs: list[Document]
-    ) -> tuple[list[Document], list[Document], list[Document]]:
+    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
         """ドキュメントをモダリティ別に分ける。
 
         Args:
             docs (list[Document]): 入力ドキュメント
 
         Returns:
-            tuple[list[Document], list[Document], list[Document]]:
-                テキストドキュメント、画像ドキュメント、音声ドキュメント
+            tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
+                テキストノード、画像ノード、音声ノード
         """
-        image_docs = []
-        audio_docs = []
-        text_docs = []
+        from llama_index.core.ingestion import IngestionPipeline
+
+        # 前段パイプ。ドキュメントストアでの重複管理
+        doc_pipe = IngestionPipeline(docstore=self._document_store.store)
+        await doc_pipe.arun(documents=docs)
+
+        image_nodes = []
+        audio_nodes = []
+        text_nodes = []
         for doc in docs:
             if self._is_image_doc(doc):
-                image_docs.append(doc)
+                image_nodes.append(ImageNode(text=doc.text, metadata=doc.metadata))
             elif self._is_audio_doc(doc):
-                audio_docs.append(doc)
+                audio_nodes.append(AudioNode(text=doc.text, metadata=doc.metadata))
             else:
-                text_docs.append(doc)
+                text_nodes.append(TextNode(text=doc.text, metadata=doc.metadata))
 
-        return text_docs, image_docs, audio_docs
+        return text_nodes, image_nodes, audio_nodes
 
     def _is_image_doc(self, doc: Document) -> bool:
         """画像ドキュメントか。

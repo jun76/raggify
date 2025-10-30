@@ -75,7 +75,7 @@ def create_vector_store_manager(
 def _create_container(
     cfg: ConfigManager, space_key: str, dim: int
 ) -> VectorStoreContainer:
-    """空間キー毎のベクトルストアコンテナを生成する。
+    """空間キー毎のコンテナを生成する。
 
     Args:
         cfg (ConfigManager): 設定管理
@@ -93,7 +93,7 @@ def _create_container(
         case VectorStoreProvider.PGVECTOR:
             cont = _pgvector(cfg=cfg.vector_store, table_name=table_name, dim=dim)
         case VectorStoreProvider.CHROMA:
-            cont = _chroma(cfg=cfg.vector_store, table_name=table_name, dim=dim)
+            cont = _chroma(cfg=cfg.vector_store, table_name=table_name)
         case _:
             raise RuntimeError(
                 f"unsupported vector store: {cfg.general.vector_store_provider}"
@@ -112,7 +112,11 @@ def _generate_table_name(cfg: ConfigManager, space_key: str) -> str:
     Returns:
         str: テーブル名
     """
-    return f"{cfg.project_name}__{cfg.general.knowledgebase_name}__{space_key}"
+    import hashlib
+
+    return hashlib.md5(
+        f"{cfg.project_name}:{cfg.general.knowledgebase_name}:{space_key}:vec".encode()
+    ).hexdigest()
 
 
 # 以下、プロバイダ毎のコンテナ生成ヘルパー
@@ -142,7 +146,7 @@ def _pgvector(
     )
 
 
-def _chroma(cfg: VectorStoreConfig, table_name: str, dim: int) -> VectorStoreContainer:
+def _chroma(cfg: VectorStoreConfig, table_name: str) -> VectorStoreContainer:
     import chromadb
     from llama_index.vector_stores.chroma import ChromaVectorStore
 

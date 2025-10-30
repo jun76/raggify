@@ -126,9 +126,7 @@ class Runtime:
         if self._document_store is None:
             from .document_store.document_store import create_document_store_manager
 
-            self._document_store = create_document_store_manager(
-                cfg=self.cfg, embed=self.embed_manager
-            )
+            self._document_store = create_document_store_manager(self.cfg)
 
         return self._document_store
 
@@ -159,11 +157,7 @@ class Runtime:
         if self._file_loader is None:
             from .ingest.loader.file_loader import FileLoader
 
-            self._file_loader = FileLoader(
-                store=self.vector_store,
-                chunk_size=self.cfg.ingest.chunk_size,
-                chunk_overlap=self.cfg.ingest.chunk_overlap,
-            )
+            self._file_loader = FileLoader(self.document_store)
 
         return self._file_loader
 
@@ -173,10 +167,8 @@ class Runtime:
             from .ingest.loader.html_loader import HTMLLoader
 
             self._html_loader = HTMLLoader(
+                document_store=self.document_store,
                 file_loader=self.file_loader,
-                store=self.vector_store,
-                chunk_size=self.cfg.ingest.chunk_size,
-                chunk_overlap=self.cfg.ingest.chunk_overlap,
                 load_asset=self.cfg.ingest.load_asset,
                 req_per_sec=self.cfg.ingest.req_per_sec,
                 timeout_sec=self.cfg.ingest.timeout_sec,

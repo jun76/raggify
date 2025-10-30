@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from ...config.default_settings import DefaultSettings as DS
 from ...core.exts import Exts
 from ...logger import logger
 from .loader import Loader
@@ -12,29 +11,25 @@ from .reader.pdf_reader import MultiPDFReader
 
 if TYPE_CHECKING:
     from llama_index.core.readers.base import BaseReader
-    from llama_index.core.schema import Document
+    from llama_index.core.schema import ImageNode, TextNode
 
-    from ...vector_store.vector_store_manager import VectorStoreManager
+    from ...document_store.document_store_manager import DocumentStoreManager
+    from ...llama.core.schema import AudioNode
 
 
 class FileLoader(Loader):
-    """ローカルファイルを読み込み、ドキュメントを生成するためのクラス。"""
+    """ローカルファイルを読み込み、ノードを生成するためのクラス。"""
 
     def __init__(
         self,
-        store: VectorStoreManager,
-        chunk_size: int = DS.CHUNK_SIZE,
-        chunk_overlap: int = DS.CHUNK_OVERLAP,
+        document_store: DocumentStoreManager,
     ) -> None:
         """コンストラクタ
 
         Args:
-            store (VectorStoreManager): 登録済みソースの判定に使用
-            chunk_size (int, optional): チャンクサイズ。Defaults to DS.CHUNK_SIZE.
-            chunk_overlap (int, optional): チャンク重複語数。Defaults to DS.CHUNK_OVERLAP.
+            document_store (DocumentStoreManager): ドキュメントストア管理
         """
-        Loader.__init__(self, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-        self._store = store
+        super().__init__(document_store)
 
         # 独自 reader の辞書。後段で SimpleDirectoryReader に渡す
         self._readers: dict[str, BaseReader] = {Exts.PDF: MultiPDFReader()}
@@ -46,8 +41,8 @@ class FileLoader(Loader):
     async def aload_from_path(
         self,
         root: str,
-    ) -> tuple[list[Document], list[Document], list[Document]]:
-        """ローカルパス（ディレクトリ、ファイル）からコンテンツを取り込み、ドキュメントを生成する。
+    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
+        """ローカルパス（ディレクトリ、ファイル）からコンテンツを取り込み、ノードを生成する。
         ディレクトリの場合はツリーを下りながら複数ファイルを取り込む。
 
         Args:
@@ -57,8 +52,8 @@ class FileLoader(Loader):
             ValueError: パスの指定誤り等
 
         Returns:
-            tuple[list[Document], list[Document], list[Document]]:
-                テキストドキュメント、画像ドキュメント、音声ドキュメント
+            tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
+                テキストノード、画像ノード、音声ノード
         """
         from llama_index.core.readers.file.base import SimpleDirectoryReader
 
@@ -76,20 +71,20 @@ class FileLoader(Loader):
             logger.exception(e)
             raise ValueError("failed to load from path") from e
 
-        return self._split_docs_modality(docs)
+        return await self._asplit_docs_modality(docs)
 
     async def aload_from_paths(
         self,
         paths: list[str],
-    ) -> tuple[list[Document], list[Document], list[Document]]:
-        """パスリスト内の複数パスからコンテンツを取得し、ドキュメントを生成する。
+    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
+        """パスリスト内の複数パスからコンテンツを取得し、ノードを生成する。
 
         Args:
             paths (list[str]): パスリスト
 
         Returns:
-            tuple[list[Document], list[Document], list[Document]]:
-                テキストドキュメント、画像ドキュメント、音声ドキュメント
+            tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
+                テキストノード、画像ノード、音声ノード
         """
         docs = []
         for path in paths:
@@ -100,4 +95,4 @@ class FileLoader(Loader):
                 logger.exception(e)
                 continue
 
-        return self._split_docs_modality(docs)
+        return await self._asplit_docs_modality(docs)
