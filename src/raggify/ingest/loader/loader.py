@@ -35,10 +35,13 @@ class Loader:
             tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
                 テキストノード、画像ノード、音声ノード
         """
-        from llama_index.core.ingestion import IngestionPipeline
+        from llama_index.core.ingestion import DocstoreStrategy, IngestionPipeline
 
         # 前段パイプ。ドキュメントストアでの重複管理
-        doc_pipe = IngestionPipeline(docstore=self._document_store.store)
+        doc_pipe = IngestionPipeline(
+            docstore=self._document_store.store,
+            docstore_strategy=DocstoreStrategy.UPSERTS,
+        )
         await doc_pipe.arun(documents=docs)
 
         image_nodes = []

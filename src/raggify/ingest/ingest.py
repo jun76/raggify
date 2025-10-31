@@ -84,10 +84,9 @@ async def _aupsert_nodes(
     vs = rt.vector_store
     ics = rt.ingest_cache_store
 
-    tasks = []
-
     # 後段パイプ。テキスト分割とモダリティ毎の埋め込み＋ストア格納。
     # キャッシュ管理も。
+    tasks = []
     if text_nodes:
         text_pipe = IngestionPipeline(
             transformations=[

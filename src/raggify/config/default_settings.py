@@ -11,18 +11,15 @@ load_dotenv()
 class VectorStoreProvider(StrEnum):
     CHROMA = auto()
     PGVECTOR = auto()
+    REDIS = auto()
 
 
 class DocumentStoreProvider(StrEnum):
-    PGVECTOR = auto()
     REDIS = auto()
-    DEFAULT = auto()
 
 
 class IngestCacheStoreProvider(StrEnum):
-    PGVECTOR = auto()
     REDIS = auto()
-    DEFAULT = auto()
 
 
 class EmbedProvider(StrEnum):
@@ -60,7 +57,7 @@ class DefaultSettings:
     HOST: str = "localhost"
     PORT: int = 8000
     MCP: bool = False
-    VECTOR_STORE_PROVIDER: VectorStoreProvider = VectorStoreProvider.CHROMA
+    VECTOR_STORE_PROVIDER: VectorStoreProvider = VectorStoreProvider.REDIS
     DOCUMENT_STORE_PROVIDER: DocumentStoreProvider = DocumentStoreProvider.REDIS
     INGEST_CACHE_STORE_PROVIDER: IngestCacheStoreProvider = (
         IngestCacheStoreProvider.REDIS
@@ -92,18 +89,15 @@ class DefaultSettings:
     PGVECTOR_USER: str = PROJECT_NAME
     PGVECTOR_PASSWORD: Optional[str] = None
 
-    ##### Document Store
-    # PGVector
-    # same as vector store settings
-
     # Redis
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
 
-    ##### Ingest Cache Store
-    # PGVector
-    # same as vector store settings
+    ##### Document Store
+    # Redis
+    # same as document store settings
 
+    ##### Ingest Cache Store
     # Redis
     # same as document store settings
 

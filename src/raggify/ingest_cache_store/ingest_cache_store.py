@@ -4,7 +4,6 @@ from ..config.config_manager import ConfigManager
 from ..config.default_settings import IngestCacheStoreProvider
 from ..config.ingest_cache_store_config import IngestCacheStoreConfig
 from ..llama.core.schema import Modality
-from ..logger import logger
 
 if TYPE_CHECKING:
     from ..embed.embed_manager import EmbedManager
@@ -74,16 +73,11 @@ def _create_container(cfg: ConfigManager, space_key: str) -> IngestCacheStoreCon
     table_name = _generate_table_name(cfg, space_key)
     match cfg.general.ingest_cache_store_provider:
         case IngestCacheStoreProvider.REDIS:
-            cont = _redis(cfg=cfg.ingest_cache_store, table_name=table_name)
-        case IngestCacheStoreProvider.PGVECTOR:
-            cont = _pgvector(cfg=cfg.ingest_cache_store, table_name=table_name)
+            return _redis(cfg=cfg.ingest_cache_store, table_name=table_name)
         case _:
-            logger.warning(
-                f"unsupported ingest cache store: {cfg.general.ingest_cache_store_provider}, use default"
+            raise RuntimeError(
+                f"unsupported ingest cache store: {cfg.general.ingest_cache_store_provider}"
             )
-            return _default(table_name)
-
-    return cont
 
 
 def _generate_table_name(cfg: ConfigManager, space_key: str) -> str:
@@ -114,53 +108,9 @@ def _redis(cfg: IngestCacheStoreConfig, table_name: str) -> IngestCacheStoreCont
         provider_name=IngestCacheStoreProvider.REDIS,
         store=IngestionCache(
             cache=RedisKVStore.from_host_and_port(
-                host=cfg.pgvector_host,
-                port=cfg.pgvector_port,
+                host=cfg.redis_host,
+                port=cfg.redis_port,
             ),
-            collection=table_name,
-        ),
-        table_name=table_name,
-    )
-
-
-def _pgvector(
-    cfg: IngestCacheStoreConfig, table_name: str
-) -> IngestCacheStoreContainer:
-    from llama_index.core.ingestion import IngestionCache
-    from llama_index.storage.kvstore.postgres import PostgresKVStore
-
-    from .ingest_cache_store_manager import IngestCacheStoreContainer
-
-    sec = cfg.pgvector_password
-    if sec is None:
-        raise ValueError("pgvector_password must be specified")
-
-    return IngestCacheStoreContainer(
-        provider_name=IngestCacheStoreProvider.PGVECTOR,
-        store=IngestionCache(
-            cache=PostgresKVStore.from_params(
-                host=cfg.pgvector_host,
-                port=str(cfg.pgvector_port),
-                database=cfg.pgvector_database,
-                user=cfg.pgvector_user,
-                password=sec,
-            ),
-            collection=table_name,
-        ),
-        table_name=table_name,
-    )
-
-
-def _default(table_name: str) -> IngestCacheStoreContainer:
-    from llama_index.core.ingestion import IngestionCache
-    from llama_index.core.storage.kvstore import SimpleKVStore
-
-    from .ingest_cache_store_manager import IngestCacheStoreContainer
-
-    return IngestCacheStoreContainer(
-        provider_name=IngestCacheStoreProvider.DEFAULT,
-        store=IngestionCache(
-            cache=SimpleKVStore(),
             collection=table_name,
         ),
         table_name=table_name,

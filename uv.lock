@@ -2260,19 +2260,6 @@ wheels = [
 ]
 
 [[package]]
-name = "llama-index-storage-docstore-postgres"
-version = "0.4.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "llama-index-core" },
-    { name = "llama-index-storage-kvstore-postgres" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/28/5e/9e2c2d002b2e2fcb11c2fdeb945e97e1bfd51521a4d8246454eab0ff1c95/llama_index_storage_docstore_postgres-0.4.1.tar.gz", hash = "sha256:87163ca4f527264c174dc6865355db02468e82ac550efd88a317300f47f8b592", size = 3528, upload-time = "2025-09-08T20:42:54.903Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/56/cb/1f2470ec622754ba5ca20fb429608519efa58bb89429cdf6844072ef63d3/llama_index_storage_docstore_postgres-0.4.1-py3-none-any.whl", hash = "sha256:d8ae8602348005907c42d5c736001d226fe6bd541e33691934db76118addeaa0", size = 3210, upload-time = "2025-09-08T20:42:54.197Z" },
-]
-
-[[package]]
 name = "llama-index-storage-docstore-redis"
 version = "0.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2283,20 +2270,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/3c/50/5b00db78fea2943b0d4677076f977fe8593d78e9b2f3c1c6c8bbd72aa2d5/llama_index_storage_docstore_redis-0.4.1.tar.gz", hash = "sha256:3778f34654598dfa366444ca8a5325e801114f0c2edfd52404cd4c9c9282ce41", size = 3415, upload-time = "2025-09-08T20:34:04.054Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/12/a1/e08cedbe086d5fe00b2694cb504f46f1c9708664d8ee570fcc45eea393a9/llama_index_storage_docstore_redis-0.4.1-py3-none-any.whl", hash = "sha256:d0192724e37662237b3b62d5bd8206a0a0be42ff9527d72119b7200a3b2f3aa5", size = 3052, upload-time = "2025-09-08T20:34:03.136Z" },
-]
-
-[[package]]
-name = "llama-index-storage-kvstore-postgres"
-version = "0.4.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "asyncpg" },
-    { name = "llama-index-core" },
-    { name = "psycopg2-binary" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/01/f9/3d66adb7cb0eaed5f7cc416ad1b2c5e88dfc47d9de2673e4dca4c1be6049/llama_index_storage_kvstore_postgres-0.4.2.tar.gz", hash = "sha256:6279d932522dad38ea900b633c741a574c8eb496a0d063afdfa36c8f0555b740", size = 5716, upload-time = "2025-10-24T09:59:59.351Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/66/ec/2a00f6c035247d790c0af8aee5b52d86062fa141e9e66ed3cc36b757da9d/llama_index_storage_kvstore_postgres-0.4.2-py3-none-any.whl", hash = "sha256:e810787daf82e14b4938591459fed105b14cec9843925dc3d0f5c3631518645c", size = 5372, upload-time = "2025-10-24T09:59:58.302Z" },
 ]
 
 [[package]]
@@ -2339,6 +2312,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ca/06/8ee5171dd7cf74225910032a6a2fc195c86b82e3bc424aa91b4cfed1a9f9/llama_index_vector_stores_postgres-0.7.1.tar.gz", hash = "sha256:c9db186ab9966760d4ea7816b68b452284eeb5b8575e6bc61b1b76bdcb9b713a", size = 11925, upload-time = "2025-10-23T15:50:37.987Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/4d/70/4e5138eea5a0e0271e30eab06f2727f344fbd5c2825c5dcf8d6006c9a057/llama_index_vector_stores_postgres-0.7.1-py3-none-any.whl", hash = "sha256:30c85ae1cb6a0daed490b0d4aa80087ea549aebe49f25e137d30bffc0f6aca43", size = 11603, upload-time = "2025-10-23T15:50:36.083Z" },
+]
+
+[[package]]
+name = "llama-index-vector-stores-redis"
+version = "0.6.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "llama-index-core" },
+    { name = "redisvl" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9d/5a/4da2e532047c795d0729c1de71b05cd7e712752ee8a871400db06be86b21/llama_index_vector_stores_redis-0.6.1.tar.gz", hash = "sha256:4efbfd14fea87d93090d769f119726d2189f5147a089d161c29b3c09d70315c4", size = 9985, upload-time = "2025-09-08T20:36:07.012Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/62/33/a1265e3e960c647fa79630410aaf56b66e5cba8bcdae19039fe9f32d2b53/llama_index_vector_stores_redis-0.6.1-py3-none-any.whl", hash = "sha256:7129fa6995dae5b0d74118d81d3f5077855a3531a40876475ebcece18fe64772", size = 10396, upload-time = "2025-09-08T20:36:06.263Z" },
 ]
 
 [[package]]
@@ -2639,6 +2625,21 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d7/02/a7fb8b21d4d55ac93cdcde9d3638da5dd0ebdd3a4fed76c7725e10b81cbe/mistune-3.1.4.tar.gz", hash = "sha256:b5a7f801d389f724ec702840c11d8fc48f2b33519102fc7ee739e8177b672164", size = 94588, upload-time = "2025-08-29T07:20:43.594Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7a/f0/8282d9641415e9e33df173516226b404d367a0fc55e1a60424a152913abc/mistune-3.1.4-py3-none-any.whl", hash = "sha256:93691da911e5d9d2e23bc54472892aff676df27a75274962ff9edc210364266d", size = 53481, upload-time = "2025-08-29T07:20:42.218Z" },
+]
+
+[[package]]
+name = "ml-dtypes"
+version = "0.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fd/15/76f86faa0902836cc133939732f7611ace68cf54148487a99c539c272dc8/ml_dtypes-0.4.1.tar.gz", hash = "sha256:fad5f2de464fd09127e49b7fd1252b9006fb43d2edc1ff112d390c324af5ca7a", size = 692594, upload-time = "2024-09-13T19:07:11.624Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ba/1a/99e924f12e4b62139fbac87419698c65f956d58de0dbfa7c028fa5b096aa/ml_dtypes-0.4.1-cp312-cp312-macosx_10_9_universal2.whl", hash = "sha256:827d3ca2097085cf0355f8fdf092b888890bb1b1455f52801a2d7756f056f54b", size = 405077, upload-time = "2024-09-13T19:06:57.538Z" },
+    { url = "https://files.pythonhosted.org/packages/8f/8c/7b610bd500617854c8cc6ed7c8cfb9d48d6a5c21a1437a36a4b9bc8a3598/ml_dtypes-0.4.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:772426b08a6172a891274d581ce58ea2789cc8abc1c002a27223f314aaf894e7", size = 2181554, upload-time = "2024-09-13T19:06:59.196Z" },
+    { url = "https://files.pythonhosted.org/packages/c7/c6/f89620cecc0581dc1839e218c4315171312e46c62a62da6ace204bda91c0/ml_dtypes-0.4.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:126e7d679b8676d1a958f2651949fbfa182832c3cd08020d8facd94e4114f3e9", size = 2160488, upload-time = "2024-09-13T19:07:03.131Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/11/a742d3c31b2cc8557a48efdde53427fd5f9caa2fa3c9c27d826e78a66f51/ml_dtypes-0.4.1-cp312-cp312-win_amd64.whl", hash = "sha256:df0fb650d5c582a9e72bb5bd96cfebb2cdb889d89daff621c8fbc60295eba66c", size = 127462, upload-time = "2024-09-13T19:07:04.916Z" },
 ]
 
 [[package]]
@@ -4266,6 +4267,15 @@ wheels = [
 ]
 
 [[package]]
+name = "python-ulid"
+version = "3.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/40/7e/0d6c82b5ccc71e7c833aed43d9e8468e1f2ff0be1b3f657a6fcafbb8433d/python_ulid-3.1.0.tar.gz", hash = "sha256:ff0410a598bc5f6b01b602851a3296ede6f91389f913a5d5f8c496003836f636", size = 93175, upload-time = "2025-08-18T16:09:26.305Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6c/a0/4ed6632b70a52de845df056654162acdebaf97c20e3212c559ac43e7216e/python_ulid-3.1.0-py3-none-any.whl", hash = "sha256:e2cdc979c8c877029b4b7a38a6fba3bc4578e4f109a308419ff4d3ccf0a46619", size = 11577, upload-time = "2025-08-18T16:09:25.047Z" },
+]
+
+[[package]]
 name = "pytz"
 version = "2025.2"
 source = { registry = "https://pypi.org/simple" }
@@ -4401,10 +4411,10 @@ dependencies = [
     { name = "llama-index-postprocessor-cohere-rerank" },
     { name = "llama-index-postprocessor-flag-embedding-reranker" },
     { name = "llama-index-readers-web" },
-    { name = "llama-index-storage-docstore-postgres" },
     { name = "llama-index-storage-docstore-redis" },
     { name = "llama-index-vector-stores-chroma" },
     { name = "llama-index-vector-stores-postgres" },
+    { name = "llama-index-vector-stores-redis" },
     { name = "nbconvert" },
     { name = "pillow" },
     { name = "psycopg2-binary" },
@@ -4448,10 +4458,10 @@ requires-dist = [
     { name = "llama-index-postprocessor-cohere-rerank" },
     { name = "llama-index-postprocessor-flag-embedding-reranker" },
     { name = "llama-index-readers-web" },
-    { name = "llama-index-storage-docstore-postgres" },
     { name = "llama-index-storage-docstore-redis" },
     { name = "llama-index-vector-stores-chroma" },
     { name = "llama-index-vector-stores-postgres" },
+    { name = "llama-index-vector-stores-redis" },
     { name = "nbconvert" },
     { name = "openai-agents", marker = "extra == 'exam'" },
     { name = "pillow" },
@@ -4546,6 +4556,26 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/6a/cf/128b1b6d7086200c9f387bd4be9b2572a30b90745ef078bd8b235042dc9f/redis-5.3.1.tar.gz", hash = "sha256:ca49577a531ea64039b5a36db3d6cd1a0c7a60c34124d46924a45b956e8cf14c", size = 4626200, upload-time = "2025-07-25T08:06:27.778Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7f/26/5c5fa0e83c3621db835cfc1f1d789b37e7fa99ed54423b5f519beb931aa7/redis-5.3.1-py3-none-any.whl", hash = "sha256:dc1909bd24669cc31b5f67a039700b16ec30571096c5f1f0d9d2324bff31af97", size = 272833, upload-time = "2025-07-25T08:06:26.317Z" },
+]
+
+[[package]]
+name = "redisvl"
+version = "0.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "coloredlogs" },
+    { name = "ml-dtypes" },
+    { name = "numpy" },
+    { name = "pydantic" },
+    { name = "python-ulid" },
+    { name = "pyyaml" },
+    { name = "redis" },
+    { name = "tabulate" },
+    { name = "tenacity" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/21/33/ab14865a0b2a31b1d003c29e7e8ea3a7a2f2c8ecb24e58e58d606e1f031b/redisvl-0.4.1.tar.gz", hash = "sha256:fd6a36426ba94792c0efca20915c31232d4ee3cc58eb23794a62c142696401e6", size = 77688, upload-time = "2025-02-21T22:51:41.389Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ad/34/2b4bb30fabb6e37c3c57d2cb760f19aec23567f9622372c8a7617071f204/redisvl-0.4.1-py3-none-any.whl", hash = "sha256:6db5d5bc95b1fe8032a1cdae74ce1c65bc7fe9054e5429b5d34d5a91d28bae5f", size = 108525, upload-time = "2025-02-21T22:51:39.385Z" },
 ]
 
 [[package]]
@@ -5271,6 +5301,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/83/d3/803453b36afefb7c2bb238361cd4ae6125a569b4db67cd9e79846ba2d68c/sympy-1.14.0.tar.gz", hash = "sha256:d3d3fe8df1e5a0b42f0e7bdf50541697dbe7d23746e894990c030e2b05e72517", size = 7793921, upload-time = "2025-04-27T18:05:01.611Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a2/09/77d55d46fd61b4a135c444fc97158ef34a095e5681d0a6c10b75bf356191/sympy-1.14.0-py3-none-any.whl", hash = "sha256:e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5", size = 6299353, upload-time = "2025-04-27T18:04:59.103Z" },
+]
+
+[[package]]
+name = "tabulate"
+version = "0.9.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/fe/802052aecb21e3797b8f7902564ab6ea0d60ff8ca23952079064155d1ae1/tabulate-0.9.0.tar.gz", hash = "sha256:0095b12bf5966de529c0feb1fa08671671b3368eec77d7ef7ab114be2c068b3c", size = 81090, upload-time = "2022-10-06T17:21:48.54Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/40/44/4a5f08c96eb108af5cb50b41f76142f0afa346dfa99d5296fe7202a11854/tabulate-0.9.0-py3-none-any.whl", hash = "sha256:024ca478df22e9340661486f85298cff5f6dcdba14f3813e8830015b9ed1948f", size = 35252, upload-time = "2022-10-06T17:21:44.262Z" },
 ]
 
 [[package]]

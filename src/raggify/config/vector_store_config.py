@@ -27,3 +27,7 @@ class VectorStoreConfig:
     pgvector_database: str = DefaultSettings.PGVECTOR_DATABASE
     pgvector_user: str = DefaultSettings.PGVECTOR_USER
     pgvector_password: Optional[str] = DefaultSettings.PGVECTOR_PASSWORD
+
+    # Redis
+    redis_host: str = DefaultSettings.REDIS_HOST
+    redis_port: int = DefaultSettings.REDIS_PORT

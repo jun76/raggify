@@ -94,6 +94,8 @@ def _create_container(
             cont = _pgvector(cfg=cfg.vector_store, table_name=table_name, dim=dim)
         case VectorStoreProvider.CHROMA:
             cont = _chroma(cfg=cfg.vector_store, table_name=table_name)
+        case VectorStoreProvider.REDIS:
+            cont = _redis(cfg=cfg.vector_store, table_name=table_name)
         case _:
             raise RuntimeError(
                 f"unsupported vector store: {cfg.general.vector_store_provider}"
@@ -167,5 +169,17 @@ def _chroma(cfg: VectorStoreConfig, table_name: str) -> VectorStoreContainer:
     return VectorStoreContainer(
         provider_name=VectorStoreProvider.CHROMA,
         store=ChromaVectorStore(chroma_collection=collection),
+        table_name=table_name,
+    )
+
+
+def _redis(cfg: VectorStoreConfig, table_name: str) -> VectorStoreContainer:
+    from llama_index.vector_stores.redis import RedisVectorStore
+
+    from .vector_store_manager import VectorStoreContainer
+
+    return VectorStoreContainer(
+        provider_name=VectorStoreProvider.REDIS,
+        store=RedisVectorStore(redis_url=f"redis://{cfg.redis_host}:{cfg.redis_port}"),
         table_name=table_name,
     )
