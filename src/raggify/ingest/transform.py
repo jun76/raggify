@@ -33,11 +33,11 @@ class AddChunkIndexTransform(TransformComponent):
 
         buckets = defaultdict(list)
         for node in nodes:
-            doc_id = node.metadata.get("doc_id") or node.metadata.get(MK.FILE_PATH)
-            buckets[doc_id].append(node)
+            id = node.ref_doc_id
+            buckets[id].append(node)
 
         node: BaseNode
-        for doc_id, group in buckets.items():
+        for id, group in buckets.items():
             for i, node in enumerate(group):
                 node.metadata[MK.CHUNK_NO] = i
 
@@ -102,16 +102,16 @@ class _BaseEmbedTransform(TransformComponent):
             return nodes
 
         # node へ戻し書き
-        for idx, vec in zip(backrefs, vecs):
-            nodes[idx].embedding = vec
+        for i, vec in zip(backrefs, vecs):
+            nodes[i].embedding = vec
 
             # 一時ファイルを削除
-            temp = nodes[idx].metadata.get(MK.TEMP_FILE_PATH)
+            temp = nodes[i].metadata.get(MK.TEMP_FILE_PATH)
             if temp:
                 # ファイルパスはベースソースで上書き
                 # （空になるか、PDF 等の独自 reader が退避していた元パスが復元されるか）
-                nodes[idx].metadata[MK.TEMP_FILE_PATH] = ""
-                nodes[idx].metadata[MK.FILE_PATH] = nodes[idx].metadata[MK.BASE_SOURCE]
+                nodes[i].metadata[MK.TEMP_FILE_PATH] = ""
+                nodes[i].metadata[MK.FILE_PATH] = nodes[i].metadata[MK.BASE_SOURCE]
                 try:
                     os.remove(temp)
                 except OSError as e:

@@ -48,7 +48,13 @@ def _read_list(path: str) -> list[str]:
     lst = []
     try:
         with open(path, "r", encoding="utf-8") as f:
-            lst = f.readlines()
+            temp = []
+            for line in f:
+                stripped = line.strip()
+                if not stripped or stripped.startswith("#"):
+                    continue
+                temp.append(stripped)
+            lst = temp
     except OSError as e:
         logger.warning(f"failed to read config file: {e}")
 

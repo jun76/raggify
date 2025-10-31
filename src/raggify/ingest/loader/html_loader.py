@@ -393,9 +393,17 @@ class HTMLLoader(Loader):
             tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
                 テキストノード、画像ノード、音声ノード
         """
-        docs = []
+        texts = []
+        images = []
+        audios = []
         for url in urls:
-            temp = await self.aload_from_url(url)
-            docs.extend(temp)
+            try:
+                temp_text, temp_image, temp_audio = await self.aload_from_url(url)
+                texts.extend(temp_text)
+                images.extend(temp_image)
+                audios.extend(temp_audio)
+            except Exception as e:
+                logger.exception(e)
+                continue
 
-        return await self._asplit_docs_modality(docs)
+        return texts, images, audios
