@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import os
 from collections import defaultdict
 from typing import TYPE_CHECKING, Awaitable, Callable, Optional
 
-from llama_index.core.schema import BaseNode, ImageNode, TextNode, TransformComponent
+from llama_index.core.schema import BaseNode, TransformComponent
 
-from ..llama.core.schema import Modality
+from ..logger import logger
 
 if TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import Embedding
@@ -15,21 +16,30 @@ if TYPE_CHECKING:
     from ..llama.embeddings.multi_modal_base import AudioType
 
 
-# FIXME: 色々未整理
 class AddChunkIndexTransform(TransformComponent):
-    def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
-        buckets = defaultdict(list)
-        for n in nodes:
-            doc_id = n.metadata.get("doc_id") or n.metadata.get("file_path")
-            buckets[doc_id].append(n)
+    """チャンク番号付与用トランスフォーム"""
 
+    def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
+        """パイプライン側から呼ばれるインタフェース
+
+        Args:
+            nodes (list[BaseNode]): 分割済みのノード
+
+        Returns:
+            list[BaseNode]: チャンク番号付与後のノード
+        """
+        from ..core.metadata import MetaKeys as MK
+
+        buckets = defaultdict(list)
+        for node in nodes:
+            doc_id = node.metadata.get("doc_id") or node.metadata.get(MK.FILE_PATH)
+            buckets[doc_id].append(node)
+
+        node: BaseNode
         for doc_id, group in buckets.items():
-            total = len(group)
-            for i, n in enumerate(group):
-                n.metadata["chunk_index"] = i
-                n.metadata["chunk_total"] = total
-                # 任意: 安定IDを作るならここで
-                # n.id_ = f"{doc_id}:{i}"  # 既存の node_id との整合は方針に合わせて
+            for i, node in enumerate(group):
+                node.metadata[MK.CHUNK_NO] = i
+
         return nodes
 
     async def acall(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
@@ -37,26 +47,38 @@ class AddChunkIndexTransform(TransformComponent):
 
 
 class _BaseEmbedTransform(TransformComponent):
-    """nodes -> nodes の非同期Transform。node.embedding を埋める。"""
+    """埋め込み用トランスフォーム"""
 
     def __init__(
         self,
         batch_embed_fn: Callable[[list], Awaitable[list[list[float]]]],
         extract_fn: Callable[[BaseNode], object],
-        modality: Modality,
-        meta_stamp: str | None = None,
     ):
+        """コンストラクタ
+
+        Args:
+            batch_embed_fn (Callable[[list], Awaitable[list[list[float]]]]): バッチ埋め込み関数
+            extract_fn (Callable[[BaseNode], object]): モダリティ別のノード抽出関数
+        """
         self._batch_embed_fn = batch_embed_fn
         self._extract_fn = extract_fn
-        self._modality = modality
-        self._meta_stamp = meta_stamp
 
     async def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
+        """パイプライン側から呼ばれるインタフェース
+
+        Args:
+            nodes (list[BaseNode]): 埋め込み対象ノード
+
+        Returns:
+            list[BaseNode]: 埋め込み後のノード
+        """
+        from ..core.metadata import MetaKeys as MK
+
         # 入力抽出（欠損はスキップしつつ、元ノードへの逆写像を保持）
         inputs: list[object] = []
         backrefs: list[int] = []
-        for i, n in enumerate(nodes):
-            x = self._extract_fn(n)
+        for i, node in enumerate(nodes):
+            x = self._extract_fn(node)
             if x is None:
                 continue
 
@@ -78,57 +100,108 @@ class _BaseEmbedTransform(TransformComponent):
         # node へ戻し書き
         for idx, vec in zip(backrefs, vecs):
             nodes[idx].embedding = vec
-            if self._meta_stamp:
-                nodes[idx].metadata["embedding_model"] = self._meta_stamp
-                nodes[idx].metadata["modality"] = self._modality
+
+            # 一時ファイルを削除
+            temp = nodes[idx].metadata.get(MK.TEMP_FILE_PATH)
+            if temp:
+                os.remove(temp)
+                nodes[idx].metadata[MK.TEMP_FILE_PATH] = ""
 
         return nodes
 
 
-def make_text_embed_transform(
-    embed: EmbedManager, model_stamp: str | None = None
-) -> _BaseEmbedTransform:
+def _get_media_path(node: BaseNode) -> str:
+    """テキスト以外の埋め込み対象メディアのパスを取得する。
+
+    Args:
+        node (BaseNode): 対象ノード
+
+    Returns:
+        str: メディアのパス
+    """
+    from ..core.metadata import MetaKeys as MK
+
+    temp = node.metadata.get(MK.TEMP_FILE_PATH)
+    if temp:
+        # フェッチした一時ファイル
+
+        # ファイルパスはベースソースで上書き
+        # （空になるか、PDF 等の独自 reader が退避していた元パスが復元されるか）
+        node.metadata[MK.FILE_PATH] = node.metadata[MK.BASE_SOURCE]
+
+        return temp
+
+    # ローカルファイル
+    return node.metadata[MK.FILE_PATH]
+
+
+def make_text_embed_transform(embed: EmbedManager) -> _BaseEmbedTransform:
+    """テキストノードの埋め込みトランスフォーム生成用ラッパー
+
+    Args:
+        embed (EmbedManager): 埋め込み管理
+
+    Returns:
+        _BaseEmbedTransform: トランスフォーム
+    """
+    from llama_index.core.schema import TextNode
+
     async def batch_text(texts: list[str]) -> list[Embedding]:
         return await embed.aembed_text(texts)
 
-    def extractor(n: BaseNode) -> Optional[str]:
-        if isinstance(n, TextNode) and n.text and n.text.strip():
-            return n.text
+    def extractor(node: BaseNode) -> Optional[str]:
+        if isinstance(node, TextNode) and node.text and node.text.strip():
+            return node.text
+
+        logger.warning("text is not found, skipped")
         return None
 
-    return _BaseEmbedTransform(batch_text, extractor, Modality.TEXT, model_stamp)
+    return _BaseEmbedTransform(batch_text, extractor)
 
 
-def make_image_embed_transform(
-    embed: EmbedManager, model_stamp: str | None = None
-) -> _BaseEmbedTransform:
+def make_image_embed_transform(embed: EmbedManager) -> _BaseEmbedTransform:
+    """画像ノードの埋め込みトランスフォーム生成用ラッパー
+
+    Args:
+        embed (EmbedManager): 埋め込み管理
+
+    Returns:
+        _BaseEmbedTransform: トランスフォーム
+    """
+    from llama_index.core.schema import ImageNode
+
     async def batch_image(paths: list[ImageType]) -> list[Embedding]:
-        # paths: file path / PIL.Image / bytes など embed 側の約束に合わせる
         return await embed.aembed_image(paths)
 
-    def extractor(n: BaseNode) -> Optional[str]:
-        if isinstance(n, ImageNode):
-            # ImageNode に合わせて取得。image_path / image_url / image を見る
-            return (
-                n.image_path
-                or getattr(n, "image_url", None)
-                or getattr(n, "image", None)
-            )
-        # BaseNode+metadata 運用なら:
-        # return n.metadata.get("image_path") or n.metadata.get("image_b64")
+    def extractor(node: BaseNode) -> Optional[str]:
+        if isinstance(node, ImageNode):
+            return _get_media_path(node)
+
+        logger.warning("image is not found, skipped")
         return None
 
-    return _BaseEmbedTransform(batch_image, extractor, Modality.IMAGE, model_stamp)
+    return _BaseEmbedTransform(batch_image, extractor)
 
 
-def make_audio_embed_transform(
-    embed: EmbedManager, model_stamp: str | None = None
-) -> _BaseEmbedTransform:
+def make_audio_embed_transform(embed: EmbedManager) -> _BaseEmbedTransform:
+    """音声ノードの埋め込みトランスフォーム生成用ラッパー
+
+    Args:
+        embed (EmbedManager): 埋め込み管理
+
+    Returns:
+        _BaseEmbedTransform: トランスフォーム
+    """
+    from ..llama.core.schema import AudioNode
+
     async def batch_audio(paths: list[AudioType]) -> list[Embedding]:
         return await embed.aembed_audio(paths)
 
-    def extractor(n: BaseNode) -> Optional[str]:
-        # AudioNode が無ければ metadata に audio_path を持たせておく
-        return getattr(n, "audio_path", None) or n.metadata.get("audio_path")
+    def extractor(node: BaseNode) -> Optional[str]:
+        if isinstance(node, AudioNode):
+            return _get_media_path(node)
 
-    return _BaseEmbedTransform(batch_audio, extractor, Modality.AUDIO, model_stamp)
+        logger.warning("audio is not found, skipped")
+        return None
+
+    return _BaseEmbedTransform(batch_audio, extractor)

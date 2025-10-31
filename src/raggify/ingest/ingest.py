@@ -96,10 +96,7 @@ async def _aupsert_nodes(
                     include_metadata=True,
                 ),
                 AddChunkIndexTransform(),
-                make_text_embed_transform(
-                    embed=embed,
-                    model_stamp=embed.get_container(Modality.TEXT).embed.model_name,
-                ),
+                make_text_embed_transform(embed=embed),
             ],
             vector_store=vs.get_container(Modality.TEXT).store,
             cache=ics.get_container(Modality.TEXT).store,
@@ -109,10 +106,7 @@ async def _aupsert_nodes(
     if image_nodes:
         image_pipe = IngestionPipeline(
             transformations=[
-                make_image_embed_transform(
-                    embed=embed,
-                    model_stamp=embed.get_container(Modality.IMAGE).embed.model_name,
-                ),
+                make_image_embed_transform(embed=embed),
             ],
             vector_store=vs.get_container(Modality.IMAGE).store,
             cache=ics.get_container(Modality.IMAGE).store,
@@ -122,10 +116,7 @@ async def _aupsert_nodes(
     if audio_nodes:
         audio_pipe = IngestionPipeline(
             transformations=[
-                make_audio_embed_transform(
-                    embed=embed,
-                    model_stamp=embed.get_container(Modality.AUDIO).embed.model_name,
-                ),
+                make_audio_embed_transform(embed=embed),
             ],
             vector_store=vs.get_container(Modality.AUDIO).store,
             cache=ics.get_container(Modality.AUDIO).store,

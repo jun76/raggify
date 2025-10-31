@@ -9,7 +9,6 @@ from ..llama.core.schema import Modality
 
 if TYPE_CHECKING:
     from ..embed.embed_manager import EmbedManager
-    from ..meta_store.structured.structured import Structured
     from .vector_store_manager import VectorStoreContainer, VectorStoreManager
 
 __all__ = ["create_vector_store_manager"]
@@ -18,14 +17,12 @@ __all__ = ["create_vector_store_manager"]
 def create_vector_store_manager(
     cfg: ConfigManager,
     embed: EmbedManager,
-    meta_store: Structured,
 ) -> VectorStoreManager:
     """ベクトルストア管理のインスタンスを生成する。
 
     Args:
         cfg (ConfigManager): 設定管理
         embed (EmbedManager): 埋め込み管理
-        meta_store (Structured): メタデータ管理
 
     Raises:
         RuntimeError: インスタンス生成に失敗またはプロバイダ指定漏れ
@@ -63,13 +60,7 @@ def create_vector_store_manager(
     if not conts:
         raise RuntimeError("no embedding providers are specified")
 
-    return VectorStoreManager(
-        conts=conts,
-        embed=embed,
-        meta_store=meta_store,
-        cache_load_limit=cfg.vector_store.cache_load_limit,
-        check_update=cfg.vector_store.check_update,
-    )
+    return VectorStoreManager(conts=conts, embed=embed)
 
 
 def _create_container(
