@@ -69,7 +69,7 @@ async def _aupsert_nodes(
     """
     import asyncio
 
-    from llama_index.core.ingestion import IngestionPipeline
+    from llama_index.core.ingestion import DocstoreStrategy, IngestionPipeline
     from llama_index.core.node_parser import SentenceSplitter
 
     from .transform import (
@@ -83,6 +83,7 @@ async def _aupsert_nodes(
     embed = rt.embed_manager
     vs = rt.vector_store
     ics = rt.ingest_cache_store
+    ds = rt.document_store
 
     # 後段パイプ。テキスト分割とモダリティ毎の埋め込み＋ストア格納。
     # キャッシュ管理も。
@@ -100,6 +101,8 @@ async def _aupsert_nodes(
             ],
             vector_store=vs.get_container(Modality.TEXT).store,
             cache=ics.get_container(Modality.TEXT).store,
+            docstore=ds.store,
+            docstore_strategy=DocstoreStrategy.UPSERTS,
         )
         tasks.append(text_pipe.arun(nodes=text_nodes))
 
@@ -110,6 +113,8 @@ async def _aupsert_nodes(
             ],
             vector_store=vs.get_container(Modality.IMAGE).store,
             cache=ics.get_container(Modality.IMAGE).store,
+            docstore=ds.store,
+            docstore_strategy=DocstoreStrategy.UPSERTS,
         )
         tasks.append(image_pipe.arun(nodes=image_nodes))
 
@@ -120,6 +125,8 @@ async def _aupsert_nodes(
             ],
             vector_store=vs.get_container(Modality.AUDIO).store,
             cache=ics.get_container(Modality.AUDIO).store,
+            docstore=ds.store,
+            docstore_strategy=DocstoreStrategy.UPSERTS,
         )
         tasks.append(audio_pipe.arun(nodes=audio_nodes))
 

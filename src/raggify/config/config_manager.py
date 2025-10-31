@@ -79,7 +79,7 @@ class ConfigManager:
             DocumentStoreConfig,
             self._document_store,
         )
-        self._document_store = self._apply_section(
+        self._ingest_cache_store = self._apply_section(
             data.get("ingest_cache_store"),
             IngestCacheStoreConfig,
             self._ingest_cache_store,

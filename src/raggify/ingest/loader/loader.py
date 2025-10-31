@@ -40,7 +40,7 @@ class Loader:
         # 前段パイプ。ドキュメントストアでの重複管理
         doc_pipe = IngestionPipeline(
             docstore=self._document_store.store,
-            docstore_strategy=DocstoreStrategy.UPSERTS,
+            docstore_strategy=DocstoreStrategy.DUPLICATES_ONLY,
         )
         await doc_pipe.arun(documents=docs)
 

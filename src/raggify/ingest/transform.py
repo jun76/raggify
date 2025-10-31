@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Awaitable, Callable, Optional
 
 from llama_index.core.schema import BaseNode, TransformComponent
 
+from ..core.event import async_loop_runner
 from ..logger import logger
 
 if TYPE_CHECKING:
@@ -63,7 +64,10 @@ class _BaseEmbedTransform(TransformComponent):
         self._batch_embed_fn = batch_embed_fn
         self._extract_fn = extract_fn
 
-    async def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
+    def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
+        return async_loop_runner.run(lambda: self.acall(nodes=nodes, **kwargs))
+
+    async def acall(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
         """パイプライン側から呼ばれるインタフェース
 
         Args:
@@ -104,8 +108,14 @@ class _BaseEmbedTransform(TransformComponent):
             # 一時ファイルを削除
             temp = nodes[idx].metadata.get(MK.TEMP_FILE_PATH)
             if temp:
-                os.remove(temp)
+                # ファイルパスはベースソースで上書き
+                # （空になるか、PDF 等の独自 reader が退避していた元パスが復元されるか）
                 nodes[idx].metadata[MK.TEMP_FILE_PATH] = ""
+                nodes[idx].metadata[MK.FILE_PATH] = nodes[idx].metadata[MK.BASE_SOURCE]
+                try:
+                    os.remove(temp)
+                except OSError as e:
+                    logger.exception(e)
 
         return nodes
 
@@ -124,11 +134,6 @@ def _get_media_path(node: BaseNode) -> str:
     temp = node.metadata.get(MK.TEMP_FILE_PATH)
     if temp:
         # フェッチした一時ファイル
-
-        # ファイルパスはベースソースで上書き
-        # （空になるか、PDF 等の独自 reader が退避していた元パスが復元されるか）
-        node.metadata[MK.FILE_PATH] = node.metadata[MK.BASE_SOURCE]
-
         return temp
 
     # ローカルファイル

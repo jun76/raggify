@@ -86,7 +86,7 @@ def _create_container(
         case VectorStoreProvider.CHROMA:
             cont = _chroma(cfg=cfg.vector_store, table_name=table_name)
         case VectorStoreProvider.REDIS:
-            cont = _redis(cfg=cfg.vector_store, table_name=table_name)
+            cont = _redis(cfg=cfg.vector_store, table_name=table_name, dim=dim)
         case _:
             raise RuntimeError(
                 f"unsupported vector store: {cfg.general.vector_store_provider}"
@@ -164,13 +164,36 @@ def _chroma(cfg: VectorStoreConfig, table_name: str) -> VectorStoreContainer:
     )
 
 
-def _redis(cfg: VectorStoreConfig, table_name: str) -> VectorStoreContainer:
+def _redis(cfg: VectorStoreConfig, table_name: str, dim: int) -> VectorStoreContainer:
     from llama_index.vector_stores.redis import RedisVectorStore
+    from redisvl.schema import IndexSchema
 
     from .vector_store_manager import VectorStoreContainer
 
+    schema = IndexSchema.from_dict(
+        {
+            "index": {"name": table_name},
+            "fields": [
+                {"name": "id", "type": "tag"},
+                {"name": "doc_id", "type": "tag"},
+                {"name": "text", "type": "text"},
+                {
+                    "name": "vector",
+                    "type": "vector",
+                    "attrs": {
+                        "dims": dim,
+                        "algorithm": "hnsw",
+                        "distance_metric": "cosine",
+                    },
+                },
+            ],
+        }
+    )
+
     return VectorStoreContainer(
         provider_name=VectorStoreProvider.REDIS,
-        store=RedisVectorStore(redis_url=f"redis://{cfg.redis_host}:{cfg.redis_port}"),
+        store=RedisVectorStore(
+            redis_url=f"redis://{cfg.redis_host}:{cfg.redis_port}", schema=schema
+        ),
         table_name=table_name,
     )
