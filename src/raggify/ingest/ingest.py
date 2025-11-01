@@ -111,6 +111,7 @@ async def _aupsert_nodes(
             docstore_strategy=DocstoreStrategy.UPSERTS,
         )
         tasks.append(text_pipe.arun(nodes=text_nodes))
+        ds.store.persist()
 
     if image_nodes:
         image_pipe = IngestionPipeline(
@@ -123,6 +124,7 @@ async def _aupsert_nodes(
             docstore_strategy=DocstoreStrategy.UPSERTS,
         )
         tasks.append(image_pipe.arun(nodes=image_nodes))
+        ds.store.persist()
 
     if audio_nodes:
         audio_pipe = IngestionPipeline(
@@ -135,6 +137,7 @@ async def _aupsert_nodes(
             docstore_strategy=DocstoreStrategy.UPSERTS,
         )
         tasks.append(audio_pipe.arun(nodes=audio_nodes))
+        ds.store.persist()
 
     if tasks:
         await asyncio.gather(*tasks)

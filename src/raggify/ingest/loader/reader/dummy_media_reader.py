@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import time
 from typing import Any, Iterable
 
 from llama_index.core.readers.base import BaseReader
@@ -23,7 +22,7 @@ class DummyMediaReader(BaseReader):
         Returns:
             Iterable[Document]: テキストドキュメントと画像ドキュメント
         """
-        from ....core.metadata import BasicMetaData
+        from ....core.metadata import MetaKeys as MK
 
         path = os.path.abspath(path)
         if not os.path.exists(path):
@@ -36,11 +35,8 @@ class DummyMediaReader(BaseReader):
             )
             return []
 
-        meta = BasicMetaData()
-        meta.file_path = path  # MultiModalVectorStoreIndex 参照用
-        meta.node_lastmod_at = time.time()
-
-        doc = Document(text=path, metadata=meta.to_dict())
+        # MultiModalVectorStoreIndex 参照用
+        doc = Document(text=path, metadata={MK.FILE_PATH: path})
 
         logger.debug(f"loaded 1 text doc from {path}")
 

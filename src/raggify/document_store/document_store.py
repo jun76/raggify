@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from ..config.config_manager import ConfigManager
 from ..config.default_settings import DocumentStoreProvider
 from ..config.document_store_config import DocumentStoreConfig
+from ..logger import logger
 
 if TYPE_CHECKING:
     from .document_store_manager import DocumentStoreManager
@@ -18,9 +19,6 @@ def create_document_store_manager(cfg: ConfigManager) -> DocumentStoreManager:
     Args:
         cfg (ConfigManager): 設定管理
 
-    Raises:
-        RuntimeError: サポート外のプロバイダ
-
     Returns:
         DocumentStoreManager: ドキュメントストア管理
     """
@@ -28,10 +26,13 @@ def create_document_store_manager(cfg: ConfigManager) -> DocumentStoreManager:
     match cfg.general.document_store_provider:
         case DocumentStoreProvider.REDIS:
             return _redis(cfg=cfg.document_store, table_name=table_name)
+        case DocumentStoreProvider.LOCAL:
+            return _local(cfg=cfg.document_store, table_name=table_name)
         case _:
-            raise RuntimeError(
-                f"unsupported vector store: {cfg.general.document_store_provider}"
+            logger.warning(
+                f"unsupported document store: {cfg.general.document_store_provider}, use default"
             )
+            return _local(cfg=cfg.document_store, table_name=table_name)
 
 
 def _generate_table_name(cfg: ConfigManager) -> str:
@@ -64,4 +65,27 @@ def _redis(cfg: DocumentStoreConfig, table_name: str) -> DocumentStoreManager:
             namespace=table_name,
         ),
         table_name=table_name,
+    )
+
+
+def _local(cfg: DocumentStoreConfig, table_name: str) -> DocumentStoreManager:
+    import os
+
+    from llama_index.core.storage.docstore import SimpleDocumentStore
+
+    from .document_store_manager import DocumentStoreManager
+
+    persist_path = cfg.docstore_local_persist_path
+    if not os.path.exists(persist_path):
+        store = SimpleDocumentStore(namespace=table_name)
+    else:
+        store = SimpleDocumentStore.from_persist_path(
+            persist_path=persist_path, namespace=table_name
+        )
+
+    return DocumentStoreManager(
+        provider_name=DocumentStoreProvider.LOCAL,
+        store=store,
+        table_name=table_name,
+        persist_path=cfg.docstore_local_persist_path,
     )

@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any, Optional
 
+from ..logger import logger
+
 
 class MetaKeysFrom:
     # ライブラリ側定義ラベル（字列変更不可）
@@ -21,7 +23,6 @@ class MetaKeys(MetaKeysFrom):
     URL = "url"
     BASE_SOURCE = "base_source"
     TEMP_FILE_PATH = "temp_file_path"
-    NODE_LASTMOD_AT = "node_last_modified_date"
     PAGE_NO = "page_no"
     ASSET_NO = "asset_no"
     ## ノードの同一性確認用メタデータ
@@ -78,7 +79,6 @@ class BasicMetaData:
     url: str = ""  # 取得元 URL
     base_source: str = ""  # 出典情報（直リンク画像の親ページ等）
     temp_file_path: str = ""  # ダウンロード画像等の一時ファイルパス
-    node_lastmod_at: float = 0  # ノードの最終更新時刻（epoch 秒）
     page_no: int = 0  # ページ番号
     asset_no: int = 0  # アセット番号（同一ページ内の画像等）
 
@@ -101,7 +101,6 @@ class BasicMetaData:
             url=data.get(MetaKeys.URL, ""),
             base_source=data.get(MetaKeys.BASE_SOURCE, ""),
             temp_file_path=data.get(MetaKeys.TEMP_FILE_PATH, ""),
-            node_lastmod_at=data.get(MetaKeys.NODE_LASTMOD_AT, 0),
             page_no=data.get(MetaKeys.PAGE_NO, 0),
             asset_no=data.get(MetaKeys.ASSET_NO, 0),
         )
@@ -113,3 +112,21 @@ class BasicMetaData:
             dict[str, Any]: メタデータの dict
         """
         return asdict(self)
+
+
+def get_temp_file_path_from(source: str, suffix: str) -> str:
+    """ソース情報に一意に対応付く一時ファイルパスを取得する。
+
+    PDF ファイルから抽出した画像ファイル等の管理用途を想定。
+    ランダムな字列だと metadata に含まれた時に hash を揺らす原因となるため。
+
+    Args:
+        source (str): パスまたは URL。ページ番号等がなければ区別できない場合はそれも付加
+        suffix (str): 拡張子等
+
+    Returns:
+        str: 一時ファイルパス
+    """
+    import hashlib
+
+    return "/tmp/" + hashlib.md5(source.encode()).hexdigest() + suffix

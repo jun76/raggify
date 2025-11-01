@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import tempfile
-import time
 from typing import TYPE_CHECKING, Optional
 from urllib.parse import urljoin, urlparse
 
@@ -184,6 +182,8 @@ class HTMLLoader(Loader):
         Returns:
             Optional[str]: ローカルの一時ファイルパス
         """
+        from ...core.metadata import get_temp_file_path_from
+
         if not Exts.endswith_exts(url, allowed_exts):
             logger.warning(f"unsupported ext. {' '.join(allowed_exts)} are allowed.")
             return None
@@ -207,12 +207,10 @@ class HTMLLoader(Loader):
             return None
 
         ext = Exts.get_ext(url)
+        path = get_temp_file_path_from(source=url, suffix=ext)
         try:
-            with tempfile.NamedTemporaryFile(
-                delete=False, prefix="__TEMP_", suffix=ext
-            ) as f:
+            with open(path, "wb") as f:
                 f.write(body)
-                path = f.name
         except OSError as e:
             logger.exception(e)
             return None
@@ -245,7 +243,6 @@ class HTMLLoader(Loader):
         meta.url = url
         meta.base_source = base_url or ""
         meta.temp_file_path = temp_file_path  # 削除用
-        meta.node_lastmod_at = time.time()
 
         return Document(text=url, metadata=meta.to_dict())
 

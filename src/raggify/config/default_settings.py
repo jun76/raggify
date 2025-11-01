@@ -16,10 +16,12 @@ class VectorStoreProvider(StrEnum):
 
 class DocumentStoreProvider(StrEnum):
     REDIS = auto()
+    LOCAL = auto()
 
 
 class IngestCacheStoreProvider(StrEnum):
     REDIS = auto()
+    DEFAULT = auto()
 
 
 class EmbedProvider(StrEnum):
@@ -58,7 +60,7 @@ class DefaultSettings:
     PORT: int = 8000
     MCP: bool = False
     VECTOR_STORE_PROVIDER: VectorStoreProvider = VectorStoreProvider.REDIS
-    DOCUMENT_STORE_PROVIDER: DocumentStoreProvider = DocumentStoreProvider.REDIS
+    DOCUMENT_STORE_PROVIDER: DocumentStoreProvider = DocumentStoreProvider.LOCAL
     INGEST_CACHE_STORE_PROVIDER: IngestCacheStoreProvider = (
         IngestCacheStoreProvider.REDIS
     )
@@ -96,6 +98,9 @@ class DefaultSettings:
     ##### Document Store
     # Redis
     # same as document store settings
+
+    # Local
+    DOCSTORE_LOCAL_PERSIST_PATH: str = f"/etc/{PROJECT_NAME}/docstore.json"
 
     ##### Ingest Cache Store
     # Redis

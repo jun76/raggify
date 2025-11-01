@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import os
-import tempfile
-import time
 from typing import TYPE_CHECKING, Any, Iterable
 
 from llama_index.core.readers.base import BaseReader
@@ -87,7 +85,6 @@ class MultiPDFReader(BaseReader):
 
             meta = BasicMetaData()
             meta.file_path = path
-            meta.node_lastmod_at = time.time()
             meta.page_no = page_no
 
             doc = Document(text=content, metadata=meta.to_dict())
@@ -111,7 +108,7 @@ class MultiPDFReader(BaseReader):
         """
         import pymupdf as fitz
 
-        from ....core.metadata import BasicMetaData
+        from ....core.metadata import BasicMetaData, get_temp_file_path_from
 
         docs = []
         for page_no in range(pdf.page_count):
@@ -135,23 +132,20 @@ class MultiPDFReader(BaseReader):
                         pix = fitz.Pixmap(fitz.csRGB, pix)
                         del old_pix
 
-                    with tempfile.NamedTemporaryFile(
-                        delete=False,
-                        prefix="__TEMP_",
-                        suffix=Exts.PNG,
-                    ) as f:
-                        pix.save(f.name)
+                    temp = get_temp_file_path_from(
+                        source=f"{path}:{page_no}:{image_no}", suffix=Exts.PNG
+                    )
+                    pix.save(temp)
 
-                        meta = BasicMetaData()
-                        meta.file_path = f.name  # MultiModalVectorStoreIndex 参照用
-                        meta.temp_file_path = f.name  # 削除用
-                        meta.base_source = path  # 元パスの復元用
-                        meta.node_lastmod_at = time.time()
-                        meta.page_no = page_no
-                        meta.asset_no = image_no
+                    meta = BasicMetaData()
+                    meta.file_path = temp  # MultiModalVectorStoreIndex 参照用
+                    meta.temp_file_path = temp  # 削除用
+                    meta.base_source = path  # 元パスの復元用
+                    meta.page_no = page_no
+                    meta.asset_no = image_no
 
-                        doc = Document(text=f.name, metadata=meta.to_dict())
-                        docs.append(doc)
+                    doc = Document(text=temp, metadata=meta.to_dict())
+                    docs.append(doc)
                 except Exception as e:
                     logger.exception(e)
                     continue

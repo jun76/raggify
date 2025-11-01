@@ -11,6 +11,8 @@ from ...llama.core.schema import AudioNode
 from ...logger import logger
 
 if TYPE_CHECKING:
+    from llama_index.core.schema import BaseNode
+
     from ...document_store.document_store_manager import DocumentStoreManager
 
 
@@ -63,67 +65,64 @@ class Loader:
         """
         from llama_index.core.ingestion import DocstoreStrategy, IngestionPipeline
 
-        new_docs: list[Document] = []
+        # 一意なドキュメント ID の付与。二回目以降、同一 ID のドキュメントに対しては
+        # IngestionPipeline 内でハッシュ比較が行われ、変更がない場合は戻り値の
+        # ノードリストから弾かれる。
         for doc in docs:
             meta = BasicMetaData.from_dict(doc.metadata)
             doc.id_ = self._generate_doc_id(meta)
             doc.doc_id = doc.id_
-            if self._document_store.store.document_exists(doc.id_):
-                logger.info(f"source {meta.file_path or meta.url} exists, skipped")
-                continue
-
-            # 新規ソースのドキュメントのみ処理対象とする
-            new_docs.append(doc)
-            logger.info(f"new source: {meta.file_path or meta.url}")
-
-        if not new_docs:
-            return [], [], []
 
         # 前段パイプ。ドキュメントストアでの重複管理
         doc_pipe = IngestionPipeline(
             docstore=self._document_store.store,
             docstore_strategy=DocstoreStrategy.DUPLICATES_ONLY,
         )
-        await doc_pipe.arun(documents=new_docs)
+        nodes = await doc_pipe.arun(documents=docs)
+        self._document_store.persist()
 
         image_nodes = []
         audio_nodes = []
         text_nodes = []
-        for doc in new_docs:
-            meta = BasicMetaData.from_dict(doc.metadata)
-            if self._is_image_doc(doc):
+        for node in nodes:
+            if isinstance(node, TextNode) and self._is_image_node(node):
                 image_nodes.append(
-                    ImageNode(text=doc.text, ref_doc_id=doc.id_, metadata=doc.metadata)
+                    ImageNode(
+                        text=node.text, ref_doc_id=node.id_, metadata=node.metadata
+                    )
                 )
-                logger.debug(f"add ImageNode: {meta.file_path or meta.url}")
-            elif self._is_audio_doc(doc):
+            elif isinstance(node, TextNode) and self._is_audio_node(node):
                 audio_nodes.append(
-                    AudioNode(text=doc.text, ref_doc_id=doc.id_, metadata=doc.metadata)
+                    AudioNode(
+                        text=node.text, ref_doc_id=node.id_, metadata=node.metadata
+                    )
                 )
-                logger.debug(f"add AudioNode: {meta.file_path or meta.url}")
-            else:
+            elif isinstance(node, TextNode):
                 text_nodes.append(
-                    TextNode(text=doc.text, ref_doc_id=doc.id_, metadata=doc.metadata)
+                    TextNode(
+                        text=node.text, ref_doc_id=node.id_, metadata=node.metadata
+                    )
                 )
-                logger.debug(f"add TextNode: {meta.file_path or meta.url}")
+            else:
+                logger.warning(f"unexpected node type {type(node)}, skipped")
 
         return text_nodes, image_nodes, audio_nodes
 
-    def _is_image_doc(self, doc: Document) -> bool:
-        """画像ドキュメントか。
+    def _is_image_node(self, node: BaseNode) -> bool:
+        """画像ノードか。
 
         Args:
-            doc (Document): 対象ドキュメント
+            node (BaseNode): 対象ノード
 
         Returns:
-            bool: 画像ドキュメントなら True
+            bool: 画像ノードなら True
         """
-        # ファイルパスか URL の末尾に画像ファイルの拡張子が含まれるものを画像ドキュメントとする
-        path = doc.metadata.get(MK.FILE_PATH, "")
-        url = doc.metadata.get(MK.URL, "")
+        # ファイルパスか URL の末尾に画像ファイルの拡張子が含まれるものを画像ノードとする
+        path = node.metadata.get(MK.FILE_PATH, "")
+        url = node.metadata.get(MK.URL, "")
 
         # 独自 reader を使用し、temp_file_path に画像ファイルの拡張子が含まれるものも抽出
-        temp_file_path = doc.metadata.get(MK.TEMP_FILE_PATH, "")
+        temp_file_path = node.metadata.get(MK.TEMP_FILE_PATH, "")
 
         return (
             Exts.endswith_exts(path, Exts.IMAGE)
@@ -131,18 +130,18 @@ class Loader:
             or Exts.endswith_exts(temp_file_path, Exts.IMAGE)
         )
 
-    def _is_audio_doc(self, doc: Document) -> bool:
-        """音声ドキュメントか。
+    def _is_audio_node(self, node: BaseNode) -> bool:
+        """音声ノードか。
 
         Args:
-            doc (Document): 対象ドキュメント
+            node (BaseNode): 対象ノード
 
         Returns:
-            bool: 音声ドキュメントなら True
+            bool: 音声ノードなら True
         """
-        path = doc.metadata.get(MK.FILE_PATH, "")
-        url = doc.metadata.get(MK.URL, "")
-        temp_file_path = doc.metadata.get(MK.TEMP_FILE_PATH, "")
+        path = node.metadata.get(MK.FILE_PATH, "")
+        url = node.metadata.get(MK.URL, "")
+        temp_file_path = node.metadata.get(MK.TEMP_FILE_PATH, "")
 
         return (
             Exts.endswith_exts(path, Exts.AUDIO)

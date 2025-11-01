@@ -12,3 +12,6 @@ class DocumentStoreConfig:
     # Redit
     redis_host: str = DefaultSettings.REDIS_HOST
     redis_port: int = DefaultSettings.REDIS_PORT
+
+    # Default
+    docstore_local_persist_path: str = DefaultSettings.DOCSTORE_LOCAL_PERSIST_PATH
