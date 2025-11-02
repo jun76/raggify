@@ -1,13 +1,18 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Optional, Sequence
 
 from ..core.event import async_loop_runner
 from ..embed.embed_manager import Modality
 from ..logger import logger
 
 if TYPE_CHECKING:
-    from llama_index.core.schema import ImageNode, TextNode
+    from llama_index.core.schema import (
+        BaseNode,
+        ImageNode,
+        TextNode,
+        TransformComponent,
+    )
 
     from ..llama.core.schema import AudioNode
     from ..runtime import Runtime
@@ -61,6 +66,128 @@ def _read_list(path: str) -> list[str]:
     return lst
 
 
+async def _arun_docstore_pipe(
+    nodes: list[BaseNode],
+    transformations: list[TransformComponent] | None,
+    modality: Modality,
+) -> Optional[Sequence[BaseNode]]:
+    """ドキュメント重複管理用パイプラインを実行する。
+
+    Args:
+        nodes (list[BaseNode]): ノード
+
+    Returus:
+        Optional[Sequence[BaseNode]]: 重複ドキュメントフィルター後のノード
+    """
+    import os
+
+    from llama_index.core.ingestion import DocstoreStrategy, IngestionPipeline
+
+    rt = _rt()
+    vs = rt.vector_store
+    ics = rt.ingest_cache_store
+    ds = rt.document_store
+
+    if not nodes:
+        return None
+
+    pipe = IngestionPipeline(
+        transformations=transformations,
+        vector_store=vs.get_container(modality).store,
+        cache=ics.get_container(modality).store,
+        docstore=ds.store,
+        docstore_strategy=DocstoreStrategy.UPSERTS,
+    )
+
+    path = ics.persist_path
+    if path and os.path.exists(path):
+        pipe.load(path)
+
+    filtered_nodes = await pipe.arun(nodes=nodes, store_doc_text=False)
+
+    if path:
+        pipe.persist(path)
+
+    return filtered_nodes
+
+
+async def _arun_text_docstore_pipe(
+    nodes: list[TextNode],
+) -> Optional[Sequence[BaseNode]]:
+    """テキストノードのパイプラインを実行する。
+
+    Args:
+        nodes (list[TextNode]): テキストノード
+
+    Returus:
+        Optional[Sequence[BaseNode]]: 重複ドキュメントフィルター後のノード
+    """
+    from llama_index.core.node_parser import SentenceSplitter
+
+    from .transform import AddChunkIndexTransform, make_text_embed_transform
+
+    rt = _rt()
+    return await _arun_docstore_pipe(
+        nodes=[node for node in nodes],
+        transformations=[
+            SentenceSplitter(
+                chunk_size=rt.cfg.ingest.chunk_size,
+                chunk_overlap=rt.cfg.ingest.chunk_overlap,
+                include_metadata=True,
+            ),
+            AddChunkIndexTransform(),
+            make_text_embed_transform(rt.embed_manager),
+        ],
+        modality=Modality.TEXT,
+    )
+
+
+async def _arun_image_docstore_pipe(
+    nodes: list[ImageNode],
+) -> Optional[Sequence[BaseNode]]:
+    """画像ノードのパイプラインを実行する。
+
+    Args:
+        nodes (list[ImageNode]): 画像ノード
+
+    Returus:
+        Optional[Sequence[BaseNode]]: 重複ドキュメントフィルター後のノード
+    """
+    from .transform import make_image_embed_transform
+
+    rt = _rt()
+    return await _arun_docstore_pipe(
+        nodes=[node for node in nodes],
+        transformations=[
+            make_image_embed_transform(rt.embed_manager),
+        ],
+        modality=Modality.IMAGE,
+    )
+
+
+async def _arun_audio_docstore_pipe(
+    nodes: list[AudioNode],
+) -> Optional[Sequence[BaseNode]]:
+    """音声ノードのパイプラインを実行する。
+
+    Args:
+        nodes (list[AudioNode]): 音声ノード
+
+    Returus:
+        Optional[Sequence[BaseNode]]: 重複ドキュメントフィルター後のノード
+    """
+    from .transform import make_audio_embed_transform
+
+    rt = _rt()
+    return await _arun_docstore_pipe(
+        nodes=[node for node in nodes],
+        transformations=[
+            make_audio_embed_transform(rt.embed_manager),
+        ],
+        modality=Modality.AUDIO,
+    )
+
+
 async def _aupsert_nodes(
     text_nodes: list[TextNode],
     image_nodes: list[ImageNode],
@@ -75,69 +202,13 @@ async def _aupsert_nodes(
     """
     import asyncio
 
-    from llama_index.core.ingestion import DocstoreStrategy, IngestionPipeline
-    from llama_index.core.node_parser import SentenceSplitter
-
-    from .transform import (
-        AddChunkIndexTransform,
-        make_audio_embed_transform,
-        make_image_embed_transform,
-        make_text_embed_transform,
-    )
-
-    rt = _rt()
-    embed = rt.embed_manager
-    vs = rt.vector_store
-    ics = rt.ingest_cache_store
-    ds = rt.document_store
-
     # 後段パイプ。テキスト分割とモダリティ毎の埋め込み＋ストア格納。
     # キャッシュ管理も。
-    tasks = []
-    if text_nodes:
-        text_pipe = IngestionPipeline(
-            transformations=[
-                SentenceSplitter(
-                    chunk_size=rt.cfg.ingest.chunk_size,
-                    chunk_overlap=rt.cfg.ingest.chunk_overlap,
-                    include_metadata=True,
-                ),
-                AddChunkIndexTransform(),
-                make_text_embed_transform(embed=embed),
-            ],
-            vector_store=vs.get_container(Modality.TEXT).store,
-            cache=ics.get_container(Modality.TEXT).store,
-            docstore=ds.store,
-            docstore_strategy=DocstoreStrategy.UPSERTS,
-        )
-        tasks.append(text_pipe.arun(nodes=text_nodes))
-        ds.store.persist()
-
-    if image_nodes:
-        image_pipe = IngestionPipeline(
-            transformations=[
-                make_image_embed_transform(embed=embed),
-            ],
-            vector_store=vs.get_container(Modality.IMAGE).store,
-            cache=ics.get_container(Modality.IMAGE).store,
-            docstore=ds.store,
-            docstore_strategy=DocstoreStrategy.UPSERTS,
-        )
-        tasks.append(image_pipe.arun(nodes=image_nodes))
-        ds.store.persist()
-
-    if audio_nodes:
-        audio_pipe = IngestionPipeline(
-            transformations=[
-                make_audio_embed_transform(embed=embed),
-            ],
-            vector_store=vs.get_container(Modality.AUDIO).store,
-            cache=ics.get_container(Modality.AUDIO).store,
-            docstore=ds.store,
-            docstore_strategy=DocstoreStrategy.UPSERTS,
-        )
-        tasks.append(audio_pipe.arun(nodes=audio_nodes))
-        ds.store.persist()
+    tasks = [
+        _arun_text_docstore_pipe(text_nodes),
+        _arun_image_docstore_pipe(image_nodes),
+        _arun_audio_docstore_pipe(audio_nodes),
+    ]
 
     if tasks:
         await asyncio.gather(*tasks)

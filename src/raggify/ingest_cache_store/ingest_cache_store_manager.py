@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from ..embed.embed_manager import Modality
 
@@ -14,7 +14,7 @@ class IngestCacheStoreContainer:
     """モダリティ毎のキャッシュストア関連パラメータを集約"""
 
     provider_name: str
-    store: IngestionCache
+    store: Optional[IngestionCache]
     table_name: str
 
 
@@ -24,13 +24,16 @@ class IngestCacheStoreManager:
     def __init__(
         self,
         conts: dict[Modality, IngestCacheStoreContainer],
+        persist_path: Optional[str] = None,
     ) -> None:
         """コンストラクタ
 
         Args:
             conts (dict[Modality, IngestCacheStoreContainer]): キャッシュストアコンテナの辞書
+            persist_path (Optional[str], optional): 永続化パス。Defaults to None.
         """
         self._conts = conts
+        self._persist_path = persist_path
 
     @property
     def name(self) -> str:
@@ -40,6 +43,15 @@ class IngestCacheStoreManager:
             str: プロバイダ名
         """
         return ", ".join([cont.provider_name for cont in self._conts.values()])
+
+    @property
+    def persist_path(self) -> Optional[str]:
+        """永続化パスを取得する。
+
+        Returns:
+            Optional[str]: 永続化パス
+        """
+        return self._persist_path
 
     @property
     def modality(self) -> set[Modality]:

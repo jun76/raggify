@@ -19,6 +19,9 @@ def create_document_store_manager(cfg: ConfigManager) -> DocumentStoreManager:
     Args:
         cfg (ConfigManager): 設定管理
 
+    Raises:
+        RuntimeError: サポート外のプロバイダ
+
     Returns:
         DocumentStoreManager: ドキュメントストア管理
     """
@@ -29,10 +32,9 @@ def create_document_store_manager(cfg: ConfigManager) -> DocumentStoreManager:
         case DocumentStoreProvider.LOCAL:
             return _local(cfg=cfg.document_store, table_name=table_name)
         case _:
-            logger.warning(
-                f"unsupported document store: {cfg.general.document_store_provider}, use default"
+            raise RuntimeError(
+                f"unsupported document store: {cfg.general.document_store_provider}"
             )
-            return _local(cfg=cfg.document_store, table_name=table_name)
 
 
 def _generate_table_name(cfg: ConfigManager) -> str:

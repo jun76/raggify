@@ -3,8 +3,6 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any, Optional
 
-from ..logger import logger
-
 
 class MetaKeysFrom:
     # ライブラリ側定義ラベル（字列変更不可）
@@ -128,5 +126,10 @@ def get_temp_file_path_from(source: str, suffix: str) -> str:
         str: 一時ファイルパス
     """
     import hashlib
+    import tempfile
+    from pathlib import Path
 
-    return "/tmp/" + hashlib.md5(source.encode()).hexdigest() + suffix
+    temp_dir = Path(tempfile.gettempdir())
+    filename = hashlib.md5(source.encode()).hexdigest() + suffix
+
+    return str(temp_dir / filename)

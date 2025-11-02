@@ -11,3 +11,4 @@ raggify_db
 raggify_metas.db
 .venv
 .zshrc
+docstore.json

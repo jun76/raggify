@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
+from ..document_store.document_store_manager import DocumentStoreManager
 from ..embed.embed_manager import EmbedManager, Modality
 from ..logger import logger
 
@@ -30,16 +31,18 @@ class VectorStoreManager:
         self,
         conts: dict[Modality, VectorStoreContainer],
         embed: EmbedManager,
+        docstore: DocumentStoreManager,
     ) -> None:
         """コンストラクタ
 
         Args:
             conts (dict[Modality, VectorStoreContainer]): ベクトルストアコンテナの辞書
             embed (EmbedManager): 埋め込み管理
-            meta_store (StructuredStoreManager): メタデータ管理
+            docstore (DocumentStoreManager): ドキュメントストア管理
         """
         self._conts = conts
         self._embed = embed
+        self._docstore = docstore
 
         for modality, cont in self._conts.items():
             cont.index = self._create_index(modality)

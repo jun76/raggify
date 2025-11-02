@@ -114,7 +114,7 @@ class Runtime:
             from .vector_store.vector_store import create_vector_store_manager
 
             self._vector_store = create_vector_store_manager(
-                cfg=self.cfg, embed=self.embed_manager
+                cfg=self.cfg, embed=self.embed_manager, docstore=self.document_store
             )
 
         return self._vector_store

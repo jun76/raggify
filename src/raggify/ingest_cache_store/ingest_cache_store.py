@@ -56,7 +56,9 @@ def create_ingest_cache_store_manager(
     if not conts:
         raise RuntimeError("no embedding providers are specified")
 
-    return IngestCacheStoreManager(conts)
+    return IngestCacheStoreManager(
+        conts=conts, persist_path=cfg.ingest_cache_store.ingest_cache_local_persist_path
+    )
 
 
 def _create_container(cfg: ConfigManager, space_key: str) -> IngestCacheStoreContainer:
@@ -76,6 +78,8 @@ def _create_container(cfg: ConfigManager, space_key: str) -> IngestCacheStoreCon
     match cfg.general.ingest_cache_store_provider:
         case IngestCacheStoreProvider.REDIS:
             return _redis(cfg=cfg.ingest_cache_store, table_name=table_name)
+        case IngestCacheStoreProvider.LOCAL:
+            return _local(table_name)
         case _:
             raise RuntimeError(
                 f"unsupported ingest cache store: {cfg.general.ingest_cache_store_provider}"
@@ -115,5 +119,15 @@ def _redis(cfg: IngestCacheStoreConfig, table_name: str) -> IngestCacheStoreCont
             ),
             collection=table_name,
         ),
+        table_name=table_name,
+    )
+
+
+def _local(table_name: str) -> IngestCacheStoreContainer:
+    from .ingest_cache_store_manager import IngestCacheStoreContainer
+
+    return IngestCacheStoreContainer(
+        provider_name=IngestCacheStoreProvider.LOCAL,
+        store=None,
         table_name=table_name,
     )

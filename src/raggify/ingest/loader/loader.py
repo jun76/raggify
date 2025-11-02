@@ -78,8 +78,7 @@ class Loader:
             docstore=self._document_store.store,
             docstore_strategy=DocstoreStrategy.DUPLICATES_ONLY,
         )
-        nodes = await doc_pipe.arun(documents=docs)
-        self._document_store.persist()
+        nodes = await doc_pipe.arun(documents=docs, store_doc_text=False)
 
         image_nodes = []
         audio_nodes = []
@@ -98,13 +97,11 @@ class Loader:
                     )
                 )
             elif isinstance(node, TextNode):
-                text_nodes.append(
-                    TextNode(
-                        text=node.text, ref_doc_id=node.id_, metadata=node.metadata
-                    )
-                )
+                text_nodes.append(node)
             else:
                 logger.warning(f"unexpected node type {type(node)}, skipped")
+
+        self._document_store.persist()
 
         return text_nodes, image_nodes, audio_nodes
 

@@ -57,6 +57,9 @@ class DocumentStoreManager:
         return self._table_name
 
     def persist(self) -> None:
-        """ストアを保存する。"""
+        """ストアを保存する。
+
+        リモートストアの場合等、persist_path 未指定では nop。
+        """
         if self._persist_path:
             self.store.persist(self._persist_path)

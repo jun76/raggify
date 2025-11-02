@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from ..config.config_manager import ConfigManager
 from ..config.default_settings import VectorStoreProvider
 from ..config.vector_store_config import VectorStoreConfig
+from ..document_store.document_store_manager import DocumentStoreManager
 from ..llama.core.schema import Modality
 
 if TYPE_CHECKING:
@@ -17,12 +18,14 @@ __all__ = ["create_vector_store_manager"]
 def create_vector_store_manager(
     cfg: ConfigManager,
     embed: EmbedManager,
+    docstore: DocumentStoreManager,
 ) -> VectorStoreManager:
     """ベクトルストア管理のインスタンスを生成する。
 
     Args:
         cfg (ConfigManager): 設定管理
         embed (EmbedManager): 埋め込み管理
+        docstore (DocumentStoreManager): ドキュメントストア管理
 
     Raises:
         RuntimeError: インスタンス生成に失敗またはプロバイダ指定漏れ
@@ -60,7 +63,7 @@ def create_vector_store_manager(
     if not conts:
         raise RuntimeError("no embedding providers are specified")
 
-    return VectorStoreManager(conts=conts, embed=embed)
+    return VectorStoreManager(conts=conts, embed=embed, docstore=docstore)
 
 
 def _create_container(

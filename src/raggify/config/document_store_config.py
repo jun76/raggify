@@ -9,7 +9,7 @@ from .default_settings import DefaultSettings
 class DocumentStoreConfig:
     """ドキュメントストア関連の設定用データクラス"""
 
-    # Redit
+    # Redis
     redis_host: str = DefaultSettings.REDIS_HOST
     redis_port: int = DefaultSettings.REDIS_PORT
 

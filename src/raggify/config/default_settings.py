@@ -21,7 +21,7 @@ class DocumentStoreProvider(StrEnum):
 
 class IngestCacheStoreProvider(StrEnum):
     REDIS = auto()
-    DEFAULT = auto()
+    LOCAL = auto()
 
 
 class EmbedProvider(StrEnum):
@@ -105,6 +105,8 @@ class DefaultSettings:
     ##### Ingest Cache Store
     # Redis
     # same as document store settings
+
+    INGEST_CACHE_LOCAL_PERSIST_PATH: str = f"/etc/{PROJECT_NAME}/ingest_cache"
 
     ##### Meta Store
     META_STORE_PATH: str = f"/etc/{PROJECT_NAME}/{PROJECT_NAME}_metas.db"
