@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from ...core.exts import Exts
 from ...logger import logger
@@ -21,15 +21,15 @@ class FileLoader(Loader):
     """ローカルファイルを読み込み、ノードを生成するためのクラス。"""
 
     def __init__(
-        self,
-        document_store: DocumentStoreManager,
+        self, document_store: DocumentStoreManager, persist_dir: Optional[str]
     ) -> None:
         """コンストラクタ
 
         Args:
             document_store (DocumentStoreManager): ドキュメントストア管理
+            persist_dir (Optional[str]): 永続化ディレクトリ
         """
-        super().__init__(document_store)
+        super().__init__(document_store=document_store, persist_dir=persist_dir)
 
         # 独自 reader の辞書。後段で SimpleDirectoryReader に渡す
         self._readers: dict[str, BaseReader] = {Exts.PDF: MultiPDFReader()}

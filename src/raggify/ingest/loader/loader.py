@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
+from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.schema import Document, ImageNode, TextNode
 
 from ...core.exts import Exts
@@ -19,13 +20,17 @@ if TYPE_CHECKING:
 class Loader:
     """ローダー基底クラス"""
 
-    def __init__(self, document_store: DocumentStoreManager) -> None:
+    def __init__(
+        self, document_store: DocumentStoreManager, persist_dir: Optional[str]
+    ) -> None:
         """コンストラクタ
 
         Args:
             document_store (DocumentStoreManager): ドキュメントストア管理
+            persist_dir (Optional[str]): 永続化ディレクトリ
         """
         self._document_store = document_store
+        self._persist_dir = persist_dir
 
     def _generate_doc_id(self, meta: BasicMetaData) -> str:
         """doc_id を生成する。
@@ -51,6 +56,26 @@ class Loader:
 
         return hashlib.md5(json.dumps(raw, sort_keys=True).encode()).hexdigest()
 
+    def _build_or_load_pipe(self) -> IngestionPipeline:
+        """ドキュメント重複管理用パイプラインを新規作成またはロードする。
+
+        Returns:
+            IngestionPipeline: パイプライン
+        """
+        import os
+
+        from llama_index.core.ingestion import DocstoreStrategy
+
+        pipe = IngestionPipeline(
+            docstore=self._document_store.store,
+            docstore_strategy=DocstoreStrategy.DUPLICATES_ONLY,
+        )
+
+        if self._persist_dir and os.path.exists(self._persist_dir):
+            pipe.load(self._persist_dir)
+
+        return pipe
+
     async def _asplit_docs_modality(
         self, docs: list[Document]
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
@@ -63,8 +88,6 @@ class Loader:
             tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
                 テキストノード、画像ノード、音声ノード
         """
-        from llama_index.core.ingestion import DocstoreStrategy, IngestionPipeline
-
         # 一意なドキュメント ID の付与。二回目以降、同一 ID のドキュメントに対しては
         # IngestionPipeline 内でハッシュ比較が行われ、変更がない場合は戻り値の
         # ノードリストから弾かれる。
@@ -73,12 +96,8 @@ class Loader:
             doc.id_ = self._generate_doc_id(meta)
             doc.doc_id = doc.id_
 
-        # 前段パイプ。ドキュメントストアでの重複管理
-        doc_pipe = IngestionPipeline(
-            docstore=self._document_store.store,
-            docstore_strategy=DocstoreStrategy.DUPLICATES_ONLY,
-        )
-        nodes = await doc_pipe.arun(documents=docs, store_doc_text=False)
+        pipe = self._build_or_load_pipe()
+        nodes = await pipe.arun(documents=docs)
 
         image_nodes = []
         audio_nodes = []
@@ -101,7 +120,8 @@ class Loader:
             else:
                 logger.warning(f"unexpected node type {type(node)}, skipped")
 
-        self._document_store.persist()
+        if self._persist_dir:
+            pipe.persist(self._persist_dir)
 
         return text_nodes, image_nodes, audio_nodes
 

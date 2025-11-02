@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from ..config.config_manager import ConfigManager
 from ..config.default_settings import DocumentStoreProvider
 from ..config.document_store_config import DocumentStoreConfig
-from ..logger import logger
 
 if TYPE_CHECKING:
     from .document_store_manager import DocumentStoreManager
@@ -30,7 +29,7 @@ def create_document_store_manager(cfg: ConfigManager) -> DocumentStoreManager:
         case DocumentStoreProvider.REDIS:
             return _redis(cfg=cfg.document_store, table_name=table_name)
         case DocumentStoreProvider.LOCAL:
-            return _local(cfg=cfg.document_store, table_name=table_name)
+            return _local(table_name)
         case _:
             raise RuntimeError(
                 f"unsupported document store: {cfg.general.document_store_provider}"
@@ -70,24 +69,13 @@ def _redis(cfg: DocumentStoreConfig, table_name: str) -> DocumentStoreManager:
     )
 
 
-def _local(cfg: DocumentStoreConfig, table_name: str) -> DocumentStoreManager:
-    import os
-
+def _local(table_name: str) -> DocumentStoreManager:
     from llama_index.core.storage.docstore import SimpleDocumentStore
 
     from .document_store_manager import DocumentStoreManager
 
-    persist_path = cfg.docstore_local_persist_path
-    if not os.path.exists(persist_path):
-        store = SimpleDocumentStore(namespace=table_name)
-    else:
-        store = SimpleDocumentStore.from_persist_path(
-            persist_path=persist_path, namespace=table_name
-        )
-
     return DocumentStoreManager(
         provider_name=DocumentStoreProvider.LOCAL,
-        store=store,
+        store=SimpleDocumentStore(namespace=table_name),
         table_name=table_name,
-        persist_path=cfg.docstore_local_persist_path,
     )

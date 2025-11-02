@@ -56,9 +56,7 @@ def create_ingest_cache_store_manager(
     if not conts:
         raise RuntimeError("no embedding providers are specified")
 
-    return IngestCacheStoreManager(
-        conts=conts, persist_path=cfg.ingest_cache_store.ingest_cache_local_persist_path
-    )
+    return IngestCacheStoreManager(conts)
 
 
 def _create_container(cfg: ConfigManager, space_key: str) -> IngestCacheStoreContainer:
@@ -127,7 +125,5 @@ def _local(table_name: str) -> IngestCacheStoreContainer:
     from .ingest_cache_store_manager import IngestCacheStoreContainer
 
     return IngestCacheStoreContainer(
-        provider_name=IngestCacheStoreProvider.LOCAL,
-        store=None,
-        table_name=table_name,
+        provider_name=IngestCacheStoreProvider.LOCAL, store=None, table_name=table_name
     )

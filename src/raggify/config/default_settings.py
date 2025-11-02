@@ -59,10 +59,10 @@ class DefaultSettings:
     HOST: str = "localhost"
     PORT: int = 8000
     MCP: bool = False
-    VECTOR_STORE_PROVIDER: VectorStoreProvider = VectorStoreProvider.REDIS
+    VECTOR_STORE_PROVIDER: VectorStoreProvider = VectorStoreProvider.CHROMA
     DOCUMENT_STORE_PROVIDER: DocumentStoreProvider = DocumentStoreProvider.LOCAL
     INGEST_CACHE_STORE_PROVIDER: IngestCacheStoreProvider = (
-        IngestCacheStoreProvider.REDIS
+        IngestCacheStoreProvider.LOCAL
     )
     TEXT_EMBED_PROVIDER: Optional[EmbedProvider] = EmbedProvider.OPENAI
     IMAGE_EMBED_PROVIDER: Optional[EmbedProvider] = EmbedProvider.VOYAGE
@@ -99,14 +99,9 @@ class DefaultSettings:
     # Redis
     # same as document store settings
 
-    # Local
-    DOCSTORE_LOCAL_PERSIST_PATH: str = f"/etc/{PROJECT_NAME}/docstore.json"
-
     ##### Ingest Cache Store
     # Redis
     # same as document store settings
-
-    INGEST_CACHE_LOCAL_PERSIST_PATH: str = f"/etc/{PROJECT_NAME}/ingest_cache"
 
     ##### Meta Store
     META_STORE_PATH: str = f"/etc/{PROJECT_NAME}/{PROJECT_NAME}_metas.db"
@@ -163,6 +158,7 @@ class DefaultSettings:
     CHUNK_SIZE: int = 500
     CHUNK_OVERLAP: int = 50
     UPLOAD_DIR: str = f"/etc/{PROJECT_NAME}/upload"
+    PIPE_PERSIST_DIR: str = f"/etc/{PROJECT_NAME}/pipeline_storage"
     # Web
     USER_AGENT: str = PROJECT_NAME
     LOAD_ASSET: bool = True

@@ -12,8 +12,3 @@ class IngestCacheStoreConfig:
     # Redit
     redis_host: str = DefaultSettings.REDIS_HOST
     redis_port: int = DefaultSettings.REDIS_PORT
-
-    # Local
-    ingest_cache_local_persist_path: str = (
-        DefaultSettings.INGEST_CACHE_LOCAL_PERSIST_PATH
-    )

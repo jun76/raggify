@@ -13,6 +13,7 @@ class IngestConfig:
     chunk_size: int = DefaultSettings.CHUNK_SIZE
     chunk_overlap: int = DefaultSettings.CHUNK_OVERLAP
     upload_dir: str = DefaultSettings.UPLOAD_DIR
+    pipe_persist_dir: str = DefaultSettings.PIPE_PERSIST_DIR
 
     # Web
     user_agent: str = DefaultSettings.USER_AGENT

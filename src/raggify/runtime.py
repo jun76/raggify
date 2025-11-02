@@ -155,7 +155,10 @@ class Runtime:
         if self._file_loader is None:
             from .ingest.loader.file_loader import FileLoader
 
-            self._file_loader = FileLoader(self.document_store)
+            self._file_loader = FileLoader(
+                document_store=self.document_store,
+                persist_dir=self.cfg.ingest.pipe_persist_dir,
+            )
 
         return self._file_loader
 
@@ -167,6 +170,7 @@ class Runtime:
             self._html_loader = HTMLLoader(
                 document_store=self.document_store,
                 file_loader=self.file_loader,
+                persist_dir=self.cfg.ingest.pipe_persist_dir,
                 load_asset=self.cfg.ingest.load_asset,
                 req_per_sec=self.cfg.ingest.req_per_sec,
                 timeout_sec=self.cfg.ingest.timeout_sec,

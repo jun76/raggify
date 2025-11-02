@@ -21,19 +21,13 @@ class IngestCacheStoreContainer:
 class IngestCacheStoreManager:
     """キャッシュストアの管理クラス。"""
 
-    def __init__(
-        self,
-        conts: dict[Modality, IngestCacheStoreContainer],
-        persist_path: Optional[str] = None,
-    ) -> None:
+    def __init__(self, conts: dict[Modality, IngestCacheStoreContainer]) -> None:
         """コンストラクタ
 
         Args:
             conts (dict[Modality, IngestCacheStoreContainer]): キャッシュストアコンテナの辞書
-            persist_path (Optional[str], optional): 永続化パス。Defaults to None.
         """
         self._conts = conts
-        self._persist_path = persist_path
 
     @property
     def name(self) -> str:
@@ -43,15 +37,6 @@ class IngestCacheStoreManager:
             str: プロバイダ名
         """
         return ", ".join([cont.provider_name for cont in self._conts.values()])
-
-    @property
-    def persist_path(self) -> Optional[str]:
-        """永続化パスを取得する。
-
-        Returns:
-            Optional[str]: 永続化パス
-        """
-        return self._persist_path
 
     @property
     def modality(self) -> set[Modality]:

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Sequence
 
+from llama_index.core.ingestion import IngestionPipeline
+
 from ..core.event import async_loop_runner
 from ..embed.embed_manager import Modality
 from ..logger import logger
@@ -66,30 +68,29 @@ def _read_list(path: str) -> list[str]:
     return lst
 
 
-async def _arun_docstore_pipe(
-    nodes: list[BaseNode],
+def _build_or_load_pipe(
     transformations: list[TransformComponent] | None,
     modality: Modality,
-) -> Optional[Sequence[BaseNode]]:
-    """ドキュメント重複管理用パイプラインを実行する。
+    persist_dir: Optional[str],
+) -> IngestionPipeline:
+    """モダリティ別キャッシュ用パイプラインを新規作成またはロードする。
 
     Args:
-        nodes (list[BaseNode]): ノード
+        transformations (list[TransformComponent] | None): 変換一式
+        modality (Modality): モダリティ
+        persist_dir (Optional[str]): 永続化ディレクトリ
 
-    Returus:
-        Optional[Sequence[BaseNode]]: 重複ドキュメントフィルター後のノード
+    Returns:
+        IngestionPipeline: パイプライン
     """
     import os
 
-    from llama_index.core.ingestion import DocstoreStrategy, IngestionPipeline
+    from llama_index.core.ingestion import DocstoreStrategy
 
     rt = _rt()
     vs = rt.vector_store
     ics = rt.ingest_cache_store
     ds = rt.document_store
-
-    if not nodes:
-        return None
 
     pipe = IngestionPipeline(
         transformations=transformations,
@@ -99,25 +100,51 @@ async def _arun_docstore_pipe(
         docstore_strategy=DocstoreStrategy.UPSERTS,
     )
 
-    path = ics.persist_path
-    if path and os.path.exists(path):
-        pipe.load(path)
+    if persist_dir and os.path.exists(persist_dir):
+        pipe.load(persist_dir)
 
-    filtered_nodes = await pipe.arun(nodes=nodes, store_doc_text=False)
+    return pipe
 
-    if path:
-        pipe.persist(path)
+
+async def _arun_pipe(
+    nodes: list[BaseNode],
+    transformations: list[TransformComponent] | None,
+    modality: Modality,
+    persist_dir: Optional[str],
+) -> Optional[Sequence[BaseNode]]:
+    """モダリティ別キャッシュ用パイプラインを実行する。
+
+    Args:
+        nodes (list[BaseNode]): ノード
+        transformations (list[TransformComponent] | None): 変換一式
+        modality (Modality): モダリティ
+        persist_dir (Optional[str]): 永続化ディレクトリ
+
+    Returns:
+        Optional[Sequence[BaseNode]]: 重複ドキュメントフィルター後のノード
+    """
+    if not nodes:
+        return None
+
+    pipe = _build_or_load_pipe(
+        transformations=transformations, modality=modality, persist_dir=persist_dir
+    )
+    filtered_nodes = await pipe.arun(nodes=nodes)
+
+    if persist_dir:
+        pipe.persist(persist_dir)
 
     return filtered_nodes
 
 
-async def _arun_text_docstore_pipe(
-    nodes: list[TextNode],
+async def _arun_text_pipe(
+    nodes: list[TextNode], persist_dir: Optional[str]
 ) -> Optional[Sequence[BaseNode]]:
     """テキストノードのパイプラインを実行する。
 
     Args:
         nodes (list[TextNode]): テキストノード
+        persist_dir (Optional[str]): 永続化ディレクトリ
 
     Returus:
         Optional[Sequence[BaseNode]]: 重複ドキュメントフィルター後のノード
@@ -127,7 +154,7 @@ async def _arun_text_docstore_pipe(
     from .transform import AddChunkIndexTransform, make_text_embed_transform
 
     rt = _rt()
-    return await _arun_docstore_pipe(
+    return await _arun_pipe(
         nodes=[node for node in nodes],
         transformations=[
             SentenceSplitter(
@@ -139,52 +166,55 @@ async def _arun_text_docstore_pipe(
             make_text_embed_transform(rt.embed_manager),
         ],
         modality=Modality.TEXT,
+        persist_dir=persist_dir,
     )
 
 
-async def _arun_image_docstore_pipe(
-    nodes: list[ImageNode],
+async def _arun_image_pipe(
+    nodes: list[ImageNode], persist_dir: Optional[str]
 ) -> Optional[Sequence[BaseNode]]:
     """画像ノードのパイプラインを実行する。
 
     Args:
         nodes (list[ImageNode]): 画像ノード
+        persist_dir (Optional[str]): 永続化ディレクトリ
 
     Returus:
         Optional[Sequence[BaseNode]]: 重複ドキュメントフィルター後のノード
     """
     from .transform import make_image_embed_transform
 
-    rt = _rt()
-    return await _arun_docstore_pipe(
+    return await _arun_pipe(
         nodes=[node for node in nodes],
         transformations=[
-            make_image_embed_transform(rt.embed_manager),
+            make_image_embed_transform(_rt().embed_manager),
         ],
         modality=Modality.IMAGE,
+        persist_dir=persist_dir,
     )
 
 
-async def _arun_audio_docstore_pipe(
-    nodes: list[AudioNode],
+async def _arun_audio_pipe(
+    nodes: list[AudioNode], persist_dir: Optional[str]
 ) -> Optional[Sequence[BaseNode]]:
     """音声ノードのパイプラインを実行する。
 
     Args:
         nodes (list[AudioNode]): 音声ノード
+        persist_dir (Optional[str]): 永続化ディレクトリ
 
     Returus:
         Optional[Sequence[BaseNode]]: 重複ドキュメントフィルター後のノード
     """
     from .transform import make_audio_embed_transform
 
-    rt = _rt()
-    return await _arun_docstore_pipe(
+    return await _arun_pipe(
         nodes=[node for node in nodes],
         transformations=[
-            make_audio_embed_transform(rt.embed_manager),
+            make_audio_embed_transform(_rt().embed_manager),
         ],
         modality=Modality.AUDIO,
+        persist_dir=persist_dir,
     )
 
 
@@ -192,6 +222,7 @@ async def _aupsert_nodes(
     text_nodes: list[TextNode],
     image_nodes: list[ImageNode],
     audio_nodes: list[AudioNode],
+    persist_dir: Optional[str],
 ):
     """ノードをアップサートする。
 
@@ -199,15 +230,16 @@ async def _aupsert_nodes(
         text_nodes (list[TextNode]): テキストノード
         image_nodes (list[ImageNode]): 画像ノード
         audio_nodes (list[AudioNode]): 音声ノード
+        persist_dir (Optional[str]): 永続化ディレクトリ
     """
     import asyncio
 
     # 後段パイプ。テキスト分割とモダリティ毎の埋め込み＋ストア格納。
     # キャッシュ管理も。
     tasks = [
-        _arun_text_docstore_pipe(text_nodes),
-        _arun_image_docstore_pipe(image_nodes),
-        _arun_audio_docstore_pipe(audio_nodes),
+        _arun_text_pipe(nodes=text_nodes, persist_dir=persist_dir),
+        _arun_image_pipe(nodes=image_nodes, persist_dir=persist_dir),
+        _arun_audio_pipe(nodes=audio_nodes, persist_dir=persist_dir),
     ]
 
     if tasks:
@@ -232,10 +264,12 @@ async def aingest_path(path: str) -> None:
         path (str): 対象パス
     """
     file_loader = _rt().file_loader
-
     text_nodes, image_nodes, audio_nodes = await file_loader.aload_from_path(path)
     await _aupsert_nodes(
-        text_nodes=text_nodes, image_nodes=image_nodes, audio_nodes=audio_nodes
+        text_nodes=text_nodes,
+        image_nodes=image_nodes,
+        audio_nodes=audio_nodes,
+        persist_dir=_rt().cfg.ingest.pipe_persist_dir,
     )
 
 
@@ -258,10 +292,12 @@ async def aingest_path_list(lst: str | Sequence[str]) -> None:
         lst = _read_list(lst)
 
     file_loader = _rt().file_loader
-
     text_nodes, image_nodes, audio_nodes = await file_loader.aload_from_paths(list(lst))
     await _aupsert_nodes(
-        text_nodes=text_nodes, image_nodes=image_nodes, audio_nodes=audio_nodes
+        text_nodes=text_nodes,
+        image_nodes=image_nodes,
+        audio_nodes=audio_nodes,
+        persist_dir=_rt().cfg.ingest.pipe_persist_dir,
     )
 
 
@@ -283,10 +319,12 @@ async def aingest_url(url: str) -> None:
         url (str): 対象 URL
     """
     html_loader = _rt().html_loader
-
     text_nodes, image_nodes, audio_nodes = await html_loader.aload_from_url(url)
     await _aupsert_nodes(
-        text_nodes=text_nodes, image_nodes=image_nodes, audio_nodes=audio_nodes
+        text_nodes=text_nodes,
+        image_nodes=image_nodes,
+        audio_nodes=audio_nodes,
+        persist_dir=_rt().cfg.ingest.pipe_persist_dir,
     )
 
 
@@ -309,8 +347,10 @@ async def aingest_url_list(lst: str | Sequence[str]) -> None:
         lst = _read_list(lst)
 
     html_loader = _rt().html_loader
-
     text_nodes, image_nodes, audio_nodes = await html_loader.aload_from_urls(list(lst))
     await _aupsert_nodes(
-        text_nodes=text_nodes, image_nodes=image_nodes, audio_nodes=audio_nodes
+        text_nodes=text_nodes,
+        image_nodes=image_nodes,
+        audio_nodes=audio_nodes,
+        persist_dir=_rt().cfg.ingest.pipe_persist_dir,
     )

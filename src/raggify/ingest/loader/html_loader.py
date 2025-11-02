@@ -24,6 +24,7 @@ class HTMLLoader(Loader):
         self,
         document_store: DocumentStoreManager,
         file_loader: FileLoader,
+        persist_dir: Optional[str],
         load_asset: bool = DS.LOAD_ASSET,
         req_per_sec: int = DS.REQ_PER_SEC,
         timeout_sec: int = DS.TIMEOUT_SEC,
@@ -35,13 +36,14 @@ class HTMLLoader(Loader):
         Args:
             document_store (DocumentStoreManager): ドキュメントストア管理
             file_loader (FileLoader): ファイル読み込み用
+            persist_dir (Optional[str]): 永続化ディレクトリ
             load_asset (bool, optional): アセットを読み込むか。Defaults to DS.LOAD_ASSET.
             req_per_sec (int, optional): 秒間リクエスト数。Defaults to DS.REQ_PER_SEC.
             timeout_sec (int, optional): タイムアウト秒。Defaults to DS.TIMEOUT_SEC.
             user_agent (str, optional): GET リクエスト時の user agent。Defaults to DS.USER_AGENT.
             same_origin (bool, optional): 同一オリジンのみ対象とするか。Defaults to DS.SAME_ORIGIN.
         """
-        super().__init__(document_store)
+        super().__init__(document_store=document_store, persist_dir=persist_dir)
         self._file_loader = file_loader
         self._load_asset = load_asset
         self._req_per_sec = req_per_sec
