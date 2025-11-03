@@ -71,7 +71,7 @@ urls = [
 
 ingest_url_list(urls)
 
-nodes = query_text_text(query="Half-Blood Prince")
+nodes = query_text_text("Half-Blood Prince")
 
 for node in nodes:
     print(
@@ -96,7 +96,7 @@ url = "https://developers.llamaindex.ai/python/examples/multi_modal/multi_modal_
 
 ingest_url(url)
 
-nodes = query_text_image(query="what is the main character in Batman")
+nodes = query_text_image("what is the main character in Batman")
 ```
 
 ## examples/ex03.py
@@ -116,7 +116,7 @@ paths = [
 
 ingest_path_list(paths)
 
-nodes = query_text_audio(query="phone call")
+nodes = query_text_audio("phone call")
 ```
 
 ⚠️ To use audio features (local CLAP), need to install openai-whisper:
@@ -142,7 +142,8 @@ raggify reload
 After initial startup according to the /etc/raggify/config.yaml, hot-reload the config values.
 
 ```python
-from raggify.config.default_settings import EmbedProvider, VectorStoreProvider
+from raggify.config.embed_config import EmbedProvider
+from raggify.config.vector_store_config import VectorStoreProvider
 from raggify.ingest import ingest_url
 from raggify.runtime import get_runtime
 

@@ -322,10 +322,7 @@ async def query_text_text(payload: QueryTextRequest) -> dict[str, Any]:
 
     async with _request_lock:
         try:
-            nodes = await aquery_text_text(
-                query=payload.query,
-                topk=payload.topk or _rt().cfg.rerank.topk,
-            )
+            nodes = await aquery_text_text(query=payload.query, topk=payload.topk)
         except Exception:
             msg = "query text text failure"
             logger.error(msg)
@@ -358,10 +355,7 @@ async def query_text_image(payload: QueryTextRequest) -> dict[str, Any]:
 
     async with _request_lock:
         try:
-            nodes = await aquery_text_image(
-                query=payload.query,
-                topk=payload.topk or _rt().cfg.rerank.topk,
-            )
+            nodes = await aquery_text_image(query=payload.query, topk=payload.topk)
         except Exception:
             msg = "query text image failure"
             logger.error(msg)
@@ -394,10 +388,7 @@ async def query_image_image(payload: QueryMultimodalRequest) -> dict[str, Any]:
 
     async with _request_lock:
         try:
-            nodes = await aquery_image_image(
-                path=payload.path,
-                topk=payload.topk or _rt().cfg.rerank.topk,
-            )
+            nodes = await aquery_image_image(path=payload.path, topk=payload.topk)
         except Exception:
             msg = "query image image failure"
             logger.error(msg)
@@ -430,10 +421,7 @@ async def query_text_audio(payload: QueryTextRequest) -> dict[str, Any]:
 
     async with _request_lock:
         try:
-            nodes = await aquery_text_audio(
-                query=payload.query,
-                topk=payload.topk or _rt().cfg.rerank.topk,
-            )
+            nodes = await aquery_text_audio(query=payload.query, topk=payload.topk)
         except Exception:
             msg = "query text audio failure"
             logger.error(msg)
@@ -466,10 +454,7 @@ async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
 
     async with _request_lock:
         try:
-            nodes = await aquery_audio_audio(
-                path=payload.path,
-                topk=payload.topk or _rt().cfg.rerank.topk,
-            )
+            nodes = await aquery_audio_audio(path=payload.path, topk=payload.topk)
         except Exception:
             msg = "query audio audio failure"
             logger.error(msg)

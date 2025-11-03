@@ -7,7 +7,7 @@ url = "https://developers.llamaindex.ai/python/examples/multi_modal/multi_modal_
 
 ingest_url(url)
 
-nodes = query_text_image(query="what is the main character in Batman")
+nodes = query_text_image("what is the main character in Batman")
 
 for node in nodes:
     print(

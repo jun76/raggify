@@ -1,4 +1,5 @@
-from raggify.config.default_settings import EmbedProvider, VectorStoreProvider
+from raggify.config.embed_config import EmbedProvider
+from raggify.config.vector_store_config import VectorStoreProvider
 from raggify.ingest import ingest_url
 from raggify.runtime import get_runtime
 

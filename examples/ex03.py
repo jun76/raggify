@@ -10,4 +10,4 @@ paths = [
 
 ingest_path_list(paths)
 
-nodes = query_text_audio(query="phone call")
+nodes = query_text_audio("phone call")

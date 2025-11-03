@@ -48,9 +48,7 @@ def _cohere(cfg: ConfigManager) -> RerankContainer:
 
     return RerankContainer(
         provider_name=RerankProvider.COHERE,
-        rerank=CohereRerank(
-            model=cfg.rerank.cohere_rerank_model, top_n=cfg.rerank.topk
-        ),
+        rerank=CohereRerank(model=cfg.rerank.cohere_rerank_model),
     )
 
 
@@ -61,7 +59,5 @@ def _flagembedding(cfg: ConfigManager) -> RerankContainer:
 
     return RerankContainer(
         provider_name=RerankProvider.FLAGEMBEDDING,
-        rerank=FlagEmbeddingReranker(
-            model=cfg.rerank.flagembedding_rerank_model, top_n=cfg.rerank.topk
-        ),
+        rerank=FlagEmbeddingReranker(model=cfg.rerank.flagembedding_rerank_model),
     )

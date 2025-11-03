@@ -11,7 +11,7 @@ urls = [
 
 ingest_url_list(urls)
 
-nodes = query_text_text(query="Half-Blood Prince")
+nodes = query_text_text("Half-Blood Prince")
 
 for node in nodes:
     print(
