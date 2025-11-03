@@ -43,6 +43,10 @@ class HTMLLoader(Loader):
         self._user_agent = cfg.user_agent
         self._same_origin = cfg.same_origin
 
+        # サイトツリー内での同一画像の使い回し等、直リンクが同じものは base_url が
+        # 異なっても最初の一件のみをドキュメントとして登録し、残りはスキップする。
+        self._asset_url_cache: set[str] = set()
+
     async def _arequest_get(self, url: str) -> requests.Response:
         """HTTP GET を実行する非同期ラッパー。
 
@@ -263,14 +267,22 @@ class HTMLLoader(Loader):
             html=html, base_url=base_url, allowed_exts=Exts.FETCH_TARGET
         )
 
+        # 最上位ループ内で複数ソースをまたいで _asset_url_cache を共有したいため
+        # ここでは _asset_url_cache.clear() しないこと。
         docs = []
         for url in urls:
+            if url in self._asset_url_cache:
+                continue
+
             doc = await self._aload_direct_linked_file(url=url, base_url=base_url)
             if doc is None:
                 logger.warning(f"failed to fetch from {url}, skipped")
                 continue
 
             docs.append(doc)
+
+            # 取得済みキャッシュに追加
+            self._asset_url_cache.add(url)
 
         return docs
 
@@ -352,6 +364,8 @@ class HTMLLoader(Loader):
             logger.exception(e)
             return [], [], []
 
+        # 最上位ループの一つ。キャッシュを空にしてから使う。
+        self._asset_url_cache.clear()
         docs = []
         for url in urls:
             temp = await self._aload_from_site(url)
@@ -372,6 +386,9 @@ class HTMLLoader(Loader):
             tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
                 テキストノード、画像ノード、音声ノード
         """
+        # 最上位ループの一つ。キャッシュを空にしてから使う。
+        self._asset_url_cache.clear()
+
         texts = []
         images = []
         audios = []
