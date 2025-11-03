@@ -223,6 +223,8 @@ class HTMLLoader(Loader):
         Returns:
             Optional[Document]: 生成したドキュメント
         """
+        from llama_index.core.schema import Document
+
         from ...core.metadata import BasicMetaData
 
         temp_file_path = await self._adownload_direct_linked_file(
@@ -261,25 +263,10 @@ class HTMLLoader(Loader):
             html=html, base_url=base_url, allowed_exts=Exts.FETCH_TARGET
         )
 
-        if not urls:
-            logger.info("no asset files found")
-            return []
-
-        logger.info(f"{len(urls)} asset files found")
-
-        # セマフォで同時実行数を制限
-        semaphore = asyncio.Semaphore(self._req_per_sec)
-
-        async def fetch_with_limit(url: str) -> Optional[Document]:
-            async with semaphore:
-                return await self._aload_direct_linked_file(url=url, base_url=base_url)
-
-        tasks = [fetch_with_limit(url) for url in urls]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
         docs = []
-        for url, doc in zip(urls, results):
-            if isinstance(doc, Exception) or doc is None:
+        for url in urls:
+            doc = await self._aload_direct_linked_file(url=url, base_url=base_url)
+            if doc is None:
                 logger.warning(f"failed to fetch from {url}, skipped")
                 continue
 
@@ -300,6 +287,7 @@ class HTMLLoader(Loader):
             list[Document]: 生成したドキュメント
         """
         import html2text
+        from llama_index.core.schema import Document
 
         from ...core.metadata import MetaKeys as MK
 

@@ -38,6 +38,6 @@ class DummyMediaReader(BaseReader):
         # MultiModalVectorStoreIndex 参照用
         doc = Document(text=path, metadata={MK.FILE_PATH: path})
 
-        logger.debug(f"loaded 1 text doc from {path}")
+        logger.debug(f"loaded 1 doc from {path}")
 
         return [doc]

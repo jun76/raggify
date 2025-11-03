@@ -32,8 +32,10 @@ class EmbedConfig:
     )
     cohere_embed_model_text: dict[str, Any] = field(
         default_factory=lambda: {
-            EmbedModel.NAME.value: "embed-v4.0",
-            EmbedModel.DIM.value: 1536,
+            # EmbedModel.NAME.value: "embed-v4.0",
+            # EmbedModel.DIM.value: 1536,
+            EmbedModel.NAME.value: "embed-english-v3.0",
+            EmbedModel.DIM.value: 1024,
         }
     )
     clip_embed_model_text: dict[str, Any] = field(
@@ -58,8 +60,10 @@ class EmbedConfig:
     # Image
     cohere_embed_model_image: dict[str, Any] = field(
         default_factory=lambda: {
-            EmbedModel.NAME.value: "embed-v4.0",
-            EmbedModel.DIM.value: 1536,
+            # EmbedModel.NAME.value: "embed-v4.0",
+            # EmbedModel.DIM.value: 1536,
+            EmbedModel.NAME.value: "embed-english-v3.0",
+            EmbedModel.DIM.value: 1024,
         }
     )
     clip_embed_model_image: dict[str, Any] = field(

@@ -18,8 +18,8 @@ class Exts:
     IMAGE: set[str] = {".gif", ".jpg", PNG, ".jpeg", ".webp"}
 
     # マルチモーダル（音声）の埋め込みモデルに渡せる拡張子
-    _PASS_THROUGH_AUDIO: set[str] = {".wav", ".flac", ".ogg"}  # うち、独自処理するもの
-    AUDIO: set[str] = {".mp3"} | _PASS_THROUGH_AUDIO
+    _PASS_THROUGH_AUDIO: set[str] = {".wav", ".flac", ".ogg", ".mp3"}  # うち、独自処理するもの
+    AUDIO: set[str] = _PASS_THROUGH_AUDIO
 
     # サイトマップの抽出判定に使用する拡張子
     SITEMAP: set[str] = {".xml"}

@@ -6,6 +6,8 @@ from rich.console import Console
 
 from .core.const import PROJECT_NAME
 
+__all__ = ["configure_logging", "logger", "console"]
+
 
 class Color:
     ResetAll = "\033[0m"
@@ -43,14 +45,19 @@ class Color:
     White = "\033[97m"
 
 
-logging.basicConfig(
-    format=f"{Color.Blue}%(levelname)s{Color.ResetAll}: "
+_LOG_FORMAT = (
+    f"{Color.Blue}%(levelname)s{Color.ResetAll}: "
     f"{Color.DarkGray}%(asctime)s "
     f"{Color.DarkGray}%(name)s "
     f"{Color.White}%(message)s "
     f"{Color.DarkGray}@ %(pathname)s:%(lineno)d %(funcName)s "
-    f"{Color.ResetAll}",
+    f"{Color.ResetAll}"
 )
+
+
+def configure_logging() -> None:
+    logging.basicConfig(level=logging.INFO, format=_LOG_FORMAT, force=True)
+
 
 logger = logging.getLogger(PROJECT_NAME)
 console = Console()

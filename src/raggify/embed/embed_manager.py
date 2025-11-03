@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from llama_index.core.settings import Settings
+
 from ..llama.core.schema import Modality
 from ..logger import logger
 
@@ -41,6 +43,9 @@ class EmbedManager:
                 modality=modality,
             )
             logger.debug(f"space_key: {cont.space_key} generated")
+
+        if Modality.TEXT in self._conts:
+            Settings.embed_model = self._conts[Modality.TEXT].embed
 
     @property
     def name(self) -> str:

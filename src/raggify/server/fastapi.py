@@ -15,7 +15,7 @@ from pydantic import BaseModel
 from ..core.const import PROJECT_NAME, VERSION
 from ..ingest import ingest
 from ..llama.core.schema import Modality
-from ..logger import console, logger
+from ..logger import configure_logging, console, logger
 from ..runtime import get_runtime as _rt
 
 __all__ = ["app"]
@@ -63,6 +63,7 @@ async def lifespan(app: FastAPI):
     Args:
         app (FastAPI): サーバインスタンス
     """
+    configure_logging()
     logger.setLevel(_rt().cfg.general.log_level)
 
     # 初期化処理
