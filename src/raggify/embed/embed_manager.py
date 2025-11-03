@@ -141,7 +141,7 @@ class EmbedManager:
         dims = await embed.aget_text_embedding_batch(texts=texts, show_progress=True)
 
         if dims:
-            logger.debug(f"dim = {len(dims[0])}, len = {len(dims)}")
+            logger.debug(f"dim = {len(dims[0])}, embed {len(dims)} texts")
 
         return dims
 
@@ -173,7 +173,7 @@ class EmbedManager:
         )
 
         if dims:
-            logger.debug(f"dim = {len(dims[0])}, len = {len(dims)}")
+            logger.debug(f"dim = {len(dims[0])}, embed {len(dims)} images")
 
         return dims
 
@@ -205,7 +205,7 @@ class EmbedManager:
         )
 
         if dims:
-            logger.debug(f"dim = {len(dims[0])}, len = {len(dims)}")
+            logger.debug(f"dim = {len(dims[0])}, embed {len(dims)} audios")
 
         return dims
 

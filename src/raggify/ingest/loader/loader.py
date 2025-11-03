@@ -102,6 +102,8 @@ class Loader:
         pipe = self._build_or_load_pipe()
         nodes = await pipe.arun(documents=docs)
 
+        logger.debug(f"{len(docs)} docs --pipeline--> {len(nodes)} nodes")
+
         image_nodes = []
         audio_nodes = []
         text_nodes = []

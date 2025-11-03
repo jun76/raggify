@@ -140,6 +140,8 @@ async def _arun_pipe(
         except Exception as e:
             logger.warning(f"failed to persist: {e}")
 
+    logger.debug(f"{len(nodes)} nodes --pipeline--> {len(filtered_nodes)} nodes")
+
     return filtered_nodes
 
 
