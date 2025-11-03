@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
-from ..config.default_settings import RerankProvider
+from ..config.rerank_config import RerankProvider
 
 if TYPE_CHECKING:
     from .rerank_manager import RerankContainer, RerankManager

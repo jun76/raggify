@@ -3,8 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
-from ..config.default_settings import IngestCacheStoreProvider
-from ..config.ingest_cache_store_config import IngestCacheStoreConfig
+from ..config.ingest_cache_store_config import (
+    IngestCacheStoreConfig,
+    IngestCacheStoreProvider,
+)
+from ..core.const import PROJECT_NAME
 from ..llama.core.schema import Modality
 
 if TYPE_CHECKING:
@@ -97,7 +100,7 @@ def _generate_table_name(cfg: ConfigManager, space_key: str) -> str:
     import hashlib
 
     return hashlib.md5(
-        f"{cfg.project_name}:{cfg.general.knowledgebase_name}:{space_key}:ics".encode()
+        f"{PROJECT_NAME}:{cfg.general.knowledgebase_name}:{space_key}:ics".encode()
     ).hexdigest()
 
 

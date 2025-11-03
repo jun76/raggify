@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 from llama_index.core.schema import NodeWithScore
 
-from ..config.default_settings import DefaultSettings as DS
 from ..core.event import async_loop_runner
 from ..llama.core.indices.multi_modal.retriever import AudioRetriever
 from ..llama.core.schema import Modality
@@ -26,6 +25,8 @@ __all__ = [
     "aquery_audio_audio",
 ]
 
+_TOPK = 10
+
 
 def _rt() -> Runtime:
     """遅延ロード用ゲッター。
@@ -40,13 +41,13 @@ def _rt() -> Runtime:
 
 def query_text_text(
     query: str,
-    topk: int = DS.TOPK,
+    topk: int = _TOPK,
 ) -> list[NodeWithScore]:
     """クエリ文字列によるテキストドキュメント検索。
 
     Args:
         query (str): クエリ文字列
-        topk (int, optional): 取得件数。Defaults to DS.TOPK.
+        topk (int, optional): 取得件数。Defaults to _TOPK.
 
     Returns:
         list[NodeWithScore]: 検索結果のリスト
@@ -56,13 +57,13 @@ def query_text_text(
 
 async def aquery_text_text(
     query: str,
-    topk: int = DS.TOPK,
+    topk: int = _TOPK,
 ) -> list[NodeWithScore]:
     """クエリ文字列によるテキストドキュメント非同期検索。
 
     Args:
         query (str): クエリ文字列
-        topk (int, optional): 取得件数。Defaults to DS.TOPK.
+        topk (int, optional): 取得件数。Defaults to _TOPK.
 
     Returns:
         list[NodeWithScore]: 検索結果のリスト
@@ -92,13 +93,13 @@ async def aquery_text_text(
 
 def query_text_image(
     query: str,
-    topk: int = DS.TOPK,
+    topk: int = _TOPK,
 ) -> list[NodeWithScore]:
     """クエリ文字列による画像ドキュメント検索。
 
     Args:
         query (str): クエリ文字列
-        topk (int, optional): 取得件数。Defaults to DS.TOPK.
+        topk (int, optional): 取得件数。Defaults to _TOPK.
 
     Raises:
         RuntimeError: テキスト --> 画像埋め込み非対応
@@ -111,13 +112,13 @@ def query_text_image(
 
 async def aquery_text_image(
     query: str,
-    topk: int = DS.TOPK,
+    topk: int = _TOPK,
 ) -> list[NodeWithScore]:
     """クエリ文字列による画像ドキュメント非同期検索。
 
     Args:
         query (str): クエリ文字列
-        topk (int, optional): 取得件数。Defaults to DS.TOPK.
+        topk (int, optional): 取得件数。Defaults to _TOPK.
 
     Raises:
         RuntimeError: テキスト --> 画像埋め込み非対応
@@ -164,13 +165,13 @@ async def aquery_text_image(
 
 def query_image_image(
     path: str,
-    topk: int = DS.TOPK,
+    topk: int = _TOPK,
 ) -> list[NodeWithScore]:
     """クエリ画像による画像ドキュメント検索。
 
     Args:
         path (str): クエリ画像の ローカルパス
-        topk (int, optional): 取得件数。Defaults to DS.TOPK.
+        topk (int, optional): 取得件数。Defaults to _TOPK.
 
     Returns:
         list[NodeWithScore]: 検索結果のリスト
@@ -180,13 +181,13 @@ def query_image_image(
 
 async def aquery_image_image(
     path: str,
-    topk: int = DS.TOPK,
+    topk: int = _TOPK,
 ) -> list[NodeWithScore]:
     """クエリ画像による画像ドキュメント非同期検索。
 
     Args:
         path (str): クエリ画像の ローカルパス
-        topk (int, optional): 取得件数。Defaults to DS.TOPK.
+        topk (int, optional): 取得件数。Defaults to _TOPK.
 
     Returns:
         list[NodeWithScore]: 検索結果のリスト
@@ -219,13 +220,13 @@ async def aquery_image_image(
 
 def query_text_audio(
     query: str,
-    topk: int = DS.TOPK,
+    topk: int = _TOPK,
 ) -> list[NodeWithScore]:
     """クエリ文字列による音声ドキュメント検索。
 
     Args:
         query (str): クエリ文字列
-        topk (int, optional): 取得件数。Defaults to DS.TOPK.
+        topk (int, optional): 取得件数。Defaults to _TOPK.
 
     Raises:
         RuntimeError: テキスト --> 音声埋め込み非対応
@@ -238,13 +239,13 @@ def query_text_audio(
 
 async def aquery_text_audio(
     query: str,
-    topk: int = DS.TOPK,
+    topk: int = _TOPK,
 ) -> list[NodeWithScore]:
     """クエリ文字列による音声ドキュメント非同期検索。
 
     Args:
         query (str): クエリ文字列
-        topk (int, optional): 取得件数。Defaults to DS.TOPK.
+        topk (int, optional): 取得件数。Defaults to _TOPK.
 
     Raises:
         RuntimeError: テキスト --> 音声埋め込み非対応
@@ -282,13 +283,13 @@ async def aquery_text_audio(
 
 def query_audio_audio(
     path: str,
-    topk: int = DS.TOPK,
+    topk: int = _TOPK,
 ) -> list[NodeWithScore]:
     """クエリ音声による音声ドキュメント検索。
 
     Args:
         path (str): クエリ音声の ローカルパス
-        topk (int, optional): 取得件数。Defaults to DS.TOPK.
+        topk (int, optional): 取得件数。Defaults to _TOPK.
 
     Returns:
         list[NodeWithScore]: 検索結果のリスト
@@ -298,13 +299,13 @@ def query_audio_audio(
 
 async def aquery_audio_audio(
     path: str,
-    topk: int = DS.TOPK,
+    topk: int = _TOPK,
 ) -> list[NodeWithScore]:
     """クエリ音声による音声ドキュメント非同期検索。
 
     Args:
         path (str): クエリ音声の ローカルパス
-        topk (int, optional): 取得件数。Defaults to DS.TOPK.
+        topk (int, optional): 取得件数。Defaults to _TOPK.
 
     Returns:
         list[NodeWithScore]: 検索結果のリスト

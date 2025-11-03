@@ -72,7 +72,10 @@ class Loader:
         )
 
         if self._persist_dir and os.path.exists(self._persist_dir):
-            pipe.load(self._persist_dir)
+            try:
+                pipe.load(self._persist_dir)
+            except Exception as e:
+                logger.warning(f"failed to load persist dir: {e}")
 
         return pipe
 
@@ -121,7 +124,10 @@ class Loader:
                 logger.warning(f"unexpected node type {type(node)}, skipped")
 
         if self._persist_dir:
-            pipe.persist(self._persist_dir)
+            try:
+                pipe.persist(self._persist_dir)
+            except Exception as e:
+                logger.warning(f"failed to persist: {e}")
 
         return text_nodes, image_nodes, audio_nodes
 

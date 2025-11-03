@@ -6,7 +6,7 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 
-from ...config.default_settings import DefaultSettings as DS
+from ...config.ingest_config import IngestConfig
 from ...core.exts import Exts
 from ...logger import logger
 from .loader import Loader
@@ -25,11 +25,7 @@ class HTMLLoader(Loader):
         document_store: DocumentStoreManager,
         file_loader: FileLoader,
         persist_dir: Optional[str],
-        load_asset: bool = DS.LOAD_ASSET,
-        req_per_sec: int = DS.REQ_PER_SEC,
-        timeout_sec: int = DS.TIMEOUT_SEC,
-        user_agent: str = DS.USER_AGENT,
-        same_origin: bool = DS.SAME_ORIGIN,
+        cfg: IngestConfig,
     ):
         """HTML を読み込み、ノードを生成するためのクラス。
 
@@ -37,19 +33,15 @@ class HTMLLoader(Loader):
             document_store (DocumentStoreManager): ドキュメントストア管理
             file_loader (FileLoader): ファイル読み込み用
             persist_dir (Optional[str]): 永続化ディレクトリ
-            load_asset (bool, optional): アセットを読み込むか。Defaults to DS.LOAD_ASSET.
-            req_per_sec (int, optional): 秒間リクエスト数。Defaults to DS.REQ_PER_SEC.
-            timeout_sec (int, optional): タイムアウト秒。Defaults to DS.TIMEOUT_SEC.
-            user_agent (str, optional): GET リクエスト時の user agent。Defaults to DS.USER_AGENT.
-            same_origin (bool, optional): 同一オリジンのみ対象とするか。Defaults to DS.SAME_ORIGIN.
+            cfg (IngestConfig): 各種設定値
         """
         super().__init__(document_store=document_store, persist_dir=persist_dir)
         self._file_loader = file_loader
-        self._load_asset = load_asset
-        self._req_per_sec = req_per_sec
-        self._timeout_sec = timeout_sec
-        self._user_agent = user_agent
-        self._same_origin = same_origin
+        self._load_asset = cfg.load_asset
+        self._req_per_sec = cfg.req_per_sec
+        self._timeout_sec = cfg.timeout_sec
+        self._user_agent = cfg.user_agent
+        self._same_origin = cfg.same_origin
 
     async def _arequest_get(self, url: str) -> requests.Response:
         """HTTP GET を実行する非同期ラッパー。

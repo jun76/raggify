@@ -4,7 +4,7 @@ import logging
 
 from rich.console import Console
 
-from .config.default_settings import DefaultSettings
+from .core.const import PROJECT_NAME
 
 
 class Color:
@@ -52,5 +52,5 @@ logging.basicConfig(
     f"{Color.ResetAll}",
 )
 
-logger = logging.getLogger(DefaultSettings.PROJECT_NAME)
+logger = logging.getLogger(PROJECT_NAME)
 console = Console()

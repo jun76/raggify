@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum, auto
 
-from .default_settings import DefaultSettings
+
+class RerankProvider(StrEnum):
+    FLAGEMBEDDING = auto()
+    COHERE = auto()
 
 
 @dataclass(kw_only=True)
 class RerankConfig:
     """リランク関連の設定用データクラス"""
 
-    flagembedding_rerank_model: str = DefaultSettings.FLAGEMBEDDING_RERANK_MODEL
-    cohere_rerank_model: str = DefaultSettings.COHERE_RERANK_MODEL
-    topk: int = DefaultSettings.TOPK
+    flagembedding_rerank_model: str = "BAAI/bge-reranker-v2-m3"
+    cohere_rerank_model: str = "rerank-multilingual-v3.0"
+    topk: int = 10

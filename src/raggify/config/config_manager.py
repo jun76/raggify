@@ -7,16 +7,16 @@ from dataclasses import fields
 from typing import Any, Optional, get_args, get_origin, get_type_hints
 
 import yaml
+from dotenv import load_dotenv
 
-from ..config.default_settings import DefaultSettings
 from ..config.document_store_config import DocumentStoreConfig
 from ..config.embed_config import EmbedConfig
 from ..config.general_config import GeneralConfig
 from ..config.ingest_cache_store_config import IngestCacheStoreConfig
 from ..config.ingest_config import IngestConfig
-from ..config.meta_store_config import MetaStoreConfig
 from ..config.rerank_config import RerankConfig
 from ..config.vector_store_config import VectorStoreConfig
+from ..core.const import USER_CONFIG_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -35,13 +35,13 @@ class ConfigManager:
         self._vector_store: VectorStoreConfig
         self._document_store: DocumentStoreConfig
         self._ingest_cache_store: IngestCacheStoreConfig
-        self._meta_store: MetaStoreConfig
         self._embed: EmbedConfig
         self._ingest: IngestConfig
         self._rerank: RerankConfig
 
-        self._user_config_path = DefaultSettings.USER_CONFIG_PATH
-        if not os.path.exists(self._user_config_path):
+        load_dotenv()
+
+        if not os.path.exists(USER_CONFIG_PATH):
             self.load_default()
             self.write_yaml()
 
@@ -53,7 +53,6 @@ class ConfigManager:
         self._vector_store = VectorStoreConfig()
         self._document_store = DocumentStoreConfig()
         self._ingest_cache_store = IngestCacheStoreConfig()
-        self._meta_store = MetaStoreConfig()
         self._embed = EmbedConfig()
         self._ingest = IngestConfig()
         self._rerank = RerankConfig()
@@ -62,7 +61,7 @@ class ConfigManager:
         """設定ファイルから設定値を読み込む。"""
         self.load_default()
         try:
-            with open(self._user_config_path, "r", encoding="utf-8") as fp:
+            with open(USER_CONFIG_PATH, "r", encoding="utf-8") as fp:
                 data = yaml.safe_load(fp) or {}
         except OSError as e:
             logger.warning(f"failed to read config file: {e}")
@@ -84,9 +83,6 @@ class ConfigManager:
             IngestCacheStoreConfig,
             self._ingest_cache_store,
         )
-        self._meta_store = self._apply_section(
-            data.get("meta_store"), MetaStoreConfig, self._meta_store
-        )
         self._embed = self._apply_section(data.get("embed"), EmbedConfig, self._embed)
         self._ingest = self._apply_section(
             data.get("ingest"), IngestConfig, self._ingest
@@ -97,7 +93,7 @@ class ConfigManager:
 
     def write_yaml(self) -> None:
         """現状の設定値を設定ファイルに書き出す。"""
-        config_dir = os.path.dirname(self._user_config_path)
+        config_dir = os.path.dirname(USER_CONFIG_PATH)
         try:
             os.makedirs(config_dir, exist_ok=True)
         except OSError as e:
@@ -106,7 +102,7 @@ class ConfigManager:
 
         data = self.get_dict()
         try:
-            with open(self._user_config_path, "w", encoding="utf-8") as fp:
+            with open(USER_CONFIG_PATH, "w", encoding="utf-8") as fp:
                 yaml.safe_dump(data, fp, sort_keys=False, allow_unicode=True)
         except OSError as e:
             logger.warning(f"failed to write config file: {e}")
@@ -128,10 +124,6 @@ class ConfigManager:
         return self._ingest_cache_store
 
     @property
-    def meta_store(self) -> MetaStoreConfig:
-        return self._meta_store
-
-    @property
     def embed(self) -> EmbedConfig:
         return self._embed
 
@@ -142,18 +134,6 @@ class ConfigManager:
     @property
     def rerank(self) -> RerankConfig:
         return self._rerank
-
-    @property
-    def project_name(self) -> str:
-        return DefaultSettings.PROJECT_NAME
-
-    @property
-    def version(self) -> str:
-        return DefaultSettings.VERSION
-
-    @property
-    def user_config_path(self) -> str:
-        return DefaultSettings.USER_CONFIG_PATH
 
     def get_dict(self) -> dict[str, Any]:
         """現状の設定を辞書形式で返す。
@@ -166,7 +146,6 @@ class ConfigManager:
             "vector_store": self._serialize_dataclass(self._vector_store),
             "document_store": self._serialize_dataclass(self._document_store),
             "ingest_cache_store": self._serialize_dataclass(self._ingest_cache_store),
-            "meta_store": self._serialize_dataclass(self._meta_store),
             "embed": self._serialize_dataclass(self._embed),
             "ingest": self._serialize_dataclass(self._ingest),
             "rerank": self._serialize_dataclass(self._rerank),

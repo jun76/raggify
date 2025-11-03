@@ -12,6 +12,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from llama_index.core.schema import NodeWithScore
 from pydantic import BaseModel
 
+from ..core.const import PROJECT_NAME, VERSION
 from ..ingest import ingest
 from ..llama.core.schema import Modality
 from ..logger import console, logger
@@ -69,22 +70,20 @@ async def lifespan(app: FastAPI):
 
     # リクエストの受付開始
     yield
-    console.print(f"🛑 now {_rt().cfg.project_name} server is stopped.")
+    console.print(f"🛑 now {PROJECT_NAME} server is stopped.")
 
 
 # FastAPIインスタンスを作成し、lifespanを渡す
-app = FastAPI(
-    title=_rt().cfg.project_name, version=_rt().cfg.version, lifespan=lifespan
-)
+app = FastAPI(title=PROJECT_NAME, version=VERSION, lifespan=lifespan)
 
 _request_lock = asyncio.Lock()
 
 
 def _setup() -> None:
     """各種インスタンスを生成"""
-    console.print(f"⏳ {_rt().cfg.project_name} server is starting up.")
+    console.print(f"⏳ {PROJECT_NAME} server is starting up.")
     _rt().build()
-    console.print(f"✅ now {_rt().cfg.project_name} server is online.")
+    console.print(f"✅ now {PROJECT_NAME} server is online.")
 
 
 def _nodes_to_response(nodes: list[NodeWithScore]) -> list[dict[str, Any]]:

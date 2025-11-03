@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 from pydantic import ValidationError
 
 from ..config.config_manager import ConfigManager
-from ..config.default_settings import EmbedModel as EM
-from ..config.default_settings import EmbedProvider
+from ..config.embed_config import EmbedModel as EM
+from ..config.embed_config import EmbedProvider
 from ..llama.core.schema import Modality
 from ..logger import logger
 

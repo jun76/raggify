@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
-from ..config.default_settings import VectorStoreProvider
-from ..config.vector_store_config import VectorStoreConfig
+from ..config.vector_store_config import VectorStoreConfig, VectorStoreProvider
+from ..core.const import PROJECT_NAME
 from ..document_store.document_store_manager import DocumentStoreManager
 from ..llama.core.schema import Modality
 
@@ -111,7 +111,7 @@ def _generate_table_name(cfg: ConfigManager, space_key: str) -> str:
     import hashlib
 
     return hashlib.md5(
-        f"{cfg.project_name}:{cfg.general.knowledgebase_name}:{space_key}:vec".encode()
+        f"{PROJECT_NAME}:{cfg.general.knowledgebase_name}:{space_key}:vec".encode()
     ).hexdigest()
 
 

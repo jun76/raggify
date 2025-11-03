@@ -3,35 +3,28 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, Optional
 
-from .default_settings import (
-    DefaultSettings,
-    DocumentStoreProvider,
-    EmbedProvider,
-    IngestCacheStoreProvider,
-    RerankProvider,
-    VectorStoreProvider,
-)
+from .document_store_config import DocumentStoreProvider
+from .embed_config import EmbedProvider
+from .ingest_cache_store_config import IngestCacheStoreProvider
+from .rerank_config import RerankProvider
+from .vector_store_config import VectorStoreProvider
 
 
 @dataclass(kw_only=True)
 class GeneralConfig:
-    knowledgebase_name: str = DefaultSettings.KNOWLEDGEBASE_NAME
-    host: str = DefaultSettings.HOST
-    port: int = DefaultSettings.PORT
-    mcp: bool = DefaultSettings.MCP
-    vector_store_provider: VectorStoreProvider = DefaultSettings.VECTOR_STORE_PROVIDER
-    document_store_provider: DocumentStoreProvider = (
-        DefaultSettings.DOCUMENT_STORE_PROVIDER
-    )
+    knowledgebase_name: str = "default"
+    host: str = "localhost"
+    port: int = 8000
+    mcp: bool = False
+    vector_store_provider: VectorStoreProvider = VectorStoreProvider.CHROMA
+    document_store_provider: DocumentStoreProvider = DocumentStoreProvider.LOCAL
     ingest_cache_store_provider: IngestCacheStoreProvider = (
-        DefaultSettings.INGEST_CACHE_STORE_PROVIDER
+        IngestCacheStoreProvider.LOCAL
     )
-    text_embed_provider: Optional[EmbedProvider] = DefaultSettings.TEXT_EMBED_PROVIDER
-    image_embed_provider: Optional[EmbedProvider] = DefaultSettings.IMAGE_EMBED_PROVIDER
-    audio_embed_provider: Optional[EmbedProvider] = DefaultSettings.AUDIO_EMBED_PROVIDER
-    rerank_provider: Optional[RerankProvider] = DefaultSettings.RERANK_PROVIDER
-    openai_base_url: Optional[str] = DefaultSettings.OPENAI_BASE_URL
-    device: Literal["cpu", "cuda", "mps"] = DefaultSettings.DEVICE
-    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = (
-        DefaultSettings.LOG_LEVEL
-    )
+    text_embed_provider: Optional[EmbedProvider] = EmbedProvider.OPENAI
+    image_embed_provider: Optional[EmbedProvider] = EmbedProvider.VOYAGE
+    audio_embed_provider: Optional[EmbedProvider] = None
+    rerank_provider: Optional[RerankProvider] = None
+    openai_base_url: Optional[str] = None
+    device: Literal["cpu", "cuda", "mps"] = "cpu"
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "DEBUG"

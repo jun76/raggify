@@ -101,13 +101,16 @@ def _build_or_load_pipe(
     )
 
     if persist_dir and os.path.exists(persist_dir):
-        pipe.load(persist_dir)
+        try:
+            pipe.load(persist_dir)
+        except Exception as e:
+            logger.warning(f"failed to load persist dir: {e}")
 
     return pipe
 
 
 async def _arun_pipe(
-    nodes: list[BaseNode],
+    nodes: Sequence[BaseNode],
     transformations: list[TransformComponent] | None,
     modality: Modality,
     persist_dir: Optional[str],
@@ -115,7 +118,7 @@ async def _arun_pipe(
     """モダリティ別キャッシュ用パイプラインを実行する。
 
     Args:
-        nodes (list[BaseNode]): ノード
+        nodes (Sequence[BaseNode]): ノード
         transformations (list[TransformComponent] | None): 変換一式
         modality (Modality): モダリティ
         persist_dir (Optional[str]): 永続化ディレクトリ
@@ -132,7 +135,10 @@ async def _arun_pipe(
     filtered_nodes = await pipe.arun(nodes=nodes)
 
     if persist_dir:
-        pipe.persist(persist_dir)
+        try:
+            pipe.persist(persist_dir)
+        except Exception as e:
+            logger.warning(f"failed to persist: {e}")
 
     return filtered_nodes
 
@@ -155,7 +161,7 @@ async def _arun_text_pipe(
 
     rt = _rt()
     return await _arun_pipe(
-        nodes=[node for node in nodes],
+        nodes=nodes,
         transformations=[
             SentenceSplitter(
                 chunk_size=rt.cfg.ingest.chunk_size,
@@ -185,7 +191,7 @@ async def _arun_image_pipe(
     from .transform import make_image_embed_transform
 
     return await _arun_pipe(
-        nodes=[node for node in nodes],
+        nodes=nodes,
         transformations=[
             make_image_embed_transform(_rt().embed_manager),
         ],
@@ -209,7 +215,7 @@ async def _arun_audio_pipe(
     from .transform import make_audio_embed_transform
 
     return await _arun_pipe(
-        nodes=[node for node in nodes],
+        nodes=nodes,
         transformations=[
             make_audio_embed_transform(_rt().embed_manager),
         ],
@@ -263,13 +269,15 @@ async def aingest_path(path: str) -> None:
     Args:
         path (str): 対象パス
     """
-    file_loader = _rt().file_loader
+    rt = _rt()
+    file_loader = rt.file_loader
     text_nodes, image_nodes, audio_nodes = await file_loader.aload_from_path(path)
+
     await _aupsert_nodes(
         text_nodes=text_nodes,
         image_nodes=image_nodes,
         audio_nodes=audio_nodes,
-        persist_dir=_rt().cfg.ingest.pipe_persist_dir,
+        persist_dir=rt.cfg.ingest.pipe_persist_dir,
     )
 
 
@@ -291,13 +299,15 @@ async def aingest_path_list(lst: str | Sequence[str]) -> None:
     if isinstance(lst, str):
         lst = _read_list(lst)
 
-    file_loader = _rt().file_loader
+    rt = _rt()
+    file_loader = rt.file_loader
     text_nodes, image_nodes, audio_nodes = await file_loader.aload_from_paths(list(lst))
+
     await _aupsert_nodes(
         text_nodes=text_nodes,
         image_nodes=image_nodes,
         audio_nodes=audio_nodes,
-        persist_dir=_rt().cfg.ingest.pipe_persist_dir,
+        persist_dir=rt.cfg.ingest.pipe_persist_dir,
     )
 
 
@@ -318,13 +328,15 @@ async def aingest_url(url: str) -> None:
     Args:
         url (str): 対象 URL
     """
-    html_loader = _rt().html_loader
+    rt = _rt()
+    html_loader = rt.html_loader
     text_nodes, image_nodes, audio_nodes = await html_loader.aload_from_url(url)
+
     await _aupsert_nodes(
         text_nodes=text_nodes,
         image_nodes=image_nodes,
         audio_nodes=audio_nodes,
-        persist_dir=_rt().cfg.ingest.pipe_persist_dir,
+        persist_dir=rt.cfg.ingest.pipe_persist_dir,
     )
 
 
@@ -346,11 +358,13 @@ async def aingest_url_list(lst: str | Sequence[str]) -> None:
     if isinstance(lst, str):
         lst = _read_list(lst)
 
-    html_loader = _rt().html_loader
+    rt = _rt()
+    html_loader = rt.html_loader
     text_nodes, image_nodes, audio_nodes = await html_loader.aload_from_urls(list(lst))
+
     await _aupsert_nodes(
         text_nodes=text_nodes,
         image_nodes=image_nodes,
         audio_nodes=audio_nodes,
-        persist_dir=_rt().cfg.ingest.pipe_persist_dir,
+        persist_dir=rt.cfg.ingest.pipe_persist_dir,
     )

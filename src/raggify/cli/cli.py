@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 import typer
 import uvicorn
 
+from ..core.const import PROJECT_NAME, USER_CONFIG_PATH, VERSION
 from ..logger import console, logger
 
 if TYPE_CHECKING:
@@ -37,7 +38,7 @@ warnings.filterwarnings(
 logger.setLevel(_cfg().general.log_level)
 app = typer.Typer(
     help="raggify CLI: Interface to ingest/query knowledge into/from raggify server. "
-    f"User config is {_cfg().user_config_path}."
+    f"User config is {USER_CONFIG_PATH}."
 )
 
 
@@ -75,7 +76,7 @@ def _echo_json(data: dict[str, Any]) -> None:
 @app.command(help="Show version.")
 def version() -> None:
     """バージョンコマンド"""
-    console.print(f"{_cfg().project_name} version {_cfg().version}")
+    console.print(f"{PROJECT_NAME} version {VERSION}")
 
 
 @app.command(help="Start as a local server.")
@@ -111,7 +112,7 @@ def server(
 def config() -> None:
     _echo_json(_cfg().get_dict())
 
-    if not os.path.exists(_cfg().user_config_path):
+    if not os.path.exists(USER_CONFIG_PATH):
         _cfg().write_yaml()
 
 
@@ -133,7 +134,7 @@ def _execute_client_command(
     except Exception as e:
         console.print(e)
         console.print(
-            f"❌ Command failed. If you haven't already started the server, run '{_cfg().project_name} server'."
+            f"❌ Command failed. If you haven't already started the server, run '{PROJECT_NAME} server'."
         )
         raise typer.Exit(code=1)
 

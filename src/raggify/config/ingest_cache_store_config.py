@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum, auto
 
-from .default_settings import DefaultSettings
+
+class IngestCacheStoreProvider(StrEnum):
+    REDIS = auto()
+    LOCAL = auto()
 
 
 @dataclass(kw_only=True)
@@ -10,5 +14,5 @@ class IngestCacheStoreConfig:
     """キャッシュストア関連の設定用データクラス"""
 
     # Redit
-    redis_host: str = DefaultSettings.REDIS_HOST
-    redis_port: int = DefaultSettings.REDIS_PORT
+    redis_host: str = "localhost"
+    redis_port: int = 6379

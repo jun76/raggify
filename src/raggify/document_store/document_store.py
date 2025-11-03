@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
-from ..config.default_settings import DocumentStoreProvider
-from ..config.document_store_config import DocumentStoreConfig
+from ..config.document_store_config import DocumentStoreConfig, DocumentStoreProvider
+from ..core.const import PROJECT_NAME
 
 if TYPE_CHECKING:
     from .document_store_manager import DocumentStoreManager
@@ -48,7 +48,7 @@ def _generate_table_name(cfg: ConfigManager) -> str:
     import hashlib
 
     return hashlib.md5(
-        f"{cfg.project_name}:{cfg.general.knowledgebase_name}:doc".encode()
+        f"{PROJECT_NAME}:{cfg.general.knowledgebase_name}:doc".encode()
     ).hexdigest()
 
 

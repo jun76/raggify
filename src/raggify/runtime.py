@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     from .ingest.loader.file_loader import FileLoader
     from .ingest.loader.html_loader import HTMLLoader
     from .ingest_cache_store.ingest_cache_store_manager import IngestCacheStoreManager
-    from .meta_store.structured.structured import Structured
     from .rerank.rerank_manager import RerankManager
     from .vector_store.vector_store_manager import VectorStoreManager
 
@@ -31,7 +30,6 @@ class Runtime:
         """コンストラクタ"""
         self._cfg: Optional[ConfigManager] = None
         self._embed_manager: Optional[EmbedManager] = None
-        self._meta_store: Optional[Structured] = None
         self._vector_store: Optional[VectorStoreManager] = None
         self._document_store: Optional[DocumentStoreManager] = None
         self._ingest_cache_store: Optional[IngestCacheStoreManager] = None
@@ -65,16 +63,9 @@ class Runtime:
         self._file_loader = None
         self._html_loader = None
 
-        if self._meta_store is not None:
-            try:
-                self._meta_store.close()
-            finally:
-                self._meta_store = None
-
     def touch(self) -> None:
         """各シングルトンの生成が未だであれば生成する。"""
         self.embed_manager
-        self.meta_store
         self.vector_store
         self.document_store
         self.ingest_cache_store
@@ -98,15 +89,6 @@ class Runtime:
             self._embed_manager = create_embed_manager(self.cfg)
 
         return self._embed_manager
-
-    @property
-    def meta_store(self) -> Structured:
-        if self._meta_store is None:
-            from .meta_store.meta_store import create_meta_store
-
-            self._meta_store = create_meta_store(self.cfg)
-
-        return self._meta_store
 
     @property
     def vector_store(self) -> VectorStoreManager:
@@ -171,11 +153,7 @@ class Runtime:
                 document_store=self.document_store,
                 file_loader=self.file_loader,
                 persist_dir=self.cfg.ingest.pipe_persist_dir,
-                load_asset=self.cfg.ingest.load_asset,
-                req_per_sec=self.cfg.ingest.req_per_sec,
-                timeout_sec=self.cfg.ingest.timeout_sec,
-                user_agent=self.cfg.ingest.user_agent,
-                same_origin=self.cfg.ingest.same_origin,
+                cfg=self.cfg.ingest,
             )
 
         return self._html_loader
