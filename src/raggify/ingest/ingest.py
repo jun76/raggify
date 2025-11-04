@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Sequence
 
+from llama_index.core.async_utils import asyncio_run
 from llama_index.core.ingestion import IngestionPipeline
 
-from ..core.event import async_loop_runner
 from ..embed.embed_manager import Modality
 from ..logger import logger
 
@@ -261,7 +261,7 @@ def ingest_path(path: str) -> None:
     Args:
         path (str): 対象パス
     """
-    async_loop_runner.run(lambda: aingest_path(path))
+    asyncio_run(aingest_path(path))
 
 
 async def aingest_path(path: str) -> None:
@@ -289,7 +289,7 @@ def ingest_path_list(lst: str | Sequence[str]) -> None:
     Args:
         lst (str | Sequence[str]): テキストファイルまたは Sequence 形式のリスト
     """
-    async_loop_runner.run(lambda: aingest_path_list(lst))
+    asyncio_run(aingest_path_list(lst))
 
 
 async def aingest_path_list(lst: str | Sequence[str]) -> None:
@@ -320,7 +320,7 @@ def ingest_url(url: str) -> None:
     Args:
         url (str): 対象 URL
     """
-    async_loop_runner.run(lambda: aingest_url(url))
+    asyncio_run(aingest_url(url))
 
 
 async def aingest_url(url: str) -> None:
@@ -348,7 +348,7 @@ def ingest_url_list(lst: str | Sequence[str]) -> None:
     Args:
         lst (str | Sequence[str]): テキストファイルまたは Sequence 形式のリスト
     """
-    async_loop_runner.run(lambda: aingest_url_list(lst))
+    asyncio_run(aingest_url_list(lst))
 
 
 async def aingest_url_list(lst: str | Sequence[str]) -> None:

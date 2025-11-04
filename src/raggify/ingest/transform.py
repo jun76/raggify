@@ -4,9 +4,9 @@ import os
 from collections import defaultdict
 from typing import TYPE_CHECKING, Awaitable, Callable, Optional
 
+from llama_index.core.async_utils import asyncio_run
 from llama_index.core.schema import BaseNode, TransformComponent
 
-from ..core.event import async_loop_runner
 from ..logger import logger
 
 if TYPE_CHECKING:
@@ -65,7 +65,7 @@ class _BaseEmbedTransform(TransformComponent):
         self._extract_fn = extract_fn
 
     def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
-        return async_loop_runner.run(lambda: self.acall(nodes=nodes, **kwargs))
+        return asyncio_run(self.acall(nodes=nodes, **kwargs))
 
     async def acall(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
         """パイプライン側から呼ばれるインタフェース

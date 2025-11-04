@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
+from llama_index.core.async_utils import asyncio_run
 from llama_index.core.schema import NodeWithScore
 
-from ..core.event import async_loop_runner
 from ..llama.core.indices.multi_modal.retriever import AudioRetriever
 from ..llama.core.schema import Modality
 from ..logger import logger
@@ -54,7 +54,7 @@ def query_text_text(
     """
     topk = topk or _rt().cfg.rerank.topk
 
-    return async_loop_runner.run(lambda: aquery_text_text(query=query, topk=topk))
+    return asyncio_run(aquery_text_text(query=query, topk=topk))
 
 
 async def aquery_text_text(
@@ -113,7 +113,7 @@ def query_text_image(
     """
     topk = topk or _rt().cfg.rerank.topk
 
-    return async_loop_runner.run(lambda: aquery_text_image(query=query, topk=topk))
+    return asyncio_run(aquery_text_image(query=query, topk=topk))
 
 
 async def aquery_text_image(
@@ -186,7 +186,7 @@ def query_image_image(
     """
     topk = topk or _rt().cfg.rerank.topk
 
-    return async_loop_runner.run(lambda: aquery_image_image(path=path, topk=topk))
+    return asyncio_run(aquery_image_image(path=path, topk=topk))
 
 
 async def aquery_image_image(
@@ -248,7 +248,7 @@ def query_text_audio(
     """
     topk = topk or _rt().cfg.rerank.topk
 
-    return async_loop_runner.run(lambda: aquery_text_audio(query=query, topk=topk))
+    return asyncio_run(aquery_text_audio(query=query, topk=topk))
 
 
 async def aquery_text_audio(
@@ -312,7 +312,7 @@ def query_audio_audio(
     """
     topk = topk or _rt().cfg.rerank.topk
 
-    return async_loop_runner.run(lambda: aquery_audio_audio(path=path, topk=topk))
+    return asyncio_run(aquery_audio_audio(path=path, topk=topk))
 
 
 async def aquery_audio_audio(
