@@ -43,8 +43,9 @@ class HTMLLoader(Loader):
         self._user_agent = cfg.user_agent
         self._same_origin = cfg.same_origin
 
-        # サイトツリー内での同一画像の使い回し等、直リンクが同じものは base_url が
-        # 異なっても最初の一件のみをドキュメントとして登録し、残りはスキップする。
+        # doc_id に base_url を含めず、url が同じドキュメントを同一視する。
+        # さらに、同一 ingest 処理内では asset_url_cache に一度処理した url を保持
+        # しておくことで、pipeline.arun に制御を渡さずフェッチ自体をスキップする。
         self._asset_url_cache: set[str] = set()
 
     async def _arequest_get(self, url: str) -> requests.Response:
@@ -246,6 +247,22 @@ class HTMLLoader(Loader):
 
         return Document(text=url, metadata=meta.to_dict())
 
+    def _register_asset_url(self, url: str) -> bool:
+        """新出アセット URL の場合、キャッシュに登録する。
+
+        Args:
+            url (str): _description_
+
+        Returns:
+            bool: _description_
+        """
+        if url in self._asset_url_cache:
+            return False
+
+        self._asset_url_cache.add(url)
+
+        return True
+
     async def _aload_html_asset_files(
         self,
         base_url: str,
@@ -267,11 +284,10 @@ class HTMLLoader(Loader):
             html=html, base_url=base_url, allowed_exts=Exts.FETCH_TARGET
         )
 
-        # 最上位ループ内で複数ソースをまたいで _asset_url_cache を共有したいため
-        # ここでは _asset_url_cache.clear() しないこと。
         docs = []
         for url in urls:
-            if url in self._asset_url_cache:
+            if not self._register_asset_url(url):
+                # 同一アセットはフェッチ自体をスキップ
                 continue
 
             doc = await self._aload_direct_linked_file(url=url, base_url=base_url)
@@ -280,9 +296,6 @@ class HTMLLoader(Loader):
                 continue
 
             docs.append(doc)
-
-            # 取得済みキャッシュに追加
-            self._asset_url_cache.add(url)
 
         return docs
 
@@ -310,11 +323,12 @@ class HTMLLoader(Loader):
         docs = []
         if Exts.endswith_exts(url, Exts.FETCH_TARGET):
             # 直リンクファイル
-            doc = await self._aload_direct_linked_file(url)
-            if doc is None:
-                logger.warning(f"failed to fetch from {url}, skipped")
-            else:
-                docs.append(doc)
+            if self._register_asset_url(url):
+                doc = await self._aload_direct_linked_file(url)
+                if doc is None:
+                    logger.warning(f"failed to fetch from {url}, skipped")
+                else:
+                    docs.append(doc)
         else:
             # Not Found ページを ingest しないように下見
             html = await self._afetch_text(url)
@@ -336,20 +350,23 @@ class HTMLLoader(Loader):
         return docs
 
     async def aload_from_url(
-        self,
-        url: str,
+        self, url: str, inloop: bool = False
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
         """URL からコンテンツを取得し、ノードを生成する。
         サイトマップ（.xml）の場合はツリーを下りながら複数サイトから取り込む。
 
         Args:
             url (str): 対象 URL
+            inloop (bool): URL リストの上位ループ内で実行中か
 
         Returns:
             tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
                 テキストノード、画像ノード、音声ノード
         """
         from llama_index.readers.web.sitemap.base import SitemapReader
+
+        if not inloop:
+            self._asset_url_cache.clear()
 
         # サイトマップ以外は単一のサイトとして読み込み
         if not Exts.endswith_exts(url, Exts.SITEMAP):
@@ -364,8 +381,6 @@ class HTMLLoader(Loader):
             logger.exception(e)
             return [], [], []
 
-        # 最上位ループの一つ。キャッシュを空にしてから使う。
-        self._asset_url_cache.clear()
         docs = []
         for url in urls:
             temp = await self._aload_from_site(url)
@@ -374,8 +389,7 @@ class HTMLLoader(Loader):
         return await self._asplit_docs_modality(docs)
 
     async def aload_from_urls(
-        self,
-        urls: list[str],
+        self, urls: list[str]
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
         """URL リスト内の複数サイトからコンテンツを取得し、ノードを生成する。
 
@@ -386,7 +400,6 @@ class HTMLLoader(Loader):
             tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
                 テキストノード、画像ノード、音声ノード
         """
-        # 最上位ループの一つ。キャッシュを空にしてから使う。
         self._asset_url_cache.clear()
 
         texts = []
@@ -394,7 +407,9 @@ class HTMLLoader(Loader):
         audios = []
         for url in urls:
             try:
-                temp_text, temp_image, temp_audio = await self.aload_from_url(url)
+                temp_text, temp_image, temp_audio = await self.aload_from_url(
+                    url=url, inloop=True
+                )
                 texts.extend(temp_text)
                 images.extend(temp_image)
                 audios.extend(temp_audio)

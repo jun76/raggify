@@ -25,8 +25,6 @@ __all__ = [
     "aquery_audio_audio",
 ]
 
-_TOPK = 10
-
 
 def _rt() -> Runtime:
     """遅延ロード用ゲッター。

@@ -44,14 +44,13 @@ class Loader:
         import hashlib
         import json
 
-        # Web ページの場合、現状 URL しかチェックしない
+        # 同一アセットの重複登録を避けるため、base_url は ID に含めない
         raw = {
             MK.FILE_PATH: meta.file_path if not meta.temp_file_path else "",
             MK.FILE_SIZE: meta.file_size,
             MK.FILE_LASTMOD_AT: meta.file_lastmod_at,
             MK.PAGE_NO: meta.page_no,
             MK.URL: meta.url,
-            MK.BASE_SOURCE: meta.base_source,
         }
 
         return hashlib.md5(json.dumps(raw, sort_keys=True).encode()).hexdigest()

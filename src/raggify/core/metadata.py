@@ -16,15 +16,12 @@ class MetaKeysFrom:
 
 class MetaKeys(MetaKeysFrom):
     # 正規化し、アプリ側で付与するラベル
-    ## ノード内に保持する（＝BasicMetaData に含まれる）メタデータ
     CHUNK_NO = "chunk_no"
     URL = "url"
     BASE_SOURCE = "base_source"
     TEMP_FILE_PATH = "temp_file_path"
     PAGE_NO = "page_no"
     ASSET_NO = "asset_no"
-    ## ノードの同一性確認用メタデータ
-    FINGERPRINT = "fingerprint"
 
 
 @dataclass
