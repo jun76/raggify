@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from typing import TYPE_CHECKING, Optional
 
 from llama_index.core.ingestion import IngestionPipeline
@@ -32,6 +33,29 @@ class Loader:
         self._document_store = document_store
         self._persist_dir = persist_dir
 
+    def _add_doc_id(self, docs: list[Document]) -> None:
+        """一意なドキュメント ID を付与する。
+
+        二回目以降、同一 ID のドキュメントに対しては IngestionPipeline 内で
+        ハッシュ比較が行われ、変更がない場合は戻り値のノードリストから弾かれる。
+
+        Args:
+            docs (list[Document]): ドキュメント
+        """
+        counters: dict[str, int] = defaultdict(int)
+        for doc in docs:
+            meta = BasicMetaData.from_dict(doc.metadata)
+
+            # IPYNBReader が分割後のドキュメントを全て同一 metadata で返してくるため
+            # こちらで chunk_no として連番を付与
+            counter_key = meta.temp_file_path or meta.file_path or meta.url
+            meta.chunk_no = counters[counter_key]
+            counters[counter_key] += 1
+
+            doc.metadata[MK.CHUNK_NO] = meta.chunk_no
+            doc.id_ = self._generate_doc_id(meta)
+            doc.doc_id = doc.id_
+
     def _generate_doc_id(self, meta: BasicMetaData) -> str:
         """doc_id を生成する。
 
@@ -46,6 +70,8 @@ class Loader:
             f"{MK.FILE_SIZE}:{meta.file_size}_"
             f"{MK.FILE_LASTMOD_AT}:{meta.file_lastmod_at}_"
             f"{MK.PAGE_NO}:{meta.page_no}_"
+            f"{MK.ASSET_NO}:{meta.asset_no}_"
+            f"{MK.CHUNK_NO}:{meta.chunk_no}_"
             f"{MK.URL}:{meta.url}_"
             f"{MK.TEMP_FILE_PATH}:{meta.temp_file_path}"  # PDF 埋め込み画像等の識別用
         )
@@ -85,16 +111,9 @@ class Loader:
             tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
                 テキストノード、画像ノード、音声ノード
         """
-        # 一意なドキュメント ID の付与。二回目以降、同一 ID のドキュメントに対しては
-        # IngestionPipeline 内でハッシュ比較が行われ、変更がない場合は戻り値の
-        # ノードリストから弾かれる。
-        for doc in docs:
-            meta = BasicMetaData.from_dict(doc.metadata)
-            doc.id_ = self._generate_doc_id(meta)
-            doc.doc_id = doc.id_
-
+        self._add_doc_id(docs)
         pipe = self._build_or_load_pipe()
-        nodes = await pipe.arun(documents=docs, store_doc_text=False)
+        nodes = await pipe.arun(documents=docs)
 
         logger.debug(f"{len(docs)} docs --pipeline--> {len(nodes)} nodes")
 

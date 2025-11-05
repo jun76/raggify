@@ -133,7 +133,7 @@ async def _arun_pipe(
     pipe = _build_or_load_pipe(
         transformations=transformations, modality=modality, persist_dir=persist_dir
     )
-    filtered_nodes = await pipe.arun(nodes=nodes, store_doc_text=False)
+    filtered_nodes = await pipe.arun(nodes=nodes)
 
     if persist_dir:
         try:
