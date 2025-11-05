@@ -42,11 +42,12 @@ class Loader:
             str: doc_id 文字列
         """
         return (
-            f"{MK.FILE_PATH}:{meta.file_path if not meta.temp_file_path else ''}_"
+            f"{MK.FILE_PATH}:{meta.file_path}_"
             f"{MK.FILE_SIZE}:{meta.file_size}_"
             f"{MK.FILE_LASTMOD_AT}:{meta.file_lastmod_at}_"
             f"{MK.PAGE_NO}:{meta.page_no}_"
-            f"{MK.URL}:{meta.url}"
+            f"{MK.URL}:{meta.url}_"
+            f"{MK.TEMP_FILE_PATH}:{meta.temp_file_path}"  # PDF 埋め込み画像等の識別用
         )
 
     def _build_or_load_pipe(self) -> IngestionPipeline:

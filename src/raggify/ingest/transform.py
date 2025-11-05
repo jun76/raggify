@@ -110,7 +110,7 @@ class _BaseEmbedTransform(TransformComponent):
             if temp:
                 # ファイルパスはベースソースで上書き
                 # （空になるか、PDF 等の独自 reader が退避していた元パスが復元されるか）
-                nodes[i].metadata[MK.TEMP_FILE_PATH] = ""
+                # nodes[i].metadata[MK.TEMP_FILE_PATH] = ""
                 nodes[i].metadata[MK.FILE_PATH] = nodes[i].metadata[MK.BASE_SOURCE]
                 try:
                     os.remove(temp)
