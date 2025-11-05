@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from ..config.config_manager import ConfigManager
 from ..config.vector_store_config import VectorStoreConfig, VectorStoreProvider
 from ..core.const import PROJECT_NAME
+from ..core.util import sanitize_str
 from ..document_store.document_store_manager import DocumentStoreManager
 from ..llama.core.schema import Modality
 
@@ -105,14 +106,15 @@ def _generate_table_name(cfg: ConfigManager, space_key: str) -> str:
         cfg (ConfigManager): 設定管理
         space_key (str): 空間キー
 
+    Raises:
+        ValueError: 長すぎるテーブル名
+
     Returns:
         str: テーブル名
     """
-    import hashlib
-
-    return hashlib.md5(
-        f"{PROJECT_NAME}:{cfg.general.knowledgebase_name}:{space_key}:vec".encode()
-    ).hexdigest()
+    return sanitize_str(
+        f"{PROJECT_NAME}_{cfg.general.knowledgebase_name}_{space_key}_vec"
+    )
 
 
 # 以下、プロバイダ毎のコンテナ生成ヘルパー

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from llama_index.core.settings import Settings
 
+from ..core.util import sanitize_str
 from ..llama.core.schema import Modality
 from ..logger import logger
 
@@ -22,6 +23,7 @@ class EmbedContainer:
     provider_name: str
     embed: BaseEmbedding
     dim: int
+    alias: str
     space_key: str = ""
 
 
@@ -39,7 +41,7 @@ class EmbedManager:
         for modality, cont in conts.items():
             cont.space_key = self._generate_space_key(
                 provider=cont.provider_name,
-                model=cont.embed.model_name,
+                model=cont.alias,
                 modality=modality,
             )
             logger.debug(f"space_key: {cont.space_key} generated")
@@ -217,21 +219,10 @@ class EmbedManager:
             model (str): モデル名
             modality (Modality): モダリティ
 
+        Raises:
+            ValueError: 長すぎる空間キー
+
         Returns:
             str: 空間キー文字列
-
-        Note:
-            元々プレーンテキストにしていたが、63 字の上限に引っかかる例が出てきたためダイジェスト化
-
-            キー制約（AND）：
-                Chroma
-                    containing 3-512 characters from [a-zA-Z0-9._-],
-                    starting and ending with a character in [a-zA-Z0-9]
-                PGVector
-                    maximum length of 63 characters
-                SQLite
-                    念のため英数とアンダースコア以外は '_'
         """
-        import hashlib
-
-        return hashlib.md5(f"{provider}:{model}:{modality}".encode()).hexdigest()
+        return sanitize_str(f"{provider}_{model}_{modality}")

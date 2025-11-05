@@ -8,6 +8,7 @@ from ..config.ingest_cache_store_config import (
     IngestCacheStoreProvider,
 )
 from ..core.const import PROJECT_NAME
+from ..core.util import sanitize_str
 from ..llama.core.schema import Modality
 
 if TYPE_CHECKING:
@@ -94,14 +95,15 @@ def _generate_table_name(cfg: ConfigManager, space_key: str) -> str:
         cfg (ConfigManager): 設定管理
         space_key (str): 空間キー
 
+    Raises:
+        ValueError: 長すぎるテーブル名
+
     Returns:
         str: テーブル名
     """
-    import hashlib
-
-    return hashlib.md5(
-        f"{PROJECT_NAME}:{cfg.general.knowledgebase_name}:{space_key}:ics".encode()
-    ).hexdigest()
+    return sanitize_str(
+        f"{PROJECT_NAME}_{cfg.general.knowledgebase_name}_{space_key}_ics"
+    )
 
 
 # 以下、プロバイダ毎のコンテナ生成ヘルパー

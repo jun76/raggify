@@ -96,16 +96,17 @@ def _openai_text(cfg: ConfigManager) -> EmbedContainer:
 
     from .embed_manager import EmbedContainer
 
-    dim = cfg.embed.openai_embed_model_text[EM.DIM]
+    model = cfg.embed.openai_embed_model_text
 
     return EmbedContainer(
         provider_name=EmbedProvider.OPENAI,
         embed=OpenAIEmbedding(
-            model=cfg.embed.openai_embed_model_text[EM.NAME],
+            model=model[EM.NAME],
             api_base=cfg.general.openai_base_url,
-            dimensions=dim,
+            dimensions=model[EM.DIM],
         ),
-        dim=dim,
+        dim=model[EM.DIM],
+        alias=model[EM.ALIAS],
     )
 
 
@@ -114,13 +115,16 @@ def _cohere_text(cfg: ConfigManager) -> EmbedContainer:
 
     from .embed_manager import EmbedContainer
 
+    model = cfg.embed.cohere_embed_model_text
+
     return EmbedContainer(
         provider_name=EmbedProvider.COHERE,
         embed=CohereEmbedding(
             api_key=os.getenv("COHERE_API_KEY"),
-            model_name=cfg.embed.cohere_embed_model_text[EM.NAME],
+            model_name=model[EM.NAME],
         ),
-        dim=cfg.embed.cohere_embed_model_text[EM.DIM],
+        dim=model[EM.DIM],
+        alias=model[EM.ALIAS],
     )
 
 
@@ -129,13 +133,16 @@ def _cohere_image(cfg: ConfigManager) -> EmbedContainer:
 
     from .embed_manager import EmbedContainer
 
+    model = cfg.embed.cohere_embed_model_image
+
     return EmbedContainer(
         provider_name=EmbedProvider.COHERE,
         embed=CohereEmbedding(
             api_key=os.getenv("COHERE_API_KEY"),
-            model_name=cfg.embed.cohere_embed_model_image[EM.NAME],
+            model_name=model[EM.NAME],
         ),
-        dim=cfg.embed.cohere_embed_model_image[EM.DIM],
+        dim=model[EM.DIM],
+        alias=model[EM.ALIAS],
     )
 
 
@@ -150,13 +157,16 @@ def _clip_text(cfg: ConfigManager) -> EmbedContainer:
 
     from .embed_manager import EmbedContainer
 
+    model = cfg.embed.clip_embed_model_text
+
     return EmbedContainer(
         provider_name=EmbedProvider.CLIP,
         embed=ClipEmbedding(
-            model_name=cfg.embed.clip_embed_model_text[EM.NAME],
+            model_name=model[EM.NAME],
             device=cfg.general.device,
         ),
-        dim=cfg.embed.clip_embed_model_text[EM.DIM],
+        dim=model[EM.DIM],
+        alias=model[EM.ALIAS],
     )
 
 
@@ -171,13 +181,16 @@ def _clip_image(cfg: ConfigManager) -> EmbedContainer:
 
     from .embed_manager import EmbedContainer
 
+    model = cfg.embed.clip_embed_model_image
+
     return EmbedContainer(
         provider_name=EmbedProvider.CLIP,
         embed=ClipEmbedding(
-            model_name=cfg.embed.clip_embed_model_image[EM.NAME],
+            model_name=model[EM.NAME],
             device=cfg.general.device,
         ),
-        dim=cfg.embed.clip_embed_model_image[EM.DIM],
+        dim=model[EM.DIM],
+        alias=model[EM.ALIAS],
     )
 
 
@@ -192,13 +205,16 @@ def _huggingface_text(cfg: ConfigManager) -> EmbedContainer:
 
     from .embed_manager import EmbedContainer
 
+    model = cfg.embed.huggingface_embed_model_text
+
     return EmbedContainer(
         provider_name=EmbedProvider.HUGGINGFACE,
         embed=HuggingFaceEmbedding(
-            model_name=cfg.embed.huggingface_embed_model_text[EM.NAME],
+            model_name=model[EM.NAME],
             device=cfg.general.device,
         ),
-        dim=cfg.embed.huggingface_embed_model_text[EM.DIM],
+        dim=model[EM.DIM],
+        alias=model[EM.ALIAS],
     )
 
 
@@ -213,14 +229,17 @@ def _huggingface_image(cfg: ConfigManager) -> EmbedContainer:
 
     from .embed_manager import EmbedContainer
 
+    model = cfg.embed.huggingface_embed_model_image
+
     return EmbedContainer(
         provider_name=EmbedProvider.HUGGINGFACE,
         embed=HuggingFaceEmbedding(
-            model_name=cfg.embed.huggingface_embed_model_image[EM.NAME],
+            model_name=model[EM.NAME],
             device=cfg.general.device,
             trust_remote_code=True,
         ),
-        dim=cfg.embed.huggingface_embed_model_image[EM.DIM],
+        dim=model[EM.DIM],
+        alias=model[EM.ALIAS],
     )
 
 
@@ -233,13 +252,16 @@ def _clap_audio(cfg: ConfigManager) -> EmbedContainer:
 
     from .embed_manager import EmbedContainer
 
+    model = cfg.embed.clap_embed_model_audio
+
     return EmbedContainer(
         provider_name=EmbedProvider.CLAP,
         embed=ClapEmbedding(
-            model_name=cfg.embed.clap_embed_model_audio[EM.NAME],
+            model_name=model[EM.NAME],
             device=cfg.general.device,
         ),
-        dim=cfg.embed.clap_embed_model_audio[EM.DIM],
+        dim=model[EM.DIM],
+        alias=model[EM.ALIAS],
     )
 
 
@@ -248,17 +270,18 @@ def _voyage_text(cfg: ConfigManager) -> EmbedContainer:
 
     from .embed_manager import EmbedContainer
 
-    dim = cfg.embed.voyage_embed_model_text[EM.DIM]
+    model = cfg.embed.voyage_embed_model_text
 
     return EmbedContainer(
         provider_name=EmbedProvider.VOYAGE,
         embed=VoyageEmbedding(
             api_key=os.getenv("VOYAGE_API_KEY"),
-            model_name=cfg.embed.voyage_embed_model_text[EM.NAME],
+            model_name=model[EM.NAME],
             truncation=False,
-            output_dimension=dim,
+            output_dimension=model[EM.DIM],
         ),
-        dim=dim,
+        dim=model[EM.DIM],
+        alias=model[EM.ALIAS],
     )
 
 
@@ -267,15 +290,16 @@ def _voyage_image(cfg: ConfigManager) -> EmbedContainer:
 
     from .embed_manager import EmbedContainer
 
-    dim = cfg.embed.voyage_embed_model_image[EM.DIM]
+    model = cfg.embed.voyage_embed_model_image
 
     return EmbedContainer(
         provider_name=EmbedProvider.VOYAGE,
         embed=VoyageEmbedding(
             api_key=os.getenv("VOYAGE_API_KEY"),
-            model_name=cfg.embed.voyage_embed_model_image[EM.NAME],
+            model_name=model[EM.NAME],
             truncation=False,
-            output_dimension=dim,
+            output_dimension=model[EM.DIM],
         ),
-        dim=dim,
+        dim=model[EM.DIM],
+        alias=model[EM.ALIAS],
     )

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from ..config.config_manager import ConfigManager
 from ..config.document_store_config import DocumentStoreConfig, DocumentStoreProvider
 from ..core.const import PROJECT_NAME
+from ..core.util import sanitize_str
 
 if TYPE_CHECKING:
     from .document_store_manager import DocumentStoreManager
@@ -42,14 +43,13 @@ def _generate_table_name(cfg: ConfigManager) -> str:
     Args:
         cfg (ConfigManager): 設定管理
 
+    Raises:
+        ValueError: 長すぎるテーブル名
+
     Returns:
         str: テーブル名
     """
-    import hashlib
-
-    return hashlib.md5(
-        f"{PROJECT_NAME}:{cfg.general.knowledgebase_name}:doc".encode()
-    ).hexdigest()
+    return sanitize_str(f"{PROJECT_NAME}_{cfg.general.knowledgebase_name}_doc")
 
 
 # 以下、プロバイダ毎のコンテナ生成ヘルパー

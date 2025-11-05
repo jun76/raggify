@@ -41,19 +41,13 @@ class Loader:
         Returns:
             str: doc_id 文字列
         """
-        import hashlib
-        import json
-
-        # 同一アセットの重複登録を避けるため、base_url は ID に含めない
-        raw = {
-            MK.FILE_PATH: meta.file_path if not meta.temp_file_path else "",
-            MK.FILE_SIZE: meta.file_size,
-            MK.FILE_LASTMOD_AT: meta.file_lastmod_at,
-            MK.PAGE_NO: meta.page_no,
-            MK.URL: meta.url,
-        }
-
-        return hashlib.md5(json.dumps(raw, sort_keys=True).encode()).hexdigest()
+        return (
+            f"{MK.FILE_PATH}:{meta.file_path if not meta.temp_file_path else ''}_"
+            f"{MK.FILE_SIZE}:{meta.file_size}_"
+            f"{MK.FILE_LASTMOD_AT}:{meta.file_lastmod_at}_"
+            f"{MK.PAGE_NO}:{meta.page_no}_"
+            f"{MK.URL}:{meta.url}"
+        )
 
     def _build_or_load_pipe(self) -> IngestionPipeline:
         """ドキュメント重複管理用パイプラインを新規作成またはロードする。
