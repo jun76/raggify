@@ -30,7 +30,7 @@ def create_document_store_manager(cfg: ConfigManager) -> DocumentStoreManager:
         case DocumentStoreProvider.REDIS:
             return _redis(cfg=cfg.document_store, table_name=table_name)
         case DocumentStoreProvider.LOCAL:
-            return _local(table_name)
+            return _local()
         case _:
             raise RuntimeError(
                 f"unsupported document store: {cfg.general.document_store_provider}"
@@ -69,13 +69,15 @@ def _redis(cfg: DocumentStoreConfig, table_name: str) -> DocumentStoreManager:
     )
 
 
-def _local(table_name: str) -> DocumentStoreManager:
+def _local() -> DocumentStoreManager:
     from llama_index.core.storage.docstore import SimpleDocumentStore
 
     from .document_store_manager import DocumentStoreManager
 
+    # IngestionPipeline.persist/load の仕様に追従して、ナレッジベース毎に
+    # サブディレクトリを切って区別するのでテーブル名はデフォルトのものを使用
     return DocumentStoreManager(
         provider_name=DocumentStoreProvider.LOCAL,
-        store=SimpleDocumentStore(namespace=table_name),
-        table_name=table_name,
+        store=SimpleDocumentStore(),
+        table_name=None,
     )

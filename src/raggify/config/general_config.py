@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, Optional
 
+from ..core.const import DEFAULT_KNOWLEDGEBASE_NAME
 from .document_store_config import DocumentStoreProvider
 from .embed_config import EmbedProvider
 from .ingest_cache_store_config import IngestCacheStoreProvider
@@ -12,7 +13,7 @@ from .vector_store_config import VectorStoreProvider
 
 @dataclass(kw_only=True)
 class GeneralConfig:
-    knowledgebase_name: str = "default"
+    knowledgebase_name: str = DEFAULT_KNOWLEDGEBASE_NAME
     host: str = "localhost"
     port: int = 8000
     mcp: bool = False

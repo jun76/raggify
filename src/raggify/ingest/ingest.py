@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Optional, Sequence
 from llama_index.core.async_utils import asyncio_run
 from llama_index.core.ingestion import IngestionPipeline
 
+from ..core.metadata import MetaKeys as MK
 from ..embed.embed_manager import Modality
 from ..logger import logger
 
@@ -132,7 +133,7 @@ async def _arun_pipe(
     pipe = _build_or_load_pipe(
         transformations=transformations, modality=modality, persist_dir=persist_dir
     )
-    filtered_nodes = await pipe.arun(nodes=nodes)
+    filtered_nodes = await pipe.arun(nodes=nodes, store_doc_text=False)
 
     if persist_dir:
         try:
@@ -143,6 +144,27 @@ async def _arun_pipe(
     logger.debug(f"{len(nodes)} nodes --pipeline--> {len(filtered_nodes)} nodes")
 
     return filtered_nodes
+
+
+def _generate_chunked_id(chunk_no: int, node: BaseNode) -> str:
+    """分割されたチャンクに元 ID + chunk_no の新たな ID を付与するためのコールバック。
+
+    Args:
+        chunk_no (int): チャンク番号
+        node (BaseNode): 分割対象
+
+    Raises:
+        RuntimeError: TextNode 以外が混入
+
+    Returns:
+        str: 新たな ID
+    """
+    from llama_index.core.schema import TextNode
+
+    if not isinstance(node, TextNode):
+        raise RuntimeError(f"unexpected node type: {type(node)}")
+
+    return f"{node.ref_doc_id}_{MK.CHUNK_NO}:{chunk_no}"
 
 
 async def _arun_text_pipe(
@@ -169,6 +191,7 @@ async def _arun_text_pipe(
                 chunk_size=rt.cfg.ingest.chunk_size,
                 chunk_overlap=rt.cfg.ingest.chunk_overlap,
                 include_metadata=True,
+                id_func=_generate_chunked_id,
             ),
             AddChunkIndexTransform(),
             make_text_embed_transform(rt.embed_manager),

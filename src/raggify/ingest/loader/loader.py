@@ -93,7 +93,7 @@ class Loader:
             doc.doc_id = doc.id_
 
         pipe = self._build_or_load_pipe()
-        nodes = await pipe.arun(documents=docs)
+        nodes = await pipe.arun(documents=docs, store_doc_text=False)
 
         logger.debug(f"{len(docs)} docs --pipeline--> {len(nodes)} nodes")
 
