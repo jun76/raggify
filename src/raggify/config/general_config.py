@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Literal, Optional
 
-from ..core.const import DEFAULT_KNOWLEDGEBASE_NAME
+from ..core.const import DEFAULT_KNOWLEDGEBASE_NAME, DEFAULT_WORKSPACE_PATH
 from .document_store_config import DocumentStoreProvider
 from .embed_config import EmbedProvider
 from .ingest_cache_store_config import IngestCacheStoreProvider
@@ -13,6 +14,7 @@ from .vector_store_config import VectorStoreProvider
 
 @dataclass(kw_only=True)
 class GeneralConfig:
+    workspace_path: Path = DEFAULT_WORKSPACE_PATH
     knowledgebase_name: str = DEFAULT_KNOWLEDGEBASE_NAME
     host: str = "localhost"
     port: int = 8000

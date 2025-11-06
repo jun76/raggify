@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
-from ..core.const import DEFAULT_KNOWLEDGEBASE_NAME, PROJECT_NAME
+from ..core.const import (
+    DEFAULT_KNOWLEDGEBASE_NAME,
+    DEFAULT_WORKSPACE_PATH,
+    PROJECT_NAME,
+)
 
 
 @dataclass(kw_only=True)
@@ -12,8 +17,8 @@ class IngestConfig:
     # General
     chunk_size: int = 500
     chunk_overlap: int = 50
-    upload_dir: str = f"/etc/{PROJECT_NAME}/upload"
-    pipe_persist_dir: str = f"/etc/{PROJECT_NAME}/{DEFAULT_KNOWLEDGEBASE_NAME}"
+    upload_dir: Path = DEFAULT_WORKSPACE_PATH / "upload"
+    pipe_persist_dir: Path = DEFAULT_WORKSPACE_PATH / DEFAULT_KNOWLEDGEBASE_NAME
 
     # Web
     user_agent: str = PROJECT_NAME

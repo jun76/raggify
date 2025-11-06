@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Sequence
 
 from llama_index.core.async_utils import asyncio_run
@@ -72,14 +73,14 @@ def _read_list(path: str) -> list[str]:
 def _build_or_load_pipe(
     transformations: list[TransformComponent] | None,
     modality: Modality,
-    persist_dir: Optional[str],
+    persist_dir: Optional[Path],
 ) -> IngestionPipeline:
     """モダリティ別キャッシュ用パイプラインを新規作成またはロードする。
 
     Args:
         transformations (list[TransformComponent] | None): 変換一式
         modality (Modality): モダリティ
-        persist_dir (Optional[str]): 永続化ディレクトリ
+        persist_dir (Optional[Path]): 永続化ディレクトリ
 
     Returns:
         IngestionPipeline: パイプライン
@@ -103,7 +104,7 @@ def _build_or_load_pipe(
 
     if persist_dir and os.path.exists(persist_dir):
         try:
-            pipe.load(persist_dir)
+            pipe.load(str(persist_dir))
         except Exception as e:
             logger.warning(f"failed to load persist dir: {e}")
 
@@ -114,7 +115,7 @@ async def _arun_pipe(
     nodes: Sequence[BaseNode],
     transformations: list[TransformComponent] | None,
     modality: Modality,
-    persist_dir: Optional[str],
+    persist_dir: Optional[Path],
 ) -> Optional[Sequence[BaseNode]]:
     """モダリティ別キャッシュ用パイプラインを実行する。
 
@@ -122,7 +123,7 @@ async def _arun_pipe(
         nodes (Sequence[BaseNode]): ノード
         transformations (list[TransformComponent] | None): 変換一式
         modality (Modality): モダリティ
-        persist_dir (Optional[str]): 永続化ディレクトリ
+        persist_dir (Optional[Path]): 永続化ディレクトリ
 
     Returns:
         Optional[Sequence[BaseNode]]: 重複ドキュメントフィルター後のノード
@@ -137,7 +138,7 @@ async def _arun_pipe(
 
     if persist_dir:
         try:
-            pipe.persist(persist_dir)
+            pipe.persist(str(persist_dir))
         except Exception as e:
             logger.warning(f"failed to persist: {e}")
 
@@ -147,13 +148,13 @@ async def _arun_pipe(
 
 
 async def _arun_text_pipe(
-    nodes: list[TextNode], persist_dir: Optional[str]
+    nodes: list[TextNode], persist_dir: Optional[Path]
 ) -> Optional[Sequence[BaseNode]]:
     """テキストノードのパイプラインを実行する。
 
     Args:
         nodes (list[TextNode]): テキストノード
-        persist_dir (Optional[str]): 永続化ディレクトリ
+        persist_dir (Optional[Path]): 永続化ディレクトリ
 
     Returus:
         Optional[Sequence[BaseNode]]: 重複ドキュメントフィルター後のノード
@@ -180,13 +181,13 @@ async def _arun_text_pipe(
 
 
 async def _arun_image_pipe(
-    nodes: list[ImageNode], persist_dir: Optional[str]
+    nodes: list[ImageNode], persist_dir: Optional[Path]
 ) -> Optional[Sequence[BaseNode]]:
     """画像ノードのパイプラインを実行する。
 
     Args:
         nodes (list[ImageNode]): 画像ノード
-        persist_dir (Optional[str]): 永続化ディレクトリ
+        persist_dir (Optional[Path]): 永続化ディレクトリ
 
     Returus:
         Optional[Sequence[BaseNode]]: 重複ドキュメントフィルター後のノード
@@ -204,13 +205,13 @@ async def _arun_image_pipe(
 
 
 async def _arun_audio_pipe(
-    nodes: list[AudioNode], persist_dir: Optional[str]
+    nodes: list[AudioNode], persist_dir: Optional[Path]
 ) -> Optional[Sequence[BaseNode]]:
     """音声ノードのパイプラインを実行する。
 
     Args:
         nodes (list[AudioNode]): 音声ノード
-        persist_dir (Optional[str]): 永続化ディレクトリ
+        persist_dir (Optional[Path]): 永続化ディレクトリ
 
     Returus:
         Optional[Sequence[BaseNode]]: 重複ドキュメントフィルター後のノード
@@ -231,7 +232,7 @@ async def _aupsert_nodes(
     text_nodes: list[TextNode],
     image_nodes: list[ImageNode],
     audio_nodes: list[AudioNode],
-    persist_dir: Optional[str],
+    persist_dir: Optional[Path],
 ):
     """ノードをアップサートする。
 
@@ -239,7 +240,7 @@ async def _aupsert_nodes(
         text_nodes (list[TextNode]): テキストノード
         image_nodes (list[ImageNode]): 画像ノード
         audio_nodes (list[AudioNode]): 音声ノード
-        persist_dir (Optional[str]): 永続化ディレクトリ
+        persist_dir (Optional[Path]): 永続化ディレクトリ
     """
     import asyncio
 

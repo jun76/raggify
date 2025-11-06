@@ -4,6 +4,7 @@ import enum
 import logging
 import os
 from dataclasses import fields
+from pathlib import Path
 from typing import Any, Optional, get_args, get_origin, get_type_hints
 
 import yaml
@@ -184,7 +185,9 @@ class ConfigManager:
             elif isinstance(current, enum.Enum):
                 values[field.name] = self._load_enum(type(current), raw, current)
             elif isinstance(current, dict):
-                values[field.name] = self._merge_dict(current, raw)
+                values[field.name] = self._load_dict(raw, current)
+            elif isinstance(current, Path) or annotation is Path:
+                values[field.name] = self._load_path(raw, current)
             else:
                 values[field.name] = raw
 
@@ -204,12 +207,12 @@ class ConfigManager:
         raw: Any,
         default: Optional[enum.Enum],
     ) -> Optional[enum.Enum]:
-        """列挙値に変換する。
+        """YAML から列挙値を読み込む。
 
         Args:
             enum_cls (type[enum.Enum]): 対象列挙型
             raw (Any): YAML から取得した raw 値
-        default (Optional[enum.Enum]): 変換失敗時に使用する既定値
+            default (Optional[enum.Enum]): 変換失敗時に使用する既定値
 
         Returns:
             Optional[enum.Enum]: 変換後の列挙値
@@ -232,12 +235,12 @@ class ConfigManager:
 
                 return default
 
-    def _merge_dict(self, default: dict[str, Any], raw: Any) -> dict[str, Any]:
-        """辞書の設定値をマージする。
+    def _load_dict(self, raw: Any, default: dict[str, Any]) -> dict[str, Any]:
+        """YAML から辞書値を読み込む。
 
         Args:
-            default (dict[str, Any]): 既定値
             raw (Any): YAML から取得した raw 値
+            default (dict[str, Any]): 既定値
 
         Returns:
             dict[str, Any]: マージ後の辞書
@@ -268,10 +271,35 @@ class ConfigManager:
             value = getattr(instance, field.name)
             if isinstance(value, enum.Enum):
                 serialized[field.name] = value.name
+            elif isinstance(value, Path):
+                serialized[field.name] = str(value)
             else:
                 serialized[field.name] = value
 
         return serialized
+
+    def _load_path(self, raw: Any, default: Path) -> Path:
+        """YAML からパス値を読み込む。
+
+        Args:
+            raw (Any): 読み込んだ文字列
+            default (Path): 既定値
+
+        Returns:
+            Path: _description_
+        """
+        if raw is None:
+            return default
+
+        if isinstance(raw, Path):
+            return raw.expanduser()
+
+        if isinstance(raw, str):
+            return Path(raw).expanduser()
+
+        logger.warning(f"invalid path value '{raw}'. using default.")
+
+        return default
 
     def _extract_enum_type(self, annotation: Any) -> Optional[type[enum.Enum]]:
         """型ヒントから列挙型を抽出する。

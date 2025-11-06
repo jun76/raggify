@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum, auto
+from pathlib import Path
 from typing import Optional
 
-from ..core.const import PROJECT_NAME
+from ..core.const import DEFAULT_WORKSPACE_PATH, PROJECT_NAME
 
 
 class VectorStoreProvider(StrEnum):
@@ -17,12 +18,8 @@ class VectorStoreProvider(StrEnum):
 class VectorStoreConfig:
     """ベクトルストア関連の設定用データクラス"""
 
-    # General
-    cache_load_limit: int = 10000
-    check_update: bool = False
-
     # Chroma
-    chroma_persist_dir: str = f"/etc/{PROJECT_NAME}/{PROJECT_NAME}_db"
+    chroma_persist_dir: Path = DEFAULT_WORKSPACE_PATH / "chroma_db"
     chroma_host: Optional[str] = None
     chroma_port: Optional[int] = None
     chroma_tenant: Optional[str] = None

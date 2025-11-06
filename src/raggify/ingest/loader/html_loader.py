@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 from urllib.parse import urljoin, urlparse
 
@@ -24,7 +25,7 @@ class HTMLLoader(Loader):
         self,
         document_store: DocumentStoreManager,
         file_loader: FileLoader,
-        persist_dir: Optional[str],
+        persist_dir: Optional[Path],
         cfg: IngestConfig,
     ):
         """HTML を読み込み、ノードを生成するためのクラス。
@@ -32,7 +33,7 @@ class HTMLLoader(Loader):
         Args:
             document_store (DocumentStoreManager): ドキュメントストア管理
             file_loader (FileLoader): ファイル読み込み用
-            persist_dir (Optional[str]): 永続化ディレクトリ
+            persist_dir (Optional[Path]): 永続化ディレクトリ
             cfg (IngestConfig): 各種設定値
         """
         super().__init__(document_store=document_store, persist_dir=persist_dir)

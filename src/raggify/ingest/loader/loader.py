@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 from llama_index.core.ingestion import IngestionPipeline
@@ -22,13 +23,13 @@ class Loader:
     """ローダー基底クラス"""
 
     def __init__(
-        self, document_store: DocumentStoreManager, persist_dir: Optional[str]
+        self, document_store: DocumentStoreManager, persist_dir: Optional[Path]
     ) -> None:
         """コンストラクタ
 
         Args:
             document_store (DocumentStoreManager): ドキュメントストア管理
-            persist_dir (Optional[str]): 永続化ディレクトリ
+            persist_dir (Optional[Path]): 永続化ディレクトリ
         """
         self._document_store = document_store
         self._persist_dir = persist_dir
@@ -93,7 +94,7 @@ class Loader:
 
         if self._persist_dir and os.path.exists(self._persist_dir):
             try:
-                pipe.load(self._persist_dir)
+                pipe.load(str(self._persist_dir))
             except Exception as e:
                 logger.warning(f"failed to load persist dir: {e}")
 
@@ -140,7 +141,7 @@ class Loader:
 
         if self._persist_dir:
             try:
-                pipe.persist(self._persist_dir)
+                pipe.persist(str(self._persist_dir))
             except Exception as e:
                 logger.warning(f"failed to persist: {e}")
 

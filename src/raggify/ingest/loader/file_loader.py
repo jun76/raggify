@@ -21,13 +21,13 @@ class FileLoader(Loader):
     """ローカルファイルを読み込み、ノードを生成するためのクラス。"""
 
     def __init__(
-        self, document_store: DocumentStoreManager, persist_dir: Optional[str]
+        self, document_store: DocumentStoreManager, persist_dir: Optional[Path]
     ) -> None:
         """コンストラクタ
 
         Args:
             document_store (DocumentStoreManager): ドキュメントストア管理
-            persist_dir (Optional[str]): 永続化ディレクトリ
+            persist_dir (Optional[Path]): 永続化ディレクトリ
         """
         super().__init__(document_store=document_store, persist_dir=persist_dir)
 
