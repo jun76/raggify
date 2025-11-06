@@ -186,8 +186,11 @@ class ConfigManager:
                 values[field.name] = self._load_enum(type(current), raw, current)
             elif isinstance(current, dict):
                 values[field.name] = self._load_dict(raw, current)
-            elif isinstance(current, Path) or annotation is Path:
-                values[field.name] = self._load_path(raw, current)
+            elif annotation is Path:
+                default_path = (
+                    current if isinstance(current, Path) else Path(current or "")
+                )
+                values[field.name] = self._load_path(raw, default_path)
             else:
                 values[field.name] = raw
 
@@ -286,7 +289,7 @@ class ConfigManager:
             default (Path): 既定値
 
         Returns:
-            Path: _description_
+            Path: パス値
         """
         if raw is None:
             return default

@@ -1,18 +1,19 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from typing import Literal, Optional
 
+from dotenv import load_dotenv
 from pydantic import SecretStr
 
-from .settings import Settings
+load_dotenv()
 
 
 @dataclass(kw_only=True)
 class Config:
-    raggify_base_url: str = Settings.RAGGIFY_BASE_URL
-    openai_llm_model: str = Settings.OPENAI_LLM_MODEL
-    openai_api_key: Optional[SecretStr] = Settings.OPENAI_API_KEY
-    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = (
-        Settings.LOG_LEVEL
-    )
+    raggify_base_url: str = "http://localhost:8000/v1"
+    openai_llm_model: str = "gpt-4-turbo"
+    _raw = os.getenv("OPENAI_API_KEY")
+    openai_api_key: Optional[SecretStr] = SecretStr(_raw) if _raw else None
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "DEBUG"

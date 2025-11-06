@@ -144,7 +144,7 @@ class MultiPDFReader(BaseReader):
                     meta.page_no = page_no
                     meta.asset_no = image_no
 
-                    doc = Document(text=temp, metadata=meta.to_dict())
+                    doc = Document(text="", metadata=meta.to_dict())
                     docs.append(doc)
                 except Exception as e:
                     logger.exception(e)
