@@ -15,4 +15,4 @@ class RerankConfig:
 
     flagembedding_rerank_model: str = "BAAI/bge-reranker-v2-m3"
     cohere_rerank_model: str = "rerank-multilingual-v3.0"
-    topk: int = 10
+    topk: int = 20

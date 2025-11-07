@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from .embed.embed_manager import EmbedManager
     from .ingest.loader.file_loader import FileLoader
     from .ingest.loader.html_loader import HTMLLoader
-    from .ingest_cache_store.ingest_cache_store_manager import IngestCacheStoreManager
+    from .ingest_cache.ingest_cache_manager import IngestCacheStoreManager
     from .rerank.rerank_manager import RerankManager
     from .vector_store.vector_store_manager import VectorStoreManager
 
@@ -32,7 +32,7 @@ class Runtime:
         self._embed_manager: Optional[EmbedManager] = None
         self._vector_store: Optional[VectorStoreManager] = None
         self._document_store: Optional[DocumentStoreManager] = None
-        self._ingest_cache_store: Optional[IngestCacheStoreManager] = None
+        self._ingest_cache: Optional[IngestCacheStoreManager] = None
         self._rerank_manager: Optional[RerankManager] = None
         self._file_loader: Optional[FileLoader] = None
         self._html_loader: Optional[HTMLLoader] = None
@@ -58,7 +58,7 @@ class Runtime:
         self._embed_manager = None
         self._vector_store = None
         self._document_store = None
-        self._ingest_cache_store = None
+        self._ingest_cache = None
         self._rerank_manager = None
         self._file_loader = None
         self._html_loader = None
@@ -68,7 +68,7 @@ class Runtime:
         self.embed_manager
         self.vector_store
         self.document_store
-        self.ingest_cache_store
+        self.ingest_cache
         self.rerank_manager
         self.file_loader
         self.html_loader
@@ -111,17 +111,15 @@ class Runtime:
         return self._document_store
 
     @property
-    def ingest_cache_store(self) -> IngestCacheStoreManager:
-        if self._ingest_cache_store is None:
-            from .ingest_cache_store.ingest_cache_store import (
-                create_ingest_cache_store_manager,
-            )
+    def ingest_cache(self) -> IngestCacheStoreManager:
+        if self._ingest_cache is None:
+            from .ingest_cache.ingest_cache import create_ingest_cache_manager
 
-            self._ingest_cache_store = create_ingest_cache_store_manager(
+            self._ingest_cache = create_ingest_cache_manager(
                 cfg=self.cfg, embed=self.embed_manager
             )
 
-        return self._ingest_cache_store
+        return self._ingest_cache
 
     @property
     def rerank_manager(self) -> RerankManager:

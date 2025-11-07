@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
 from ..config.document_store_config import DocumentStoreConfig, DocumentStoreProvider
 from ..core.const import PROJECT_NAME
 from ..core.util import sanitize_str
+from ..logger import logger
 
 if TYPE_CHECKING:
     from .document_store_manager import DocumentStoreManager
@@ -30,7 +32,7 @@ def create_document_store_manager(cfg: ConfigManager) -> DocumentStoreManager:
         case DocumentStoreProvider.REDIS:
             return _redis(cfg=cfg.document_store, table_name=table_name)
         case DocumentStoreProvider.LOCAL:
-            return _local()
+            return _local(cfg.ingest.pipe_persist_dir)
         case _:
             raise RuntimeError(
                 f"unsupported document store: {cfg.general.document_store_provider}"
@@ -69,15 +71,24 @@ def _redis(cfg: DocumentStoreConfig, table_name: str) -> DocumentStoreManager:
     )
 
 
-def _local() -> DocumentStoreManager:
+def _local(persist_dir: Path) -> DocumentStoreManager:
     from llama_index.core.storage.docstore import SimpleDocumentStore
 
     from .document_store_manager import DocumentStoreManager
 
-    # IngestionPipeline.persist/load の仕様に追従して、ナレッジベース毎に
-    # サブディレクトリを切って区別するのでテーブル名はデフォルトのものを使用
+    if persist_dir and persist_dir.exists():
+        try:
+            # IngestionPipeline.persist/load の仕様に追従して、ナレッジベース毎に
+            # サブディレクトリを切って区別するのでテーブル名はデフォルトのものを使用
+            store = SimpleDocumentStore.from_persist_dir(str(persist_dir))
+        except Exception as e:
+            logger.warning(f"failed to load persist dir: {e}")
+            store = SimpleDocumentStore()
+    else:
+        store = SimpleDocumentStore()
+
     return DocumentStoreManager(
         provider_name=DocumentStoreProvider.LOCAL,
-        store=SimpleDocumentStore(),
+        store=store,
         table_name=None,
     )

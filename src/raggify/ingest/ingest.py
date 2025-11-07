@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Optional, Sequence
 from llama_index.core.async_utils import asyncio_run
 from llama_index.core.ingestion import IngestionPipeline
 
-from ..core.metadata import MetaKeys as MK
 from ..embed.embed_manager import Modality
 from ..logger import logger
 
@@ -85,26 +84,26 @@ def _build_or_load_pipe(
     Returns:
         IngestionPipeline: パイプライン
     """
-    import os
-
     from llama_index.core.ingestion import DocstoreStrategy
 
     rt = _rt()
     vs = rt.vector_store
-    ics = rt.ingest_cache_store
+    ic = rt.ingest_cache
     ds = rt.document_store
 
     pipe = IngestionPipeline(
         transformations=transformations,
         vector_store=vs.get_container(modality).store,
-        cache=ics.get_container(modality).store,
+        cache=ic.get_container(modality).cache,
         docstore=ds.store,
         docstore_strategy=DocstoreStrategy.UPSERTS,
     )
 
-    if persist_dir and os.path.exists(persist_dir):
+    if persist_dir and persist_dir.exists():
         try:
             pipe.load(str(persist_dir))
+            ic.get_container(modality).cache = pipe.cache
+            ds.store = pipe.docstore
         except Exception as e:
             logger.warning(f"failed to load persist dir: {e}")
 

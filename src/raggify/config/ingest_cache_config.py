@@ -10,8 +10,8 @@ class IngestCacheStoreProvider(StrEnum):
 
 
 @dataclass(kw_only=True)
-class IngestCacheStoreConfig:
-    """キャッシュストア関連の設定用データクラス"""
+class IngestCacheConfig:
+    """インジェストキャッシュ関連の設定用データクラス"""
 
     # Redit
     redis_host: str = "localhost"

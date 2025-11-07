@@ -11,21 +11,21 @@ if TYPE_CHECKING:
 
 @dataclass
 class IngestCacheStoreContainer:
-    """モダリティ毎のキャッシュストア関連パラメータを集約"""
+    """モダリティ毎のインジェストキャッシュ関連パラメータを集約"""
 
     provider_name: str
-    store: Optional[IngestionCache]
+    cache: Optional[IngestionCache]
     table_name: str
 
 
 class IngestCacheStoreManager:
-    """キャッシュストアの管理クラス。"""
+    """インジェストキャッシュの管理クラス。"""
 
     def __init__(self, conts: dict[Modality, IngestCacheStoreContainer]) -> None:
         """コンストラクタ
 
         Args:
-            conts (dict[Modality, IngestCacheStoreContainer]): キャッシュストアコンテナの辞書
+            conts (dict[Modality, IngestCacheStoreContainer]): インジェストキャッシュコンテナの辞書
         """
         self._conts = conts
 
@@ -40,7 +40,7 @@ class IngestCacheStoreManager:
 
     @property
     def modality(self) -> set[Modality]:
-        """このキャッシュストアがサポートするモダリティ一覧。
+        """このインジェストキャッシュがサポートするモダリティ一覧。
 
         Returns:
             set[Modality]: モダリティ一覧
@@ -48,7 +48,7 @@ class IngestCacheStoreManager:
         return set(self._conts.keys())
 
     def get_container(self, modality: Modality) -> IngestCacheStoreContainer:
-        """モダリティ別のキャッシュストアコンテナを取得する。
+        """モダリティ別のインジェストキャッシュコンテナを取得する。
 
         Args:
             modality (Modality): モダリティ
@@ -57,7 +57,7 @@ class IngestCacheStoreManager:
             RuntimeError: 未初期化
 
         Returns:
-            IngestCacheStoreContainer: キャッシュストアコンテナ
+            IngestCacheStoreContainer: インジェストキャッシュコンテナ
         """
         cont = self._conts.get(modality)
         if cont is None:

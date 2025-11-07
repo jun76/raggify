@@ -1,27 +1,23 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
-from ..config.ingest_cache_store_config import (
-    IngestCacheStoreConfig,
-    IngestCacheStoreProvider,
-)
+from ..config.ingest_cache_config import IngestCacheConfig, IngestCacheStoreProvider
 from ..core.const import PROJECT_NAME
 from ..core.util import sanitize_str
 from ..llama.core.schema import Modality
+from ..logger import logger
 
 if TYPE_CHECKING:
     from ..embed.embed_manager import EmbedManager
-    from .ingest_cache_store_manager import (
-        IngestCacheStoreContainer,
-        IngestCacheStoreManager,
-    )
+    from .ingest_cache_manager import IngestCacheStoreContainer, IngestCacheStoreManager
 
-__all__ = ["create_ingest_cache_store_manager"]
+__all__ = ["create_ingest_cache_manager"]
 
 
-def create_ingest_cache_store_manager(
+def create_ingest_cache_manager(
     cfg: ConfigManager, embed: EmbedManager
 ) -> IngestCacheStoreManager:
     """インジェストキャッシュ管理のインスタンスを生成する。
@@ -36,7 +32,7 @@ def create_ingest_cache_store_manager(
     Returns:
         IngestCacheStoreManager: インジェストキャッシュ管理
     """
-    from .ingest_cache_store_manager import IngestCacheStoreManager
+    from .ingest_cache_manager import IngestCacheStoreManager
 
     try:
         conts: dict[Modality, IngestCacheStoreContainer] = {}
@@ -77,14 +73,16 @@ def _create_container(cfg: ConfigManager, space_key: str) -> IngestCacheStoreCon
         IngestCacheStoreContainer: コンテナ
     """
     table_name = _generate_table_name(cfg, space_key)
-    match cfg.general.ingest_cache_store_provider:
+    match cfg.general.ingest_cache_provider:
         case IngestCacheStoreProvider.REDIS:
-            return _redis(cfg=cfg.ingest_cache_store, table_name=table_name)
+            return _redis(cfg=cfg.ingest_cache, table_name=table_name)
         case IngestCacheStoreProvider.LOCAL:
-            return _local(table_name)
+            return _local(
+                persist_dir=cfg.ingest.pipe_persist_dir, table_name=table_name
+            )
         case _:
             raise RuntimeError(
-                f"unsupported ingest cache store: {cfg.general.ingest_cache_store_provider}"
+                f"unsupported ingest cache: {cfg.general.ingest_cache_provider}"
             )
 
 
@@ -102,20 +100,20 @@ def _generate_table_name(cfg: ConfigManager, space_key: str) -> str:
         str: テーブル名
     """
     return sanitize_str(
-        f"{PROJECT_NAME}_{cfg.general.knowledgebase_name}_{space_key}_ics"
+        f"{PROJECT_NAME}_{cfg.general.knowledgebase_name}_{space_key}_ic"
     )
 
 
 # 以下、プロバイダ毎のコンテナ生成ヘルパー
-def _redis(cfg: IngestCacheStoreConfig, table_name: str) -> IngestCacheStoreContainer:
+def _redis(cfg: IngestCacheConfig, table_name: str) -> IngestCacheStoreContainer:
     from llama_index.core.ingestion import IngestionCache
     from llama_index.storage.kvstore.redis import RedisKVStore
 
-    from .ingest_cache_store_manager import IngestCacheStoreContainer
+    from .ingest_cache_manager import IngestCacheStoreContainer
 
     return IngestCacheStoreContainer(
         provider_name=IngestCacheStoreProvider.REDIS,
-        store=IngestionCache(
+        cache=IngestionCache(
             cache=RedisKVStore.from_host_and_port(
                 host=cfg.redis_host,
                 port=cfg.redis_port,
@@ -126,9 +124,22 @@ def _redis(cfg: IngestCacheStoreConfig, table_name: str) -> IngestCacheStoreCont
     )
 
 
-def _local(table_name: str) -> IngestCacheStoreContainer:
-    from .ingest_cache_store_manager import IngestCacheStoreContainer
+def _local(persist_dir: Path, table_name: str) -> IngestCacheStoreContainer:
+    from llama_index.core.ingestion.cache import DEFAULT_CACHE_NAME, IngestionCache
+
+    from .ingest_cache_manager import IngestCacheStoreContainer
+
+    if persist_dir and persist_dir.exists():
+        try:
+            cache = IngestionCache.from_persist_path(
+                str(persist_dir / DEFAULT_CACHE_NAME)
+            )
+        except Exception as e:
+            logger.warning(f"failed to load persist dir: {e}")
+            cache = IngestionCache()
 
     return IngestCacheStoreContainer(
-        provider_name=IngestCacheStoreProvider.LOCAL, store=None, table_name=table_name
+        provider_name=IngestCacheStoreProvider.LOCAL,
+        cache=cache,
+        table_name=table_name,
     )

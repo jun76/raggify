@@ -83,8 +83,6 @@ class Loader:
         Returns:
             IngestionPipeline: パイプライン
         """
-        import os
-
         from llama_index.core.ingestion import DocstoreStrategy
 
         pipe = IngestionPipeline(
@@ -92,9 +90,10 @@ class Loader:
             docstore_strategy=DocstoreStrategy.DUPLICATES_ONLY,
         )
 
-        if self._persist_dir and os.path.exists(self._persist_dir):
+        if self._persist_dir and self._persist_dir.exists():
             try:
                 pipe.load(str(self._persist_dir))
+                self._document_store.store = pipe.docstore
             except Exception as e:
                 logger.warning(f"failed to load persist dir: {e}")
 

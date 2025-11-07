@@ -377,7 +377,8 @@ class HTMLLoader(Loader):
         # 以下、サイトマップの解析と読み込み
         try:
             loader = SitemapReader()
-            urls = loader._parse_sitemap(url)
+            raw_sitemap = loader._load_sitemap(url)
+            urls = loader._parse_sitemap(raw_sitemap)
         except Exception as e:
             logger.exception(e)
             return [], [], []

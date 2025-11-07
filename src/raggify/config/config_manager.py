@@ -13,9 +13,10 @@ from dotenv import load_dotenv
 from ..config.document_store_config import DocumentStoreConfig
 from ..config.embed_config import EmbedConfig
 from ..config.general_config import GeneralConfig
-from ..config.ingest_cache_store_config import IngestCacheStoreConfig
+from ..config.ingest_cache_config import IngestCacheConfig
 from ..config.ingest_config import IngestConfig
 from ..config.rerank_config import RerankConfig
+from ..config.retrieve_config import RetrieveConfig
 from ..config.vector_store_config import VectorStoreConfig
 from ..core.const import USER_CONFIG_PATH
 
@@ -35,10 +36,11 @@ class ConfigManager:
         self._general: GeneralConfig
         self._vector_store: VectorStoreConfig
         self._document_store: DocumentStoreConfig
-        self._ingest_cache_store: IngestCacheStoreConfig
+        self._ingest_cache: IngestCacheConfig
         self._embed: EmbedConfig
         self._ingest: IngestConfig
         self._rerank: RerankConfig
+        self._retrieve: RetrieveConfig
 
         load_dotenv()
 
@@ -53,10 +55,11 @@ class ConfigManager:
         self._general = GeneralConfig()
         self._vector_store = VectorStoreConfig()
         self._document_store = DocumentStoreConfig()
-        self._ingest_cache_store = IngestCacheStoreConfig()
+        self._ingest_cache = IngestCacheConfig()
         self._embed = EmbedConfig()
         self._ingest = IngestConfig()
         self._rerank = RerankConfig()
+        self._retrieve = RetrieveConfig()
 
     def read_yaml(self) -> None:
         """設定ファイルから設定値を読み込む。"""
@@ -79,10 +82,10 @@ class ConfigManager:
             DocumentStoreConfig,
             self._document_store,
         )
-        self._ingest_cache_store = self._apply_section(
-            data.get("ingest_cache_store"),
-            IngestCacheStoreConfig,
-            self._ingest_cache_store,
+        self._ingest_cache = self._apply_section(
+            data.get("ingest_cache"),
+            IngestCacheConfig,
+            self._ingest_cache,
         )
         self._embed = self._apply_section(data.get("embed"), EmbedConfig, self._embed)
         self._ingest = self._apply_section(
@@ -90,6 +93,9 @@ class ConfigManager:
         )
         self._rerank = self._apply_section(
             data.get("rerank"), RerankConfig, self._rerank
+        )
+        self._retrieve = self._apply_section(
+            data.get("retrieve"), RetrieveConfig, self._retrieve
         )
 
     def write_yaml(self) -> None:
@@ -121,8 +127,8 @@ class ConfigManager:
         return self._document_store
 
     @property
-    def ingest_cache_store(self) -> IngestCacheStoreConfig:
-        return self._ingest_cache_store
+    def ingest_cache(self) -> IngestCacheConfig:
+        return self._ingest_cache
 
     @property
     def embed(self) -> EmbedConfig:
@@ -136,6 +142,10 @@ class ConfigManager:
     def rerank(self) -> RerankConfig:
         return self._rerank
 
+    @property
+    def retrieve(self) -> RetrieveConfig:
+        return self._retrieve
+
     def get_dict(self) -> dict[str, Any]:
         """現状の設定を辞書形式で返す。
 
@@ -146,10 +156,11 @@ class ConfigManager:
             "general": self._serialize_dataclass(self._general),
             "vector_store": self._serialize_dataclass(self._vector_store),
             "document_store": self._serialize_dataclass(self._document_store),
-            "ingest_cache_store": self._serialize_dataclass(self._ingest_cache_store),
+            "ingest_cache": self._serialize_dataclass(self._ingest_cache),
             "embed": self._serialize_dataclass(self._embed),
             "ingest": self._serialize_dataclass(self._ingest),
             "rerank": self._serialize_dataclass(self._rerank),
+            "retrieve": self._serialize_dataclass(self._retrieve),
         }
 
     def _apply_section(
