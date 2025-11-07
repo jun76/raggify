@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from .embed.embed_manager import EmbedManager
     from .ingest.loader.file_loader import FileLoader
     from .ingest.loader.html_loader import HTMLLoader
-    from .ingest_cache.ingest_cache_manager import IngestCacheStoreManager
+    from .ingest_cache.ingest_cache_manager import IngestCacheManager
     from .rerank.rerank_manager import RerankManager
     from .vector_store.vector_store_manager import VectorStoreManager
 
@@ -32,7 +32,7 @@ class Runtime:
         self._embed_manager: Optional[EmbedManager] = None
         self._vector_store: Optional[VectorStoreManager] = None
         self._document_store: Optional[DocumentStoreManager] = None
-        self._ingest_cache: Optional[IngestCacheStoreManager] = None
+        self._ingest_cache: Optional[IngestCacheManager] = None
         self._rerank_manager: Optional[RerankManager] = None
         self._file_loader: Optional[FileLoader] = None
         self._html_loader: Optional[HTMLLoader] = None
@@ -111,7 +111,7 @@ class Runtime:
         return self._document_store
 
     @property
-    def ingest_cache(self) -> IngestCacheStoreManager:
+    def ingest_cache(self) -> IngestCacheManager:
         if self._ingest_cache is None:
             from .ingest_cache.ingest_cache import create_ingest_cache_manager
 

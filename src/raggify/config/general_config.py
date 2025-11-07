@@ -7,7 +7,7 @@ from typing import Literal, Optional
 from ..core.const import DEFAULT_KNOWLEDGEBASE_NAME, DEFAULT_WORKSPACE_PATH
 from .document_store_config import DocumentStoreProvider
 from .embed_config import EmbedProvider
-from .ingest_cache_config import IngestCacheStoreProvider
+from .ingest_cache_config import IngestCacheProvider
 from .rerank_config import RerankProvider
 from .vector_store_config import VectorStoreProvider
 
@@ -21,7 +21,7 @@ class GeneralConfig:
     mcp: bool = False
     vector_store_provider: VectorStoreProvider = VectorStoreProvider.CHROMA
     document_store_provider: DocumentStoreProvider = DocumentStoreProvider.LOCAL
-    ingest_cache_provider: IngestCacheStoreProvider = IngestCacheStoreProvider.LOCAL
+    ingest_cache_provider: IngestCacheProvider = IngestCacheProvider.LOCAL
     text_embed_provider: Optional[EmbedProvider] = EmbedProvider.OPENAI
     image_embed_provider: Optional[EmbedProvider] = EmbedProvider.VOYAGE
     audio_embed_provider: Optional[EmbedProvider] = None

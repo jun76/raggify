@@ -70,6 +70,9 @@ class DocumentStoreManager:
         Returns:
             bool: コーパスを持っているか
         """
+        if self.store is None:
+            return False
+
         docs_attr = getattr(self.store, "docs", None)
 
         return bool(docs_attr)

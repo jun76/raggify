@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import StrEnum, auto
 
 
-class IngestCacheStoreProvider(StrEnum):
+class IngestCacheProvider(StrEnum):
     REDIS = auto()
     LOCAL = auto()
 
@@ -13,6 +13,6 @@ class IngestCacheStoreProvider(StrEnum):
 class IngestCacheConfig:
     """インジェストキャッシュ関連の設定用データクラス"""
 
-    # Redit
+    # Redis
     redis_host: str = "localhost"
     redis_port: int = 6379

@@ -76,13 +76,13 @@ def _local(persist_dir: Path) -> DocumentStoreManager:
 
     from .document_store_manager import DocumentStoreManager
 
-    if persist_dir and persist_dir.exists():
+    if persist_dir.exists():
         try:
             # IngestionPipeline.persist/load の仕様に追従して、ナレッジベース毎に
             # サブディレクトリを切って区別するのでテーブル名はデフォルトのものを使用
             store = SimpleDocumentStore.from_persist_dir(str(persist_dir))
         except Exception as e:
-            logger.warning(f"failed to load persist dir: {e}")
+            logger.warning(f"failed to load persist dir {persist_dir}: {e}")
             store = SimpleDocumentStore()
     else:
         store = SimpleDocumentStore()

@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
-from ..config.ingest_cache_config import IngestCacheConfig, IngestCacheStoreProvider
+from ..config.ingest_cache_config import IngestCacheConfig, IngestCacheProvider
 from ..core.const import PROJECT_NAME
 from ..core.util import sanitize_str
 from ..llama.core.schema import Modality
@@ -12,14 +12,14 @@ from ..logger import logger
 
 if TYPE_CHECKING:
     from ..embed.embed_manager import EmbedManager
-    from .ingest_cache_manager import IngestCacheStoreContainer, IngestCacheStoreManager
+    from .ingest_cache_manager import IngestCacheContainer, IngestCacheManager
 
 __all__ = ["create_ingest_cache_manager"]
 
 
 def create_ingest_cache_manager(
     cfg: ConfigManager, embed: EmbedManager
-) -> IngestCacheStoreManager:
+) -> IngestCacheManager:
     """インジェストキャッシュ管理のインスタンスを生成する。
 
     Args:
@@ -30,12 +30,12 @@ def create_ingest_cache_manager(
         RuntimeError: インスタンス生成に失敗またはプロバイダ指定漏れ
 
     Returns:
-        IngestCacheStoreManager: インジェストキャッシュ管理
+        IngestCacheManager: インジェストキャッシュ管理
     """
-    from .ingest_cache_manager import IngestCacheStoreManager
+    from .ingest_cache_manager import IngestCacheManager
 
     try:
-        conts: dict[Modality, IngestCacheStoreContainer] = {}
+        conts: dict[Modality, IngestCacheContainer] = {}
         if cfg.general.text_embed_provider:
             conts[Modality.TEXT] = _create_container(
                 cfg=cfg, space_key=embed.space_key_text
@@ -51,15 +51,15 @@ def create_ingest_cache_manager(
                 cfg=cfg, space_key=embed.space_key_audio
             )
     except Exception as e:
-        raise RuntimeError(f"failed to create vector store: {e}") from e
+        raise RuntimeError(f"failed to create ingest cache: {e}") from e
 
     if not conts:
         raise RuntimeError("no embedding providers are specified")
 
-    return IngestCacheStoreManager(conts)
+    return IngestCacheManager(conts)
 
 
-def _create_container(cfg: ConfigManager, space_key: str) -> IngestCacheStoreContainer:
+def _create_container(cfg: ConfigManager, space_key: str) -> IngestCacheContainer:
     """空間キー毎のコンテナを生成する。
 
     Args:
@@ -70,13 +70,13 @@ def _create_container(cfg: ConfigManager, space_key: str) -> IngestCacheStoreCon
         RuntimeError: サポート外のプロバイダ
 
     Returns:
-        IngestCacheStoreContainer: コンテナ
+        IngestCacheContainer: コンテナ
     """
     table_name = _generate_table_name(cfg, space_key)
     match cfg.general.ingest_cache_provider:
-        case IngestCacheStoreProvider.REDIS:
+        case IngestCacheProvider.REDIS:
             return _redis(cfg=cfg.ingest_cache, table_name=table_name)
-        case IngestCacheStoreProvider.LOCAL:
+        case IngestCacheProvider.LOCAL:
             return _local(
                 persist_dir=cfg.ingest.pipe_persist_dir, table_name=table_name
             )
@@ -105,14 +105,14 @@ def _generate_table_name(cfg: ConfigManager, space_key: str) -> str:
 
 
 # 以下、プロバイダ毎のコンテナ生成ヘルパー
-def _redis(cfg: IngestCacheConfig, table_name: str) -> IngestCacheStoreContainer:
+def _redis(cfg: IngestCacheConfig, table_name: str) -> IngestCacheContainer:
     from llama_index.core.ingestion import IngestionCache
     from llama_index.storage.kvstore.redis import RedisKVStore
 
-    from .ingest_cache_manager import IngestCacheStoreContainer
+    from .ingest_cache_manager import IngestCacheContainer
 
-    return IngestCacheStoreContainer(
-        provider_name=IngestCacheStoreProvider.REDIS,
+    return IngestCacheContainer(
+        provider_name=IngestCacheProvider.REDIS,
         cache=IngestionCache(
             cache=RedisKVStore.from_host_and_port(
                 host=cfg.redis_host,
@@ -124,12 +124,13 @@ def _redis(cfg: IngestCacheConfig, table_name: str) -> IngestCacheStoreContainer
     )
 
 
-def _local(persist_dir: Path, table_name: str) -> IngestCacheStoreContainer:
+def _local(persist_dir: Path, table_name: str) -> IngestCacheContainer:
     from llama_index.core.ingestion.cache import DEFAULT_CACHE_NAME, IngestionCache
 
-    from .ingest_cache_manager import IngestCacheStoreContainer
+    from .ingest_cache_manager import IngestCacheContainer
 
-    if persist_dir and persist_dir.exists():
+    cache = IngestionCache()
+    if persist_dir.exists():
         try:
             cache = IngestionCache.from_persist_path(
                 str(persist_dir / DEFAULT_CACHE_NAME)
@@ -138,8 +139,8 @@ def _local(persist_dir: Path, table_name: str) -> IngestCacheStoreContainer:
             logger.warning(f"failed to load persist dir: {e}")
             cache = IngestionCache()
 
-    return IngestCacheStoreContainer(
-        provider_name=IngestCacheStoreProvider.LOCAL,
+    return IngestCacheContainer(
+        provider_name=IngestCacheProvider.LOCAL,
         cache=cache,
         table_name=table_name,
     )
