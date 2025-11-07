@@ -2,19 +2,25 @@ from __future__ import annotations
 
 import atexit
 import threading
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
+from llama_index.core.ingestion import IngestionPipeline
+
 from .config.config_manager import ConfigManager
+from .logger import logger
 
 if TYPE_CHECKING:
+    from llama_index.core.schema import TransformComponent
+
     from .document_store.document_store_manager import DocumentStoreManager
     from .embed.embed_manager import EmbedManager
     from .ingest.loader.file_loader import FileLoader
     from .ingest.loader.html_loader import HTMLLoader
     from .ingest_cache.ingest_cache_manager import IngestCacheManager
+    from .llama.core.schema import Modality
     from .rerank.rerank_manager import RerankManager
     from .vector_store.vector_store_manager import VectorStoreManager
-
 
 __all__ = ["get_runtime"]
 
@@ -37,14 +43,7 @@ class Runtime:
         self._file_loader: Optional[FileLoader] = None
         self._html_loader: Optional[HTMLLoader] = None
 
-    def build(self) -> None:
-        self._release()
-        self.touch()
-
-    def rebuild(self) -> None:
-        # メモリ上の設定値を生かす
-        self._release(False)
-        self.touch()
+        self._pipeline_lock = threading.Lock()
 
     def _release(self, with_cfg: bool = True) -> None:
         """既存のリソースを破棄する。
@@ -63,6 +62,15 @@ class Runtime:
         self._file_loader = None
         self._html_loader = None
 
+    def build(self) -> None:
+        self._release()
+        self.touch()
+
+    def rebuild(self) -> None:
+        # メモリ上の設定値を生かす
+        self._release(False)
+        self.touch()
+
     def touch(self) -> None:
         """各シングルトンの生成が未だであれば生成する。"""
         self.embed_manager
@@ -72,6 +80,75 @@ class Runtime:
         self.rerank_manager
         self.file_loader
         self.html_loader
+
+    def build_pipeline(
+        self,
+        transformations: list[TransformComponent] | None = None,
+        modality: Optional[Modality] = None,
+        persist_dir: Optional[Path] = None,
+    ) -> IngestionPipeline:
+        """パイプラインを新規作成またはロードする。
+
+        Args:
+            transformations (list[TransformComponent] | None): 変換一式
+            modality (Optional[Modality], optional): モダリティ。Defaults to None.
+                None の場合は docstore 専用。Defaults to None.
+            persist_dir (Optional[Path], optional): 永続化ディレクトリ。Defaults to None.
+
+        Returns:
+            IngestionPipeline: パイプライン
+        """
+        from llama_index.core.ingestion import DocstoreStrategy
+
+        if modality is None:
+            pipe = IngestionPipeline(
+                transformations=transformations,
+                docstore=self.document_store.store,
+                docstore_strategy=DocstoreStrategy.DUPLICATES_ONLY,
+            )
+        else:
+            pipe = IngestionPipeline(
+                transformations=transformations,
+                vector_store=self.vector_store.get_container(modality).store,
+                cache=self.ingest_cache.get_container(modality).cache,
+                docstore=self.document_store.store,
+                docstore_strategy=DocstoreStrategy.UPSERTS,
+            )
+
+        if persist_dir and persist_dir.exists():
+            try:
+                pipe.load(str(persist_dir))
+                with self._pipeline_lock:
+                    if modality is not None:
+                        self.ingest_cache.get_container(modality).cache = pipe.cache
+                    self.document_store.store = pipe.docstore
+            except Exception as e:
+                logger.warning(f"failed to load persist dir: {e}")
+
+        return pipe
+
+    def persist_pipeline(
+        self,
+        pipe: IngestionPipeline,
+        modality: Optional[Modality] = None,
+        persist_dir: Optional[Path] = None,
+    ) -> None:
+        """パイプラインを永続化する。
+
+        Args:
+            pipe (IngestionPipeline): パイプライン
+            modality (Optional[Modality], optional): モダリティ。Defaults to None.
+            persist_dir (Optional[Path], optional): 永続化ディレクトリ。Defaults to None.
+        """
+        if persist_dir:
+            try:
+                pipe.persist(str(persist_dir))
+                with self._pipeline_lock:
+                    if modality:
+                        self.ingest_cache.get_container(modality).cache = pipe.cache
+                    self.document_store.store = pipe.docstore
+            except Exception as e:
+                logger.warning(f"failed to persist: {e}")
 
     # 以下、シングルトンのインスタンス取得用
     @property
@@ -135,10 +212,7 @@ class Runtime:
         if self._file_loader is None:
             from .ingest.loader.file_loader import FileLoader
 
-            self._file_loader = FileLoader(
-                document_store=self.document_store,
-                persist_dir=self.cfg.ingest.pipe_persist_dir,
-            )
+            self._file_loader = FileLoader(self.cfg.ingest.pipe_persist_dir)
 
         return self._file_loader
 
@@ -148,7 +222,6 @@ class Runtime:
             from .ingest.loader.html_loader import HTMLLoader
 
             self._html_loader = HTMLLoader(
-                document_store=self.document_store,
                 file_loader=self.file_loader,
                 persist_dir=self.cfg.ingest.pipe_persist_dir,
                 cfg=self.cfg.ingest,

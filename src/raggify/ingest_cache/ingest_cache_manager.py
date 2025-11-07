@@ -61,6 +61,6 @@ class IngestCacheManager:
         """
         cont = self._conts.get(modality)
         if cont is None:
-            raise RuntimeError(f"store {modality} is not initialized")
+            raise RuntimeError(f"{modality} cache is not initialized")
 
         return cont

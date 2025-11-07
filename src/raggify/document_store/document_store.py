@@ -81,6 +81,7 @@ def _local(persist_dir: Path) -> DocumentStoreManager:
             # IngestionPipeline.persist/load の仕様に追従して、ナレッジベース毎に
             # サブディレクトリを切って区別するのでテーブル名はデフォルトのものを使用
             store = SimpleDocumentStore.from_persist_dir(str(persist_dir))
+            logger.info(f"loaded from persist dir: {persist_dir}")
         except Exception as e:
             logger.warning(f"failed to load persist dir {persist_dir}: {e}")
             store = SimpleDocumentStore()

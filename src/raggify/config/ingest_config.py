@@ -19,6 +19,7 @@ class IngestConfig:
     chunk_overlap: int = 50
     upload_dir: Path = DEFAULT_WORKSPACE_PATH / "upload"
     pipe_persist_dir: Path = DEFAULT_WORKSPACE_PATH / DEFAULT_KNOWLEDGEBASE_NAME
+    batch_size: int = 100
 
     # Web
     user_agent: str = PROJECT_NAME

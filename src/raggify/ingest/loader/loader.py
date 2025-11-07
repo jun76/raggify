@@ -4,7 +4,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
-from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.schema import Document, ImageNode, TextNode
 
 from ...core.exts import Exts
@@ -16,22 +15,29 @@ from ...logger import logger
 if TYPE_CHECKING:
     from llama_index.core.schema import BaseNode
 
-    from ...document_store.document_store_manager import DocumentStoreManager
+    from ...runtime import Runtime
+
+
+def _rt() -> Runtime:
+    """遅延ロード用ゲッター。
+
+    Returns:
+        Runtime: ランタイム
+    """
+    from ...runtime import get_runtime
+
+    return get_runtime()
 
 
 class Loader:
     """ローダー基底クラス"""
 
-    def __init__(
-        self, document_store: DocumentStoreManager, persist_dir: Optional[Path]
-    ) -> None:
+    def __init__(self, persist_dir: Optional[Path]) -> None:
         """コンストラクタ
 
         Args:
-            document_store (DocumentStoreManager): ドキュメントストア管理
             persist_dir (Optional[Path]): 永続化ディレクトリ
         """
-        self._document_store = document_store
         self._persist_dir = persist_dir
 
     def _add_doc_id(self, docs: list[Document]) -> None:
@@ -77,28 +83,6 @@ class Loader:
             f"{MK.TEMP_FILE_PATH}:{meta.temp_file_path}"  # PDF 埋め込み画像等の識別用
         )
 
-    def _build_or_load_pipe(self) -> IngestionPipeline:
-        """ドキュメント重複管理用パイプラインを新規作成またはロードする。
-
-        Returns:
-            IngestionPipeline: パイプライン
-        """
-        from llama_index.core.ingestion import DocstoreStrategy
-
-        pipe = IngestionPipeline(
-            docstore=self._document_store.store,
-            docstore_strategy=DocstoreStrategy.DUPLICATES_ONLY,
-        )
-
-        if self._persist_dir and self._persist_dir.exists():
-            try:
-                pipe.load(str(self._persist_dir))
-                self._document_store.store = pipe.docstore
-            except Exception as e:
-                logger.warning(f"failed to load persist dir: {e}")
-
-        return pipe
-
     async def _asplit_docs_modality(
         self, docs: list[Document]
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
@@ -112,7 +96,8 @@ class Loader:
                 テキストノード、画像ノード、音声ノード
         """
         self._add_doc_id(docs)
-        pipe = self._build_or_load_pipe()
+        rt = _rt()
+        pipe = rt.build_pipeline(persist_dir=self._persist_dir)
         nodes = await pipe.arun(documents=docs)
 
         logger.debug(f"{len(docs)} docs --pipeline--> {len(nodes)} nodes")
@@ -138,11 +123,7 @@ class Loader:
             else:
                 logger.warning(f"unexpected node type {type(node)}, skipped")
 
-        if self._persist_dir:
-            try:
-                pipe.persist(str(self._persist_dir))
-            except Exception as e:
-                logger.warning(f"failed to persist: {e}")
+        rt.persist_pipeline(pipe=pipe, persist_dir=self._persist_dir)
 
         return text_nodes, image_nodes, audio_nodes
 

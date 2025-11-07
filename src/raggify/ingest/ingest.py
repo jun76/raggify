@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import TYPE_CHECKING, Awaitable, Callable, Optional, Sequence
 
 from llama_index.core.async_utils import asyncio_run
-from llama_index.core.ingestion import IngestionPipeline
 
 from ..embed.embed_manager import Modality
 from ..logger import logger
@@ -69,47 +68,6 @@ def _read_list(path: str) -> list[str]:
     return lst
 
 
-def _build_or_load_pipe(
-    transformations: list[TransformComponent] | None,
-    modality: Modality,
-    persist_dir: Optional[Path],
-) -> IngestionPipeline:
-    """モダリティ別キャッシュ用パイプラインを新規作成またはロードする。
-
-    Args:
-        transformations (list[TransformComponent] | None): 変換一式
-        modality (Modality): モダリティ
-        persist_dir (Optional[Path]): 永続化ディレクトリ
-
-    Returns:
-        IngestionPipeline: パイプライン
-    """
-    from llama_index.core.ingestion import DocstoreStrategy
-
-    rt = _rt()
-    vs = rt.vector_store
-    ic = rt.ingest_cache
-    ds = rt.document_store
-
-    pipe = IngestionPipeline(
-        transformations=transformations,
-        vector_store=vs.get_container(modality).store,
-        cache=ic.get_container(modality).cache,
-        docstore=ds.store,
-        docstore_strategy=DocstoreStrategy.UPSERTS,
-    )
-
-    if persist_dir and persist_dir.exists():
-        try:
-            pipe.load(str(persist_dir))
-            ic.get_container(modality).cache = pipe.cache
-            ds.store = pipe.docstore
-        except Exception as e:
-            logger.warning(f"failed to load persist dir: {e}")
-
-    return pipe
-
-
 async def _arun_pipe(
     nodes: Sequence[BaseNode],
     transformations: list[TransformComponent] | None,
@@ -130,16 +88,12 @@ async def _arun_pipe(
     if not nodes:
         return None
 
-    pipe = _build_or_load_pipe(
+    rt = _rt()
+    pipe = rt.build_pipeline(
         transformations=transformations, modality=modality, persist_dir=persist_dir
     )
     filtered_nodes = await pipe.arun(nodes=nodes)
-
-    if persist_dir:
-        try:
-            pipe.persist(str(persist_dir))
-        except Exception as e:
-            logger.warning(f"failed to persist: {e}")
+    rt.persist_pipeline(pipe=pipe, modality=modality, persist_dir=persist_dir)
 
     logger.debug(f"{len(nodes)} nodes --pipeline--> {len(filtered_nodes)} nodes")
 
@@ -147,12 +101,13 @@ async def _arun_pipe(
 
 
 async def _arun_text_pipe(
-    nodes: list[TextNode], persist_dir: Optional[Path]
+    nodes: Sequence[TextNode],
+    persist_dir: Optional[Path],
 ) -> Optional[Sequence[BaseNode]]:
     """テキストノードのパイプラインを実行する。
 
     Args:
-        nodes (list[TextNode]): テキストノード
+        nodes (Sequence[TextNode]): テキストノード
         persist_dir (Optional[Path]): 永続化ディレクトリ
 
     Returus:
@@ -180,12 +135,13 @@ async def _arun_text_pipe(
 
 
 async def _arun_image_pipe(
-    nodes: list[ImageNode], persist_dir: Optional[Path]
+    nodes: Sequence[ImageNode],
+    persist_dir: Optional[Path],
 ) -> Optional[Sequence[BaseNode]]:
     """画像ノードのパイプラインを実行する。
 
     Args:
-        nodes (list[ImageNode]): 画像ノード
+        nodes (Sequence[ImageNode]): 画像ノード
         persist_dir (Optional[Path]): 永続化ディレクトリ
 
     Returus:
@@ -204,12 +160,13 @@ async def _arun_image_pipe(
 
 
 async def _arun_audio_pipe(
-    nodes: list[AudioNode], persist_dir: Optional[Path]
+    nodes: Sequence[AudioNode],
+    persist_dir: Optional[Path],
 ) -> Optional[Sequence[BaseNode]]:
     """音声ノードのパイプラインを実行する。
 
     Args:
-        nodes (list[AudioNode]): 音声ノード
+        nodes (Sequence[AudioNode]): 音声ノード
         persist_dir (Optional[Path]): 永続化ディレクトリ
 
     Returus:
@@ -227,77 +184,150 @@ async def _arun_audio_pipe(
     )
 
 
-async def _aupsert_nodes(
-    text_nodes: list[TextNode],
-    image_nodes: list[ImageNode],
-    audio_nodes: list[AudioNode],
+async def _process_batches(
+    nodes: Sequence[BaseNode],
+    runner: Callable[
+        [Sequence, Optional[Path]], Awaitable[Optional[Sequence[BaseNode]]]
+    ],
+    label: str,
     persist_dir: Optional[Path],
+    batch_size: int,
+) -> None:
+    """大量ノードのアップサートで長時間ブロックしないようにバッチ化する。
+
+    Args:
+        nodes (Sequence[BaseNode]): ノード
+        runner (Callable[
+            [Sequence, Optional[Path]], Awaitable[Optional[Sequence[BaseNode]]]
+        ]): バッチ化対象の処理
+        label (str): 経過表示用ラベル
+        persist_dir (Optional[Path]): 永続化ディレクトリ
+        batch_size (int): バッチサイズ
+    """
+    if not nodes:
+        return
+
+    total_batches = (len(nodes) + batch_size - 1) // batch_size
+    for idx in range(0, len(nodes), batch_size):
+        batch = nodes[idx : idx + batch_size]
+        logger.debug(
+            f"{label}: processing batch {idx // batch_size + 1}/{total_batches} "
+            f"({len(batch)} nodes)"
+        )
+        await runner(batch, persist_dir)
+
+
+async def _aupsert_nodes(
+    text_nodes: Sequence[TextNode],
+    image_nodes: Sequence[ImageNode],
+    audio_nodes: Sequence[AudioNode],
+    persist_dir: Optional[Path],
+    batch_size: int,
 ):
     """ノードをアップサートする。
 
     Args:
-        text_nodes (list[TextNode]): テキストノード
-        image_nodes (list[ImageNode]): 画像ノード
-        audio_nodes (list[AudioNode]): 音声ノード
+        text_nodes (Sequence[TextNode]): テキストノード
+        image_nodes (Sequence[ImageNode]): 画像ノード
+        audio_nodes (Sequence[AudioNode]): 音声ノード
         persist_dir (Optional[Path]): 永続化ディレクトリ
+        batch_size (int): バッチサイズ
     """
     import asyncio
 
-    # 後段パイプ。テキスト分割とモダリティ毎の埋め込み＋ストア格納。
-    # キャッシュ管理も。
-    tasks = [
-        _arun_text_pipe(nodes=text_nodes, persist_dir=persist_dir),
-        _arun_image_pipe(nodes=image_nodes, persist_dir=persist_dir),
-        _arun_audio_pipe(nodes=audio_nodes, persist_dir=persist_dir),
-    ]
+    tasks = []
+    tasks.append(
+        _process_batches(
+            nodes=text_nodes,
+            runner=_arun_text_pipe,
+            label="text pipeline",
+            persist_dir=persist_dir,
+            batch_size=batch_size,
+        )
+    )
+    tasks.append(
+        _process_batches(
+            nodes=image_nodes,
+            runner=_arun_image_pipe,
+            label="image pipeline",
+            persist_dir=persist_dir,
+            batch_size=batch_size,
+        )
+    )
+    tasks.append(
+        _process_batches(
+            nodes=audio_nodes,
+            runner=_arun_audio_pipe,
+            label="audio pipeline",
+            persist_dir=persist_dir,
+            batch_size=batch_size,
+        )
+    )
 
-    if tasks:
-        await asyncio.gather(*tasks)
+    await asyncio.gather(*tasks)
 
 
-def ingest_path(path: str) -> None:
+def ingest_path(
+    path: str,
+    batch_size: Optional[int] = None,
+) -> None:
     """ローカルパス（ディレクトリ、ファイル）からコンテンツを収集、埋め込み、ストアに格納する。
     ディレクトリの場合はツリーを下りながら複数ファイルを取り込む。
 
     Args:
         path (str): 対象パス
+        batch_size (Optional[int]): バッチサイズ。Defaults to None.
     """
-    asyncio_run(aingest_path(path))
+    asyncio_run(aingest_path(path, batch_size=batch_size))
 
 
-async def aingest_path(path: str) -> None:
+async def aingest_path(
+    path: str,
+    batch_size: Optional[int] = None,
+) -> None:
     """ローカルパス（ディレクトリ、ファイル）から非同期でコンテンツを収集、埋め込み、ストアに格納する。
     ディレクトリの場合はツリーを下りながら複数ファイルを取り込む。
 
     Args:
         path (str): 対象パス
+        batch_size (Optional[int]): バッチサイズ。Defaults to None.
     """
     rt = _rt()
     file_loader = rt.file_loader
     text_nodes, image_nodes, audio_nodes = await file_loader.aload_from_path(path)
+    batch_size = batch_size or rt.cfg.ingest.batch_size
 
     await _aupsert_nodes(
         text_nodes=text_nodes,
         image_nodes=image_nodes,
         audio_nodes=audio_nodes,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
+        batch_size=batch_size,
     )
 
 
-def ingest_path_list(lst: str | Sequence[str]) -> None:
+def ingest_path_list(
+    lst: str | Sequence[str],
+    batch_size: Optional[int] = None,
+) -> None:
     """パスリスト内の複数パスからコンテンツを収集、埋め込み、ストアに格納する。
 
     Args:
         lst (str | Sequence[str]): テキストファイルまたは Sequence 形式のリスト
+        batch_size (Optional[int]): バッチサイズ。Defaults to None.
     """
-    asyncio_run(aingest_path_list(lst))
+    asyncio_run(aingest_path_list(lst, batch_size=batch_size))
 
 
-async def aingest_path_list(lst: str | Sequence[str]) -> None:
+async def aingest_path_list(
+    lst: str | Sequence[str],
+    batch_size: Optional[int] = None,
+) -> None:
     """パスリスト内の複数パスから非同期でコンテンツを収集、埋め込み、ストアに格納する。
 
     Args:
         list (str | Sequence[str]): テキストファイルまたは Sequence 形式のリスト
+        batch_size (Optional[int]): バッチサイズ。Defaults to None.
     """
     if isinstance(lst, str):
         lst = _read_list(lst)
@@ -305,58 +335,78 @@ async def aingest_path_list(lst: str | Sequence[str]) -> None:
     rt = _rt()
     file_loader = rt.file_loader
     text_nodes, image_nodes, audio_nodes = await file_loader.aload_from_paths(list(lst))
+    batch_size = batch_size or rt.cfg.ingest.batch_size
 
     await _aupsert_nodes(
         text_nodes=text_nodes,
         image_nodes=image_nodes,
         audio_nodes=audio_nodes,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
+        batch_size=batch_size,
     )
 
 
-def ingest_url(url: str) -> None:
+def ingest_url(
+    url: str,
+    batch_size: Optional[int] = None,
+) -> None:
     """URL からコンテンツを収集、埋め込み、ストアに格納する。
     サイトマップ（.xml）の場合はツリーを下りながら複数サイトから取り込む。
 
     Args:
         url (str): 対象 URL
+        batch_size (Optional[int]): バッチサイズ。Defaults to None.
     """
-    asyncio_run(aingest_url(url))
+    asyncio_run(aingest_url(url, batch_size=batch_size))
 
 
-async def aingest_url(url: str) -> None:
+async def aingest_url(
+    url: str,
+    batch_size: Optional[int] = None,
+) -> None:
     """URL から非同期でコンテンツを収集、埋め込み、ストアに格納する。
     サイトマップ（.xml）の場合はツリーを下りながら複数サイトから取り込む。
 
     Args:
         url (str): 対象 URL
+        batch_size (Optional[int]): バッチサイズ。Defaults to None.
     """
     rt = _rt()
     html_loader = rt.html_loader
     text_nodes, image_nodes, audio_nodes = await html_loader.aload_from_url(url)
+    batch_size = batch_size or rt.cfg.ingest.batch_size
 
     await _aupsert_nodes(
         text_nodes=text_nodes,
         image_nodes=image_nodes,
         audio_nodes=audio_nodes,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
+        batch_size=batch_size,
     )
 
 
-def ingest_url_list(lst: str | Sequence[str]) -> None:
+def ingest_url_list(
+    lst: str | Sequence[str],
+    batch_size: Optional[int] = None,
+) -> None:
     """URL リスト内の複数サイトからコンテンツを収集、埋め込み、ストアに格納する。
 
     Args:
         lst (str | Sequence[str]): テキストファイルまたは Sequence 形式のリスト
+        batch_size (Optional[int]): バッチサイズ。Defaults to None.
     """
-    asyncio_run(aingest_url_list(lst))
+    asyncio_run(aingest_url_list(lst, batch_size=batch_size))
 
 
-async def aingest_url_list(lst: str | Sequence[str]) -> None:
+async def aingest_url_list(
+    lst: str | Sequence[str],
+    batch_size: Optional[int] = None,
+) -> None:
     """URL リスト内の複数サイトから非同期でコンテンツを収集、埋め込み、ストアに格納する。
 
     Args:
         lst (str | Sequence[str]): テキストファイルまたは Sequence 形式のリスト
+        batch_size (Optional[int]): バッチサイズ。Defaults to None.
     """
     if isinstance(lst, str):
         lst = _read_list(lst)
@@ -364,10 +414,12 @@ async def aingest_url_list(lst: str | Sequence[str]) -> None:
     rt = _rt()
     html_loader = rt.html_loader
     text_nodes, image_nodes, audio_nodes = await html_loader.aload_from_urls(list(lst))
+    batch_size = batch_size or rt.cfg.ingest.batch_size
 
     await _aupsert_nodes(
         text_nodes=text_nodes,
         image_nodes=image_nodes,
         audio_nodes=audio_nodes,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
+        batch_size=batch_size,
     )

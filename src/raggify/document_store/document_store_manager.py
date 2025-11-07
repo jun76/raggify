@@ -75,4 +75,4 @@ class DocumentStoreManager:
 
         docs_attr = getattr(self.store, "docs", None)
 
-        return bool(docs_attr)
+        return docs_attr is not None

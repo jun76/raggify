@@ -13,23 +13,19 @@ if TYPE_CHECKING:
     from llama_index.core.readers.base import BaseReader
     from llama_index.core.schema import ImageNode, TextNode
 
-    from ...document_store.document_store_manager import DocumentStoreManager
     from ...llama.core.schema import AudioNode
 
 
 class FileLoader(Loader):
     """ローカルファイルを読み込み、ノードを生成するためのクラス。"""
 
-    def __init__(
-        self, document_store: DocumentStoreManager, persist_dir: Optional[Path]
-    ) -> None:
+    def __init__(self, persist_dir: Optional[Path]) -> None:
         """コンストラクタ
 
         Args:
-            document_store (DocumentStoreManager): ドキュメントストア管理
             persist_dir (Optional[Path]): 永続化ディレクトリ
         """
-        super().__init__(document_store=document_store, persist_dir=persist_dir)
+        super().__init__(persist_dir)
 
         # 独自 reader の辞書。後段で SimpleDirectoryReader に渡す
         self._readers: dict[str, BaseReader] = {Exts.PDF: MultiPDFReader()}

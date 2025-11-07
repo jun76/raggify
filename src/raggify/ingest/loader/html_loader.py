@@ -15,7 +15,6 @@ from .loader import Loader
 if TYPE_CHECKING:
     from llama_index.core.schema import Document, ImageNode, TextNode
 
-    from ...document_store.document_store_manager import DocumentStoreManager
     from ...llama.core.schema import AudioNode
     from .file_loader import FileLoader
 
@@ -23,7 +22,6 @@ if TYPE_CHECKING:
 class HTMLLoader(Loader):
     def __init__(
         self,
-        document_store: DocumentStoreManager,
         file_loader: FileLoader,
         persist_dir: Optional[Path],
         cfg: IngestConfig,
@@ -31,12 +29,11 @@ class HTMLLoader(Loader):
         """HTML を読み込み、ノードを生成するためのクラス。
 
         Args:
-            document_store (DocumentStoreManager): ドキュメントストア管理
             file_loader (FileLoader): ファイル読み込み用
             persist_dir (Optional[Path]): 永続化ディレクトリ
             cfg (IngestConfig): 各種設定値
         """
-        super().__init__(document_store=document_store, persist_dir=persist_dir)
+        super().__init__(persist_dir)
         self._file_loader = file_loader
         self._load_asset = cfg.load_asset
         self._req_per_sec = cfg.req_per_sec
@@ -102,6 +99,19 @@ class HTMLLoader(Loader):
             return ""
 
         return res.text
+
+    def _sanitize_html_text(self, html: str) -> str:
+        """キャッシュバスター等の余分な要素を除外する。
+
+        Args:
+            html (str): フェッチしてきた HTML テキスト
+
+        Returns:
+            str: 整形後のテキスト
+        """
+        import re
+
+        return re.sub(r"(\.(?:svg|png|jpe?g|webp))\?[^\s\"'<>]+", r"\1", html)
 
     def _gather_asset_links(
         self,
@@ -338,7 +348,8 @@ class HTMLLoader(Loader):
                 return []
 
             # 本文テキスト
-            text = html2text.html2text(html)
+            text = self._sanitize_html_text(html)
+            text = html2text.html2text(text)
             doc = Document(text=text, metadata={MK.URL: url})
             docs.append(doc)
 

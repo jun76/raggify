@@ -135,6 +135,7 @@ def _local(persist_dir: Path, table_name: str) -> IngestCacheContainer:
             cache = IngestionCache.from_persist_path(
                 str(persist_dir / DEFAULT_CACHE_NAME)
             )
+            logger.info(f"loaded from persist dir: {persist_dir}")
         except Exception as e:
             logger.warning(f"failed to load persist dir: {e}")
             cache = IngestionCache()
