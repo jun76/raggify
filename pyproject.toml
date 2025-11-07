@@ -45,6 +45,7 @@ dependencies = [
     "llama-index-readers-file",
     "llama-index-readers-web",
     "llama-index-retrievers-bm25",
+    "llama-index-storage-docstore-postgres",
     "llama-index-storage-docstore-redis",
     "llama-index-vector-stores-chroma",
     "llama-index-vector-stores-redis",

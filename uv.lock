@@ -2293,6 +2293,19 @@ wheels = [
 ]
 
 [[package]]
+name = "llama-index-storage-docstore-postgres"
+version = "0.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "llama-index-core" },
+    { name = "llama-index-storage-kvstore-postgres" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/28/5e/9e2c2d002b2e2fcb11c2fdeb945e97e1bfd51521a4d8246454eab0ff1c95/llama_index_storage_docstore_postgres-0.4.1.tar.gz", hash = "sha256:87163ca4f527264c174dc6865355db02468e82ac550efd88a317300f47f8b592", size = 3528, upload-time = "2025-09-08T20:42:54.903Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/56/cb/1f2470ec622754ba5ca20fb429608519efa58bb89429cdf6844072ef63d3/llama_index_storage_docstore_postgres-0.4.1-py3-none-any.whl", hash = "sha256:d8ae8602348005907c42d5c736001d226fe6bd541e33691934db76118addeaa0", size = 3210, upload-time = "2025-09-08T20:42:54.197Z" },
+]
+
+[[package]]
 name = "llama-index-storage-docstore-redis"
 version = "0.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2303,6 +2316,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/3c/50/5b00db78fea2943b0d4677076f977fe8593d78e9b2f3c1c6c8bbd72aa2d5/llama_index_storage_docstore_redis-0.4.1.tar.gz", hash = "sha256:3778f34654598dfa366444ca8a5325e801114f0c2edfd52404cd4c9c9282ce41", size = 3415, upload-time = "2025-09-08T20:34:04.054Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/12/a1/e08cedbe086d5fe00b2694cb504f46f1c9708664d8ee570fcc45eea393a9/llama_index_storage_docstore_redis-0.4.1-py3-none-any.whl", hash = "sha256:d0192724e37662237b3b62d5bd8206a0a0be42ff9527d72119b7200a3b2f3aa5", size = 3052, upload-time = "2025-09-08T20:34:03.136Z" },
+]
+
+[[package]]
+name = "llama-index-storage-kvstore-postgres"
+version = "0.4.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "asyncpg" },
+    { name = "llama-index-core" },
+    { name = "psycopg2-binary" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/01/f9/3d66adb7cb0eaed5f7cc416ad1b2c5e88dfc47d9de2673e4dca4c1be6049/llama_index_storage_kvstore_postgres-0.4.2.tar.gz", hash = "sha256:6279d932522dad38ea900b633c741a574c8eb496a0d063afdfa36c8f0555b740", size = 5716, upload-time = "2025-10-24T09:59:59.351Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/66/ec/2a00f6c035247d790c0af8aee5b52d86062fa141e9e66ed3cc36b757da9d/llama_index_storage_kvstore_postgres-0.4.2-py3-none-any.whl", hash = "sha256:e810787daf82e14b4938591459fed105b14cec9843925dc3d0f5c3631518645c", size = 5372, upload-time = "2025-10-24T09:59:58.302Z" },
 ]
 
 [[package]]
@@ -4470,6 +4497,7 @@ dependencies = [
     { name = "llama-index-readers-file" },
     { name = "llama-index-readers-web" },
     { name = "llama-index-retrievers-bm25" },
+    { name = "llama-index-storage-docstore-postgres" },
     { name = "llama-index-storage-docstore-redis" },
     { name = "llama-index-vector-stores-chroma" },
     { name = "llama-index-vector-stores-postgres" },
@@ -4519,6 +4547,7 @@ requires-dist = [
     { name = "llama-index-readers-file" },
     { name = "llama-index-readers-web" },
     { name = "llama-index-retrievers-bm25" },
+    { name = "llama-index-storage-docstore-postgres" },
     { name = "llama-index-storage-docstore-redis" },
     { name = "llama-index-vector-stores-chroma" },
     { name = "llama-index-vector-stores-postgres" },

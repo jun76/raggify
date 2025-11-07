@@ -46,7 +46,7 @@ class VectorStoreManager:
 
         for modality, cont in self._conts.items():
             cont.index = self._create_index(modality)
-            logger.debug(f"{modality} index created")
+            logger.debug(f"{cont.provider_name} {modality} index created")
 
     @property
     def name(self) -> str:

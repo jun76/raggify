@@ -14,28 +14,30 @@ __all__ = ["render_main_menu"]
 
 
 def _summarize_status(
-    raggify_stat: Optional[dict[str, Any]],
+    raggify_stat: dict[str, Any],
 ) -> dict[str, str]:
     """Summarize the health check result into display text.
 
     Args:
-        raggify_stat (Optional[dict[str, Any]]): raggify status payload.
+        raggify_stat (dict[str, Any]): raggify status payload.
 
     Returns:
         dict[str, str]: Service status description.
     """
+    details = "\n".join(
+        [
+            f"- vector store: {raggify_stat.get('vector store', 'N/A')}",
+            f"- embed: {raggify_stat.get('embed', 'N/A')}",
+            f"- rerank: {raggify_stat.get('rerank', 'N/A')}",
+            f"- document store: {raggify_stat.get('document store', 'N/A')}",
+            f"- ingest cache: {raggify_stat.get('ingest cache', 'N/A')}",
+        ]
+    )
+
     return {
         "raggify": (
-            "✅ Online ("
-            + ", ".join(
-                [
-                    f"store: {raggify_stat.get('store', 'N/A')}",
-                    f"embed: {raggify_stat.get('embed', 'N/A')}",
-                    f"rerank: {raggify_stat.get('rerank', 'N/A')}",
-                ]
-            )
-            + ")"
-            if raggify_stat and raggify_stat.get("status") == "ok"
+            f"✅ Online\n{details}"
+            if raggify_stat.get("status") == "ok"
             else "🛑 Offline"
         )
     }
@@ -70,7 +72,7 @@ def _render_status_section(client: RestAPIClient) -> None:
 
     st.subheader("🩺 Service status")
     texts = st.session_state["status_texts"]
-    st.write(f"RAG server: {texts['raggify']}")
+    st.markdown(f"RAG server:\n{texts['raggify']}")
     st.button(
         "🔄 Refresh status",
         on_click=_refresh_status,

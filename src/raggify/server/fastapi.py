@@ -111,12 +111,15 @@ async def health() -> dict[str, Any]:
     """
     logger.debug("exec /v1/health")
 
+    rt = _rt()
     async with _request_lock:
         return {
             "status": "ok",
-            "store": _rt().vector_store.name,
-            "embed": _rt().embed_manager.name,
-            "rerank": _rt().rerank_manager.name,
+            "vector store": rt.vector_store.name,
+            "embed": rt.embed_manager.name,
+            "rerank": rt.rerank_manager.name,
+            "ingest cache": rt.ingest_cache.name,
+            "document store": rt.document_store.name,
         }
 
 

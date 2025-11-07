@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
+from ..logger import logger
+
 if TYPE_CHECKING:
     from llama_index.core.storage.docstore import BaseDocumentStore
 
@@ -25,6 +27,8 @@ class DocumentStoreManager:
         self._provider_name = provider_name
         self._store = store
         self._table_name = table_name
+
+        logger.debug(f"{provider_name} docstore created")
 
     @property
     def name(self) -> str:

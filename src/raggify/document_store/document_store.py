@@ -31,6 +31,8 @@ def create_document_store_manager(cfg: ConfigManager) -> DocumentStoreManager:
     match cfg.general.document_store_provider:
         case DocumentStoreProvider.REDIS:
             return _redis(cfg=cfg.document_store, table_name=table_name)
+        case DocumentStoreProvider.POSTGRES:
+            return _postgres(cfg=cfg.document_store, table_name=table_name)
         case DocumentStoreProvider.LOCAL:
             return _local(cfg.ingest.pipe_persist_dir)
         case _:
@@ -65,6 +67,26 @@ def _redis(cfg: DocumentStoreConfig, table_name: str) -> DocumentStoreManager:
         store=RedisDocumentStore.from_host_and_port(
             host=cfg.redis_host,
             port=cfg.redis_port,
+            namespace=table_name,
+        ),
+        table_name=table_name,
+    )
+
+
+def _postgres(cfg: DocumentStoreConfig, table_name: str) -> DocumentStoreManager:
+    from llama_index.storage.docstore.postgres import PostgresDocumentStore
+
+    from .document_store_manager import DocumentStoreManager
+
+    return DocumentStoreManager(
+        provider_name=DocumentStoreProvider.POSTGRES,
+        store=PostgresDocumentStore.from_params(
+            host=cfg.postgres_host,
+            port=str(cfg.postgres_port),
+            database=cfg.postgres_database,
+            user=cfg.postgres_user,
+            password=cfg.postgres_password,
+            table_name=table_name,
             namespace=table_name,
         ),
         table_name=table_name,

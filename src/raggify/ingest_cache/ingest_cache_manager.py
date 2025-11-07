@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
 from ..embed.embed_manager import Modality
+from ..logger import logger
 
 if TYPE_CHECKING:
     from llama_index.core.ingestion import IngestionCache
@@ -28,6 +29,9 @@ class IngestCacheManager:
             conts (dict[Modality, IngestCacheContainer]): インジェストキャッシュコンテナの辞書
         """
         self._conts = conts
+
+        for modality, cont in conts.items():
+            logger.debug(f"{cont.provider_name} {modality} ingest cache created")
 
     @property
     def name(self) -> str:
