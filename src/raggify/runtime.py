@@ -141,7 +141,6 @@ class Runtime:
             return pipe
 
         if not (persist_dir and persist_dir.exists()):
-            logger.warning(f"invalid persist dir: {persist_dir}, skipped loading")
             return pipe
 
         try:

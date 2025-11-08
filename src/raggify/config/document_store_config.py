@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import StrEnum, auto
 from typing import Optional
 
-from ..core.const import DEFAULT_WORKSPACE_PATH, PROJECT_NAME
+from ..core.const import PROJECT_NAME
 
 
 class DocumentStoreProvider(StrEnum):

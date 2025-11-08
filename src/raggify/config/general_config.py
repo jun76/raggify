@@ -21,9 +21,9 @@ class GeneralConfig:
     document_store_provider: DocumentStoreProvider = DocumentStoreProvider.LOCAL
     ingest_cache_provider: IngestCacheProvider = IngestCacheProvider.LOCAL
     text_embed_provider: Optional[EmbedProvider] = EmbedProvider.OPENAI
-    image_embed_provider: Optional[EmbedProvider] = EmbedProvider.VOYAGE
+    image_embed_provider: Optional[EmbedProvider] = EmbedProvider.COHERE
     audio_embed_provider: Optional[EmbedProvider] = None
-    rerank_provider: Optional[RerankProvider] = None
+    rerank_provider: Optional[RerankProvider] = RerankProvider.COHERE
     openai_base_url: Optional[str] = None
     device: Literal["cpu", "cuda", "mps"] = "cpu"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "DEBUG"
