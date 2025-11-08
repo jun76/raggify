@@ -266,6 +266,40 @@ async def _aupsert_nodes(
 
     await asyncio.gather(*tasks)
 
+    _cleanup_temp_files()
+
+
+def _cleanup_temp_files() -> None:
+    """プレフィックスにマッチする一時ファイルをまとめて削除する。
+
+    思わぬ取りこぼしがあるかもしれないので、ノードから一時ファイル名を取ることはしない。
+    """
+    import tempfile
+    from pathlib import Path
+
+    from ..core.const import TEMP_FILE_PREFIX
+
+    temp_dir = Path(tempfile.gettempdir())
+    prefix = TEMP_FILE_PREFIX
+
+    try:
+        entries = list(temp_dir.iterdir())
+    except OSError as e:
+        logger.warning(f"failed to list temp dir {temp_dir}: {e}")
+        return
+
+    for entry in entries:
+        if not entry.is_file():
+            continue
+
+        if not entry.name.startswith(prefix):
+            continue
+
+        try:
+            entry.unlink()
+        except OSError as e:
+            logger.warning(f"failed to remove temp file {entry}: {e}")
+
 
 def ingest_path(
     path: str,

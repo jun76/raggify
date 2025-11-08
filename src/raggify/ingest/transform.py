@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from collections import defaultdict
 from typing import TYPE_CHECKING, Awaitable, Callable, Optional
 
@@ -105,16 +104,10 @@ class _BaseEmbedTransform(TransformComponent):
         for i, vec in zip(backrefs, vecs):
             nodes[i].embedding = vec
 
-            # 一時ファイルを削除
-            temp = nodes[i].metadata.get(MK.TEMP_FILE_PATH)
-            if temp:
-                # ファイルパスはベースソースで上書き
+            if nodes[i].metadata.get(MK.TEMP_FILE_PATH):
+                # 一時ファイルを持つノードの file_path は base_source で上書き
                 # （空になるか、PDF 等の独自 reader が退避していた元パスが復元されるか）
                 nodes[i].metadata[MK.FILE_PATH] = nodes[i].metadata[MK.BASE_SOURCE]
-                try:
-                    os.remove(temp)
-                except OSError as e:
-                    logger.exception(e)
 
         return nodes
 
