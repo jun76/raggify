@@ -4,7 +4,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
-from llama_index.core.schema import Document, ImageNode, TextNode
+from llama_index.core.schema import Document, ImageNode, MediaResource, TextNode
 
 from ...core.exts import Exts
 from ...core.metadata import BasicMetaData
@@ -40,11 +40,8 @@ class Loader:
         """
         self._persist_dir = persist_dir
 
-    def _add_doc_id(self, docs: list[Document]) -> None:
-        """一意なドキュメント ID を付与する。
-
-        二回目以降、同一 ID のドキュメントに対しては IngestionPipeline 内で
-        ハッシュ比較が行われ、変更がない場合は戻り値のノードリストから弾かれる。
+    def _finalize_docs(self, docs: list[Document]) -> None:
+        """メタデータを調整してドキュメントの内容を確定する。
 
         Args:
             docs (list[Document]): ドキュメント
@@ -58,10 +55,24 @@ class Loader:
             counter_key = meta.temp_file_path or meta.file_path or meta.url
             meta.chunk_no = counters[counter_key]
             counters[counter_key] += 1
-
             doc.metadata[MK.CHUNK_NO] = meta.chunk_no
+
+            # 一意な ID を付与。二回目以降、同一 ID のドキュメントに対しては
+            # IngestionPipeline 内でハッシュ比較が行われ、変更がない場合は戻り値の
+            # ノードリストに含まれない。
             doc.id_ = self._generate_doc_id(meta)
             doc.doc_id = doc.id_
+
+            # BM25 が text_resource を参照するため、中身が空なら .text を転記する
+            text_resource = getattr(doc, "text_resource", None)
+            text_value = getattr(text_resource, "text", None) if text_resource else None
+            if not text_value:
+                try:
+                    doc.text_resource = MediaResource(text=doc.text)
+                except Exception as e:
+                    logger.debug(
+                        f"failed to set text_resource on doc {doc.doc_id}: {e}"
+                    )
 
     def _generate_doc_id(self, meta: BasicMetaData) -> str:
         """doc_id を生成する。
@@ -95,7 +106,7 @@ class Loader:
             tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
                 テキストノード、画像ノード、音声ノード
         """
-        self._add_doc_id(docs)
+        self._finalize_docs(docs)
         rt = _rt()
         pipe = rt.build_pipeline(persist_dir=self._persist_dir)
         nodes = await pipe.arun(documents=docs)

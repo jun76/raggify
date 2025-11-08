@@ -73,6 +73,8 @@ class Runtime:
 
     def touch(self) -> None:
         """各シングルトンの生成が未だであれば生成する。"""
+        from .logger import configure_logging
+
         self.embed_manager
         self.vector_store
         self.document_store
@@ -80,6 +82,26 @@ class Runtime:
         self.rerank_manager
         self.file_loader
         self.html_loader
+
+        configure_logging()
+        logger.setLevel(self.cfg.general.log_level)
+
+    def _use_local_workspace(self) -> bool:
+        """キャッシュやドキュメントストアをローカルに保存するか
+
+        Returns:
+            bool: ローカルに保存する場合 True
+        """
+        from .config.document_store_config import DocumentStoreProvider
+        from .config.ingest_cache_config import IngestCacheProvider
+
+        cfg = self.cfg.general
+        if (cfg.ingest_cache_provider is IngestCacheProvider.LOCAL) or (
+            cfg.document_store_provider is DocumentStoreProvider.LOCAL
+        ):
+            return True
+
+        return False
 
     def build_pipeline(
         self,
@@ -115,15 +137,21 @@ class Runtime:
                 docstore_strategy=DocstoreStrategy.UPSERTS,
             )
 
-        if persist_dir and persist_dir.exists():
-            try:
-                pipe.load(str(persist_dir))
-                with self._pipeline_lock:
-                    if modality is not None:
-                        self.ingest_cache.get_container(modality).cache = pipe.cache
-                    self.document_store.store = pipe.docstore
-            except Exception as e:
-                logger.warning(f"failed to load persist dir: {e}")
+        if not self._use_local_workspace():
+            return pipe
+
+        if not (persist_dir and persist_dir.exists()):
+            logger.warning(f"invalid persist dir: {persist_dir}, skipped loading")
+            return pipe
+
+        try:
+            pipe.load(str(persist_dir))
+            with self._pipeline_lock:
+                if modality is not None:
+                    self.ingest_cache.get_container(modality).cache = pipe.cache
+                self.document_store.store = pipe.docstore
+        except Exception as e:
+            logger.warning(f"failed to load persist dir: {e}")
 
         return pipe
 
@@ -140,15 +168,21 @@ class Runtime:
             modality (Optional[Modality], optional): モダリティ。Defaults to None.
             persist_dir (Optional[Path], optional): 永続化ディレクトリ。Defaults to None.
         """
-        if persist_dir:
-            try:
-                pipe.persist(str(persist_dir))
-                with self._pipeline_lock:
-                    if modality:
-                        self.ingest_cache.get_container(modality).cache = pipe.cache
-                    self.document_store.store = pipe.docstore
-            except Exception as e:
-                logger.warning(f"failed to persist: {e}")
+        if not self._use_local_workspace():
+            return
+
+        if persist_dir is None:
+            logger.warning(f"persist dir not specified, skipped persisting")
+            return
+
+        try:
+            pipe.persist(str(persist_dir))
+            with self._pipeline_lock:
+                if modality:
+                    self.ingest_cache.get_container(modality).cache = pipe.cache
+                self.document_store.store = pipe.docstore
+        except Exception as e:
+            logger.warning(f"failed to persist: {e}")
 
     # 以下、シングルトンのインスタンス取得用
     @property

@@ -71,10 +71,14 @@ def _get_bm25_retriever(rt: Runtime) -> Optional[BaseRetriever]:
         logger.warning("docstore is empty; BM25 retrieval skipped")
         return None
 
-    return BM25Retriever.from_defaults(
-        docstore=docstore.store,
-        similarity_top_k=rt.cfg.retrieve.bm25_topk,
-    )
+    try:
+        return BM25Retriever.from_defaults(
+            docstore=docstore.store,
+            similarity_top_k=rt.cfg.retrieve.bm25_topk,
+        )
+    except Exception as e:
+        logger.warning(f"failed to get BM25 retriever: {e}")
+        return None
 
 
 def _get_fusion_retriever(rt: Runtime, index: VectorStoreIndex) -> BaseRetriever:

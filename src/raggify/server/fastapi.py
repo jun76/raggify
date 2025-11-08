@@ -269,8 +269,9 @@ async def ingest_url(payload: URLRequest) -> dict[str, str]:
         try:
             await ingest.aingest_url(payload.url)
         except Exception as e:
-            logger.error(f"ingest url failure: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=f"ingest url failure")
+            msg = "ingest url failure"
+            logger.error(f"{msg}: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=msg)
 
     return {"status": "ok"}
 
@@ -326,9 +327,9 @@ async def query_text_text(payload: QueryTextRequest) -> dict[str, Any]:
     async with _request_lock:
         try:
             nodes = await aquery_text_text(query=payload.query, topk=payload.topk)
-        except Exception:
+        except Exception as e:
             msg = "query text text failure"
-            logger.error(msg)
+            logger.error(f"{msg}: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail=msg)
 
     return {"documents": _nodes_to_response(nodes)}
@@ -359,9 +360,9 @@ async def query_text_image(payload: QueryTextRequest) -> dict[str, Any]:
     async with _request_lock:
         try:
             nodes = await aquery_text_image(query=payload.query, topk=payload.topk)
-        except Exception:
+        except Exception as e:
             msg = "query text image failure"
-            logger.error(msg)
+            logger.error(f"{msg}: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail=msg)
 
     return {"documents": _nodes_to_response(nodes)}
@@ -392,9 +393,9 @@ async def query_image_image(payload: QueryMultimodalRequest) -> dict[str, Any]:
     async with _request_lock:
         try:
             nodes = await aquery_image_image(path=payload.path, topk=payload.topk)
-        except Exception:
+        except Exception as e:
             msg = "query image image failure"
-            logger.error(msg)
+            logger.error(f"{msg}: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail=msg)
 
     return {"documents": _nodes_to_response(nodes)}
@@ -425,9 +426,9 @@ async def query_text_audio(payload: QueryTextRequest) -> dict[str, Any]:
     async with _request_lock:
         try:
             nodes = await aquery_text_audio(query=payload.query, topk=payload.topk)
-        except Exception:
+        except Exception as e:
             msg = "query text audio failure"
-            logger.error(msg)
+            logger.error(f"{msg}: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail=msg)
 
     return {"documents": _nodes_to_response(nodes)}
@@ -458,9 +459,9 @@ async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
     async with _request_lock:
         try:
             nodes = await aquery_audio_audio(path=payload.path, topk=payload.topk)
-        except Exception:
+        except Exception as e:
             msg = "query audio audio failure"
-            logger.error(msg)
+            logger.error(f"{msg}: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail=msg)
 
     return {"documents": _nodes_to_response(nodes)}
