@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum, auto
 
+from mashumaro import DataClassDictMixin
+
 
 class RerankProvider(StrEnum):
     FLAGEMBEDDING = auto()
@@ -10,7 +12,7 @@ class RerankProvider(StrEnum):
 
 
 @dataclass(kw_only=True)
-class RerankConfig:
+class RerankConfig(DataClassDictMixin):
     """リランク関連の設定用データクラス"""
 
     flagembedding_rerank_model: str = "BAAI/bge-reranker-v2-m3"

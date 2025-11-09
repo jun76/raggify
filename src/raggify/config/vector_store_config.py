@@ -5,6 +5,8 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Optional
 
+from mashumaro import DataClassDictMixin
+
 from ..core.const import DEFAULT_WORKSPACE_PATH, PROJECT_NAME
 
 
@@ -15,7 +17,7 @@ class VectorStoreProvider(StrEnum):
 
 
 @dataclass(kw_only=True)
-class VectorStoreConfig:
+class VectorStoreConfig(DataClassDictMixin):
     """ベクトルストア関連の設定用データクラス"""
 
     # Chroma

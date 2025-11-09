@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum, auto
 
+from mashumaro import DataClassDictMixin
+
 
 class RetrieveMode(StrEnum):
     VECTOR_ONLY = auto()
@@ -11,7 +13,7 @@ class RetrieveMode(StrEnum):
 
 
 @dataclass(kw_only=True)
-class RetrieveConfig:
+class RetrieveConfig(DataClassDictMixin):
     """リトリーバー関連の設定用データクラス"""
 
     mode: RetrieveMode = RetrieveMode.FUSION

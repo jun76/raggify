@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from enum import StrEnum, auto
 from typing import Optional
 
+from mashumaro import DataClassDictMixin
+
 from ..core.const import PROJECT_NAME
 
 
@@ -14,7 +16,7 @@ class DocumentStoreProvider(StrEnum):
 
 
 @dataclass(kw_only=True)
-class DocumentStoreConfig:
+class DocumentStoreConfig(DataClassDictMixin):
     """ドキュメントストア関連の設定用データクラス"""
 
     # Redis

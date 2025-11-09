@@ -1,69 +1,70 @@
 from __future__ import annotations
 
-import enum
 import logging
 import os
-from dataclasses import fields
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional, get_args, get_origin, get_type_hints
 
 import yaml
 from dotenv import load_dotenv
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
+from mashumaro.types import SerializationStrategy
 
-from ..config.document_store_config import DocumentStoreConfig
-from ..config.embed_config import EmbedConfig
-from ..config.general_config import GeneralConfig
-from ..config.ingest_cache_config import IngestCacheConfig
-from ..config.ingest_config import IngestConfig
-from ..config.rerank_config import RerankConfig
-from ..config.retrieve_config import RetrieveConfig
-from ..config.vector_store_config import VectorStoreConfig
 from ..core.const import USER_CONFIG_PATH
+from .document_store_config import DocumentStoreConfig
+from .embed_config import EmbedConfig
+from .general_config import GeneralConfig
+from .ingest_cache_config import IngestCacheConfig
+from .ingest_config import IngestConfig
+from .rerank_config import RerankConfig
+from .retrieve_config import RetrieveConfig
+from .vector_store_config import VectorStoreConfig
 
 logger = logging.getLogger(__name__)
 
 
-class ConfigManager:
-    """設定管理クラス
+class PathSerializationStrategy(SerializationStrategy):
+    """Path <-> str の相互変換を mashumaro 経由で行うためのストラテジークラス。"""
 
-    このクラスの保持する値がマスターであり、周辺クラスはそれぞれ以下の役割。
-        Settings: デフォルトの設定値を定義
-        *Config: 各所に設定値を公開するためのインタフェース
-    """
+    def serialize(self, value: Path) -> str:
+        return str(value)
+
+    def deserialize(self, value: str) -> Path:
+        return Path(value).expanduser()
+
+
+@dataclass
+class AppConfig(DataClassDictMixin):
+    """全セクションを一括で保持するためのルート設定データクラス。"""
+
+    general: GeneralConfig = field(default_factory=GeneralConfig)
+    vector_store: VectorStoreConfig = field(default_factory=VectorStoreConfig)
+    document_store: DocumentStoreConfig = field(default_factory=DocumentStoreConfig)
+    ingest_cache: IngestCacheConfig = field(default_factory=IngestCacheConfig)
+    embed: EmbedConfig = field(default_factory=EmbedConfig)
+    ingest: IngestConfig = field(default_factory=IngestConfig)
+    rerank: RerankConfig = field(default_factory=RerankConfig)
+    retrieve: RetrieveConfig = field(default_factory=RetrieveConfig)
+
+    class Config(BaseConfig):
+        serialization_strategy = {Path: PathSerializationStrategy()}
+
+
+class ConfigManager:
+    """各種設定管理クラス。"""
 
     def __init__(self) -> None:
-        """コンストラクタ"""
-        self._general: GeneralConfig
-        self._vector_store: VectorStoreConfig
-        self._document_store: DocumentStoreConfig
-        self._ingest_cache: IngestCacheConfig
-        self._embed: EmbedConfig
-        self._ingest: IngestConfig
-        self._rerank: RerankConfig
-        self._retrieve: RetrieveConfig
-
         load_dotenv()
+        self._config = AppConfig()
 
         if not os.path.exists(USER_CONFIG_PATH):
-            self.load_default()
             self.write_yaml()
-
-        self.read_yaml()
-
-    def load_default(self) -> None:
-        """デフォルトの設定値を読み込む。"""
-        self._general = GeneralConfig()
-        self._vector_store = VectorStoreConfig()
-        self._document_store = DocumentStoreConfig()
-        self._ingest_cache = IngestCacheConfig()
-        self._embed = EmbedConfig()
-        self._ingest = IngestConfig()
-        self._rerank = RerankConfig()
-        self._retrieve = RetrieveConfig()
+        else:
+            self.read_yaml()
 
     def read_yaml(self) -> None:
-        """設定ファイルから設定値を読み込む。"""
-        self.load_default()
+        """YAML ファイルから設定を読み込み、AppConfig にマッピングする。"""
         try:
             with open(USER_CONFIG_PATH, "r", encoding="utf-8") as fp:
                 data = yaml.safe_load(fp) or {}
@@ -71,35 +72,14 @@ class ConfigManager:
             logger.warning(f"failed to read config file: {e}")
             return
 
-        self._general = self._apply_section(
-            data.get("general"), GeneralConfig, self._general
-        )
-        self._vector_store = self._apply_section(
-            data.get("vector_store"), VectorStoreConfig, self._vector_store
-        )
-        self._document_store = self._apply_section(
-            data.get("document_store"),
-            DocumentStoreConfig,
-            self._document_store,
-        )
-        self._ingest_cache = self._apply_section(
-            data.get("ingest_cache"),
-            IngestCacheConfig,
-            self._ingest_cache,
-        )
-        self._embed = self._apply_section(data.get("embed"), EmbedConfig, self._embed)
-        self._ingest = self._apply_section(
-            data.get("ingest"), IngestConfig, self._ingest
-        )
-        self._rerank = self._apply_section(
-            data.get("rerank"), RerankConfig, self._rerank
-        )
-        self._retrieve = self._apply_section(
-            data.get("retrieve"), RetrieveConfig, self._retrieve
-        )
+        try:
+            self._config = AppConfig.from_dict(data)
+        except Exception as e:
+            logger.warning(f"failed to load config, using defaults: {e}")
+            self._config = AppConfig()
 
     def write_yaml(self) -> None:
-        """現状の設定値を設定ファイルに書き出す。"""
+        """現在の設定を YAML として書き出す。"""
         config_dir = os.path.dirname(USER_CONFIG_PATH)
         try:
             os.makedirs(config_dir, exist_ok=True)
@@ -107,7 +87,7 @@ class ConfigManager:
             logger.warning(f"failed to prepare config directory: {e}")
             return
 
-        data = self.get_dict()
+        data = self._config.to_dict()
         try:
             with open(USER_CONFIG_PATH, "w", encoding="utf-8") as fp:
                 yaml.safe_dump(data, fp, sort_keys=False, allow_unicode=True)
@@ -116,224 +96,40 @@ class ConfigManager:
 
     @property
     def general(self) -> GeneralConfig:
-        return self._general
+        return self._config.general
 
     @property
     def vector_store(self) -> VectorStoreConfig:
-        return self._vector_store
+        return self._config.vector_store
 
     @property
     def document_store(self) -> DocumentStoreConfig:
-        return self._document_store
+        return self._config.document_store
 
     @property
     def ingest_cache(self) -> IngestCacheConfig:
-        return self._ingest_cache
+        return self._config.ingest_cache
 
     @property
     def embed(self) -> EmbedConfig:
-        return self._embed
+        return self._config.embed
 
     @property
     def ingest(self) -> IngestConfig:
-        return self._ingest
+        return self._config.ingest
 
     @property
     def rerank(self) -> RerankConfig:
-        return self._rerank
+        return self._config.rerank
 
     @property
     def retrieve(self) -> RetrieveConfig:
-        return self._retrieve
+        return self._config.retrieve
 
-    def get_dict(self) -> dict[str, Any]:
-        """現状の設定を辞書形式で返す。
-
-        Returns:
-            dict[str, Any]: 設定の辞書
-        """
-        return {
-            "general": self._serialize_dataclass(self._general),
-            "vector_store": self._serialize_dataclass(self._vector_store),
-            "document_store": self._serialize_dataclass(self._document_store),
-            "ingest_cache": self._serialize_dataclass(self._ingest_cache),
-            "embed": self._serialize_dataclass(self._embed),
-            "ingest": self._serialize_dataclass(self._ingest),
-            "rerank": self._serialize_dataclass(self._rerank),
-            "retrieve": self._serialize_dataclass(self._retrieve),
-        }
-
-    def _apply_section(
-        self,
-        section: Any,
-        schema: type[Any],
-        default_instance: Any,
-    ) -> Any:
-        """YAML セクションを dataclass インスタンスへ適用する。
-
-        Args:
-            section (Any): YAML から読み込んだセクションデータ
-            schema (type): 対象の dataclass 型
-            default_instance (Any): デフォルト値として利用するインスタンス
+    def get_dict(self) -> dict[str, object]:
+        """現在保持している設定を辞書形式で取得する。
 
         Returns:
-            Any: セクションから生成した dataclass インスタンス
+            dict[str, object]: 辞書
         """
-        if not isinstance(section, dict):
-            return default_instance
-
-        values: dict[str, Any] = {}
-        type_hints = get_type_hints(schema)
-        for field in fields(schema):
-            current = getattr(default_instance, field.name)
-            raw = section.get(field.name, current)
-
-            annotation = type_hints.get(field.name, field.type)
-            enum_cls = self._extract_enum_type(annotation)
-            if enum_cls is not None:
-                default_enum = current if isinstance(current, enum.Enum) else None
-                values[field.name] = self._load_enum(enum_cls, raw, default_enum)
-            elif isinstance(current, enum.Enum):
-                values[field.name] = self._load_enum(type(current), raw, current)
-            elif isinstance(current, dict):
-                values[field.name] = self._load_dict(raw, current)
-            elif annotation is Path:
-                default_path = (
-                    current if isinstance(current, Path) else Path(current or "")
-                )
-                values[field.name] = self._load_path(raw, default_path)
-            else:
-                values[field.name] = raw
-
-        try:
-            return schema(**values)
-        except Exception as e:
-            logger.warning(
-                f"failed to instantiate {schema.__name__} from config. "
-                f"falling back to defaults. error: {e}"
-            )
-
-            return default_instance
-
-    def _load_enum(
-        self,
-        enum_cls: type[enum.Enum],
-        raw: Any,
-        default: Optional[enum.Enum],
-    ) -> Optional[enum.Enum]:
-        """YAML から列挙値を読み込む。
-
-        Args:
-            enum_cls (type[enum.Enum]): 対象列挙型
-            raw (Any): YAML から取得した raw 値
-            default (Optional[enum.Enum]): 変換失敗時に使用する既定値
-
-        Returns:
-            Optional[enum.Enum]: 変換後の列挙値
-        """
-        if isinstance(raw, enum_cls):
-            return raw
-
-        if raw is None:
-            return None
-
-        try:
-            return enum_cls[raw]
-        except (KeyError, TypeError):
-            try:
-                return enum_cls(raw)
-            except Exception:
-                logger.warning(
-                    f"invalid enum value '{raw}' for {enum_cls.__name__}. using default."
-                )
-
-                return default
-
-    def _load_dict(self, raw: Any, default: dict[str, Any]) -> dict[str, Any]:
-        """YAML から辞書値を読み込む。
-
-        Args:
-            raw (Any): YAML から取得した raw 値
-            default (dict[str, Any]): 既定値
-
-        Returns:
-            dict[str, Any]: マージ後の辞書
-        """
-        if raw is None:
-            return dict(default)
-
-        if not isinstance(raw, dict):
-            logger.warning(f"invalid dict value '{raw}'. using default.")
-            return dict(default)
-
-        return {
-            **default,
-            **{k: v for k, v in raw.items() if v is not None},
-        }
-
-    def _serialize_dataclass(self, instance: Any) -> dict[str, Any]:
-        """dataclass インスタンスを YAML 書き込み用 dict に変換する。
-
-        Args:
-            instance (Any): 対象の dataclass インスタンス
-
-        Returns:
-            dict[str, Any]: シリアライズ済み辞書
-        """
-        serialized: dict[str, Any] = {}
-        for field in fields(type(instance)):
-            value = getattr(instance, field.name)
-            if isinstance(value, enum.Enum):
-                serialized[field.name] = value.name
-            elif isinstance(value, Path):
-                serialized[field.name] = str(value)
-            else:
-                serialized[field.name] = value
-
-        return serialized
-
-    def _load_path(self, raw: Any, default: Path) -> Path:
-        """YAML からパス値を読み込む。
-
-        Args:
-            raw (Any): 読み込んだ文字列
-            default (Path): 既定値
-
-        Returns:
-            Path: パス値
-        """
-        if raw is None:
-            return default
-
-        if isinstance(raw, Path):
-            return raw.expanduser()
-
-        if isinstance(raw, str):
-            return Path(raw).expanduser()
-
-        logger.warning(f"invalid path value '{raw}'. using default.")
-
-        return default
-
-    def _extract_enum_type(self, annotation: Any) -> Optional[type[enum.Enum]]:
-        """型ヒントから列挙型を抽出する。
-
-        Args:
-            annotation (Any): フィールドの型ヒント
-
-        Returns:
-            Optional[type[enum.Enum]]: 列挙型または None
-        """
-        if isinstance(annotation, type) and issubclass(annotation, enum.Enum):
-            return annotation
-
-        origin = get_origin(annotation)
-        if origin is None:
-            return None
-
-        for arg in get_args(annotation):
-            enum_cls = self._extract_enum_type(arg)
-            if enum_cls is not None:
-                return enum_cls
-
-        return None
+        return self._config.to_dict()

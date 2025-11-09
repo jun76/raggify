@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from mashumaro import DataClassDictMixin
+
 from ..core.const import (
     DEFAULT_KNOWLEDGEBASE_NAME,
     DEFAULT_WORKSPACE_PATH,
@@ -11,7 +13,7 @@ from ..core.const import (
 
 
 @dataclass(kw_only=True)
-class IngestConfig:
+class IngestConfig(DataClassDictMixin):
     """ドキュメント取り込み処理関連の設定用データクラス"""
 
     # General

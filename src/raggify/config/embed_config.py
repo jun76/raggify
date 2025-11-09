@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from enum import StrEnum, auto
 from typing import Any
 
+from mashumaro import DataClassDictMixin
+
 
 class EmbedProvider(StrEnum):
     CLIP = auto()
@@ -21,7 +23,7 @@ class EmbedModel(StrEnum):
 
 
 @dataclass(kw_only=True)
-class EmbedConfig:
+class EmbedConfig(DataClassDictMixin):
     """埋め込み関連の設定用データクラス"""
 
     # Text

@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum, auto
 
+from mashumaro import DataClassDictMixin
+
 
 class IngestCacheProvider(StrEnum):
     REDIS = auto()
@@ -10,7 +12,7 @@ class IngestCacheProvider(StrEnum):
 
 
 @dataclass(kw_only=True)
-class IngestCacheConfig:
+class IngestCacheConfig(DataClassDictMixin):
     """インジェストキャッシュ関連の設定用データクラス"""
 
     # Redis
