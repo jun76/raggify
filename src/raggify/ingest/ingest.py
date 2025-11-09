@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Awaitable, Callable, Optional, Sequence
+from typing import TYPE_CHECKING, Optional, Sequence
 
 from llama_index.core.async_utils import asyncio_run
+from llama_index.core.ingestion import IngestionPipeline
 
 from ..embed.embed_manager import Modality
 from ..logger import logger
@@ -68,117 +69,76 @@ def _read_list(path: str) -> list[str]:
     return lst
 
 
-async def _arun_pipe(
-    nodes: Sequence[BaseNode],
-    transformations: list[TransformComponent] | None,
-    modality: Modality,
-    persist_dir: Optional[Path],
-) -> Optional[Sequence[BaseNode]]:
-    """モダリティ別キャッシュ用パイプラインを実行する。
+def _build_text_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
+    """テキスト用パイプラインを構築する。
 
     Args:
-        nodes (Sequence[BaseNode]): ノード
-        transformations (list[TransformComponent] | None): 変換一式
-        modality (Modality): モダリティ
         persist_dir (Optional[Path]): 永続化ディレクトリ
 
     Returns:
-        Optional[Sequence[BaseNode]]: 重複ドキュメントフィルター後のノード
-    """
-    if not nodes:
-        return None
-
-    rt = _rt()
-    pipe = rt.build_pipeline(
-        transformations=transformations, modality=modality, persist_dir=persist_dir
-    )
-    filtered_nodes = await pipe.arun(nodes=nodes)
-    rt.persist_pipeline(pipe=pipe, modality=modality, persist_dir=persist_dir)
-
-    logger.debug(f"{len(nodes)} nodes --pipeline--> {len(filtered_nodes)} nodes")
-
-    return filtered_nodes
-
-
-async def _arun_text_pipe(
-    nodes: Sequence[TextNode],
-    persist_dir: Optional[Path],
-) -> Optional[Sequence[BaseNode]]:
-    """テキストノードのパイプラインを実行する。
-
-    Args:
-        nodes (Sequence[TextNode]): テキストノード
-        persist_dir (Optional[Path]): 永続化ディレクトリ
-
-    Returus:
-        Optional[Sequence[BaseNode]]: 重複ドキュメントフィルター後のノード
+        IngestionPipeline: パイプライン
     """
     from llama_index.core.node_parser import SentenceSplitter
 
     from .transform import AddChunkIndexTransform, make_text_embed_transform
 
     rt = _rt()
-    return await _arun_pipe(
-        nodes=nodes,
-        transformations=[
-            SentenceSplitter(
-                chunk_size=rt.cfg.ingest.chunk_size,
-                chunk_overlap=rt.cfg.ingest.chunk_overlap,
-                include_metadata=True,
-            ),
-            AddChunkIndexTransform(),
-            make_text_embed_transform(rt.embed_manager),
-        ],
-        modality=Modality.TEXT,
-        persist_dir=persist_dir,
+    transformations: list[TransformComponent] = [
+        SentenceSplitter(
+            chunk_size=rt.cfg.ingest.chunk_size,
+            chunk_overlap=rt.cfg.ingest.chunk_overlap,
+            include_metadata=True,
+        ),
+        AddChunkIndexTransform(),
+        make_text_embed_transform(rt.embed_manager),
+    ]
+
+    return rt.build_pipeline(
+        transformations=transformations, modality=Modality.TEXT, persist_dir=persist_dir
     )
 
 
-async def _arun_image_pipe(
-    nodes: Sequence[ImageNode],
-    persist_dir: Optional[Path],
-) -> Optional[Sequence[BaseNode]]:
-    """画像ノードのパイプラインを実行する。
+def _build_image_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
+    """画像用パイプラインを構築する。
 
     Args:
-        nodes (Sequence[ImageNode]): 画像ノード
         persist_dir (Optional[Path]): 永続化ディレクトリ
 
-    Returus:
-        Optional[Sequence[BaseNode]]: 重複ドキュメントフィルター後のノード
+    Returns:
+        IngestionPipeline: パイプライン
     """
     from .transform import make_image_embed_transform
 
-    return await _arun_pipe(
-        nodes=nodes,
-        transformations=[
-            make_image_embed_transform(_rt().embed_manager),
-        ],
+    rt = _rt()
+    transformations: list[TransformComponent] = [
+        make_image_embed_transform(rt.embed_manager),
+    ]
+
+    return rt.build_pipeline(
+        transformations=transformations,
         modality=Modality.IMAGE,
         persist_dir=persist_dir,
     )
 
 
-async def _arun_audio_pipe(
-    nodes: Sequence[AudioNode],
-    persist_dir: Optional[Path],
-) -> Optional[Sequence[BaseNode]]:
-    """音声ノードのパイプラインを実行する。
+def _build_audio_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
+    """音声用パイプラインを構築する。
 
     Args:
-        nodes (Sequence[AudioNode]): 音声ノード
         persist_dir (Optional[Path]): 永続化ディレクトリ
 
-    Returus:
-        Optional[Sequence[BaseNode]]: 重複ドキュメントフィルター後のノード
+    Returns:
+        IngestionPipeline: パイプライン
     """
     from .transform import make_audio_embed_transform
 
-    return await _arun_pipe(
-        nodes=nodes,
-        transformations=[
-            make_audio_embed_transform(_rt().embed_manager),
-        ],
+    rt = _rt()
+    transformations: list[TransformComponent] = [
+        make_audio_embed_transform(rt.embed_manager),
+    ]
+
+    return rt.build_pipeline(
+        transformations=transformations,
         modality=Modality.AUDIO,
         persist_dir=persist_dir,
     )
@@ -186,10 +146,7 @@ async def _arun_audio_pipe(
 
 async def _process_batches(
     nodes: Sequence[BaseNode],
-    runner: Callable[
-        [Sequence, Optional[Path]], Awaitable[Optional[Sequence[BaseNode]]]
-    ],
-    label: str,
+    modality: Modality,
     persist_dir: Optional[Path],
     batch_size: int,
 ) -> None:
@@ -197,24 +154,40 @@ async def _process_batches(
 
     Args:
         nodes (Sequence[BaseNode]): ノード
-        runner (Callable[
-            [Sequence, Optional[Path]], Awaitable[Optional[Sequence[BaseNode]]]
-        ]): バッチ化対象の処理
-        label (str): 経過表示用ラベル
+        modality (Modality): モダリティ
         persist_dir (Optional[Path]): 永続化ディレクトリ
         batch_size (int): バッチサイズ
     """
     if not nodes:
         return
 
+    rt = _rt()
+    match modality:
+        case Modality.TEXT:
+            pipe = _build_text_pipeline(persist_dir)
+        case Modality.IMAGE:
+            pipe = _build_image_pipeline(persist_dir)
+        case Modality.AUDIO:
+            pipe = _build_audio_pipeline(persist_dir)
+        case _:
+            raise ValueError(f"unexpected modality: {modality}")
+
     total_batches = (len(nodes) + batch_size - 1) // batch_size
+    trans_nodes = []
     for idx in range(0, len(nodes), batch_size):
         batch = nodes[idx : idx + batch_size]
+        prog = f"{idx // batch_size + 1}/{total_batches}"
         logger.debug(
-            f"{label}: processing batch {idx // batch_size + 1}/{total_batches} "
+            f"{modality} upsert pipeline: processing batch {prog} "
             f"({len(batch)} nodes)"
         )
-        await runner(batch, persist_dir)
+        try:
+            trans_nodes.extend(await pipe.arun(nodes=batch))
+        except Exception as e:
+            logger.error(f"failed to process batch {prog}, continue: {e}")
+
+    rt.persist_pipeline(pipe=pipe, modality=modality, persist_dir=persist_dir)
+    logger.debug(f"{len(nodes)} nodes --pipeline--> {len(trans_nodes)} nodes")
 
 
 async def _aupsert_nodes(
@@ -223,7 +196,7 @@ async def _aupsert_nodes(
     audio_nodes: Sequence[AudioNode],
     persist_dir: Optional[Path],
     batch_size: int,
-):
+) -> None:
     """ノードをアップサートする。
 
     Args:
@@ -239,8 +212,7 @@ async def _aupsert_nodes(
     tasks.append(
         _process_batches(
             nodes=text_nodes,
-            runner=_arun_text_pipe,
-            label="text pipeline",
+            modality=Modality.TEXT,
             persist_dir=persist_dir,
             batch_size=batch_size,
         )
@@ -248,8 +220,7 @@ async def _aupsert_nodes(
     tasks.append(
         _process_batches(
             nodes=image_nodes,
-            runner=_arun_image_pipe,
-            label="image pipeline",
+            modality=Modality.IMAGE,
             persist_dir=persist_dir,
             batch_size=batch_size,
         )
@@ -257,8 +228,7 @@ async def _aupsert_nodes(
     tasks.append(
         _process_batches(
             nodes=audio_nodes,
-            runner=_arun_audio_pipe,
-            label="audio pipeline",
+            modality=Modality.AUDIO,
             persist_dir=persist_dir,
             batch_size=batch_size,
         )

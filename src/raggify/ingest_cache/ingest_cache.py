@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
 from ..config.ingest_cache_config import IngestCacheConfig, IngestCacheProvider
-from ..core.const import PROJECT_NAME
+from ..core.const import PJNAME_ALIAS
 from ..core.util import sanitize_str
 from ..llama.core.schema import Modality
 from ..logger import logger
@@ -102,7 +102,7 @@ def _generate_table_name(cfg: ConfigManager, space_key: str) -> str:
         str: テーブル名
     """
     return sanitize_str(
-        f"{PROJECT_NAME}_{cfg.general.knowledgebase_name}_{space_key}_ic"
+        f"{PJNAME_ALIAS}_{cfg.general.knowledgebase_name}_{space_key}_ic"
     )
 
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Sequence
 
 from llama_index.core.schema import Document, ImageNode, MediaResource, TextNode
 
@@ -94,6 +94,40 @@ class Loader:
             f"{MK.TEMP_FILE_PATH}:{meta.temp_file_path}"  # PDF 埋め込み画像等の識別用
         )
 
+    async def _aparse_documents(self, docs: Sequence[Document]) -> Sequence[BaseNode]:
+        """ドキュメントをノードに分割する。
+
+        Args:
+            docs (Sequence[Document]): ドキュメント
+
+        Returns:
+            Sequence[BaseNode]: 分割後のノード
+        """
+        if not docs:
+            return []
+
+        rt = _rt()
+        batch_size = rt.cfg.ingest.batch_size
+        total_batches = (len(docs) + batch_size - 1) // batch_size
+        nodes = []
+        pipe = rt.build_pipeline(persist_dir=self._persist_dir)
+        for idx in range(0, len(docs), batch_size):
+            batch = docs[idx : idx + batch_size]
+            prog = f"{idx // batch_size + 1}/{total_batches}"
+            logger.debug(
+                f"parse documents pipeline: processing batch {prog} "
+                f"({len(batch)} docs)"
+            )
+            try:
+                nodes.extend(await pipe.arun(documents=batch))
+            except Exception as e:
+                logger.error(f"failed to process batch {prog}, continue: {e}")
+
+        rt.persist_pipeline(pipe=pipe, persist_dir=self._persist_dir)
+        logger.debug(f"{len(docs)} docs --pipeline--> {len(nodes)} nodes")
+
+        return nodes
+
     async def _asplit_docs_modality(
         self, docs: list[Document]
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
@@ -107,11 +141,7 @@ class Loader:
                 テキストノード、画像ノード、音声ノード
         """
         self._finalize_docs(docs)
-        rt = _rt()
-        pipe = rt.build_pipeline(persist_dir=self._persist_dir)
-        nodes = await pipe.arun(documents=docs)
-
-        logger.debug(f"{len(docs)} docs --pipeline--> {len(nodes)} nodes")
+        nodes = await self._aparse_documents(docs)
 
         image_nodes = []
         audio_nodes = []
@@ -133,8 +163,6 @@ class Loader:
                 text_nodes.append(node)
             else:
                 logger.warning(f"unexpected node type {type(node)}, skipped")
-
-        rt.persist_pipeline(pipe=pipe, persist_dir=self._persist_dir)
 
         return text_nodes, image_nodes, audio_nodes
 

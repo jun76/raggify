@@ -225,4 +225,9 @@ class EmbedManager:
         Returns:
             str: 空間キー文字列
         """
-        return sanitize_str(f"{provider}_{model}_{modality}")
+        # 字数節約
+        mod = {Modality.TEXT: "te", Modality.IMAGE: "im", Modality.AUDIO: "au"}
+        if mod.get(modality) is None:
+            raise ValueError(f"unexpected modality: {modality}")
+
+        return sanitize_str(f"{provider}_{model}_{mod[modality]}")

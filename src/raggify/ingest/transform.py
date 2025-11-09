@@ -20,7 +20,7 @@ class AddChunkIndexTransform(TransformComponent):
     """チャンク番号付与用トランスフォーム"""
 
     def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
-        """パイプライン側から呼ばれるインタフェース
+        """パイプライン側から呼ばれるインタフェース。
 
         Args:
             nodes (list[BaseNode]): 分割済みのノード
@@ -54,7 +54,7 @@ class _BaseEmbedTransform(TransformComponent):
         batch_embed_fn: Callable[[list], Awaitable[list[list[float]]]],
         extract_fn: Callable[[BaseNode], object],
     ):
-        """コンストラクタ
+        """コンストラクタ。
 
         Args:
             batch_embed_fn (Callable[[list], Awaitable[list[list[float]]]]): バッチ埋め込み関数
@@ -64,10 +64,18 @@ class _BaseEmbedTransform(TransformComponent):
         self._extract_fn = extract_fn
 
     def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
+        """同期インタフェース。
+
+        Args:
+            nodes (list[BaseNode]): 埋め込み対象ノード
+
+        Returns:
+            list[BaseNode]: 埋め込み後のノード
+        """
         return asyncio_run(self.acall(nodes=nodes, **kwargs))
 
     async def acall(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
-        """パイプライン側から呼ばれるインタフェース
+        """パイプライン側から呼ばれるインタフェース。
 
         Args:
             nodes (list[BaseNode]): 埋め込み対象ノード
@@ -133,7 +141,7 @@ def _get_media_path(node: BaseNode) -> str:
 
 
 def make_text_embed_transform(embed: EmbedManager) -> _BaseEmbedTransform:
-    """テキストノードの埋め込みトランスフォーム生成用ラッパー
+    """テキストノードの埋め込みトランスフォーム生成用ラッパー。
 
     Args:
         embed (EmbedManager): 埋め込み管理
@@ -157,7 +165,7 @@ def make_text_embed_transform(embed: EmbedManager) -> _BaseEmbedTransform:
 
 
 def make_image_embed_transform(embed: EmbedManager) -> _BaseEmbedTransform:
-    """画像ノードの埋め込みトランスフォーム生成用ラッパー
+    """画像ノードの埋め込みトランスフォーム生成用ラッパー。
 
     Args:
         embed (EmbedManager): 埋め込み管理
@@ -181,7 +189,7 @@ def make_image_embed_transform(embed: EmbedManager) -> _BaseEmbedTransform:
 
 
 def make_audio_embed_transform(embed: EmbedManager) -> _BaseEmbedTransform:
-    """音声ノードの埋め込みトランスフォーム生成用ラッパー
+    """音声ノードの埋め込みトランスフォーム生成用ラッパー。
 
     Args:
         embed (EmbedManager): 埋め込み管理

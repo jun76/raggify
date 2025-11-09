@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
 from ..config.document_store_config import DocumentStoreConfig, DocumentStoreProvider
-from ..core.const import PROJECT_NAME
+from ..core.const import PJNAME_ALIAS
 from ..core.util import sanitize_str
 from ..logger import logger
 
@@ -53,7 +53,7 @@ def _generate_table_name(cfg: ConfigManager) -> str:
     Returns:
         str: テーブル名
     """
-    return sanitize_str(f"{PROJECT_NAME}_{cfg.general.knowledgebase_name}_doc")
+    return sanitize_str(f"{PJNAME_ALIAS}_{cfg.general.knowledgebase_name}_doc")
 
 
 # 以下、プロバイダ毎のコンテナ生成ヘルパー
