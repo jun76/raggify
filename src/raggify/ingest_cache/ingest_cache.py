@@ -76,6 +76,8 @@ def _create_container(cfg: ConfigManager, space_key: str) -> IngestCacheContaine
     match cfg.general.ingest_cache_provider:
         case IngestCacheProvider.REDIS:
             return _redis(cfg=cfg.ingest_cache, table_name=table_name)
+        case IngestCacheProvider.POSTGRES:
+            return _postgres(cfg=cfg.ingest_cache, table_name=table_name)
         case IngestCacheProvider.LOCAL:
             return _local(
                 persist_dir=cfg.ingest.pipe_persist_dir, table_name=table_name
@@ -117,6 +119,29 @@ def _redis(cfg: IngestCacheConfig, table_name: str) -> IngestCacheContainer:
             cache=RedisKVStore.from_host_and_port(
                 host=cfg.redis_host,
                 port=cfg.redis_port,
+            ),
+            collection=table_name,
+        ),
+        table_name=table_name,
+    )
+
+
+def _postgres(cfg: IngestCacheConfig, table_name: str) -> IngestCacheContainer:
+    from llama_index.core.ingestion import IngestionCache
+    from llama_index.storage.kvstore.postgres import PostgresKVStore
+
+    from .ingest_cache_manager import IngestCacheContainer
+
+    return IngestCacheContainer(
+        provider_name=IngestCacheProvider.REDIS,
+        cache=IngestionCache(
+            cache=PostgresKVStore.from_params(
+                host=cfg.postgres_host,
+                port=str(cfg.postgres_port),
+                database=cfg.postgres_database,
+                user=cfg.postgres_user,
+                password=cfg.postgres_password,
+                table_name=table_name,
             ),
             collection=table_name,
         ),

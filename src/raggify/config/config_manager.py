@@ -64,13 +64,16 @@ class ConfigManager:
             self.read_yaml()
 
     def read_yaml(self) -> None:
-        """YAML ファイルから設定を読み込み、AppConfig にマッピングする。"""
+        """YAML ファイルから設定を読み込み、AppConfig にマッピングする。
+
+        Raises:
+            RuntimeError: 読み込み失敗
+        """
         try:
             with open(USER_CONFIG_PATH, "r", encoding="utf-8") as fp:
                 data = yaml.safe_load(fp) or {}
         except OSError as e:
-            logger.warning(f"failed to read config file: {e}")
-            return
+            raise RuntimeError("failed to read config file") from e
 
         try:
             self._config = AppConfig.from_dict(data)
