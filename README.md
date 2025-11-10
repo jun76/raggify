@@ -35,11 +35,13 @@ VOYAGE_API_KEY="your-api-key"
 Default providers (configured at /etc/raggify/config.yaml) are:
 
 ```
-"vector_store_provider": "CHROMA",
-"text_embed_provider": "OPENAI",
-"image_embed_provider": "VOYAGE",
+"vector_store_provider": "chroma",
+"document_store_provider": "local",
+"ingest_cache_provider": "local",
+"text_embed_provider": "openai",
+"image_embed_provider": "cohere",
 "audio_embed_provider": null,
-"rerank_provider": null,
+"rerank_provider": "cohere",
 ```
 
 ⚠️ To use the following features, additional installation from the Git repository is required.
@@ -48,8 +50,6 @@ Default providers (configured at /etc/raggify/config.yaml) are:
    `clip@git+https://github.com/openai/CLIP.git`
 - CLAP\
    `openai-whisper@git+https://github.com/openai/whisper.git`
-- Cohere embed-v4.0\
-   `llama-index-embeddings-cohere@git+https://github.com/run-llama/llama_index.git#subdirectory=llama-index-integrations/embeddings/llama-index-embeddings-cohere`
 
 # 📚 as Library API
 
@@ -149,6 +149,7 @@ from raggify.runtime import get_runtime
 
 rt = get_runtime()
 rt.cfg.general.vector_store_provider = VectorStoreProvider.PGVECTOR
+rt.cfg.general.audio_embed_provider = EmbedProvider.CLAP
 rt.cfg.ingest.chunk_size = 300
 rt.cfg.ingest.same_origin = False
 rt.rebuild()
@@ -164,6 +165,21 @@ ingest_url("http://some.site.com")
   - If you want to reset db (drop table), exec ./init_pgdb.sh --reset
 - set `pgvector_password` at /etc/raggify/config.yaml
   - init_pgdb.sh set `raggify` as default password, so write it.
+
+⚠️ To use redis,
+
+- start redis server
+- exec examples/init_redis.sh
+  - for the first time. (Optional)
+  - If you want to reset db (drop table), exec ./init_redis.sh --reset
+- set `redis_password` at /etc/raggify/config.yaml
+  - init_redis.sh set `raggify` as default password, so write it.
+
+Using Docker containers is easy.
+
+```bash
+docker run --rm -p 6379:6379 --name redis-stack redis/redis-stack-server:latest
+```
 
 # 💻 as REST API Server
 

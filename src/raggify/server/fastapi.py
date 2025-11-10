@@ -17,6 +17,7 @@ from ..ingest import ingest
 from ..llama.core.schema import Modality
 from ..logger import configure_logging, console, logger
 from ..runtime import get_runtime as _rt
+from .background_worker import BackgroundWorker, JobPayload
 
 __all__ = ["app"]
 
@@ -68,16 +69,21 @@ async def lifespan(app: FastAPI):
 
     # 初期化処理
     _setup()
+    await _worker.start()
 
     # リクエストの受付開始
-    yield
-    console.print(f"🛑 now {PROJECT_NAME} server is stopped.")
+    try:
+        yield
+    finally:
+        await _worker.shutdown()
+        console.print(f"🛑 now {PROJECT_NAME} server is stopped.")
 
 
 # FastAPIインスタンスを作成し、lifespanを渡す
 app = FastAPI(title=PROJECT_NAME, version=VERSION, lifespan=lifespan)
 
 _request_lock = asyncio.Lock()
+_worker = BackgroundWorker()
 
 
 def _setup() -> None:
@@ -204,23 +210,14 @@ async def ingest_path(payload: PathRequest) -> dict[str, str]:
     Args:
         payload (PathRequest): 対象パス
 
-    Raises:
-        HTTPException: 収集処理に失敗
-
     Returns:
         dict[str, str]: 実行結果
     """
     logger.debug("exec /v1/ingest/path")
 
-    async with _request_lock:
-        try:
-            await ingest.aingest_path(path=payload.path)
-        except Exception as e:
-            msg = "ingest path failure"
-            logger.error(f"{msg}: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=msg)
+    job = _worker.submit(JobPayload(kind="ingest_path", kwargs={"path": payload.path}))
 
-    return {"status": "ok"}
+    return {"status": "accepted", "job_id": job.job_id}
 
 
 @app.post("/v1/ingest/path_list", operation_id="ingest_path_list")
@@ -230,23 +227,16 @@ async def ingest_path_list(payload: PathRequest) -> dict[str, str]:
     Args:
         payload (PathRequest): パスリストのパス（テキストファイル。# で始まるコメント行・空行はスキップ）
 
-    Raises:
-        HTTPException: 収集処理に失敗
-
     Returns:
         dict[str, str]: 実行結果
     """
     logger.debug("exec /v1/ingest/path_list")
 
-    async with _request_lock:
-        try:
-            await ingest.aingest_path_list(payload.path)
-        except Exception as e:
-            msg = "ingest path list failure"
-            logger.error(f"{msg}: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=msg)
+    job = _worker.submit(
+        JobPayload(kind="ingest_path_list", kwargs={"lst": payload.path})
+    )
 
-    return {"status": "ok"}
+    return {"status": "accepted", "job_id": job.job_id}
 
 
 @app.post("/v1/ingest/url", operation_id="ingest_url")
@@ -257,23 +247,14 @@ async def ingest_url(payload: URLRequest) -> dict[str, str]:
     Args:
         payload (URLRequest): 対象 URL
 
-    Raises:
-        HTTPException: 収集処理に失敗
-
     Returns:
         dict[str, str]: 実行結果
     """
     logger.debug("exec /v1/ingest/url")
 
-    async with _request_lock:
-        try:
-            await ingest.aingest_url(payload.url)
-        except Exception as e:
-            msg = "ingest url failure"
-            logger.error(f"{msg}: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=msg)
+    job = _worker.submit(JobPayload(kind="ingest_url", kwargs={"url": payload.url}))
 
-    return {"status": "ok"}
+    return {"status": "accepted", "job_id": job.job_id}
 
 
 @app.post("/v1/ingest/url_list", operation_id="ingest_url_list")
@@ -283,23 +264,16 @@ async def ingest_url_list(payload: PathRequest) -> dict[str, str]:
     Args:
         payload (PathRequest): URL リストのパス（テキストファイル。# で始まるコメント行・空行はスキップ）
 
-    Raises:
-        HTTPException: 収集処理に失敗
-
     Returns:
         dict[str, str]: 実行結果
     """
     logger.debug("exec /v1/ingest/url_list")
 
-    async with _request_lock:
-        try:
-            await ingest.aingest_url_list(payload.path)
-        except Exception as e:
-            msg = "ingest url list failure"
-            logger.error(f"{msg}: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=msg)
+    job = _worker.submit(
+        JobPayload(kind="ingest_url_list", kwargs={"lst": payload.path})
+    )
 
-    return {"status": "ok"}
+    return {"status": "accepted", "job_id": job.job_id}
 
 
 @app.post("/v1/query/text_text", operation_id="query_text_text")
