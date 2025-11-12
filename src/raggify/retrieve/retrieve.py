@@ -13,6 +13,7 @@ from ..config.retrieve_config import RetrieveMode
 from ..llama.core.indices.multi_modal.retriever import AudioRetriever
 from ..llama.core.schema import Modality
 from ..logger import logger
+from ..runtime import get_runtime as _rt
 
 if TYPE_CHECKING:
     from ..runtime import Runtime
@@ -29,17 +30,6 @@ __all__ = [
     "query_audio_audio",
     "aquery_audio_audio",
 ]
-
-
-def _rt() -> Runtime:
-    """遅延ロード用ゲッター。
-
-    Returns:
-        Runtime: ランタイム
-    """
-    from ..runtime import get_runtime
-
-    return get_runtime()
 
 
 def _get_vector_retriever(rt: Runtime, index: VectorStoreIndex) -> BaseRetriever:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 from ...core.exts import Exts
 from ...logger import logger
@@ -37,12 +37,14 @@ class FileLoader(Loader):
     async def aload_from_path(
         self,
         root: str,
+        is_canceled: Callable[[], bool],
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
         """ローカルパス（ディレクトリ、ファイル）からコンテンツを取り込み、ノードを生成する。
         ディレクトリの場合はツリーを下りながら複数ファイルを取り込む。
 
         Args:
             root (str): 対象パス
+            is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
 
         Raises:
             ValueError: パスの指定誤り等
@@ -67,16 +69,18 @@ class FileLoader(Loader):
             logger.exception(e)
             raise ValueError("failed to load from path") from e
 
-        return await self._asplit_docs_modality(docs)
+        return await self._asplit_docs_modality(docs=docs, is_canceled=is_canceled)
 
     async def aload_from_paths(
         self,
         paths: list[str],
+        is_canceled: Callable[[], bool],
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
         """パスリスト内の複数パスからコンテンツを取得し、ノードを生成する。
 
         Args:
             paths (list[str]): パスリスト
+            is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
 
         Returns:
             tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
@@ -87,7 +91,9 @@ class FileLoader(Loader):
         audios = []
         for path in paths:
             try:
-                temp_text, temp_image, temp_audio = await self.aload_from_path(path)
+                temp_text, temp_image, temp_audio = await self.aload_from_path(
+                    root=path, is_canceled=is_canceled
+                )
                 texts.extend(temp_text)
                 images.extend(temp_image)
                 audios.extend(temp_audio)

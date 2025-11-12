@@ -114,6 +114,51 @@ class RestAPIClient:
         """
         return self._get_json("/reload")
 
+    def upload(self, files: list[tuple[str, bytes, Optional[str]]]) -> dict[str, Any]:
+        """ファイルアップロード API を呼び出す。
+
+        Args:
+            files (list[tuple[str, bytes, Optional[str]]]): アップロードするファイル情報
+
+        Returns:
+            dict[str, Any]: 応答データ
+
+        Raises:
+            ValueError: 入力値が不正な場合
+            RuntimeError: リクエスト失敗または JSON 解析失敗時
+        """
+        if not files:
+            raise ValueError("files must not be empty")
+
+        files_payload: list[tuple[str, tuple[str, bytes, str]]] = []
+        for name, data, content_type in files:
+            if not isinstance(name, str) or name == "":
+                raise ValueError("file name must be non-empty string")
+
+            if not isinstance(data, bytes):
+                raise ValueError("file data must be bytes")
+
+            mime = content_type or "application/octet-stream"
+            files_payload.append(("files", (name, data, mime)))
+
+        return self._post_form_data_json("/upload", files_payload)
+
+    def job(self, job_id: str = "", rm: bool = False) -> dict[str, str]:
+        """バックグラウンドジョブ操作 API を呼び出す。
+
+        Args:
+            job_id (str, optional): ジョブ ID。Defaults to "".
+            rm (bool, optional): 削除フラグ。Defaults to False.
+
+        Returns:
+            dict[str, str]: 応答データ
+
+        Note:
+            job_id が空の時、全ジョブの実行状態を取得する。
+            job_id が空かつ rm オプション指定の時、完了済みジョブを全削除する。
+        """
+        return self._post_json("/job", {"job_id": job_id, "rm": rm})
+
     def ingest_path(self, path: str) -> dict[str, Any]:
         """パス指定の取り込み API を呼び出す。
 
@@ -245,32 +290,3 @@ class RestAPIClient:
             payload["topk"] = topk
 
         return self._post_json("/query/audio_audio", payload)
-
-    def upload(self, files: list[tuple[str, bytes, Optional[str]]]) -> dict[str, Any]:
-        """ファイルアップロード API を呼び出す。
-
-        Args:
-            files (list[tuple[str, bytes, Optional[str]]]): アップロードするファイル情報
-
-        Returns:
-            dict[str, Any]: 応答データ
-
-        Raises:
-            ValueError: 入力値が不正な場合
-            RuntimeError: リクエスト失敗または JSON 解析失敗時
-        """
-        if not files:
-            raise ValueError("files must not be empty")
-
-        files_payload: list[tuple[str, tuple[str, bytes, str]]] = []
-        for name, data, content_type in files:
-            if not isinstance(name, str) or name == "":
-                raise ValueError("file name must be non-empty string")
-
-            if not isinstance(data, bytes):
-                raise ValueError("file data must be bytes")
-
-            mime = content_type or "application/octet-stream"
-            files_payload.append(("files", (name, data, mime)))
-
-        return self._post_form_data_json("/upload", files_payload)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import TYPE_CHECKING, Callable, Optional, Sequence
 
 from llama_index.core.schema import Document, ImageNode, MediaResource, TextNode
 
@@ -11,22 +11,12 @@ from ...core.metadata import BasicMetaData
 from ...core.metadata import MetaKeys as MK
 from ...llama.core.schema import AudioNode
 from ...logger import logger
+from ...runtime import get_runtime as _rt
 
 if TYPE_CHECKING:
     from llama_index.core.schema import BaseNode
 
     from ...runtime import Runtime
-
-
-def _rt() -> Runtime:
-    """遅延ロード用ゲッター。
-
-    Returns:
-        Runtime: ランタイム
-    """
-    from ...runtime import get_runtime
-
-    return get_runtime()
 
 
 class Loader:
@@ -94,16 +84,21 @@ class Loader:
             f"{MK.TEMP_FILE_PATH}:{meta.temp_file_path}"  # PDF 埋め込み画像等の識別用
         )
 
-    async def _aparse_documents(self, docs: Sequence[Document]) -> Sequence[BaseNode]:
+    async def _aparse_documents(
+        self,
+        docs: Sequence[Document],
+        is_canceled: Callable[[], bool],
+    ) -> Sequence[BaseNode]:
         """ドキュメントをノードに分割する。
 
         Args:
             docs (Sequence[Document]): ドキュメント
+            is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
 
         Returns:
             Sequence[BaseNode]: 分割後のノード
         """
-        if not docs:
+        if not docs or is_canceled():
             return []
 
         rt = _rt()
@@ -112,6 +107,10 @@ class Loader:
         nodes = []
         pipe = rt.build_pipeline(persist_dir=self._persist_dir)
         for idx in range(0, len(docs), batch_size):
+            if is_canceled():
+                logger.info("Job is canceled, aborting batch processing")
+                return nodes
+
             batch = docs[idx : idx + batch_size]
             prog = f"{idx // batch_size + 1}/{total_batches}"
             logger.debug(
@@ -129,19 +128,22 @@ class Loader:
         return nodes
 
     async def _asplit_docs_modality(
-        self, docs: list[Document]
+        self,
+        docs: list[Document],
+        is_canceled: Callable[[], bool],
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
         """ドキュメントをモダリティ別に分ける。
 
         Args:
             docs (list[Document]): 入力ドキュメント
+            is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
 
         Returns:
             tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
                 テキストノード、画像ノード、音声ノード
         """
         self._finalize_docs(docs)
-        nodes = await self._aparse_documents(docs)
+        nodes = await self._aparse_documents(docs=docs, is_canceled=is_canceled)
 
         image_nodes = []
         audio_nodes = []

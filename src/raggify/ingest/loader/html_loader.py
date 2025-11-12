@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -262,10 +262,10 @@ class HTMLLoader(Loader):
         """新出アセット URL の場合、キャッシュに登録する。
 
         Args:
-            url (str): _description_
+            url (str): アセットファイルの URL
 
         Returns:
-            bool: _description_
+            bool: 今回登録したか
         """
         if url in self._asset_url_cache:
             return False
@@ -362,14 +362,18 @@ class HTMLLoader(Loader):
         return docs
 
     async def aload_from_url(
-        self, url: str, inloop: bool = False
+        self,
+        url: str,
+        is_canceled: Callable[[], bool],
+        inloop: bool = False,
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
         """URL からコンテンツを取得し、ノードを生成する。
         サイトマップ（.xml）の場合はツリーを下りながら複数サイトから取り込む。
 
         Args:
             url (str): 対象 URL
-            inloop (bool): URL リストの上位ループ内で実行中か
+            is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
+            inloop (bool, optional): URL リストの上位ループ内で実行中か。Defaults to False.
 
         Returns:
             tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
@@ -383,7 +387,7 @@ class HTMLLoader(Loader):
         # サイトマップ以外は単一のサイトとして読み込み
         if not Exts.endswith_exts(url, Exts.SITEMAP):
             docs = await self._aload_from_site(url)
-            return await self._asplit_docs_modality(docs)
+            return await self._asplit_docs_modality(docs=docs, is_canceled=is_canceled)
 
         # 以下、サイトマップの解析と読み込み
         try:
@@ -396,18 +400,25 @@ class HTMLLoader(Loader):
 
         docs = []
         for url in urls:
+            if is_canceled():
+                logger.info("Job is canceled, aborting batch processing")
+                break
+
             temp = await self._aload_from_site(url)
             docs.extend(temp)
 
-        return await self._asplit_docs_modality(docs)
+        return await self._asplit_docs_modality(docs=docs, is_canceled=is_canceled)
 
     async def aload_from_urls(
-        self, urls: list[str]
+        self,
+        urls: list[str],
+        is_canceled: Callable[[], bool],
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
         """URL リスト内の複数サイトからコンテンツを取得し、ノードを生成する。
 
         Args:
             urls (list[str]): URL リスト
+            is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
 
         Returns:
             tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
@@ -419,9 +430,12 @@ class HTMLLoader(Loader):
         images = []
         audios = []
         for url in urls:
+            if is_canceled():
+                logger.info("Job is canceled, aborting batch processing")
+                break
             try:
                 temp_text, temp_image, temp_audio = await self.aload_from_url(
-                    url=url, inloop=True
+                    url=url, is_canceled=is_canceled, inloop=True
                 )
                 texts.extend(temp_text)
                 images.extend(temp_image)

@@ -13,11 +13,11 @@ from llama_index.core.schema import NodeWithScore
 from pydantic import BaseModel
 
 from ..core.const import PROJECT_NAME, VERSION
-from ..ingest import ingest
 from ..llama.core.schema import Modality
 from ..logger import configure_logging, console, logger
 from ..runtime import get_runtime as _rt
-from .background_worker import BackgroundWorker, JobPayload
+from .background_worker import JobPayload
+from .background_worker import get_worker as _wk
 
 __all__ = ["app"]
 
@@ -54,6 +54,11 @@ class URLRequest(BaseModel):
     url: str
 
 
+class JobRequest(BaseModel):
+    job_id: str = ""
+    rm: bool = False
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """サーバ起動前後の処理用ライフスパン。
@@ -69,13 +74,14 @@ async def lifespan(app: FastAPI):
 
     # 初期化処理
     _setup()
-    await _worker.start()
+    wk = _wk()
+    await wk.start()
 
     # リクエストの受付開始
     try:
         yield
     finally:
-        await _worker.shutdown()
+        await wk.shutdown()
         console.print(f"🛑 now {PROJECT_NAME} server is stopped.")
 
 
@@ -83,7 +89,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title=PROJECT_NAME, version=VERSION, lifespan=lifespan)
 
 _request_lock = asyncio.Lock()
-_worker = BackgroundWorker()
 
 
 def _setup() -> None:
@@ -202,6 +207,56 @@ async def upload(files: list[UploadFile] = File(...)) -> dict[str, Any]:
         return {"files": results}
 
 
+@app.post("/v1/job")
+async def job(payload: JobRequest) -> dict[str, Any]:
+    """バックグラウンドワーカーが保持するジョブの実行状態を返却する。
+
+    Args:
+        payload (JobRequest):
+            job_id: ジョブ ID（未指定の場合全件）
+            rm: True の場合、完了済みジョブ（job_id 未指定時）または指定ジョブを削除
+
+    Raises:
+        HTTPException(400): 不正なジョブ ID
+
+    Returns:
+        dict[str, Any]: 結果
+    """
+    logger.debug("exec /v1/job")
+
+    wk = _wk()
+    async with _request_lock:
+        if not payload.job_id:
+            if payload.rm:
+                wk.remove_completed_jobs()
+
+            jobs = wk.get_jobs()
+            res = {}
+            for job_id, job in jobs.items():
+                res[job_id] = job.status
+        else:
+            job = wk.get_job(payload.job_id)
+            if job is None:
+                msg = "invalid job id"
+                logger.error(msg)
+                raise HTTPException(status_code=400, detail=msg)
+
+            if payload.rm:
+                wk.remove_job(payload.job_id)
+                res = {"status": "removed"}
+            else:
+                res = {
+                    "status": job.status,
+                    "kind": job.payload.kind,
+                    "created_at": job.created_at,
+                    "last_update": job.last_update,
+                }
+                for k, arg in job.payload.kwargs.items():
+                    res[k] = arg
+
+        return res
+
+
 @app.post("/v1/ingest/path", operation_id="ingest_path")
 async def ingest_path(payload: PathRequest) -> dict[str, str]:
     """ローカルパス（ディレクトリ、ファイル）からコンテンツを収集、埋め込み、ストアに格納する。
@@ -215,7 +270,7 @@ async def ingest_path(payload: PathRequest) -> dict[str, str]:
     """
     logger.debug("exec /v1/ingest/path")
 
-    job = _worker.submit(JobPayload(kind="ingest_path", kwargs={"path": payload.path}))
+    job = _wk().submit(JobPayload(kind="ingest_path", kwargs={"path": payload.path}))
 
     return {"status": "accepted", "job_id": job.job_id}
 
@@ -232,7 +287,7 @@ async def ingest_path_list(payload: PathRequest) -> dict[str, str]:
     """
     logger.debug("exec /v1/ingest/path_list")
 
-    job = _worker.submit(
+    job = _wk().submit(
         JobPayload(kind="ingest_path_list", kwargs={"lst": payload.path})
     )
 
@@ -252,7 +307,7 @@ async def ingest_url(payload: URLRequest) -> dict[str, str]:
     """
     logger.debug("exec /v1/ingest/url")
 
-    job = _worker.submit(JobPayload(kind="ingest_url", kwargs={"url": payload.url}))
+    job = _wk().submit(JobPayload(kind="ingest_url", kwargs={"url": payload.url}))
 
     return {"status": "accepted", "job_id": job.job_id}
 
@@ -269,9 +324,7 @@ async def ingest_url_list(payload: PathRequest) -> dict[str, str]:
     """
     logger.debug("exec /v1/ingest/url_list")
 
-    job = _worker.submit(
-        JobPayload(kind="ingest_url_list", kwargs={"lst": payload.path})
-    )
+    job = _wk().submit(JobPayload(kind="ingest_url_list", kwargs={"lst": payload.path}))
 
     return {"status": "accepted", "job_id": job.job_id}
 

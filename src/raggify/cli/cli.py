@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 import warnings
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Optional, Protocol
 
 import typer
 import uvicorn
@@ -19,14 +19,17 @@ __all__ = ["app"]
 
 
 def _cfg() -> ConfigManager:
-    """遅延ロード用ゲッター。
+    """遅延ロード用 getter。
 
     Returns:
         ConfigManager: 設定管理
     """
     from ..runtime import get_runtime
 
-    return get_runtime().cfg
+    cfg = get_runtime().cfg
+    logger.setLevel(cfg.general.log_level)
+
+    return cfg
 
 
 warnings.filterwarnings(
@@ -34,8 +37,6 @@ warnings.filterwarnings(
     message="The 'validate_default' attribute with value True was provided to the `Field\\(\\)` function.*",
     category=UserWarning,
 )
-
-logger.setLevel(_cfg().general.log_level)
 app = typer.Typer(
     help="raggify CLI: Interface to ingest/query knowledge into/from raggify server. "
     f"User config is {USER_CONFIG_PATH}."
@@ -50,7 +51,9 @@ def _get_server_base_url() -> str:
     Returns:
         str: ベース URL 文字列
     """
-    return f"http://{_cfg().general.host}:{_cfg().general.port}/v1"
+    cfg = _cfg()
+
+    return f"http://{cfg.general.host}:{cfg.general.port}/v1"
 
 
 def _create_rest_client() -> RestAPIClient:
@@ -81,9 +84,15 @@ def version() -> None:
 
 @app.command(help="Start as a local server.")
 def server(
-    host: str = typer.Option(default=_cfg().general.host, help="Server hostname."),
-    port: int = typer.Option(default=_cfg().general.port, help="Server port number."),
-    mcp: bool = typer.Option(default=_cfg().general.mcp, help="Up server also as MCP."),
+    host: Optional[str] = typer.Option(
+        default=None, help="Server hostname (defaults to config)."
+    ),
+    port: Optional[int] = typer.Option(
+        default=None, help="Server port number (defaults to config)."
+    ),
+    mcp: Optional[bool] = typer.Option(
+        default=None, help="Up server also as MCP (defaults to config)."
+    ),
 ) -> None:
     """ローカルサーバとして起動する。
 
@@ -94,26 +103,33 @@ def server(
     """
     from ..server.fastapi import app as fastapi
 
+    logger.debug("exec cli server command")
+    cfg = _cfg()
+    host = host or cfg.general.host
+    port = port or cfg.general.port
+    mcp = mcp or cfg.general.mcp
+    logger.debug(f"up server @ host = {host}, port = {port}")
+
     if mcp:
         from ..server.mcp import app as _mcp
 
         _mcp.mount_http()
 
-    logger.debug(f"up server @ host = {host}, port = {port}")
     uvicorn.run(
         app=fastapi,
         host=host,
         port=port,
-        log_level=_cfg().general.log_level.lower(),
+        log_level=cfg.general.log_level.lower(),
     )
 
 
 @app.command(help=f"Show current config file.")
 def config() -> None:
-    _echo_json(_cfg().get_dict())
+    cfg = _cfg()
+    _echo_json(cfg.get_dict())
 
     if not os.path.exists(USER_CONFIG_PATH):
-        _cfg().write_yaml()
+        cfg.write_yaml()
 
 
 # 以下、REST API Client のラッパーコマンドを定義
@@ -151,6 +167,18 @@ def health():
 def reload():
     logger.debug("")
     _execute_client_command(lambda client: client.reload())
+
+
+@app.command(name="job", help="Get background job status.")
+def job(
+    job_id: str = typer.Argument(default="", help="Job id to get status."),
+    rm: bool = typer.Option(
+        default=False,
+        help="With no id, all completed tasks will be removed from the job queue.",
+    ),
+):
+    logger.debug(f"id = {job_id}")
+    _execute_client_command(lambda client: client.job(job_id=job_id, rm=rm))
 
 
 @app.command(name="ip", help=f"Ingest from local Path.")
@@ -191,9 +219,12 @@ def ingest_url_list(
 )
 def query_text_text(
     query: str = typer.Argument(help="Query string."),
-    topk: int = typer.Option(default=_cfg().rerank.topk, help="Show top-k results."),
+    topk: Optional[int] = typer.Option(
+        default=None, help="Show top-k results (defaults to config)."
+    ),
 ):
     logger.debug(f"query = {query}, topk = {topk}")
+    topk = topk or _cfg().rerank.topk
     _execute_client_command(lambda client: client.query_text_text(query, topk))
 
 
@@ -203,9 +234,12 @@ def query_text_text(
 )
 def query_text_image(
     query: str = typer.Argument(help="Query string."),
-    topk: int = typer.Option(default=_cfg().rerank.topk, help="Show top-k results."),
+    topk: Optional[int] = typer.Option(
+        default=None, help="Show top-k results (defaults to config)."
+    ),
 ):
     logger.debug(f"query = {query}, topk = {topk}")
+    topk = topk or _cfg().rerank.topk
     _execute_client_command(lambda client: client.query_text_image(query, topk))
 
 
@@ -215,9 +249,12 @@ def query_text_image(
 )
 def query_image_image(
     path: str = typer.Argument(help="Query image path."),
-    topk: int = typer.Option(default=_cfg().rerank.topk, help="Show top-k results."),
+    topk: Optional[int] = typer.Option(
+        default=None, help="Show top-k results (defaults to config)."
+    ),
 ):
     logger.debug(f"path = {path}, topk = {topk}")
+    topk = topk or _cfg().rerank.topk
     _execute_client_command(lambda client: client.query_image_image(path, topk))
 
 
@@ -227,9 +264,12 @@ def query_image_image(
 )
 def query_text_audio(
     query: str = typer.Argument(help="Query string."),
-    topk: int = typer.Option(default=_cfg().rerank.topk, help="Show top-k results."),
+    topk: Optional[int] = typer.Option(
+        default=None, help="Show top-k results (defaults to config)."
+    ),
 ):
     logger.debug(f"query = {query}, topk = {topk}")
+    topk = topk or _cfg().rerank.topk
     _execute_client_command(lambda client: client.query_text_audio(query, topk))
 
 
@@ -239,9 +279,12 @@ def query_text_audio(
 )
 def query_audio_audio(
     path: str = typer.Argument(help="Query audio path."),
-    topk: int = typer.Option(default=_cfg().rerank.topk, help="Show top-k results."),
+    topk: Optional[int] = typer.Option(
+        default=None, help="Show top-k results (defaults to config)."
+    ),
 ):
     logger.debug(f"path = {path}, topk = {topk}")
+    topk = topk or _cfg().rerank.topk
     _execute_client_command(lambda client: client.query_audio_audio(path, topk))
 
 

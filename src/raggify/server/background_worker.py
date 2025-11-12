@@ -2,12 +2,19 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import datetime
+import threading
 import uuid
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
 from typing import Any, Dict, Optional
 
 from ..logger import logger
+
+__all__ = ["get_worker"]
+
+_worker: BackgroundWorker | None = None
+_lock = threading.Lock()
 
 
 class JobStatus(StrEnum):
@@ -21,13 +28,9 @@ class JobStatus(StrEnum):
 
 @dataclass
 class JobPayload:
-    """ワーカーに渡すジョブ内容。
+    """ワーカーに渡すジョブ内容。"""
 
-    kind: ingest_path / ingest_url などの識別子
-    kwargs: ingest に渡すパラメータ
-    """
-
-    kind: str
+    kind: str  # ingest_path 等
     kwargs: dict[str, Any] = field(default_factory=dict)
 
 
@@ -38,6 +41,8 @@ class Job:
     job_id: str
     payload: JobPayload
     config_snapshot: dict[str, Any]
+    created_at: str
+    last_update: str
     status: JobStatus = JobStatus.PENDING
     message: str = ""
 
@@ -50,6 +55,8 @@ class BackgroundWorker:
         self._queue: asyncio.Queue[Job] = asyncio.Queue()
         self._jobs: Dict[str, Job] = {}
         self._worker_task: Optional[asyncio.Task[None]] = None
+
+        self._jobs_lock = threading.Lock()
 
     async def start(self) -> None:
         """ワーカーを起動する。"""
@@ -71,6 +78,15 @@ class BackgroundWorker:
 
         self._worker_task = None
 
+    def _update(self, job: Job, status: JobStatus) -> None:
+        """ジョブの状態を更新する。
+
+        Args:
+            job (Job): ジョブ
+        """
+        job.status = status
+        job.last_update = str(datetime.datetime.now())
+
     def submit(self, payload: JobPayload) -> Job:
         """ジョブをキューに追加する。
 
@@ -82,16 +98,25 @@ class BackgroundWorker:
         """
         from ..runtime import get_runtime as _rt
 
-        job_id = str(uuid.uuid4())
+        job_id = str(uuid.uuid4())[:8]
         cfg_snapshot = _rt().cfg.get_dict()
-        job = Job(job_id=job_id, payload=payload, config_snapshot=cfg_snapshot)
-        self._jobs[job_id] = job
-        self._queue.put_nowait(job)
+        t = str(datetime.datetime.now())
+        job = Job(
+            job_id=job_id,
+            payload=payload,
+            config_snapshot=cfg_snapshot,
+            created_at=t,
+            last_update=t,
+        )
+
+        with self._jobs_lock:
+            self._jobs[job_id] = job
+            self._queue.put_nowait(job)
 
         return job
 
     def get_job(self, job_id: str) -> Optional[Job]:
-        """ジョブを参照する。
+        """特定 ID のジョブを取得する。
 
         Args:
             job_id (str): ジョブ ID
@@ -100,6 +125,29 @@ class BackgroundWorker:
             Optional[Job]: ジョブ
         """
         return self._jobs.get(job_id)
+
+    def get_jobs(self) -> Dict[str, Job]:
+        """ジョブを全件取得する。
+
+        Returns:
+            Dict[str, Job]: ジョブ
+        """
+        return self._jobs.copy()
+
+    def remove_job(self, job_id: str) -> None:
+        """ジョブをキューから削除する。
+
+        Args:
+            job_id (str): ジョブ ID
+        """
+        with self._jobs_lock:
+            self._jobs.pop(job_id, None)
+
+    def remove_completed_jobs(self) -> None:
+        """実行完了しているジョブをキューから削除する。"""
+        for job_id, job in self._jobs.items():
+            if job.status in (JobStatus.SUCCEEDED, JobStatus.FAILED):
+                self.remove_job(job_id)
 
     async def _worker_loop(self) -> None:
         """ワーカーループ。"""
@@ -119,22 +167,50 @@ class BackgroundWorker:
         """
         from ..ingest import ingest
 
-        job.status = JobStatus.RUNNING
+        self._update(job=job, status=JobStatus.RUNNING)
+
+        def is_canceled() -> bool:
+            return self._jobs.get(job.job_id) is None
+
         try:
             match job.payload.kind:
                 case "ingest_path":
-                    await ingest.aingest_path(**job.payload.kwargs)
+                    await ingest.aingest_path(
+                        **job.payload.kwargs, is_canceled=is_canceled
+                    )
                 case "ingest_path_list":
-                    await ingest.aingest_path_list(**job.payload.kwargs)
+                    await ingest.aingest_path_list(
+                        **job.payload.kwargs, is_canceled=is_canceled
+                    )
                 case "ingest_url":
-                    await ingest.aingest_url(**job.payload.kwargs)
+                    await ingest.aingest_url(
+                        **job.payload.kwargs, is_canceled=is_canceled
+                    )
                 case "ingest_url_list":
-                    await ingest.aingest_url_list(**job.payload.kwargs)
+                    await ingest.aingest_url_list(
+                        **job.payload.kwargs, is_canceled=is_canceled
+                    )
                 case _:
                     raise ValueError(f"unknown job kind: {job.payload.kind}")
 
-            job.status = JobStatus.SUCCEEDED
+            self._update(job=job, status=JobStatus.SUCCEEDED)
         except Exception as e:
             logger.exception(e)
-            job.status = JobStatus.FAILED
+            self._update(job=job, status=JobStatus.FAILED)
             job.message = str(e)
+
+
+def get_worker() -> BackgroundWorker:
+    """バックグラウンドワーカーシングルトンの getter。
+
+    Returns:
+        BackgroundWorker: ワーカー
+    """
+    global _worker
+
+    if _worker is None:
+        with _lock:
+            if _worker is None:
+                _worker = BackgroundWorker()
+
+    return _worker

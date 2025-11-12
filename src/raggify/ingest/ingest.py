@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import TYPE_CHECKING, Callable, Optional, Sequence
 
 from llama_index.core.async_utils import asyncio_run
 from llama_index.core.ingestion import IngestionPipeline
 
 from ..embed.embed_manager import Modality
 from ..logger import logger
+from ..runtime import get_runtime as _rt
 
 if TYPE_CHECKING:
     from llama_index.core.schema import (
@@ -18,7 +19,6 @@ if TYPE_CHECKING:
     )
 
     from ..llama.core.schema import AudioNode
-    from ..runtime import Runtime
 
 
 __all__ = [
@@ -31,17 +31,6 @@ __all__ = [
     "ingest_url_list",
     "aingest_url_list",
 ]
-
-
-def _rt() -> Runtime:
-    """遅延ロード用ゲッター。
-
-    Returns:
-        Runtime: ランタイム
-    """
-    from ..runtime import get_runtime
-
-    return get_runtime()
 
 
 def _read_list(path: str) -> list[str]:
@@ -149,6 +138,7 @@ async def _process_batches(
     modality: Modality,
     persist_dir: Optional[Path],
     batch_size: int,
+    is_canceled: Callable[[], bool],
 ) -> None:
     """大量ノードのアップサートで長時間ブロックしないようにバッチ化する。
 
@@ -157,8 +147,9 @@ async def _process_batches(
         modality (Modality): モダリティ
         persist_dir (Optional[Path]): 永続化ディレクトリ
         batch_size (int): バッチサイズ
+        is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
     """
-    if not nodes:
+    if not nodes or is_canceled():
         return
 
     rt = _rt()
@@ -175,6 +166,10 @@ async def _process_batches(
     total_batches = (len(nodes) + batch_size - 1) // batch_size
     trans_nodes = []
     for idx in range(0, len(nodes), batch_size):
+        if is_canceled():
+            logger.info("Job is canceled, aborting batch processing")
+            return
+
         batch = nodes[idx : idx + batch_size]
         prog = f"{idx // batch_size + 1}/{total_batches}"
         logger.debug(
@@ -196,6 +191,7 @@ async def _aupsert_nodes(
     audio_nodes: Sequence[AudioNode],
     persist_dir: Optional[Path],
     batch_size: int,
+    is_canceled: Callable[[], bool],
 ) -> None:
     """ノードをアップサートする。
 
@@ -205,6 +201,7 @@ async def _aupsert_nodes(
         audio_nodes (Sequence[AudioNode]): 音声ノード
         persist_dir (Optional[Path]): 永続化ディレクトリ
         batch_size (int): バッチサイズ
+        is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
     """
     import asyncio
 
@@ -215,6 +212,7 @@ async def _aupsert_nodes(
             modality=Modality.TEXT,
             persist_dir=persist_dir,
             batch_size=batch_size,
+            is_canceled=is_canceled,
         )
     )
     tasks.append(
@@ -223,6 +221,7 @@ async def _aupsert_nodes(
             modality=Modality.IMAGE,
             persist_dir=persist_dir,
             batch_size=batch_size,
+            is_canceled=is_canceled,
         )
     )
     tasks.append(
@@ -231,6 +230,7 @@ async def _aupsert_nodes(
             modality=Modality.AUDIO,
             persist_dir=persist_dir,
             batch_size=batch_size,
+            is_canceled=is_canceled,
         )
     )
 
@@ -274,6 +274,7 @@ def _cleanup_temp_files() -> None:
 def ingest_path(
     path: str,
     batch_size: Optional[int] = None,
+    is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     """ローカルパス（ディレクトリ、ファイル）からコンテンツを収集、埋め込み、ストアに格納する。
     ディレクトリの場合はツリーを下りながら複数ファイルを取り込む。
@@ -281,13 +282,16 @@ def ingest_path(
     Args:
         path (str): 対象パス
         batch_size (Optional[int]): バッチサイズ。Defaults to None.
+        is_canceled (Callable[[], bool], optional):
+            このジョブがキャンセルされたか。Defaults to lambda:False.
     """
-    asyncio_run(aingest_path(path, batch_size=batch_size))
+    asyncio_run(aingest_path(path, batch_size=batch_size, is_canceled=is_canceled))
 
 
 async def aingest_path(
     path: str,
     batch_size: Optional[int] = None,
+    is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     """ローカルパス（ディレクトリ、ファイル）から非同期でコンテンツを収集、埋め込み、ストアに格納する。
     ディレクトリの場合はツリーを下りながら複数ファイルを取り込む。
@@ -295,10 +299,14 @@ async def aingest_path(
     Args:
         path (str): 対象パス
         batch_size (Optional[int]): バッチサイズ。Defaults to None.
+        is_canceled (Callable[[], bool], optional):
+            このジョブがキャンセルされたか。Defaults to lambda:False.
     """
     rt = _rt()
     file_loader = rt.file_loader
-    text_nodes, image_nodes, audio_nodes = await file_loader.aload_from_path(path)
+    text_nodes, image_nodes, audio_nodes = await file_loader.aload_from_path(
+        root=path, is_canceled=is_canceled
+    )
     batch_size = batch_size or rt.cfg.ingest.batch_size
 
     await _aupsert_nodes(
@@ -307,38 +315,47 @@ async def aingest_path(
         audio_nodes=audio_nodes,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
         batch_size=batch_size,
+        is_canceled=is_canceled,
     )
 
 
 def ingest_path_list(
     lst: str | Sequence[str],
     batch_size: Optional[int] = None,
+    is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     """パスリスト内の複数パスからコンテンツを収集、埋め込み、ストアに格納する。
 
     Args:
         lst (str | Sequence[str]): テキストファイルまたは Sequence 形式のリスト
         batch_size (Optional[int]): バッチサイズ。Defaults to None.
+        is_canceled (Callable[[], bool], optional):
+            このジョブがキャンセルされたか。Defaults to lambda:False.
     """
-    asyncio_run(aingest_path_list(lst, batch_size=batch_size))
+    asyncio_run(aingest_path_list(lst, batch_size=batch_size, is_canceled=is_canceled))
 
 
 async def aingest_path_list(
     lst: str | Sequence[str],
     batch_size: Optional[int] = None,
+    is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     """パスリスト内の複数パスから非同期でコンテンツを収集、埋め込み、ストアに格納する。
 
     Args:
         list (str | Sequence[str]): テキストファイルまたは Sequence 形式のリスト
         batch_size (Optional[int]): バッチサイズ。Defaults to None.
+        is_canceled (Callable[[], bool], optional):
+            このジョブがキャンセルされたか。Defaults to lambda:False.
     """
     if isinstance(lst, str):
         lst = _read_list(lst)
 
     rt = _rt()
     file_loader = rt.file_loader
-    text_nodes, image_nodes, audio_nodes = await file_loader.aload_from_paths(list(lst))
+    text_nodes, image_nodes, audio_nodes = await file_loader.aload_from_paths(
+        paths=list(lst), is_canceled=is_canceled
+    )
     batch_size = batch_size or rt.cfg.ingest.batch_size
 
     await _aupsert_nodes(
@@ -347,12 +364,14 @@ async def aingest_path_list(
         audio_nodes=audio_nodes,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
         batch_size=batch_size,
+        is_canceled=is_canceled,
     )
 
 
 def ingest_url(
     url: str,
     batch_size: Optional[int] = None,
+    is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     """URL からコンテンツを収集、埋め込み、ストアに格納する。
     サイトマップ（.xml）の場合はツリーを下りながら複数サイトから取り込む。
@@ -360,13 +379,16 @@ def ingest_url(
     Args:
         url (str): 対象 URL
         batch_size (Optional[int]): バッチサイズ。Defaults to None.
+        is_canceled (Callable[[], bool], optional):
+            このジョブがキャンセルされたか。Defaults to lambda:False.
     """
-    asyncio_run(aingest_url(url, batch_size=batch_size))
+    asyncio_run(aingest_url(url=url, batch_size=batch_size, is_canceled=is_canceled))
 
 
 async def aingest_url(
     url: str,
     batch_size: Optional[int] = None,
+    is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     """URL から非同期でコンテンツを収集、埋め込み、ストアに格納する。
     サイトマップ（.xml）の場合はツリーを下りながら複数サイトから取り込む。
@@ -374,10 +396,14 @@ async def aingest_url(
     Args:
         url (str): 対象 URL
         batch_size (Optional[int]): バッチサイズ。Defaults to None.
+        is_canceled (Callable[[], bool], optional):
+            このジョブがキャンセルされたか。Defaults to lambda:False.
     """
     rt = _rt()
     html_loader = rt.html_loader
-    text_nodes, image_nodes, audio_nodes = await html_loader.aload_from_url(url)
+    text_nodes, image_nodes, audio_nodes = await html_loader.aload_from_url(
+        url=url, is_canceled=is_canceled
+    )
     batch_size = batch_size or rt.cfg.ingest.batch_size
 
     await _aupsert_nodes(
@@ -386,38 +412,47 @@ async def aingest_url(
         audio_nodes=audio_nodes,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
         batch_size=batch_size,
+        is_canceled=is_canceled,
     )
 
 
 def ingest_url_list(
     lst: str | Sequence[str],
     batch_size: Optional[int] = None,
+    is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     """URL リスト内の複数サイトからコンテンツを収集、埋め込み、ストアに格納する。
 
     Args:
         lst (str | Sequence[str]): テキストファイルまたは Sequence 形式のリスト
         batch_size (Optional[int]): バッチサイズ。Defaults to None.
+        is_canceled (Callable[[], bool], optional):
+            このジョブがキャンセルされたか。Defaults to lambda:False.
     """
-    asyncio_run(aingest_url_list(lst, batch_size=batch_size))
+    asyncio_run(aingest_url_list(lst, batch_size=batch_size, is_canceled=is_canceled))
 
 
 async def aingest_url_list(
     lst: str | Sequence[str],
     batch_size: Optional[int] = None,
+    is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     """URL リスト内の複数サイトから非同期でコンテンツを収集、埋め込み、ストアに格納する。
 
     Args:
         lst (str | Sequence[str]): テキストファイルまたは Sequence 形式のリスト
         batch_size (Optional[int]): バッチサイズ。Defaults to None.
+        is_canceled (Callable[[], bool], optional):
+            このジョブがキャンセルされたか。Defaults to lambda:False.
     """
     if isinstance(lst, str):
         lst = _read_list(lst)
 
     rt = _rt()
     html_loader = rt.html_loader
-    text_nodes, image_nodes, audio_nodes = await html_loader.aload_from_urls(list(lst))
+    text_nodes, image_nodes, audio_nodes = await html_loader.aload_from_urls(
+        urls=list(lst), is_canceled=is_canceled
+    )
     batch_size = batch_size or rt.cfg.ingest.batch_size
 
     await _aupsert_nodes(
@@ -426,4 +461,5 @@ async def aingest_url_list(
         audio_nodes=audio_nodes,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
         batch_size=batch_size,
+        is_canceled=is_canceled,
     )
