@@ -10,7 +10,7 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.retrievers.bm25 import BM25Retriever
 
 from ..config.retrieve_config import RetrieveMode
-from ..llama.core.indices.multi_modal.retriever import AudioRetriever, MovieRetriever
+from ..llama.core.indices.multi_modal.retriever import AudioRetriever, VideoRetriever
 from ..llama.core.schema import Modality
 from ..logger import logger
 from ..runtime import get_runtime as _rt
@@ -29,14 +29,14 @@ __all__ = [
     "aquery_text_audio",
     "query_audio_audio",
     "aquery_audio_audio",
-    "query_text_movie",
-    "aquery_text_movie",
-    "query_image_movie",
-    "aquery_image_movie",
-    "query_audio_movie",
-    "aquery_audio_movie",
-    "query_movie_movie",
-    "aquery_movie_movie",
+    "query_text_video",
+    "aquery_text_video",
+    "query_image_video",
+    "aquery_image_video",
+    "query_audio_video",
+    "aquery_audio_video",
+    "query_video_video",
+    "aquery_video_video",
 ]
 
 
@@ -444,7 +444,7 @@ async def aquery_audio_audio(
     return nwss
 
 
-def query_text_movie(
+def query_text_video(
     query: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
@@ -462,10 +462,10 @@ def query_text_movie(
     """
     topk = topk or _rt().cfg.rerank.topk
 
-    return asyncio_run(aquery_text_movie(query=query, topk=topk))
+    return asyncio_run(aquery_text_video(query=query, topk=topk))
 
 
-async def aquery_text_movie(
+async def aquery_text_video(
     query: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
@@ -485,7 +485,7 @@ async def aquery_text_movie(
 
     rt = _rt()
     store = rt.vector_store
-    index = store.get_index(Modality.MOVIE)
+    index = store.get_index(Modality.VIDEO)
     if index is None:
         logger.error("store is not initialized")
         return []
@@ -495,12 +495,12 @@ async def aquery_text_movie(
         return []
 
     topk = topk or rt.cfg.rerank.topk
-    retriever_engine = MovieRetriever(index=index, top_k=topk)
+    retriever_engine = VideoRetriever(index=index, top_k=topk)
     try:
-        nwss = await retriever_engine.atext_to_movie_retrieve(query)
+        nwss = await retriever_engine.atext_to_video_retrieve(query)
     except Exception as e:
         raise RuntimeError(
-            "this embed model may not support text --> movie embedding"
+            "this embed model may not support text --> video embedding"
         ) from e
 
     if len(nwss) == 0:
@@ -517,7 +517,7 @@ async def aquery_text_movie(
     return nwss
 
 
-def query_image_movie(
+def query_image_video(
     path: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
@@ -535,10 +535,10 @@ def query_image_movie(
     """
     topk = topk or _rt().cfg.rerank.topk
 
-    return asyncio_run(aquery_image_movie(path=path, topk=topk))
+    return asyncio_run(aquery_image_video(path=path, topk=topk))
 
 
-async def aquery_image_movie(
+async def aquery_image_video(
     path: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
@@ -558,7 +558,7 @@ async def aquery_image_movie(
 
     rt = _rt()
     store = rt.vector_store
-    index = store.get_index(Modality.MOVIE)
+    index = store.get_index(Modality.VIDEO)
     if index is None:
         logger.error("store is not initialized")
         return []
@@ -568,12 +568,12 @@ async def aquery_image_movie(
         return []
 
     topk = topk or rt.cfg.rerank.topk
-    retriever_engine = MovieRetriever(index=index, top_k=topk)
+    retriever_engine = VideoRetriever(index=index, top_k=topk)
     try:
-        nwss = await retriever_engine.aimage_to_movie_retrieve(path)
+        nwss = await retriever_engine.aimage_to_video_retrieve(path)
     except Exception as e:
         raise RuntimeError(
-            "this embed model may not support image --> movie embedding"
+            "this embed model may not support image --> video embedding"
         ) from e
 
     if len(nwss) == 0:
@@ -585,7 +585,7 @@ async def aquery_image_movie(
     return nwss
 
 
-def query_audio_movie(
+def query_audio_video(
     path: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
@@ -603,10 +603,10 @@ def query_audio_movie(
     """
     topk = topk or _rt().cfg.rerank.topk
 
-    return asyncio_run(aquery_audio_movie(path=path, topk=topk))
+    return asyncio_run(aquery_audio_video(path=path, topk=topk))
 
 
-async def aquery_audio_movie(
+async def aquery_audio_video(
     path: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
@@ -626,7 +626,7 @@ async def aquery_audio_movie(
 
     rt = _rt()
     store = rt.vector_store
-    index = store.get_index(Modality.MOVIE)
+    index = store.get_index(Modality.VIDEO)
     if index is None:
         logger.error("store is not initialized")
         return []
@@ -636,12 +636,12 @@ async def aquery_audio_movie(
         return []
 
     topk = topk or rt.cfg.rerank.topk
-    retriever_engine = MovieRetriever(index=index, top_k=topk)
+    retriever_engine = VideoRetriever(index=index, top_k=topk)
     try:
-        nwss = await retriever_engine.aaudio_to_movie_retrieve(path)
+        nwss = await retriever_engine.aaudio_to_video_retrieve(path)
     except Exception as e:
         raise RuntimeError(
-            "this embed model may not support audio --> movie embedding"
+            "this embed model may not support audio --> video embedding"
         ) from e
 
     if len(nwss) == 0:
@@ -653,7 +653,7 @@ async def aquery_audio_movie(
     return nwss
 
 
-def query_movie_movie(
+def query_video_video(
     path: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
@@ -668,10 +668,10 @@ def query_movie_movie(
     """
     topk = topk or _rt().cfg.rerank.topk
 
-    return asyncio_run(aquery_movie_movie(path=path, topk=topk))
+    return asyncio_run(aquery_video_video(path=path, topk=topk))
 
 
-async def aquery_movie_movie(
+async def aquery_video_video(
     path: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
@@ -688,7 +688,7 @@ async def aquery_movie_movie(
 
     rt = _rt()
     store = rt.vector_store
-    index = store.get_index(Modality.MOVIE)
+    index = store.get_index(Modality.VIDEO)
     if index is None:
         logger.error("store is not initialized")
         return []
@@ -698,8 +698,8 @@ async def aquery_movie_movie(
         return []
 
     topk = topk or rt.cfg.rerank.topk
-    retriever_engine = MovieRetriever(index=index, top_k=topk)
-    nwss = await retriever_engine.amovie_to_movie_retrieve(path)
+    retriever_engine = VideoRetriever(index=index, top_k=topk)
+    nwss = await retriever_engine.avideo_to_video_retrieve(path)
 
     if len(nwss) == 0:
         logger.warning("empty nodes")

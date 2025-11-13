@@ -28,8 +28,8 @@ class Exts:
     AUDIO: set[str] = _PASS_THROUGH_AUDIO
 
     # マルチモーダル（動画）の埋め込みモデルに渡せる拡張子
-    PASS_THROUGH_MOVIE: set[str] = {".wmv", ".mp4", ".avi"}  # うち、独自処理するもの
-    MOVIE: set[str] = PASS_THROUGH_MOVIE
+    PASS_THROUGH_VIDEO: set[str] = {".wmv", ".mp4", ".avi"}  # うち、独自処理するもの
+    VIDEO: set[str] = PASS_THROUGH_VIDEO
 
     # サイトマップの抽出判定に使用する拡張子
     SITEMAP: set[str] = {".xml"}
@@ -58,14 +58,14 @@ class Exts:
     FETCH_TARGET: set[str] = (
         IMAGE
         | AUDIO
-        | MOVIE
+        | VIDEO
         | SITEMAP
         | _DEFAULT_FETCH_TARGET
         | _ADDITIONAL_FETCH_TARGET
     )
 
     # デフォルトの reader に渡すとテキストとして解釈してしまうため除外して自前処理したいもの
-    PASS_THROUGH_MEDIA = _PASS_THROUGH_AUDIO | PASS_THROUGH_MOVIE
+    PASS_THROUGH_MEDIA = _PASS_THROUGH_AUDIO | PASS_THROUGH_VIDEO
 
     @classmethod
     def endswith_exts(cls, s: str, exts: set[str]) -> bool:

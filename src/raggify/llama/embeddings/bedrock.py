@@ -13,7 +13,7 @@ from llama_index.embeddings.bedrock import BedrockEmbedding
 
 from raggify.core.exts import Exts
 
-from .multi_modal_base import AudioType, MovieEmbedding, MovieType
+from .multi_modal_base import AudioType, VideoEmbedding, VideoType
 
 if TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import Embedding
@@ -36,7 +36,7 @@ class Models(StrEnum):
     NOVA_2_MULTIMODAL_V1 = "amazon.nova-2-multimodal-embeddings-v1:0"
 
 
-class MultiModalBedrockEmbedding(MovieEmbedding, BedrockEmbedding):
+class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
     """BedrockEmbedding のマルチモーダル対応版"""
 
     @classmethod
@@ -174,23 +174,23 @@ class MultiModalBedrockEmbedding(MovieEmbedding, BedrockEmbedding):
             show_progress=show_progress,
         )
 
-    def _get_movie_embeddings(
-        self, movie_file_paths: list[MovieType]
+    def _get_video_embeddings(
+        self, video_file_paths: list[VideoType]
     ) -> list[Embedding]:
         """動画埋め込みの同期インタフェース。
 
         Args:
-            movie_file_paths (list[MovieType]): 動画ファイルパス
+            video_file_paths (list[VideoType]): 動画ファイルパス
 
         Returns:
             list[Embedding]: 埋め込みベクトル
         """
         vecs: list[Embedding] = []
         video_overrides = self.additional_kwargs.get("video_payload_overrides", {})
-        for movie in movie_file_paths:
+        for video in video_file_paths:
             encoded, fmt = self._read_media_payload(
-                movie,
-                expected_exts=Exts.MOVIE,
+                video,
+                expected_exts=Exts.VIDEO,
                 fallback_format_key="video_format",
             )
             payload = {
@@ -215,34 +215,34 @@ class MultiModalBedrockEmbedding(MovieEmbedding, BedrockEmbedding):
 
         return vecs
 
-    async def _aget_movie_embeddings(
-        self, movie_file_paths: list[MovieType]
+    async def _aget_video_embeddings(
+        self, video_file_paths: list[VideoType]
     ) -> list[Embedding]:
         """動画埋め込みの非同期インタフェース。
 
         Args:
-            movie_file_paths (list[MovieType]): 動画ファイルパス
+            video_file_paths (list[VideoType]): 動画ファイルパス
 
         Returns:
             list[Embedding]: 埋め込みベクトル
         """
-        return await asyncio.to_thread(self._get_movie_embeddings, movie_file_paths)
+        return await asyncio.to_thread(self._get_video_embeddings, video_file_paths)
 
-    async def aget_movie_embedding_batch(
-        self, movie_file_paths: list[MovieType], show_progress: bool = False
+    async def aget_video_embedding_batch(
+        self, video_file_paths: list[VideoType], show_progress: bool = False
     ) -> list[Embedding]:
         """動画埋め込みの非同期バッチインタフェース。
 
         Args:
-            movie_file_paths (list[MovieType]): 動画ファイルパス
+            video_file_paths (list[VideoType]): 動画ファイルパス
             show_progress (bool, optional): 進捗の表示。Defaults to False.
 
         Returns:
             list[Embedding]: 埋め込みベクトル
         """
         return await self._aget_media_embedding_batch(
-            movie_file_paths,
-            self._aget_movie_embeddings,
+            video_file_paths,
+            self._aget_video_embeddings,
             show_progress=show_progress,
         )
 
@@ -316,7 +316,7 @@ class MultiModalBedrockEmbedding(MovieEmbedding, BedrockEmbedding):
 
     def _read_media_payload(
         self,
-        media: AudioType | MovieType | ImageType,
+        media: AudioType | VideoType | ImageType,
         *,
         expected_exts: set[str],
         fallback_format_key: str,
@@ -324,7 +324,7 @@ class MultiModalBedrockEmbedding(MovieEmbedding, BedrockEmbedding):
         """メディアファイルから base64 文字列とフォーマットを取得する。
 
         Args:
-            media (AudioType | MovieType): メディアファイル
+            media (AudioType | VideoType): メディアファイル
             expected_exts (set[str]): 許可された拡張子セット
             fallback_format_key (str): 追加設定で参照するフォーマットのキー
 

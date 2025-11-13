@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import Embedding
 
 AudioType = Union[str, BytesIO]
-MovieType = Union[str, BytesIO]
+VideoType = Union[str, BytesIO]
 
 
 class AudioEmbedding(BaseEmbedding):
@@ -40,7 +40,7 @@ class AudioEmbedding(BaseEmbedding):
         ...
 
 
-class MovieEmbedding(AudioEmbedding, MultiModalEmbedding):
+class VideoEmbedding(AudioEmbedding, MultiModalEmbedding):
     """動画埋め込みクラスの抽象
 
     MultiModalEmbedding 自身に動画埋め込みサポートがあれば良いが未だ無いので
@@ -52,13 +52,13 @@ class MovieEmbedding(AudioEmbedding, MultiModalEmbedding):
         super().__init__(*args, **kwargs)
 
     @abstractmethod
-    async def aget_movie_embedding_batch(
-        self, movie_file_paths: list[MovieType], show_progress: bool = False
+    async def aget_video_embedding_batch(
+        self, video_file_paths: list[VideoType], show_progress: bool = False
     ) -> list[Embedding]:
         """動画埋め込みの非同期バッチインタフェース。
 
         Args:
-            movie_file_paths (list[MovieType]): 動画ファイルパス
+            video_file_paths (list[VideoType]): 動画ファイルパス
             show_progress (bool, optional): 進捗の表示。Defaults to False.
 
         Returns:

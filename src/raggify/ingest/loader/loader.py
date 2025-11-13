@@ -9,7 +9,7 @@ from llama_index.core.schema import Document, ImageNode, MediaResource, TextNode
 from ...core.exts import Exts
 from ...core.metadata import BasicMetaData
 from ...core.metadata import MetaKeys as MK
-from ...llama.core.schema import AudioNode, MovieNode
+from ...llama.core.schema import AudioNode, VideoNode
 from ...logger import logger
 from ...runtime import get_runtime as _rt
 
@@ -129,7 +129,7 @@ class Loader:
         self,
         docs: list[Document],
         is_canceled: Callable[[], bool],
-    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[MovieNode]]:
+    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
         """ドキュメントをモダリティ別に分ける。
 
         Args:
@@ -137,7 +137,7 @@ class Loader:
             is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
 
         Returns:
-            tuple[list[TextNode], list[ImageNode], list[AudioNode], list[MovieNode]]:
+            tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
                 テキストノード、画像ノード、音声ノード、動画ノード
         """
         self._finalize_docs(docs)
@@ -145,7 +145,7 @@ class Loader:
 
         image_nodes = []
         audio_nodes = []
-        movie_nodes = []
+        video_nodes = []
         text_nodes = []
         for node in nodes:
             if isinstance(node, TextNode) and self._is_image_node(node):
@@ -160,9 +160,9 @@ class Loader:
                         text=node.text, ref_doc_id=node.id_, metadata=node.metadata
                     )
                 )
-            elif isinstance(node, TextNode) and self._is_movie_node(node):
-                movie_nodes.append(
-                    MovieNode(
+            elif isinstance(node, TextNode) and self._is_video_node(node):
+                video_nodes.append(
+                    VideoNode(
                         text=node.text, ref_doc_id=node.id_, metadata=node.metadata
                     )
                 )
@@ -171,7 +171,7 @@ class Loader:
             else:
                 logger.warning(f"unexpected node type {type(node)}, skipped")
 
-        return text_nodes, image_nodes, audio_nodes, movie_nodes
+        return text_nodes, image_nodes, audio_nodes, video_nodes
 
     def _is_multimodal_node(self, node: BaseNode, exts: set[str]) -> bool:
         """マルチモーダルノードか。
@@ -218,7 +218,7 @@ class Loader:
         """
         return self._is_multimodal_node(node=node, exts=Exts.AUDIO)
 
-    def _is_movie_node(self, node: BaseNode) -> bool:
+    def _is_video_node(self, node: BaseNode) -> bool:
         """動画ノードか。
 
         Args:
@@ -227,4 +227,4 @@ class Loader:
         Returns:
             bool: 動画ノードなら True
         """
-        return self._is_multimodal_node(node=node, exts=Exts.MOVIE)
+        return self._is_multimodal_node(node=node, exts=Exts.VIDEO)

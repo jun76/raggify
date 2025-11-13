@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from llama_index.core.readers.base import BaseReader
     from llama_index.core.schema import ImageNode, TextNode
 
-    from ...llama.core.schema import AudioNode, MovieNode
+    from ...llama.core.schema import AudioNode, VideoNode
 
 
 class FileLoader(Loader):
@@ -38,7 +38,7 @@ class FileLoader(Loader):
         self,
         root: str,
         is_canceled: Callable[[], bool],
-    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[MovieNode]]:
+    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
         """ローカルパス（ディレクトリ、ファイル）からコンテンツを取り込み、ノードを生成する。
         ディレクトリの場合はツリーを下りながら複数ファイルを取り込む。
 
@@ -50,7 +50,7 @@ class FileLoader(Loader):
             ValueError: パスの指定誤り等
 
         Returns:
-            tuple[list[TextNode], list[ImageNode], list[AudioNode], list[MovieNode]]:
+            tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
                 テキストノード、画像ノード、音声ノード、動画ノード
         """
         from llama_index.core.readers.file.base import SimpleDirectoryReader
@@ -75,7 +75,7 @@ class FileLoader(Loader):
         self,
         paths: list[str],
         is_canceled: Callable[[], bool],
-    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[MovieNode]]:
+    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
         """パスリスト内の複数パスからコンテンツを取得し、ノードを生成する。
 
         Args:
@@ -83,24 +83,24 @@ class FileLoader(Loader):
             is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
 
         Returns:
-            tuple[list[TextNode], list[ImageNode], list[AudioNode], list[MovieNode]]:
+            tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
                 テキストノード、画像ノード、音声ノード、動画ノード
         """
         texts = []
         images = []
         audios = []
-        movies = []
+        videos = []
         for path in paths:
             try:
-                temp_text, temp_image, temp_audio, temp_movie = (
+                temp_text, temp_image, temp_audio, temp_video = (
                     await self.aload_from_path(root=path, is_canceled=is_canceled)
                 )
                 texts.extend(temp_text)
                 images.extend(temp_image)
                 audios.extend(temp_audio)
-                movies.extend(temp_movie)
+                videos.extend(temp_video)
             except Exception as e:
                 logger.exception(e)
                 continue
 
-        return texts, images, audios, movies
+        return texts, images, audios, videos

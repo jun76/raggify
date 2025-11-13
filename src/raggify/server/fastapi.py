@@ -491,8 +491,8 @@ async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
     )
 
 
-@app.post("/v1/query/text_movie", operation_id="query_text_movie")
-async def query_text_movie(payload: QueryTextRequest) -> dict[str, Any]:
+@app.post("/v1/query/text_video", operation_id="query_text_video")
+async def query_text_video(payload: QueryTextRequest) -> dict[str, Any]:
     """クエリ文字列による動画ドキュメント検索。
 
     Args:
@@ -504,21 +504,21 @@ async def query_text_movie(payload: QueryTextRequest) -> dict[str, Any]:
     Returns:
         dict[str, Any]: 検索結果
     """
-    from ..retrieve.retrieve import aquery_text_movie
+    from ..retrieve.retrieve import aquery_text_video
 
-    logger.debug("exec /v1/query/text_movie")
+    logger.debug("exec /v1/query/text_video")
 
     return await _query_handler(
-        modality=Modality.MOVIE,
-        query_func=aquery_text_movie,
-        operation_name="query text movie",
+        modality=Modality.VIDEO,
+        query_func=aquery_text_video,
+        operation_name="query text video",
         query=payload.query,
         topk=payload.topk,
     )
 
 
-@app.post("/v1/query/image_movie", operation_id="query_image_movie")
-async def query_image_movie(payload: QueryMultimodalRequest) -> dict[str, Any]:
+@app.post("/v1/query/image_video", operation_id="query_image_video")
+async def query_image_video(payload: QueryMultimodalRequest) -> dict[str, Any]:
     """クエリ画像による動画ドキュメント検索。
 
     Args:
@@ -530,21 +530,21 @@ async def query_image_movie(payload: QueryMultimodalRequest) -> dict[str, Any]:
     Returns:
         dict[str, Any]: 検索結果
     """
-    from ..retrieve.retrieve import aquery_image_movie
+    from ..retrieve.retrieve import aquery_image_video
 
-    logger.debug("exec /v1/query/image_movie")
+    logger.debug("exec /v1/query/image_video")
 
     return await _query_handler(
-        modality=Modality.MOVIE,
-        query_func=aquery_image_movie,
-        operation_name="query image movie",
+        modality=Modality.VIDEO,
+        query_func=aquery_image_video,
+        operation_name="query image video",
         path=payload.path,
         topk=payload.topk,
     )
 
 
-@app.post("/v1/query/audio_movie", operation_id="query_audio_movie")
-async def query_audio_movie(payload: QueryMultimodalRequest) -> dict[str, Any]:
+@app.post("/v1/query/audio_video", operation_id="query_audio_video")
+async def query_audio_video(payload: QueryMultimodalRequest) -> dict[str, Any]:
     """クエリ音声による動画ドキュメント検索。
 
     Args:
@@ -556,21 +556,21 @@ async def query_audio_movie(payload: QueryMultimodalRequest) -> dict[str, Any]:
     Returns:
         dict[str, Any]: 検索結果
     """
-    from ..retrieve.retrieve import aquery_audio_movie
+    from ..retrieve.retrieve import aquery_audio_video
 
-    logger.debug("exec /v1/query/audio_movie")
+    logger.debug("exec /v1/query/audio_video")
 
     return await _query_handler(
-        modality=Modality.MOVIE,
-        query_func=aquery_audio_movie,
-        operation_name="query audio movie",
+        modality=Modality.VIDEO,
+        query_func=aquery_audio_video,
+        operation_name="query audio video",
         path=payload.path,
         topk=payload.topk,
     )
 
 
-@app.post("/v1/query/movie_movie", operation_id="query_movie_movie")
-async def query_movie_movie(payload: QueryMultimodalRequest) -> dict[str, Any]:
+@app.post("/v1/query/video_video", operation_id="query_video_video")
+async def query_video_video(payload: QueryMultimodalRequest) -> dict[str, Any]:
     """クエリ動画による動画ドキュメント検索。
 
     Args:
@@ -582,14 +582,14 @@ async def query_movie_movie(payload: QueryMultimodalRequest) -> dict[str, Any]:
     Returns:
         dict[str, Any]: 検索結果
     """
-    from ..retrieve.retrieve import aquery_movie_movie
+    from ..retrieve.retrieve import aquery_video_video
 
-    logger.debug("exec /v1/query/movie_movie")
+    logger.debug("exec /v1/query/video_video")
 
     return await _query_handler(
-        modality=Modality.MOVIE,
-        query_func=aquery_movie_movie,
-        operation_name="query movie movie",
+        modality=Modality.VIDEO,
+        query_func=aquery_video_video,
+        operation_name="query video video",
         path=payload.path,
         topk=payload.topk,
     )

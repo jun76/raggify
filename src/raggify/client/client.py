@@ -291,7 +291,7 @@ class RestAPIClient:
 
         return self._post_json("/query/audio_audio", payload)
 
-    def query_text_movie(
+    def query_text_video(
         self, query: str, topk: Optional[int] = None
     ) -> dict[str, Any]:
         """クエリ文字列による動画ドキュメント検索 API を呼び出す。
@@ -307,9 +307,9 @@ class RestAPIClient:
         if topk is not None:
             payload["topk"] = topk
 
-        return self._post_json("/query/text_movie", payload)
+        return self._post_json("/query/text_video", payload)
 
-    def query_image_movie(
+    def query_image_video(
         self, path: str, topk: Optional[int] = None
     ) -> dict[str, Any]:
         """クエリ画像による動画ドキュメント検索 API を呼び出す。
@@ -325,9 +325,9 @@ class RestAPIClient:
         if topk is not None:
             payload["topk"] = topk
 
-        return self._post_json("/query/image_movie", payload)
+        return self._post_json("/query/image_video", payload)
 
-    def query_audio_movie(
+    def query_audio_video(
         self, path: str, topk: Optional[int] = None
     ) -> dict[str, Any]:
         """クエリ音声による動画ドキュメント検索 API を呼び出す。
@@ -343,9 +343,9 @@ class RestAPIClient:
         if topk is not None:
             payload["topk"] = topk
 
-        return self._post_json("/query/audio_movie", payload)
+        return self._post_json("/query/audio_video", payload)
 
-    def query_movie_movie(
+    def query_video_video(
         self, path: str, topk: Optional[int] = None
     ) -> dict[str, Any]:
         """クエリ動画による動画ドキュメント検索 API を呼び出す。
@@ -361,4 +361,4 @@ class RestAPIClient:
         if topk is not None:
             payload["topk"] = topk
 
-        return self._post_json("/query/movie_movie", payload)
+        return self._post_json("/query/video_video", payload)

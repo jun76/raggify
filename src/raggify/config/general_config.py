@@ -25,7 +25,7 @@ class GeneralConfig(DataClassDictMixin):
     text_embed_provider: Optional[EmbedProvider] = EmbedProvider.OPENAI
     image_embed_provider: Optional[EmbedProvider] = EmbedProvider.COHERE
     audio_embed_provider: Optional[EmbedProvider] = None
-    movie_embed_provider: Optional[EmbedProvider] = None
+    video_embed_provider: Optional[EmbedProvider] = None
     rerank_provider: Optional[RerankProvider] = RerankProvider.COHERE
     openai_base_url: Optional[str] = None
     device: Literal["cpu", "cuda", "mps"] = "cpu"

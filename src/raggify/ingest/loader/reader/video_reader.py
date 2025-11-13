@@ -13,7 +13,7 @@ from ....core.metadata import BasicMetaData
 from ....logger import logger
 
 
-class MovieReader(BaseReader):
+class VideoReader(BaseReader):
     """動画ファイルをフレーム画像と音声トラックに分解するためのリーダー。"""
 
     def __init__(
@@ -59,7 +59,7 @@ class MovieReader(BaseReader):
             list[Path]: 抽出したフレームのパス
         """
         ffmpeg = self._ffmpeg()
-        temp_dir = Path(tempfile.mkdtemp(prefix="rg_movie_frames_"))
+        temp_dir = Path(tempfile.mkdtemp(prefix="rg_video_frames_"))
         pattern = str(temp_dir / f"frame_%05d{self._image_suffix}")
         (
             ffmpeg.input(src)
@@ -84,7 +84,7 @@ class MovieReader(BaseReader):
             Path: 抽出した音声ファイルのパス
         """
         ffmpeg = self._ffmpeg()
-        fd, temp = tempfile.mkstemp(prefix="rg_movie_audio_", suffix=self._audio_suffix)
+        fd, temp = tempfile.mkstemp(prefix="rg_video_audio_", suffix=self._audio_suffix)
         os.close(fd)
         (
             ffmpeg.input(src)
@@ -133,7 +133,7 @@ class MovieReader(BaseReader):
 
         return Document(text=source, metadata=meta.to_dict())
 
-    def _load_movie(self, path: str, allowed_exts: Iterable[str]) -> list[Document]:
+    def _load_video(self, path: str, allowed_exts: Iterable[str]) -> list[Document]:
         """動画を読み込み、フレーム＋音声のドキュメントを生成する。
 
         Args:
@@ -153,7 +153,7 @@ class MovieReader(BaseReader):
 
         if not Exts.endswith_exts(abs_path, set(allowed_exts)):
             raise ValueError(
-                f"unsupported movie ext: {abs_path}. supported: {' '.join(allowed_exts)}"
+                f"unsupported video ext: {abs_path}. supported: {' '.join(allowed_exts)}"
             )
 
         frames = self._extract_frames(abs_path)
@@ -179,4 +179,4 @@ class MovieReader(BaseReader):
             logger.warning(f"file not found: {abs_path}")
             return []
 
-        return self._load_movie(abs_path, allowed_exts=Exts.PASS_THROUGH_MOVIE)
+        return self._load_video(abs_path, allowed_exts=Exts.PASS_THROUGH_VIDEO)

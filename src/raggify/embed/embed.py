@@ -86,16 +86,16 @@ def create_embed_manager(cfg: ConfigManager) -> EmbedManager:
                     )
             conts[Modality.AUDIO] = cont
 
-        if cfg.general.movie_embed_provider:
-            match cfg.general.movie_embed_provider:
+        if cfg.general.video_embed_provider:
+            match cfg.general.video_embed_provider:
                 case EmbedProvider.BEDROCK:
-                    cont = _bedrock_movie(cfg.embed)
+                    cont = _bedrock_video(cfg.embed)
                 case _:
                     raise ValueError(
-                        "unsupported movie embed provider: "
-                        f"{cfg.general.movie_embed_provider}"
+                        "unsupported video embed provider: "
+                        f"{cfg.general.video_embed_provider}"
                     )
-            conts[Modality.MOVIE] = cont
+            conts[Modality.VIDEO] = cont
     except (ValidationError, ValueError) as e:
         raise RuntimeError("invalid settings") from e
     except Exception as e:
@@ -278,5 +278,5 @@ def _bedrock_audio(cfg: EmbedConfig) -> EmbedContainer:
     return _bedrock(cfg, cfg.bedrock_embed_model_audio)
 
 
-def _bedrock_movie(cfg: EmbedConfig) -> EmbedContainer:
-    return _bedrock(cfg, cfg.bedrock_embed_model_movie)
+def _bedrock_video(cfg: EmbedConfig) -> EmbedContainer:
+    return _bedrock(cfg, cfg.bedrock_embed_model_video)

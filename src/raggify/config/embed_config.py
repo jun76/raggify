@@ -124,8 +124,8 @@ class EmbedConfig(DataClassDictMixin):
         }
     )
 
-    # Movie
-    bedrock_embed_model_movie: dict[str, Any] = field(
+    # Video
+    bedrock_embed_model_video: dict[str, Any] = field(
         default_factory=lambda: {
             EmbedModel.NAME.value: "amazon.nova-2-multimodal-embeddings-v1:0",
             EmbedModel.ALIAS.value: "n2v1",

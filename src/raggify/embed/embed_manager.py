@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import BaseEmbedding, Embedding
     from llama_index.core.schema import ImageType
 
-    from ..llama.embeddings.multi_modal_base import AudioType, MovieType
+    from ..llama.embeddings.multi_modal_base import AudioType, VideoType
 
 
 @dataclass(kw_only=True)
@@ -104,7 +104,7 @@ class EmbedManager:
         return self.get_container(Modality.AUDIO).space_key
 
     @property
-    def space_key_movie(self) -> str:
+    def space_key_video(self) -> str:
         """動画埋め込みの空間キー。
 
         Raises:
@@ -113,7 +113,7 @@ class EmbedManager:
         Returns:
             str: 空間キー
         """
-        return self.get_container(Modality.MOVIE).space_key
+        return self.get_container(Modality.VIDEO).space_key
 
     def get_container(self, modality: Modality) -> EmbedContainer:
         """モダリティ別の埋め込みコンテナを取得する。
@@ -223,11 +223,11 @@ class EmbedManager:
 
         return dims
 
-    async def aembed_movie(self, paths: list[MovieType]) -> list[Embedding]:
+    async def aembed_video(self, paths: list[VideoType]) -> list[Embedding]:
         """動画の埋め込みベクトルを取得する。
 
         Args:
-            paths (list[MovieType]): 動画のパス
+            paths (list[VideoType]): 動画のパス
 
         Raises:
             RuntimeError: 未初期化または動画埋め込み器でない
@@ -235,23 +235,23 @@ class EmbedManager:
         Returns:
             list[Embedding]: 埋め込みベクトル
         """
-        from ..llama.embeddings.multi_modal_base import MovieEmbedding
+        from ..llama.embeddings.multi_modal_base import VideoEmbedding
 
-        if Modality.MOVIE not in self.modality:
-            logger.warning("no movie embedding is specified")
+        if Modality.VIDEO not in self.modality:
+            logger.warning("no video embedding is specified")
             return []
 
-        embed = self.get_container(Modality.MOVIE).embed
-        if not isinstance(embed, MovieEmbedding):
-            raise RuntimeError("movie embed model is required")
+        embed = self.get_container(Modality.VIDEO).embed
+        if not isinstance(embed, VideoEmbedding):
+            raise RuntimeError("video embed model is required")
 
-        logger.debug(f"now batch embedding {len(paths)} movies...")
-        dims = await embed.aget_movie_embedding_batch(
-            movie_file_paths=paths, show_progress=True
+        logger.debug(f"now batch embedding {len(paths)} videos...")
+        dims = await embed.aget_video_embedding_batch(
+            video_file_paths=paths, show_progress=True
         )
 
         if dims:
-            logger.debug(f"dim = {len(dims[0])}, embed {len(dims)} movies")
+            logger.debug(f"dim = {len(dims[0])}, embed {len(dims)} videos")
 
         return dims
 
@@ -274,7 +274,7 @@ class EmbedManager:
             Modality.TEXT: "te",
             Modality.IMAGE: "im",
             Modality.AUDIO: "au",
-            Modality.MOVIE: "mo",
+            Modality.VIDEO: "mo",
         }
         if mod.get(modality) is None:
             raise ValueError(f"unexpected modality: {modality}")
