@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
-from typing import Any
+from typing import Any, Optional
 
 from mashumaro import DataClassDictMixin
 
@@ -63,6 +63,13 @@ class EmbedConfig(DataClassDictMixin):
             EmbedModel.DIM.value: 2048,
         }
     )
+    bedrock_embed_model_text: dict[str, Any] = field(
+        default_factory=lambda: {
+            EmbedModel.NAME.value: "amazon.nova-2-multimodal-embeddings-v1:0",
+            EmbedModel.ALIAS.value: "n2v1",
+            EmbedModel.DIM.value: 1024,
+        }
+    )
 
     # Image
     cohere_embed_model_image: dict[str, Any] = field(
@@ -93,6 +100,13 @@ class EmbedConfig(DataClassDictMixin):
             EmbedModel.DIM.value: 1024,
         }
     )
+    bedrock_embed_model_image: dict[str, Any] = field(
+        default_factory=lambda: {
+            EmbedModel.NAME.value: "amazon.nova-2-multimodal-embeddings-v1:0",
+            EmbedModel.ALIAS.value: "n2v1",
+            EmbedModel.DIM.value: 1024,
+        }
+    )
 
     # Audio
     clap_embed_model_audio: dict[str, Any] = field(
@@ -102,12 +116,26 @@ class EmbedConfig(DataClassDictMixin):
             EmbedModel.DIM.value: 512,
         }
     )
+    bedrock_embed_model_audio: dict[str, Any] = field(
+        default_factory=lambda: {
+            EmbedModel.NAME.value: "amazon.nova-2-multimodal-embeddings-v1:0",
+            EmbedModel.ALIAS.value: "n2v1",
+            EmbedModel.DIM.value: 1024,
+        }
+    )
 
     # Movie
     bedrock_embed_model_movie: dict[str, Any] = field(
         default_factory=lambda: {
             EmbedModel.NAME.value: "amazon.nova-2-multimodal-embeddings-v1:0",
             EmbedModel.ALIAS.value: "n2v1",
-            EmbedModel.DIM.value: 3072,
+            EmbedModel.DIM.value: 1024,
         }
     )
+
+    # Provider settings
+    bedrock_profile_name: Optional[str] = None
+    bedrock_aws_access_key_id: Optional[str] = None
+    bedrock_aws_secret_access_key: Optional[str] = None
+    bedrock_aws_session_token: Optional[str] = None
+    bedrock_region_name: Optional[str] = None

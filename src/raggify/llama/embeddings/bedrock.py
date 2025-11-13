@@ -56,7 +56,6 @@ class MultiModalBedrockEmbedding(MovieEmbedding, BedrockEmbedding):
         aws_secret_access_key: Optional[str] = None,
         aws_session_token: Optional[str] = None,
         region_name: Optional[str] = None,
-        botocore_session: Optional[Any] = None,
         **kwargs: Any,
     ) -> None:
         """コンストラクタ
@@ -71,7 +70,6 @@ class MultiModalBedrockEmbedding(MovieEmbedding, BedrockEmbedding):
             aws_secret_access_key=aws_secret_access_key,
             aws_session_token=aws_session_token,
             region_name=region_name,
-            botocore_session=botocore_session,
             **kwargs,
         )
 
@@ -419,7 +417,7 @@ class MultiModalBedrockEmbedding(MovieEmbedding, BedrockEmbedding):
             media_field: media_payload,
         }
         dimension = self.additional_kwargs.get("embedding_dimension", 3072)
-        if dimension:
+        if dimension is not None:
             params["embeddingDimension"] = dimension
 
         if params_override_key:

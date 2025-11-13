@@ -9,6 +9,7 @@ from typing import (
     Optional,
     Sequence,
     Union,
+    cast,
 )
 
 from llama_index.core.base.embeddings.base import BaseEmbedding
@@ -38,7 +39,7 @@ class AudioEncoders:
     audio_encoder: Optional[Callable[[list[str]], Awaitable[list[Embeddings]]]] = None
 
     @classmethod
-    def from_embed_model(cls, embed_model: Optional[BaseEmbedding]) -> "AudioEncoders":
+    def from_embed_model(cls, embed_model: Optional[BaseEmbedding]) -> AudioEncoders:
         """埋め込みモデルから利用可能なエンコーダを生成する。
 
         Args:
@@ -102,6 +103,89 @@ class AudioEncoders:
             raise RuntimeError("audio encoder for audio retrieval is not available")
 
         return await self.audio_encoder(paths)
+
+
+@dataclass(kw_only=True)
+class MovieEncoders(AudioEncoders):
+    """動画検索用エンコーダ群。"""
+
+    image_encoder: Optional[Callable[[list[str]], Awaitable[list[Embeddings]]]] = None
+    movie_encoder: Optional[Callable[[list[str]], Awaitable[list[Embeddings]]]] = None
+
+    @classmethod
+    def from_embed_model(cls, embed_model: Optional[BaseEmbedding]) -> MovieEncoders:
+        """埋め込みモデルから利用可能なエンコーダを生成する。
+
+        Args:
+            embed_model (Optional[BaseEmbedding]): 埋め込みモデル
+
+        Returns:
+            MovieEncoders: テキスト・音声・画像・動画エンコーダを含むインスタンス
+        """
+        base = super().from_embed_model(embed_model)
+        image_encoder: Optional[Callable[[list[str]], Awaitable[list[Embeddings]]]] = (
+            None
+        )
+        movie_encoder: Optional[Callable[[list[str]], Awaitable[list[Embeddings]]]] = (
+            None
+        )
+
+        if embed_model is not None and hasattr(
+            embed_model, "aget_image_embedding_batch"
+        ):
+
+            async def encode_image(paths: list[str]) -> list[Embeddings]:
+                return await embed_model.aget_image_embedding_batch(  # type: ignore[attr-defined]
+                    img_file_paths=paths
+                )
+
+            image_encoder = encode_image
+
+        if embed_model is not None and hasattr(
+            embed_model, "aget_movie_embedding_batch"
+        ):
+
+            async def encode_movie(paths: list[str]) -> list[Embeddings]:
+                return await embed_model.aget_movie_embedding_batch(  # type: ignore[attr-defined]
+                    movie_file_paths=paths
+                )
+
+            movie_encoder = encode_movie
+
+        return cls(
+            text_encoder=base.text_encoder,
+            audio_encoder=base.audio_encoder,
+            image_encoder=image_encoder,
+            movie_encoder=movie_encoder,
+        )
+
+    async def aencode_image(self, paths: list[str]) -> list[Embeddings]:
+        """画像ファイル群を埋め込みベクトルへ変換する。
+
+        Args:
+            paths (list[str]): 画像ファイルパスのリスト
+
+        Returns:
+            list[Embeddings]: 画像埋め込みベクトルのリスト
+        """
+        if self.image_encoder is None:
+            raise RuntimeError("image encoder for movie retrieval is not available")
+
+        return await self.image_encoder(paths)
+
+    async def aencode_movie(self, paths: list[str]) -> list[Embeddings]:
+        """動画ファイル群を埋め込みベクトルへ変換する。
+
+        Args:
+            paths (list[str]): 動画ファイルパスのリスト
+
+        Returns:
+            list[Embeddings]: 動画埋め込みベクトルのリスト
+        """
+        if self.movie_encoder is None:
+            raise RuntimeError("movie encoder for movie retrieval is not available")
+
+        return await self.movie_encoder(paths)
 
 
 class AudioRetriever(BaseRetriever):
@@ -287,3 +371,130 @@ class AudioRetriever(BaseRetriever):
             node_with_scores.append(NodeWithScore(node=node, score=score))
 
         return node_with_scores
+
+
+class MovieRetriever(AudioRetriever):
+    """動画モダリティ専用リトリーバー。"""
+
+    def __init__(
+        self,
+        index: VectorStoreIndex,
+        top_k: int = 10,
+        encoders: Optional[MovieEncoders] = None,
+        *,
+        filters: Optional["MetadataFilters"] = None,
+        vector_store_query_mode: VectorStoreQueryMode = VectorStoreQueryMode.DEFAULT,
+        node_ids: Optional[list[str]] = None,
+        doc_ids: Optional[list[str]] = None,
+        vector_store_kwargs: Optional[dict] = None,
+    ) -> None:
+        """リトリーバーを初期化する。
+
+        Args:
+            index (VectorStoreIndex): ベクトルストアインデックス
+            top_k (int, optional): 類似ドキュメントの最大取得件数。Defaults to 10.
+            encoders (Optional[MovieEncoders], optional): 事前構築済みエンコーダ。Defaults to None.
+            filters (Optional[MetadataFilters], optional): メタデータフィルタ条件。Defaults to None.
+            vector_store_query_mode (VectorStoreQueryMode, optional): クエリモード。Defaults to VectorStoreQueryMode.DEFAULT.
+            node_ids (Optional[list[str]], optional): 対象ノード ID の制限。Defaults to None.
+            doc_ids (Optional[list[str]], optional): 対象ドキュメント ID の制限。Defaults to None.
+            vector_store_kwargs (Optional[dict], optional): ベクトルストアへ渡す追加パラメータ。Defaults to None.
+        """
+        if encoders is None:
+            embed_model = getattr(index, "_embed_model", None)
+            encoders = MovieEncoders.from_embed_model(embed_model)
+
+        super().__init__(
+            index=index,
+            top_k=top_k,
+            encoders=encoders,
+            filters=filters,
+            vector_store_query_mode=vector_store_query_mode,
+            node_ids=node_ids,
+            doc_ids=doc_ids,
+            vector_store_kwargs=vector_store_kwargs,
+        )
+        self._movie_encoders = encoders
+
+    @property
+    def movie_encoders(self) -> MovieEncoders:
+        """動画モダリティ用エンコーダを返す。
+
+        Returns:
+            MovieEncoders: エンコーダ群
+        """
+        return cast(MovieEncoders, self._encoders)
+
+    async def atext_to_movie_retrieve(
+        self, query: Union[str, QueryBundle]
+    ) -> list[NodeWithScore]:
+        """テキストクエリから動画モダリティを検索する。
+
+        Args:
+            query (Union[str, QueryBundle]): テキストクエリまたは QueryBundle
+
+        Returns:
+            list[NodeWithScore]: 類似ノードのリスト
+        """
+        from llama_index.core.schema import QueryBundle
+
+        encoders = self.movie_encoders
+        if isinstance(query, QueryBundle):
+            query_str = query.query_str
+            embedding = query.embedding
+            if embedding is None:
+                if query.embedding_strs:
+                    texts = list(query.embedding_strs)
+                else:
+                    texts = [query.query_str]
+                embedding = (await encoders.aencode_text(texts))[0]
+
+            return await self._aquery_with_embedding(
+                embedding=embedding,
+                query_str=query_str,
+            )
+
+        embedding = (await encoders.aencode_text([query]))[0]
+        return await self._aquery_with_embedding(embedding=embedding, query_str=query)
+
+    async def aimage_to_movie_retrieve(self, image_path: str) -> list[NodeWithScore]:
+        """画像ファイルをクエリとして検索する。
+
+        Args:
+            image_path (str): クエリ画像ファイルパス
+
+        Returns:
+            list[NodeWithScore]: 類似ノードのリスト
+        """
+        encoders = self.movie_encoders
+        embedding = (await encoders.aencode_image([image_path]))[0]
+
+        return await self._aquery_with_embedding(embedding=embedding, query_str="")
+
+    async def aaudio_to_movie_retrieve(self, audio_path: str) -> list[NodeWithScore]:
+        """音声ファイルをクエリとして検索する。
+
+        Args:
+            audio_path (str): クエリ音声ファイルパス
+
+        Returns:
+            list[NodeWithScore]: 類似ノードのリスト
+        """
+        encoders = self.movie_encoders
+        embedding = (await encoders.aencode_audio([audio_path]))[0]
+
+        return await self._aquery_with_embedding(embedding=embedding, query_str="")
+
+    async def amovie_to_movie_retrieve(self, movie_path: str) -> list[NodeWithScore]:
+        """動画ファイルをクエリとして検索する。
+
+        Args:
+            movie_path (str): クエリ動画ファイルパス
+
+        Returns:
+            list[NodeWithScore]: 類似ノードのリスト
+        """
+        encoders = self.movie_encoders
+        embedding = (await encoders.aencode_movie([movie_path]))[0]
+
+        return await self._aquery_with_embedding(embedding=embedding, query_str="")

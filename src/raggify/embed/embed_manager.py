@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import BaseEmbedding, Embedding
     from llama_index.core.schema import ImageType
 
-    from ..llama.embeddings.multi_modal_base import AudioType
+    from ..llama.embeddings.multi_modal_base import AudioType, MovieType
 
 
 @dataclass(kw_only=True)
@@ -65,14 +65,7 @@ class EmbedManager:
         Returns:
             set[Modality]: モダリティ一覧
         """
-        mods = set(self._conts.keys())
-        if Modality.IMAGE in mods and Modality.AUDIO in mods:
-            # 現状、動画を直接扱える埋め込みモデルは無いため画像＋音声モダリティが
-            # 揃えば動画モダリティも扱えることとする。
-            # コンテナに実体はない（get しても None）ので注意。
-            mods.add(Modality.MOVIE)
-
-        return mods
+        return set(self._conts.keys())
 
     @property
     def space_key_text(self) -> str:
@@ -109,6 +102,18 @@ class EmbedManager:
             str: 空間キー
         """
         return self.get_container(Modality.AUDIO).space_key
+
+    @property
+    def space_key_movie(self) -> str:
+        """動画埋め込みの空間キー。
+
+        Raises:
+            RuntimeError: 未初期化
+
+        Returns:
+            str: 空間キー
+        """
+        return self.get_container(Modality.MOVIE).space_key
 
     def get_container(self, modality: Modality) -> EmbedContainer:
         """モダリティ別の埋め込みコンテナを取得する。
@@ -218,6 +223,38 @@ class EmbedManager:
 
         return dims
 
+    async def aembed_movie(self, paths: list[MovieType]) -> list[Embedding]:
+        """動画の埋め込みベクトルを取得する。
+
+        Args:
+            paths (list[MovieType]): 動画のパス
+
+        Raises:
+            RuntimeError: 未初期化または動画埋め込み器でない
+
+        Returns:
+            list[Embedding]: 埋め込みベクトル
+        """
+        from ..llama.embeddings.multi_modal_base import MovieEmbedding
+
+        if Modality.MOVIE not in self.modality:
+            logger.warning("no movie embedding is specified")
+            return []
+
+        embed = self.get_container(Modality.MOVIE).embed
+        if not isinstance(embed, MovieEmbedding):
+            raise RuntimeError("movie embed model is required")
+
+        logger.debug(f"now batch embedding {len(paths)} movies...")
+        dims = await embed.aget_movie_embedding_batch(
+            movie_file_paths=paths, show_progress=True
+        )
+
+        if dims:
+            logger.debug(f"dim = {len(dims[0])}, embed {len(dims)} movies")
+
+        return dims
+
     def _generate_space_key(self, provider: str, model: str, modality: Modality) -> str:
         """空間キー文字列を生成する。
 
@@ -233,7 +270,12 @@ class EmbedManager:
             str: 空間キー文字列
         """
         # 字数節約
-        mod = {Modality.TEXT: "te", Modality.IMAGE: "im", Modality.AUDIO: "au"}
+        mod = {
+            Modality.TEXT: "te",
+            Modality.IMAGE: "im",
+            Modality.AUDIO: "au",
+            Modality.MOVIE: "mo",
+        }
         if mod.get(modality) is None:
             raise ValueError(f"unexpected modality: {modality}")
 

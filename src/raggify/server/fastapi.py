@@ -5,7 +5,7 @@ import logging
 import warnings
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 import aiofiles
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -329,6 +329,38 @@ async def ingest_url_list(payload: PathRequest) -> dict[str, str]:
     return {"status": "accepted", "job_id": job.job_id}
 
 
+async def _query_handler(
+    modality: Modality, query_func: Callable, operation_name: str, **kwargs
+) -> dict[str, Any]:
+    """query 系コマンドの共通ハンドラ。
+
+    Args:
+        modality (Modality): モダリティ
+        query_func (Callable): query 系コマンド
+        operation_name (str): 表示用
+
+    Raises:
+        HTTPException: 検索処理に失敗
+
+    Returns:
+        dict[str, Any]: 検索結果
+    """
+    if modality not in _rt().embed_manager.modality:
+        msg = f"{modality.value} embeddings is not available in current setting"
+        logger.error(msg)
+        raise HTTPException(status_code=400, detail=msg)
+
+    async with _request_lock:
+        try:
+            nodes = await query_func(**kwargs)
+        except Exception as e:
+            msg = f"{operation_name} failure"
+            logger.error(f"{msg}: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=msg)
+
+    return {"documents": _nodes_to_response(nodes)}
+
+
 @app.post("/v1/query/text_text", operation_id="query_text_text")
 async def query_text_text(payload: QueryTextRequest) -> dict[str, Any]:
     """クエリ文字列によるテキストドキュメント検索。
@@ -346,20 +378,13 @@ async def query_text_text(payload: QueryTextRequest) -> dict[str, Any]:
 
     logger.debug("exec /v1/query/text_text")
 
-    if Modality.TEXT not in _rt().embed_manager.modality:
-        msg = "text embeddings is not available in current setting"
-        logger.error(msg)
-        raise HTTPException(status_code=400, detail=msg)
-
-    async with _request_lock:
-        try:
-            nodes = await aquery_text_text(query=payload.query, topk=payload.topk)
-        except Exception as e:
-            msg = "query text text failure"
-            logger.error(f"{msg}: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=msg)
-
-    return {"documents": _nodes_to_response(nodes)}
+    return await _query_handler(
+        modality=Modality.TEXT,
+        query_func=aquery_text_text,
+        operation_name="query text text",
+        query=payload.query,
+        topk=payload.topk,
+    )
 
 
 @app.post("/v1/query/text_image", operation_id="query_text_image")
@@ -379,20 +404,13 @@ async def query_text_image(payload: QueryTextRequest) -> dict[str, Any]:
 
     logger.debug("exec /v1/query/text_image")
 
-    if Modality.IMAGE not in _rt().embed_manager.modality:
-        msg = "image embeddings is not available in current setting"
-        logger.error(msg)
-        raise HTTPException(status_code=400, detail=msg)
-
-    async with _request_lock:
-        try:
-            nodes = await aquery_text_image(query=payload.query, topk=payload.topk)
-        except Exception as e:
-            msg = "query text image failure"
-            logger.error(f"{msg}: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=msg)
-
-    return {"documents": _nodes_to_response(nodes)}
+    return await _query_handler(
+        modality=Modality.IMAGE,
+        query_func=aquery_text_image,
+        operation_name="query text image",
+        query=payload.query,
+        topk=payload.topk,
+    )
 
 
 @app.post("/v1/query/image_image", operation_id="query_image_image")
@@ -412,20 +430,13 @@ async def query_image_image(payload: QueryMultimodalRequest) -> dict[str, Any]:
 
     logger.debug("exec /v1/query/image_image")
 
-    if Modality.IMAGE not in _rt().embed_manager.modality:
-        msg = "image embeddings is not available in current setting"
-        logger.error(msg)
-        raise HTTPException(status_code=400, detail=msg)
-
-    async with _request_lock:
-        try:
-            nodes = await aquery_image_image(path=payload.path, topk=payload.topk)
-        except Exception as e:
-            msg = "query image image failure"
-            logger.error(f"{msg}: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=msg)
-
-    return {"documents": _nodes_to_response(nodes)}
+    return await _query_handler(
+        modality=Modality.IMAGE,
+        query_func=aquery_image_image,
+        operation_name="query image image",
+        path=payload.path,
+        topk=payload.topk,
+    )
 
 
 @app.post("/v1/query/text_audio", operation_id="query_text_audio")
@@ -445,20 +456,13 @@ async def query_text_audio(payload: QueryTextRequest) -> dict[str, Any]:
 
     logger.debug("exec /v1/query/text_audio")
 
-    if Modality.AUDIO not in _rt().embed_manager.modality:
-        msg = "audio embeddings is not available in current setting"
-        logger.error(msg)
-        raise HTTPException(status_code=400, detail=msg)
-
-    async with _request_lock:
-        try:
-            nodes = await aquery_text_audio(query=payload.query, topk=payload.topk)
-        except Exception as e:
-            msg = "query text audio failure"
-            logger.error(f"{msg}: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=msg)
-
-    return {"documents": _nodes_to_response(nodes)}
+    return await _query_handler(
+        modality=Modality.AUDIO,
+        query_func=aquery_text_audio,
+        operation_name="query text audio",
+        query=payload.query,
+        topk=payload.topk,
+    )
 
 
 @app.post("/v1/query/audio_audio", operation_id="query_audio_audio")
@@ -478,17 +482,114 @@ async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
 
     logger.debug("exec /v1/query/audio_audio")
 
-    if Modality.AUDIO not in _rt().embed_manager.modality:
-        msg = "audio embeddings is not available in current setting"
-        logger.error(msg)
-        raise HTTPException(status_code=400, detail=msg)
+    return await _query_handler(
+        modality=Modality.AUDIO,
+        query_func=aquery_audio_audio,
+        operation_name="query audio audio",
+        path=payload.path,
+        topk=payload.topk,
+    )
 
-    async with _request_lock:
-        try:
-            nodes = await aquery_audio_audio(path=payload.path, topk=payload.topk)
-        except Exception as e:
-            msg = "query audio audio failure"
-            logger.error(f"{msg}: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=msg)
 
-    return {"documents": _nodes_to_response(nodes)}
+@app.post("/v1/query/text_movie", operation_id="query_text_movie")
+async def query_text_movie(payload: QueryTextRequest) -> dict[str, Any]:
+    """クエリ文字列による動画ドキュメント検索。
+
+    Args:
+        payload (QueryTextRequest): クエリ内容
+
+    Raises:
+        HTTPException: 検索処理に失敗
+
+    Returns:
+        dict[str, Any]: 検索結果
+    """
+    from ..retrieve.retrieve import aquery_text_movie
+
+    logger.debug("exec /v1/query/text_movie")
+
+    return await _query_handler(
+        modality=Modality.MOVIE,
+        query_func=aquery_text_movie,
+        operation_name="query text movie",
+        query=payload.query,
+        topk=payload.topk,
+    )
+
+
+@app.post("/v1/query/image_movie", operation_id="query_image_movie")
+async def query_image_movie(payload: QueryMultimodalRequest) -> dict[str, Any]:
+    """クエリ画像による動画ドキュメント検索。
+
+    Args:
+        payload (QueryMultimodalRequest): クエリ内容
+
+    Raises:
+        HTTPException: 検索処理に失敗
+
+    Returns:
+        dict[str, Any]: 検索結果
+    """
+    from ..retrieve.retrieve import aquery_image_movie
+
+    logger.debug("exec /v1/query/image_movie")
+
+    return await _query_handler(
+        modality=Modality.MOVIE,
+        query_func=aquery_image_movie,
+        operation_name="query image movie",
+        path=payload.path,
+        topk=payload.topk,
+    )
+
+
+@app.post("/v1/query/audio_movie", operation_id="query_audio_movie")
+async def query_audio_movie(payload: QueryMultimodalRequest) -> dict[str, Any]:
+    """クエリ音声による動画ドキュメント検索。
+
+    Args:
+        payload (QueryMultimodalRequest): クエリ内容
+
+    Raises:
+        HTTPException: 検索処理に失敗
+
+    Returns:
+        dict[str, Any]: 検索結果
+    """
+    from ..retrieve.retrieve import aquery_audio_movie
+
+    logger.debug("exec /v1/query/audio_movie")
+
+    return await _query_handler(
+        modality=Modality.MOVIE,
+        query_func=aquery_audio_movie,
+        operation_name="query audio movie",
+        path=payload.path,
+        topk=payload.topk,
+    )
+
+
+@app.post("/v1/query/movie_movie", operation_id="query_movie_movie")
+async def query_movie_movie(payload: QueryMultimodalRequest) -> dict[str, Any]:
+    """クエリ動画による動画ドキュメント検索。
+
+    Args:
+        payload (QueryMultimodalRequest): クエリ内容
+
+    Raises:
+        HTTPException: 検索処理に失敗
+
+    Returns:
+        dict[str, Any]: 検索結果
+    """
+    from ..retrieve.retrieve import aquery_movie_movie
+
+    logger.debug("exec /v1/query/movie_movie")
+
+    return await _query_handler(
+        modality=Modality.MOVIE,
+        query_func=aquery_movie_movie,
+        operation_name="query movie movie",
+        path=payload.path,
+        topk=payload.topk,
+    )

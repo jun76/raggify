@@ -141,5 +141,10 @@ class VectorStoreManager:
                     vector_store=self.get_container(Modality.AUDIO).store,
                     embed_model=self._embed.get_container(Modality.AUDIO).embed,
                 )
+            case Modality.MOVIE:
+                return VectorStoreIndex.from_vector_store(
+                    vector_store=self.get_container(Modality.MOVIE).store,
+                    embed_model=self._embed.get_container(Modality.MOVIE).embed,
+                )
             case _:
                 raise RuntimeError("unexpected modality")
