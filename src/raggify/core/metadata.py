@@ -24,7 +24,7 @@ class MetaKeys(MetaKeysFrom):
     ASSET_NO = "asset_no"
 
 
-@dataclass
+@dataclass(kw_only=True)
 class BasicMetaData:
     """ドキュメント、ノードの metadata フィールド用。
     Reader が自動付与するものを利用しつつ、アプリ側で明示的に挿入・利用するものはここで定義。

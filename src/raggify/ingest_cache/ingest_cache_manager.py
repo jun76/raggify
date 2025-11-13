@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from llama_index.core.ingestion import IngestionCache
 
 
-@dataclass
+@dataclass(kw_only=True)
 class IngestCacheContainer:
     """モダリティ毎のインジェストキャッシュ関連パラメータを集約"""
 

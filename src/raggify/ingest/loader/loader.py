@@ -16,8 +16,6 @@ from ...runtime import get_runtime as _rt
 if TYPE_CHECKING:
     from llama_index.core.schema import BaseNode
 
-    from ...runtime import Runtime
-
 
 class Loader:
     """ローダー基底クラス"""

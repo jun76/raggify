@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 Embeddings = Sequence[float]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AudioEncoders:
     """音声検索用エンコーダ群。
 

@@ -12,10 +12,19 @@ class Modality(StrEnum):
     TEXT = auto()
     IMAGE = auto()
     AUDIO = auto()
+    MOVIE = auto()
 
 
 class AudioNode(TextNode):
     """音声モダリティのノード実装用クラス"""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """コンストラクタ"""
+        super().__init__(*args, **kwargs)
+
+
+class MovieNode(TextNode):
+    """動画モダリティのノード実装用クラス"""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """コンストラクタ"""

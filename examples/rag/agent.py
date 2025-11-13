@@ -209,7 +209,7 @@ _TOOLSET = [
 ]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class RagAgentManager:
     """Manager that runs RAG searches using openai-agents."""
 

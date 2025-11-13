@@ -303,3 +303,22 @@ def _voyage_image(cfg: ConfigManager) -> EmbedContainer:
         dim=model[EM.DIM],
         alias=model[EM.ALIAS],
     )
+
+
+def _bedrock_movie(cfg: ConfigManager) -> EmbedContainer:
+    from llama_index.embeddings.bedrock import BedrockEmbedding
+
+    from .embed_manager import EmbedContainer
+
+    model = cfg.embed.voyage_embed_model_image
+
+    return EmbedContainer(
+        provider_name=EmbedProvider.VOYAGE,
+        embed=BedrockEmbedding(
+            model_name=model[EM.NAME],
+            truncation=False,
+            output_dimension=model[EM.DIM],
+        ),
+        dim=model[EM.DIM],
+        alias=model[EM.ALIAS],
+    )

@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from llama_index.core.vector_stores.types import BasePydanticVectorStore
 
 
-@dataclass
+@dataclass(kw_only=True)
 class VectorStoreContainer:
     """モダリティ毎のベクトルストア関連パラメータを集約"""
 

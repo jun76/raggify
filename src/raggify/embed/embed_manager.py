@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from ..llama.embeddings.multi_modal_base import AudioType
 
 
-@dataclass
+@dataclass(kw_only=True)
 class EmbedContainer:
     """モダリティ毎の埋め込み関連パラメータを集約"""
 
@@ -65,7 +65,14 @@ class EmbedManager:
         Returns:
             set[Modality]: モダリティ一覧
         """
-        return set(self._conts.keys())
+        mods = set(self._conts.keys())
+        if Modality.IMAGE in mods and Modality.AUDIO in mods:
+            # 現状、動画を直接扱える埋め込みモデルは無いため画像＋音声モダリティが
+            # 揃えば動画モダリティも扱えることとする。
+            # コンテナに実体はない（get しても None）ので注意。
+            mods.add(Modality.MOVIE)
+
+        return mods
 
     @property
     def space_key_text(self) -> str:

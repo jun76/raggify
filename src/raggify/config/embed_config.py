@@ -14,6 +14,7 @@ class EmbedProvider(StrEnum):
     HUGGINGFACE = auto()
     CLAP = auto()
     VOYAGE = auto()
+    BEDROCK = auto()
 
 
 class EmbedModel(StrEnum):
@@ -99,5 +100,14 @@ class EmbedConfig(DataClassDictMixin):
             EmbedModel.NAME.value: "effect_varlen",
             EmbedModel.ALIAS.value: "efvl",
             EmbedModel.DIM.value: 512,
+        }
+    )
+
+    # Movie
+    bedrock_embed_model_movie: dict[str, Any] = field(
+        default_factory=lambda: {
+            EmbedModel.NAME.value: "amazon.nova-2-multimodal-embeddings-v1:0",
+            EmbedModel.ALIAS.value: "n2v1",
+            EmbedModel.DIM.value: 3072,
         }
     )

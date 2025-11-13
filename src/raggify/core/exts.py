@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 class Exts:
     # 個別参照用
     PNG: str = ".png"
+    WAV: str = ".wav"
     PDF: str = ".pdf"
 
     # 基本的に reader(llama_index.core.readers.file.base._try_loading_included_file_formats)
@@ -18,8 +19,17 @@ class Exts:
     IMAGE: set[str] = {".gif", ".jpg", PNG, ".jpeg", ".webp"}
 
     # マルチモーダル（音声）の埋め込みモデルに渡せる拡張子
-    _PASS_THROUGH_AUDIO: set[str] = {".wav", ".flac", ".ogg", ".mp3"}  # うち、独自処理するもの
+    _PASS_THROUGH_AUDIO: set[str] = {
+        WAV,
+        ".flac",
+        ".ogg",
+        ".mp3",
+    }  # うち、独自処理するもの
     AUDIO: set[str] = _PASS_THROUGH_AUDIO
+
+    # マルチモーダル（動画）の埋め込みモデルに渡せる拡張子
+    PASS_THROUGH_MOVIE: set[str] = {".wmv", ".mp4", ".avi"}  # うち、独自処理するもの
+    MOVIE: set[str] = PASS_THROUGH_MOVIE
 
     # サイトマップの抽出判定に使用する拡張子
     SITEMAP: set[str] = {".xml"}
@@ -46,11 +56,16 @@ class Exts:
         ".json",
     }
     FETCH_TARGET: set[str] = (
-        IMAGE | AUDIO | SITEMAP | _DEFAULT_FETCH_TARGET | _ADDITIONAL_FETCH_TARGET
+        IMAGE
+        | AUDIO
+        | MOVIE
+        | SITEMAP
+        | _DEFAULT_FETCH_TARGET
+        | _ADDITIONAL_FETCH_TARGET
     )
 
     # デフォルトの reader に渡すとテキストとして解釈してしまうため除外して自前処理したいもの
-    PASS_THROUGH_MEDIA = _PASS_THROUGH_AUDIO
+    PASS_THROUGH_MEDIA = _PASS_THROUGH_AUDIO | PASS_THROUGH_MOVIE
 
     @classmethod
     def endswith_exts(cls, s: str, exts: set[str]) -> bool:
