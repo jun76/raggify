@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING, Callable, Optional
 
 from ...core.exts import Exts
 from ...logger import logger
+from ...runtime import get_runtime as _rt
 from .loader import Loader
-from .reader.dummy_media_reader import DummyMediaReader
-from .reader.pdf_reader import MultiPDFReader
+from .reader import DummyMediaReader, MultiPDFReader, VideoReader
 
 if TYPE_CHECKING:
     from llama_index.core.readers.base import BaseReader
@@ -29,6 +29,16 @@ class FileLoader(Loader):
 
         # 独自 reader の辞書。後段で SimpleDirectoryReader に渡す
         self._readers: dict[str, BaseReader] = {Exts.PDF: MultiPDFReader()}
+
+        # 動画 -> 画像＋音声のように、他のモダリティに分解して処理する場合は reader を通す
+        cfg = _rt().cfg.general
+        if cfg.use_modality_fallback:
+            if cfg.video_embed_provider is None:
+                video_reader = VideoReader()
+                for ext in Exts.VIDEO:
+                    self._readers[ext] = video_reader
+
+            # TODO: 画像や音声の文字起こし等に対応する場合はここに追加
 
         dummy_reader = DummyMediaReader()
         for ext in Exts.PASS_THROUGH_MEDIA:
@@ -62,6 +72,7 @@ class FileLoader(Loader):
                 input_files=[root] if path.is_file() else None,
                 recursive=True,
                 file_extractor=self._readers,
+                raise_on_error=True,
             )
 
             docs = await reader.aload_data(show_progress=True)

@@ -15,7 +15,7 @@ from .loader import Loader
 if TYPE_CHECKING:
     from llama_index.core.schema import Document, ImageNode, TextNode
 
-    from ...llama.core.schema import AudioNode
+    from ...llama.core.schema import AudioNode, VideoNode
     from .file_loader import FileLoader
 
 
@@ -366,7 +366,7 @@ class HTMLLoader(Loader):
         url: str,
         is_canceled: Callable[[], bool],
         inloop: bool = False,
-    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
+    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
         """URL からコンテンツを取得し、ノードを生成する。
         サイトマップ（.xml）の場合はツリーを下りながら複数サイトから取り込む。
 
@@ -376,8 +376,8 @@ class HTMLLoader(Loader):
             inloop (bool, optional): URL リストの上位ループ内で実行中か。Defaults to False.
 
         Returns:
-            tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
-                テキストノード、画像ノード、音声ノード
+            tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
+                テキストノード、画像ノード、音声ノード、動画ノード
         """
         from llama_index.readers.web.sitemap.base import SitemapReader
 
@@ -396,7 +396,7 @@ class HTMLLoader(Loader):
             urls = loader._parse_sitemap(raw_sitemap)
         except Exception as e:
             logger.exception(e)
-            return [], [], []
+            return [], [], [], []
 
         docs = []
         for url in urls:
@@ -413,7 +413,7 @@ class HTMLLoader(Loader):
         self,
         urls: list[str],
         is_canceled: Callable[[], bool],
-    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
+    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
         """URL リスト内の複数サイトからコンテンツを取得し、ノードを生成する。
 
         Args:
@@ -421,27 +421,31 @@ class HTMLLoader(Loader):
             is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
 
         Returns:
-            tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
-                テキストノード、画像ノード、音声ノード
+            tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
+                テキストノード、画像ノード、音声ノード、動画ノード
         """
         self._asset_url_cache.clear()
 
         texts = []
         images = []
         audios = []
+        videos = []
         for url in urls:
             if is_canceled():
                 logger.info("Job is canceled, aborting batch processing")
                 break
             try:
-                temp_text, temp_image, temp_audio = await self.aload_from_url(
-                    url=url, is_canceled=is_canceled, inloop=True
+                temp_text, temp_image, temp_audio, temp_video = (
+                    await self.aload_from_url(
+                        url=url, is_canceled=is_canceled, inloop=True
+                    )
                 )
                 texts.extend(temp_text)
                 images.extend(temp_image)
                 audios.extend(temp_audio)
+                videos.extend(temp_video)
             except Exception as e:
                 logger.exception(e)
                 continue
 
-        return texts, images, audios
+        return texts, images, audios, videos

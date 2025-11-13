@@ -18,7 +18,7 @@ if TYPE_CHECKING:
         TransformComponent,
     )
 
-    from ..llama.core.schema import AudioNode
+    from ..llama.core.schema import AudioNode, VideoNode
 
 
 __all__ = [
@@ -189,6 +189,7 @@ async def _aupsert_nodes(
     text_nodes: Sequence[TextNode],
     image_nodes: Sequence[ImageNode],
     audio_nodes: Sequence[AudioNode],
+    video_nodes: Sequence[VideoNode],
     persist_dir: Optional[Path],
     batch_size: int,
     is_canceled: Callable[[], bool],
@@ -199,6 +200,7 @@ async def _aupsert_nodes(
         text_nodes (Sequence[TextNode]): テキストノード
         image_nodes (Sequence[ImageNode]): 画像ノード
         audio_nodes (Sequence[AudioNode]): 音声ノード
+        video_nodes (Sequence[VideoNode]): 動画ノード
         persist_dir (Optional[Path]): 永続化ディレクトリ
         batch_size (int): バッチサイズ
         is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
@@ -228,6 +230,15 @@ async def _aupsert_nodes(
         _process_batches(
             nodes=audio_nodes,
             modality=Modality.AUDIO,
+            persist_dir=persist_dir,
+            batch_size=batch_size,
+            is_canceled=is_canceled,
+        )
+    )
+    tasks.append(
+        _process_batches(
+            nodes=video_nodes,
+            modality=Modality.VIDEO,
             persist_dir=persist_dir,
             batch_size=batch_size,
             is_canceled=is_canceled,
@@ -304,8 +315,8 @@ async def aingest_path(
     """
     rt = _rt()
     file_loader = rt.file_loader
-    text_nodes, image_nodes, audio_nodes = await file_loader.aload_from_path(
-        root=path, is_canceled=is_canceled
+    text_nodes, image_nodes, audio_nodes, video_nodes = (
+        await file_loader.aload_from_path(root=path, is_canceled=is_canceled)
     )
     batch_size = batch_size or rt.cfg.ingest.batch_size
 
@@ -313,6 +324,7 @@ async def aingest_path(
         text_nodes=text_nodes,
         image_nodes=image_nodes,
         audio_nodes=audio_nodes,
+        video_nodes=video_nodes,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
         batch_size=batch_size,
         is_canceled=is_canceled,
@@ -353,8 +365,8 @@ async def aingest_path_list(
 
     rt = _rt()
     file_loader = rt.file_loader
-    text_nodes, image_nodes, audio_nodes = await file_loader.aload_from_paths(
-        paths=list(lst), is_canceled=is_canceled
+    text_nodes, image_nodes, audio_nodes, video_nodes = (
+        await file_loader.aload_from_paths(paths=list(lst), is_canceled=is_canceled)
     )
     batch_size = batch_size or rt.cfg.ingest.batch_size
 
@@ -362,6 +374,7 @@ async def aingest_path_list(
         text_nodes=text_nodes,
         image_nodes=image_nodes,
         audio_nodes=audio_nodes,
+        video_nodes=video_nodes,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
         batch_size=batch_size,
         is_canceled=is_canceled,
@@ -401,8 +414,8 @@ async def aingest_url(
     """
     rt = _rt()
     html_loader = rt.html_loader
-    text_nodes, image_nodes, audio_nodes = await html_loader.aload_from_url(
-        url=url, is_canceled=is_canceled
+    text_nodes, image_nodes, audio_nodes, video_nodes = (
+        await html_loader.aload_from_url(url=url, is_canceled=is_canceled)
     )
     batch_size = batch_size or rt.cfg.ingest.batch_size
 
@@ -410,6 +423,7 @@ async def aingest_url(
         text_nodes=text_nodes,
         image_nodes=image_nodes,
         audio_nodes=audio_nodes,
+        video_nodes=video_nodes,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
         batch_size=batch_size,
         is_canceled=is_canceled,
@@ -450,8 +464,8 @@ async def aingest_url_list(
 
     rt = _rt()
     html_loader = rt.html_loader
-    text_nodes, image_nodes, audio_nodes = await html_loader.aload_from_urls(
-        urls=list(lst), is_canceled=is_canceled
+    text_nodes, image_nodes, audio_nodes, video_nodes = (
+        await html_loader.aload_from_urls(urls=list(lst), is_canceled=is_canceled)
     )
     batch_size = batch_size or rt.cfg.ingest.batch_size
 
@@ -459,6 +473,7 @@ async def aingest_url_list(
         text_nodes=text_nodes,
         image_nodes=image_nodes,
         audio_nodes=audio_nodes,
+        video_nodes=video_nodes,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
         batch_size=batch_size,
         is_canceled=is_canceled,

@@ -12,6 +12,8 @@ from ....core.exts import Exts
 from ....core.metadata import BasicMetaData
 from ....logger import logger
 
+__all__ = ["VideoReader"]
+
 
 class VideoReader(BaseReader):
     """動画ファイルをフレーム画像と音声トラックに分解するためのリーダー。"""
@@ -74,7 +76,7 @@ class VideoReader(BaseReader):
 
         return frames
 
-    def _extract_audio(self, src: str) -> Path:
+    def _extract_audio(self, src: str) -> Path | None:
         """動画から音声トラックを抽出する。
 
         Args:
@@ -86,12 +88,20 @@ class VideoReader(BaseReader):
         ffmpeg = self._ffmpeg()
         fd, temp = tempfile.mkstemp(prefix="rg_video_audio_", suffix=self._audio_suffix)
         os.close(fd)
-        (
-            ffmpeg.input(src)
-            .output(temp, acodec="pcm_s16le", ac=1, ar=self._audio_sample_rate)
-            .overwrite_output()
-            .run(quiet=True)
-        )
+        try:
+            (
+                ffmpeg.input(src)
+                .output(temp, acodec="pcm_s16le", ac=1, ar=self._audio_sample_rate)
+                .overwrite_output()
+                .run(quiet=True)
+            )
+        except ffmpeg.Error as err:  # type: ignore[attr-defined]
+            logger.warning(f"ffmpeg audio extraction failure: {err}")
+            try:
+                os.unlink(temp)
+            except OSError:
+                pass
+            return None
 
         return Path(temp)
 
@@ -159,8 +169,15 @@ class VideoReader(BaseReader):
         frames = self._extract_frames(abs_path)
         audio = self._extract_audio(abs_path)
         docs = self._frame_docs(frames, abs_path)
-        docs.append(self._audio_doc(audio, abs_path))
-        logger.debug(f"loaded {len(frames)} frame docs + 1 audio doc from {abs_path}")
+        if audio is not None:
+            docs.append(self._audio_doc(audio, abs_path))
+            logger.debug(
+                f"loaded {len(frames)} frame docs + 1 audio doc from {abs_path}"
+            )
+        else:
+            logger.debug(
+                f"loaded {len(frames)} frame docs from {abs_path} (audio missing)"
+            )
 
         return docs
 
@@ -179,4 +196,4 @@ class VideoReader(BaseReader):
             logger.warning(f"file not found: {abs_path}")
             return []
 
-        return self._load_video(abs_path, allowed_exts=Exts.PASS_THROUGH_VIDEO)
+        return self._load_video(abs_path, allowed_exts=Exts.VIDEO)

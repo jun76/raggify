@@ -9,6 +9,8 @@ from llama_index.core.schema import Document
 from ....core.exts import Exts
 from ....logger import logger
 
+__all__ = ["DummyMediaReader"]
+
 
 class DummyMediaReader(BaseReader):
     """後段のデフォルトリーダーにテキストとして解釈・スプリットさせないためのダミーリーダー"""
