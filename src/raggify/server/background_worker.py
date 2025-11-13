@@ -145,9 +145,13 @@ class BackgroundWorker:
 
     def remove_completed_jobs(self) -> None:
         """実行完了しているジョブをキューから削除する。"""
-        for job_id, job in self._jobs.items():
-            if job.status in (JobStatus.SUCCEEDED, JobStatus.FAILED):
-                self.remove_job(job_id)
+        completed_ids = [
+            job_id
+            for job_id, job in self._jobs.items()
+            if job.status in (JobStatus.SUCCEEDED, JobStatus.FAILED)
+        ]
+        for job_id in completed_ids:
+            self.remove_job(job_id)
 
     async def _worker_loop(self) -> None:
         """ワーカーループ。"""
