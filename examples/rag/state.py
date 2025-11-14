@@ -40,6 +40,10 @@ class FeedBack(StrEnum):
     FB_SEARCH_IMAGE_IMAGE = auto()
     FB_SEARCH_TEXT_AUDIO = auto()
     FB_SEARCH_AUDIO_AUDIO = auto()
+    FB_SEARCH_TEXT_VIDEO = auto()
+    FB_SEARCH_IMAGE_VIDEO = auto()
+    FB_SEARCH_AUDIO_VIDEO = auto()
+    FB_SEARCH_VIDEO_VIDEO = auto()
     # RAG Search
     FB_RAGSEARCH_TEXT_TEXT = auto()
     FB_RAGSEARCH_TEXT_IMAGE = auto()
@@ -58,6 +62,10 @@ class SearchResult(StrEnum):
     SR_SEARCH_IMAGE_IMAGE = auto()
     SR_SEARCH_TEXT_AUDIO = auto()
     SR_SEARCH_AUDIO_AUDIO = auto()
+    SR_SEARCH_TEXT_VIDEO = auto()
+    SR_SEARCH_IMAGE_VIDEO = auto()
+    SR_SEARCH_AUDIO_VIDEO = auto()
+    SR_SEARCH_VIDEO_VIDEO = auto()
     # RAG Search
     SR_RAGSEARCH_TEXT_TEXT = auto()
     SR_RAGSEARCH_TEXT_IMAGE = auto()

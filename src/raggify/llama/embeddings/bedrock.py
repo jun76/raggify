@@ -39,6 +39,14 @@ class Models(StrEnum):
 class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
     """BedrockEmbedding のマルチモーダル対応版"""
 
+    def _is_nova_model(self) -> bool:
+        """現在のモデルが Nova 系か判定する。
+
+        Returns:
+            bool: Nova 系モデルなら True
+        """
+        return "amazon.nova" in self.model_name.lower()
+
     @classmethod
     def class_name(cls) -> str:
         """クラス名
@@ -71,6 +79,75 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
             aws_session_token=aws_session_token,
             region_name=region_name,
             **kwargs,
+        )
+
+    def _get_text_embedding(self, text: str) -> Embedding:
+        """テキスト埋め込みの同期インタフェース。
+
+        Args:
+            text (str): テキスト
+
+        Returns:
+            Embedding: 埋め込みベクトル
+        """
+        if not self._is_nova_model():
+            return super()._get_text_embedding(text)
+
+        trunc_mode = self.additional_kwargs.get("text_truncation_mode", "END")
+        payload = {
+            "truncationMode": trunc_mode,
+            "value": text,
+        }
+        payload.update(self.additional_kwargs.get("text_payload_overrides", {}))
+        request_body = self._build_single_embedding_body(
+            media_field="text",
+            media_payload=payload,
+            params_override_key="text_params_overrides",
+        )
+        return self._invoke_single_embedding(request_body)
+
+    async def _aget_text_embedding(self, text: str) -> Embedding:
+        """テキスト埋め込みの非同期インタフェース。
+
+        Args:
+            text (str): テキスト
+
+        Returns:
+            Embedding: 埋め込みベクトル
+        """
+        if not self._is_nova_model():
+            return await super()._aget_text_embedding(text)
+
+        return await asyncio.to_thread(self._get_text_embedding, text)
+
+    def _get_text_embeddings(self, texts: list[str]) -> list[Embedding]:
+        """テキスト埋め込みの同期バッチインタフェース。
+
+        Args:
+            texts (list[str]): テキストリスト
+
+        Returns:
+            list[Embedding]: 埋め込みベクトルリスト
+        """
+        if not self._is_nova_model():
+            return super()._get_text_embeddings(texts)
+
+        return [self._get_text_embedding(text) for text in texts]
+
+    async def _aget_text_embeddings(self, texts: list[str]) -> list[Embedding]:
+        """テキスト埋め込みの非同期バッチインタフェース。
+
+        Args:
+            texts (list[str]): テキストリスト
+
+        Returns:
+            list[Embedding]: 埋め込みベクトルリスト
+        """
+        if not self._is_nova_model():
+            return await super()._aget_text_embeddings(texts)
+
+        return await asyncio.gather(
+            *[self._aget_text_embedding(text) for text in texts]
         )
 
     def _get_image_embedding(self, img_file_path: ImageType) -> Embedding:
@@ -442,9 +519,8 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
 
         if self._client is None:
             self.set_credentials()
-
-        if self._client is None:
-            raise RuntimeError("Bedrock client is not initialized")
+            if self._client is None:
+                raise RuntimeError("Bedrock client is not initialized")
 
         response = self._client.invoke_model(
             body=json.dumps(body),
@@ -470,5 +546,7 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         first = embeddings[0]
         if isinstance(first, dict) and "embedding" in first:
             return first["embedding"]
-
-        return first  # type: ignore
+        elif isinstance(first, list):
+            return first
+        else:
+            raise RuntimeError(f"Unexpected embedding format: {type(first)}")

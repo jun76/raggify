@@ -50,6 +50,11 @@ def create_ingest_cache_manager(
             conts[Modality.AUDIO] = _create_container(
                 cfg=cfg, space_key=embed.space_key_audio
             )
+
+        if cfg.general.video_embed_provider:
+            conts[Modality.VIDEO] = _create_container(
+                cfg=cfg, space_key=embed.space_key_video
+            )
     except Exception as e:
         raise RuntimeError(f"failed to create ingest cache: {e}") from e
 

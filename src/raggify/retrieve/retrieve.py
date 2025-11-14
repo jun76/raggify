@@ -481,17 +481,11 @@ async def aquery_text_video(
     Returns:
         list[NodeWithScore]: 検索結果のリスト
     """
-    from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
-
     rt = _rt()
     store = rt.vector_store
     index = store.get_index(Modality.VIDEO)
     if index is None:
         logger.error("store is not initialized")
-        return []
-
-    if not isinstance(index, MultiModalVectorStoreIndex):
-        logger.error("multimodal index is required")
         return []
 
     topk = topk or rt.cfg.rerank.topk
@@ -554,17 +548,11 @@ async def aquery_image_video(
     Returns:
         list[NodeWithScore]: 検索結果のリスト
     """
-    from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
-
     rt = _rt()
     store = rt.vector_store
     index = store.get_index(Modality.VIDEO)
     if index is None:
         logger.error("store is not initialized")
-        return []
-
-    if not isinstance(index, MultiModalVectorStoreIndex):
-        logger.error("multimodal index is required")
         return []
 
     topk = topk or rt.cfg.rerank.topk
@@ -622,17 +610,11 @@ async def aquery_audio_video(
     Returns:
         list[NodeWithScore]: 検索結果のリスト
     """
-    from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
-
     rt = _rt()
     store = rt.vector_store
     index = store.get_index(Modality.VIDEO)
     if index is None:
         logger.error("store is not initialized")
-        return []
-
-    if not isinstance(index, MultiModalVectorStoreIndex):
-        logger.error("multimodal index is required")
         return []
 
     topk = topk or rt.cfg.rerank.topk
@@ -684,17 +666,11 @@ async def aquery_video_video(
     Returns:
         list[NodeWithScore]: 検索結果のリスト
     """
-    from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
-
     rt = _rt()
     store = rt.vector_store
     index = store.get_index(Modality.VIDEO)
     if index is None:
         logger.error("store is not initialized")
-        return []
-
-    if not isinstance(index, MultiModalVectorStoreIndex):
-        logger.error("multimodal index is required")
         return []
 
     topk = topk or rt.cfg.rerank.topk

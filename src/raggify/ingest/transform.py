@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from llama_index.core.schema import ImageType
 
     from ..embed.embed_manager import EmbedManager
-    from ..llama.embeddings.multi_modal_base import AudioType
+    from ..llama.embeddings.multi_modal_base import AudioType, VideoType
 
 
 class AddChunkIndexTransform(TransformComponent):
@@ -223,7 +223,7 @@ def make_video_embed_transform(embed: EmbedManager) -> _BaseEmbedTransform:
     """
     from ..llama.core.schema import VideoNode
 
-    async def batch_video(paths: list[AudioType]) -> list[Embedding]:
+    async def batch_video(paths: list[VideoType]) -> list[Embedding]:
         return await embed.aembed_video(paths)
 
     def extractor(node: BaseNode) -> Optional[str]:

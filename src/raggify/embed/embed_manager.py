@@ -274,7 +274,7 @@ class EmbedManager:
             Modality.TEXT: "te",
             Modality.IMAGE: "im",
             Modality.AUDIO: "au",
-            Modality.VIDEO: "mo",
+            Modality.VIDEO: "vi",
         }
         if mod.get(modality) is None:
             raise ValueError(f"unexpected modality: {modality}")

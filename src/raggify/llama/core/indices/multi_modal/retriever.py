@@ -414,7 +414,6 @@ class VideoRetriever(AudioRetriever):
             doc_ids=doc_ids,
             vector_store_kwargs=vector_store_kwargs,
         )
-        self._video_encoders = encoders
 
     @property
     def video_encoders(self) -> VideoEncoders:

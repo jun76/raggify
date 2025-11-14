@@ -247,19 +247,22 @@ def _voyage_image(cfg: EmbedConfig) -> EmbedContainer:
     return _voyage(cfg.voyage_embed_model_image)
 
 
-def _bedrock(cfg: EmbedConfig, model: dict[str, Any]) -> EmbedContainer:
+def _bedrock(model: dict[str, Any]) -> EmbedContainer:
     from ..llama.embeddings.bedrock import MultiModalBedrockEmbedding
     from .embed_manager import EmbedContainer
+
+    kwargs = {"dimensions": model[EM.DIM], "embedding_dimension": model[EM.DIM]}
 
     return EmbedContainer(
         provider_name=EmbedProvider.BEDROCK,
         embed=MultiModalBedrockEmbedding(
             model_name=model[EM.NAME],
-            profile_name=cfg.bedrock_profile_name,
-            aws_access_key_id=cfg.bedrock_aws_access_key_id,
-            aws_secret_access_key=cfg.bedrock_aws_secret_access_key,
-            aws_session_token=cfg.bedrock_aws_session_token,
-            region_name=cfg.bedrock_region_name,
+            profile_name=os.getenv("AWS_PROFILE"),
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+            aws_session_token=os.getenv("AWS_SESSION_TOKEN"),
+            region_name=os.getenv("AWS_REGION"),
+            additional_kwargs=kwargs,
         ),
         dim=model[EM.DIM],
         alias=model[EM.ALIAS],
@@ -267,16 +270,16 @@ def _bedrock(cfg: EmbedConfig, model: dict[str, Any]) -> EmbedContainer:
 
 
 def _bedrock_text(cfg: EmbedConfig) -> EmbedContainer:
-    return _bedrock(cfg, cfg.bedrock_embed_model_text)
+    return _bedrock(cfg.bedrock_embed_model_text)
 
 
 def _bedrock_image(cfg: EmbedConfig) -> EmbedContainer:
-    return _bedrock(cfg, cfg.bedrock_embed_model_image)
+    return _bedrock(cfg.bedrock_embed_model_image)
 
 
 def _bedrock_audio(cfg: EmbedConfig) -> EmbedContainer:
-    return _bedrock(cfg, cfg.bedrock_embed_model_audio)
+    return _bedrock(cfg.bedrock_embed_model_audio)
 
 
 def _bedrock_video(cfg: EmbedConfig) -> EmbedContainer:
-    return _bedrock(cfg, cfg.bedrock_embed_model_video)
+    return _bedrock(cfg.bedrock_embed_model_video)

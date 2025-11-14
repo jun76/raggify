@@ -17,5 +17,9 @@ app = FastApiMCP(
         "query_image_image",
         "query_text_audio",
         "query_audio_audio",
+        "query_text_video",
+        "query_image_video",
+        "query_audio_video",
+        "query_video_video",
     ],
 )

@@ -59,7 +59,7 @@ class Exts:
 
     # 専用 reader に処理させずにファイルパスのみを素通しさせておき、
     # 後段の upsert 時に埋め込みモデルに直接処理させたい拡張子セット
-    PASS_THROUGH_MEDIA = AUDIO
+    PASS_THROUGH_MEDIA = AUDIO | VIDEO
 
     @classmethod
     def endswith_exts(cls, s: str, exts: set[str]) -> bool:

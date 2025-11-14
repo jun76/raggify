@@ -34,6 +34,7 @@ class HTMLLoader(Loader):
             cfg (IngestConfig): 各種設定値
         """
         super().__init__(persist_dir)
+
         self._file_loader = file_loader
         self._load_asset = cfg.load_asset
         self._req_per_sec = cfg.req_per_sec

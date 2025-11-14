@@ -133,6 +133,29 @@ def _build_audio_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
     )
 
 
+def _build_video_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
+    """動画用パイプラインを構築する。
+
+    Args:
+        persist_dir (Optional[Path]): 永続化ディレクトリ
+
+    Returns:
+        IngestionPipeline: パイプライン
+    """
+    from .transform import make_video_embed_transform
+
+    rt = _rt()
+    transformations: list[TransformComponent] = [
+        make_video_embed_transform(rt.embed_manager),
+    ]
+
+    return rt.build_pipeline(
+        transformations=transformations,
+        modality=Modality.VIDEO,
+        persist_dir=persist_dir,
+    )
+
+
 async def _process_batches(
     nodes: Sequence[BaseNode],
     modality: Modality,
@@ -160,6 +183,8 @@ async def _process_batches(
             pipe = _build_image_pipeline(persist_dir)
         case Modality.AUDIO:
             pipe = _build_audio_pipeline(persist_dir)
+        case Modality.VIDEO:
+            pipe = _build_video_pipeline(persist_dir)
         case _:
             raise ValueError(f"unexpected modality: {modality}")
 
@@ -270,16 +295,18 @@ def _cleanup_temp_files() -> None:
         return
 
     for entry in entries:
-        if not entry.is_file():
-            continue
-
         if not entry.name.startswith(prefix):
             continue
 
         try:
-            entry.unlink()
+            if entry.is_dir():
+                import shutil
+
+                shutil.rmtree(entry)
+            else:
+                entry.unlink()
         except OSError as e:
-            logger.warning(f"failed to remove temp file {entry}: {e}")
+            logger.warning(f"failed to remove temp entry {entry}: {e}")
 
 
 def ingest_path(

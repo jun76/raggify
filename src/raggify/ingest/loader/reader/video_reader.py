@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-import tempfile
+import shutil
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
@@ -9,7 +9,7 @@ from llama_index.core.readers.base import BaseReader
 from llama_index.core.schema import Document
 
 from ....core.exts import Exts
-from ....core.metadata import BasicMetaData
+from ....core.metadata import BasicMetaData, get_temp_file_path_from
 from ....logger import logger
 
 __all__ = ["VideoReader"]
@@ -38,15 +38,13 @@ class VideoReader(BaseReader):
             ValueError: fps が 0 以下の場合
         """
         super().__init__()
-        if fps <= 0:
-            raise ValueError("fps must be positive")
 
         self._fps = fps
         self._audio_sample_rate = audio_sample_rate
         self._image_suffix = image_suffix
         self._audio_suffix = audio_suffix
 
-    def _ffmpeg(self):
+    def _ffmpeg(self) -> Any:
         import ffmpeg  # type: ignore
 
         return ffmpeg
@@ -61,8 +59,14 @@ class VideoReader(BaseReader):
             list[Path]: 抽出したフレームのパス
         """
         ffmpeg = self._ffmpeg()
-        temp_dir = Path(tempfile.mkdtemp(prefix="rg_video_frames_"))
-        pattern = str(temp_dir / f"frame_%05d{self._image_suffix}")
+        base_path = Path(get_temp_file_path_from(source=src, suffix=self._image_suffix))
+        frames_dir = base_path.parent / f"{base_path.stem}_frames"
+
+        if frames_dir.exists():
+            shutil.rmtree(frames_dir)
+
+        frames_dir.mkdir(parents=True, exist_ok=True)
+        pattern = str(frames_dir / f"{base_path.stem}_%05d{self._image_suffix}")
         (
             ffmpeg.input(src)
             .filter("fps", self._fps)
@@ -70,7 +74,7 @@ class VideoReader(BaseReader):
             .overwrite_output()
             .run(quiet=True)
         )
-        frames = sorted(temp_dir.glob(f"frame_*{self._image_suffix}"))
+        frames = sorted(frames_dir.glob(f"{base_path.stem}_*{self._image_suffix}"))
 
         logger.debug(f"extracted {len(frames)} frame(s) from {src}")
 
@@ -86,26 +90,32 @@ class VideoReader(BaseReader):
             Path: 抽出した音声ファイルのパス
         """
         ffmpeg = self._ffmpeg()
-        fd, temp = tempfile.mkstemp(prefix="rg_video_audio_", suffix=self._audio_suffix)
-        os.close(fd)
+        temp_path = Path(get_temp_file_path_from(source=src, suffix=self._audio_suffix))
+        temp_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if temp_path.exists():
+            temp_path.unlink()
+
         try:
             (
                 ffmpeg.input(src)
-                .output(temp, acodec="pcm_s16le", ac=1, ar=self._audio_sample_rate)
+                .output(
+                    str(temp_path), acodec="pcm_s16le", ac=1, ar=self._audio_sample_rate
+                )
                 .overwrite_output()
                 .run(quiet=True)
             )
         except ffmpeg.Error as err:  # type: ignore[attr-defined]
             logger.warning(f"ffmpeg audio extraction failure: {err}")
             try:
-                os.unlink(temp)
+                temp_path.unlink()
             except OSError:
                 pass
             return None
 
-        return Path(temp)
+        return temp_path
 
-    def _frame_docs(self, frames: Sequence[Path], source: str) -> list[Document]:
+    def _image_docs(self, frames: Sequence[Path], source: str) -> list[Document]:
         """フレーム画像を Document に変換する。
 
         Args:
@@ -168,15 +178,15 @@ class VideoReader(BaseReader):
 
         frames = self._extract_frames(abs_path)
         audio = self._extract_audio(abs_path)
-        docs = self._frame_docs(frames, abs_path)
+        docs = self._image_docs(frames, abs_path)
         if audio is not None:
             docs.append(self._audio_doc(audio, abs_path))
             logger.debug(
-                f"loaded {len(frames)} frame docs + 1 audio doc from {abs_path}"
+                f"loaded {len(frames)} image docs + 1 audio doc from {abs_path}"
             )
         else:
             logger.debug(
-                f"loaded {len(frames)} frame docs from {abs_path} (audio missing)"
+                f"loaded {len(frames)} image docs from {abs_path} (audio missing)"
             )
 
         return docs

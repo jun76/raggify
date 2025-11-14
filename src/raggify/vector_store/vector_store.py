@@ -58,6 +58,13 @@ def create_vector_store_manager(
                 space_key=embed.space_key_audio,
                 dim=embed.get_container(Modality.AUDIO).dim,
             )
+
+        if cfg.general.video_embed_provider:
+            conts[Modality.VIDEO] = _create_container(
+                cfg=cfg,
+                space_key=embed.space_key_video,
+                dim=embed.get_container(Modality.VIDEO).dim,
+            )
     except Exception as e:
         raise RuntimeError(f"failed to create vector store: {e}") from e
 

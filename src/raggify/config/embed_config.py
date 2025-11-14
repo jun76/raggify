@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
-from typing import Any, Optional
+from typing import Any
 
 from mashumaro import DataClassDictMixin
 
@@ -132,10 +132,3 @@ class EmbedConfig(DataClassDictMixin):
             EmbedModel.DIM.value: 1024,
         }
     )
-
-    # Provider settings
-    bedrock_profile_name: Optional[str] = None
-    bedrock_aws_access_key_id: Optional[str] = None
-    bedrock_aws_secret_access_key: Optional[str] = None
-    bedrock_aws_session_token: Optional[str] = None
-    bedrock_region_name: Optional[str] = None
