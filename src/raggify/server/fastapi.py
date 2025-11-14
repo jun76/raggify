@@ -12,6 +12,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from llama_index.core.schema import NodeWithScore
 from pydantic import BaseModel
 
+from ..config.retrieve_config import RetrieveMode
 from ..core.const import PROJECT_NAME, VERSION
 from ..llama.core.schema import Modality
 from ..logger import configure_logging, console, logger
@@ -39,6 +40,12 @@ warnings.filterwarnings(
 class QueryTextRequest(BaseModel):
     query: str
     topk: Optional[int] = None
+
+
+class QueryTextTextRequest(BaseModel):
+    query: str
+    topk: Optional[int] = None
+    mode: Optional[RetrieveMode] = None
 
 
 class QueryMultimodalRequest(BaseModel):
@@ -362,11 +369,11 @@ async def _query_handler(
 
 
 @app.post("/v1/query/text_text", operation_id="query_text_text")
-async def query_text_text(payload: QueryTextRequest) -> dict[str, Any]:
+async def query_text_text(payload: QueryTextTextRequest) -> dict[str, Any]:
     """クエリ文字列によるテキストドキュメント検索。
 
     Args:
-        payload (QueryTextRequest): クエリ内容
+        payload (QueryTextTextRequest): クエリ内容
 
     Raises:
         HTTPException: 検索処理に失敗
@@ -384,6 +391,7 @@ async def query_text_text(payload: QueryTextRequest) -> dict[str, Any]:
         operation_name="query text text",
         query=payload.query,
         topk=payload.topk,
+        mode=payload.mode,
     )
 
 

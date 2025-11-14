@@ -50,6 +50,8 @@ def _get_vector_retriever(rt: Runtime, index: VectorStoreIndex) -> BaseRetriever
     Returns:
         BaseRetriever: リトリーバー
     """
+    logger.debug("vector only")
+
     return index.as_retriever(similarity_top_k=rt.cfg.rerank.topk)
 
 
@@ -70,6 +72,8 @@ def _get_bm25_retriever(rt: Runtime) -> Optional[BaseRetriever]:
         return None
 
     try:
+        logger.debug("bm25 only")
+
         return BM25Retriever.from_defaults(
             docstore=docstore.store,
             similarity_top_k=rt.cfg.retrieve.bm25_topk,
@@ -105,6 +109,8 @@ def _get_fusion_retriever(rt: Runtime, index: VectorStoreIndex) -> BaseRetriever
         similarity_top_k=rt.cfg.retrieve.bm25_topk,
     )
 
+    logger.debug("fusion")
+
     return QueryFusionRetriever(
         retrievers=[vector_retriever, bm25_retriever],
         similarity_top_k=topk,
@@ -128,13 +134,11 @@ def query_text_text(
     Args:
         query (str): クエリ文字列
         topk (int, optional): 取得件数。Defaults to None.
-        mode (Optional[RetrieveMode], optional): BM25 ハイブリッド検索を使用するか。Defaults to None.
+        mode (Optional[RetrieveMode], optional): 検索モード。Defaults to None.
 
     Returns:
         list[NodeWithScore]: 検索結果のリスト
     """
-    topk = topk or _rt().cfg.rerank.topk
-
     return asyncio_run(aquery_text_text(query=query, topk=topk, mode=mode))
 
 
@@ -207,8 +211,6 @@ def query_text_image(
     Returns:
         list[NodeWithScore]: 検索結果のリスト
     """
-    topk = topk or _rt().cfg.rerank.topk
-
     return asyncio_run(aquery_text_image(query=query, topk=topk))
 
 
@@ -280,8 +282,6 @@ def query_image_image(
     Returns:
         list[NodeWithScore]: 検索結果のリスト
     """
-    topk = topk or _rt().cfg.rerank.topk
-
     return asyncio_run(aquery_image_image(path=path, topk=topk))
 
 
@@ -342,8 +342,6 @@ def query_text_audio(
     Returns:
         list[NodeWithScore]: 検索結果のリスト
     """
-    topk = topk or _rt().cfg.rerank.topk
-
     return asyncio_run(aquery_text_audio(query=query, topk=topk))
 
 
@@ -406,8 +404,6 @@ def query_audio_audio(
     Returns:
         list[NodeWithScore]: 検索結果のリスト
     """
-    topk = topk or _rt().cfg.rerank.topk
-
     return asyncio_run(aquery_audio_audio(path=path, topk=topk))
 
 
@@ -460,8 +456,6 @@ def query_text_video(
     Returns:
         list[NodeWithScore]: 検索結果のリスト
     """
-    topk = topk or _rt().cfg.rerank.topk
-
     return asyncio_run(aquery_text_video(query=query, topk=topk))
 
 
@@ -527,8 +521,6 @@ def query_image_video(
     Returns:
         list[NodeWithScore]: 検索結果のリスト
     """
-    topk = topk or _rt().cfg.rerank.topk
-
     return asyncio_run(aquery_image_video(path=path, topk=topk))
 
 
@@ -589,8 +581,6 @@ def query_audio_video(
     Returns:
         list[NodeWithScore]: 検索結果のリスト
     """
-    topk = topk or _rt().cfg.rerank.topk
-
     return asyncio_run(aquery_audio_video(path=path, topk=topk))
 
 
@@ -648,8 +638,6 @@ def query_video_video(
     Returns:
         list[NodeWithScore]: 検索結果のリスト
     """
-    topk = topk or _rt().cfg.rerank.topk
-
     return asyncio_run(aquery_video_video(path=path, topk=topk))
 
 

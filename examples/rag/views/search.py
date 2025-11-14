@@ -1,16 +1,18 @@
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 import streamlit as st
 
 from raggify.client import RestAPIClient
+from raggify.config.retrieve_config import RetrieveMode
 from raggify.core import Exts
 
 from ..logger import logger
 from ..state import (
     FeedBack,
     SearchResult,
+    SearchSettings,
     View,
     clear_feedback,
     clear_search_result,
@@ -83,6 +85,7 @@ def _render_search_view_text_text(client: RestAPIClient) -> None:
     Args:
         client (RestAPIClient): raggify API client.
     """
+    mode = _get_text_retrieve_mode()
     _render_search_section(
         title="📝→📝 Search text with text",
         caption='Find passages similar to the search query. Example: "employment rules summary"',
@@ -94,6 +97,7 @@ def _render_search_view_text_text(client: RestAPIClient) -> None:
             query,
             SearchResult.SR_SEARCH_TEXT_TEXT,
             FeedBack.FB_SEARCH_TEXT_TEXT,
+            mode,
         ),
         feedback_key=FeedBack.FB_SEARCH_TEXT_TEXT,
         result_key=SearchResult.SR_SEARCH_TEXT_TEXT,
@@ -384,10 +388,11 @@ def run_text_text_search_callback(
     query: str,
     result_key: SearchResult,
     feedback_key: FeedBack,
+    mode: Optional[RetrieveMode] = None,
 ) -> None:
     """Call the text-to-text search API."""
     _run_text_search(
-        func=client.query_text_text,
+        func=lambda text: client.query_text_text(text, mode=mode),
         query=query,
         result_key=result_key,
         feedback_key=feedback_key,
@@ -643,6 +648,45 @@ def _render_query_results_video(title: str, result: dict[str, Any]) -> None:
             st.write(f"Reference: {base_source}")
 
 
+def _get_text_retrieve_mode() -> RetrieveMode:
+    """Retrieve the text search mode from the session.
+
+    Returns:
+        RetrieveMode: The currently selected mode.
+    """
+    raw = st.session_state.get(SearchSettings.SS_TEXT_RETRIEVE_MODE)
+    if isinstance(raw, RetrieveMode):
+        return raw
+
+    if isinstance(raw, str):
+        try:
+            mode = RetrieveMode(raw)
+            st.session_state[SearchSettings.SS_TEXT_RETRIEVE_MODE] = mode
+            return mode
+        except ValueError:
+            pass
+
+    st.session_state[SearchSettings.SS_TEXT_RETRIEVE_MODE] = RetrieveMode.FUSION
+    return RetrieveMode.FUSION
+
+
+def _render_text_mode_selector() -> None:
+    """Render a toggle to select text search mode."""
+    _get_text_retrieve_mode()
+
+    st.radio(
+        "Text retrieve mode",
+        options=list(RetrieveMode),
+        horizontal=True,
+        key=SearchSettings.SS_TEXT_RETRIEVE_MODE,
+        format_func=lambda mode: {
+            RetrieveMode.VECTOR_ONLY: "Semantic similarity",
+            RetrieveMode.BM25_ONLY: "Text matching",
+            RetrieveMode.FUSION: "Hybrid",
+        }.get(mode, mode.value),
+    )
+
+
 def render_search_view(client: RestAPIClient) -> None:
     """Render the search view."""
 
@@ -665,4 +709,7 @@ def render_search_view(client: RestAPIClient) -> None:
 
     renderer = choice_map.get(choice)
     if renderer is not None:
+        if renderer is _render_search_view_text_text:
+            _render_text_mode_selector()
+
         renderer(client)

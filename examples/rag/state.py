@@ -10,6 +10,7 @@ from .logger import logger
 __all__ = [
     "View",
     "FeedBack",
+    "SearchSettings",
     "SearchResult",
     "ensure_session_state",
     "set_view",
@@ -55,6 +56,10 @@ class FeedBack(StrEnum):
     FB_ADMIN_PATH_LIST = auto()
 
 
+class SearchSettings(StrEnum):
+    SS_TEXT_RETRIEVE_MODE = auto()
+
+
 class SearchResult(StrEnum):
     # Search
     SR_SEARCH_TEXT_TEXT = auto()
@@ -98,6 +103,9 @@ def ensure_session_state() -> None:
         st.session_state["status_dirty"] = True
 
     for key in FeedBack:
+        st.session_state.setdefault(key, None)
+
+    for key in SearchSettings:
         st.session_state.setdefault(key, None)
 
     for key in SearchResult:

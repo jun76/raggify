@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Optional, Protocol
 import typer
 import uvicorn
 
+from ..config.retrieve_config import RetrieveMode
 from ..core.const import PROJECT_NAME, USER_CONFIG_PATH, VERSION
 from ..logger import console, logger
 
@@ -169,7 +170,7 @@ def reload():
     _execute_client_command(lambda client: client.reload())
 
 
-@app.command(name="job", help="Get background job status.")
+@app.command(name="job", help="Access background jobs.")
 def job(
     job_id: str = typer.Argument(default="", help="Job id to get status."),
     rm: bool = typer.Option(
@@ -222,10 +223,15 @@ def query_text_text(
     topk: Optional[int] = typer.Option(
         default=None, help="Show top-k results (defaults to config)."
     ),
+    mode: Optional[RetrieveMode] = typer.Option(
+        default=None, help="You can specify text retrieve mode."
+    ),
 ):
-    logger.debug(f"query = {query}, topk = {topk}")
+    logger.debug(f"query = {query}, topk = {topk}, mode = {mode}")
     topk = topk or _cfg().rerank.topk
-    _execute_client_command(lambda client: client.query_text_text(query, topk))
+    _execute_client_command(
+        lambda client: client.query_text_text(query=query, topk=topk, mode=mode)
+    )
 
 
 @app.command(

@@ -4,6 +4,8 @@ from typing import Any, Callable, Optional
 
 import requests
 
+from ..config.retrieve_config import RetrieveMode
+
 __all__ = ["RestAPIClient"]
 
 
@@ -203,12 +205,18 @@ class RestAPIClient:
         """
         return self._post_json("/ingest/url_list", {"path": path})
 
-    def query_text_text(self, query: str, topk: Optional[int] = None) -> dict[str, Any]:
+    def query_text_text(
+        self,
+        query: str,
+        topk: Optional[int] = None,
+        mode: Optional[RetrieveMode] = None,
+    ) -> dict[str, Any]:
         """クエリ文字列によるテキストドキュメント検索 API を呼び出す。
 
         Args:
             query (str): クエリ文字列
             topk (Optional[int]): 上限件数
+            mode (Optional[RetrieveMode], optional): 検索モード。Defaults to None.
 
         Returns:
             dict[str, Any]: 応答データ
@@ -216,6 +224,9 @@ class RestAPIClient:
         payload: dict[str, Any] = {"query": query}
         if topk is not None:
             payload["topk"] = topk
+
+        if mode is not None:
+            payload["mode"] = mode
 
         return self._post_json("/query/text_text", payload)
 
