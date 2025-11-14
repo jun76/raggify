@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from llama_index.core.schema import ImageType
 
     from ..embed.embed_manager import EmbedManager
-    from ..llama.embeddings.multi_modal_base import AudioType
+    from ..llama.embeddings.multi_modal_base import AudioType, VideoType
 
 
 class AddChunkIndexTransform(TransformComponent):
@@ -210,3 +210,27 @@ def make_audio_embed_transform(embed: EmbedManager) -> _BaseEmbedTransform:
         return None
 
     return _BaseEmbedTransform(batch_audio, extractor)
+
+
+def make_video_embed_transform(embed: EmbedManager) -> _BaseEmbedTransform:
+    """動画ノードの埋め込みトランスフォーム生成用ラッパー。
+
+    Args:
+        embed (EmbedManager): 埋め込み管理
+
+    Returns:
+        _BaseEmbedTransform: トランスフォーム
+    """
+    from ..llama.core.schema import VideoNode
+
+    async def batch_video(paths: list[VideoType]) -> list[Embedding]:
+        return await embed.aembed_video(paths)
+
+    def extractor(node: BaseNode) -> Optional[str]:
+        if isinstance(node, VideoNode):
+            return _get_media_path(node)
+
+        logger.warning("video is not found, skipped")
+        return None
+
+    return _BaseEmbedTransform(batch_video, extractor)

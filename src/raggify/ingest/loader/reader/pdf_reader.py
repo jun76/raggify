@@ -12,6 +12,8 @@ from ....logger import logger
 if TYPE_CHECKING:
     from fitz import Document as FDoc
 
+__all__ = ["MultiPDFReader"]
+
 
 class MultiPDFReader(BaseReader):
     """画像抽出も行うための独自 PDF リーダー"""

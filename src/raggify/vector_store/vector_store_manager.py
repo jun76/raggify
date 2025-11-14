@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from llama_index.core.vector_stores.types import BasePydanticVectorStore
 
 
-@dataclass
+@dataclass(kw_only=True)
 class VectorStoreContainer:
     """モダリティ毎のベクトルストア関連パラメータを集約"""
 
@@ -140,6 +140,11 @@ class VectorStoreManager:
                 return VectorStoreIndex.from_vector_store(
                     vector_store=self.get_container(Modality.AUDIO).store,
                     embed_model=self._embed.get_container(Modality.AUDIO).embed,
+                )
+            case Modality.VIDEO:
+                return VectorStoreIndex.from_vector_store(
+                    vector_store=self.get_container(Modality.VIDEO).store,
+                    embed_model=self._embed.get_container(Modality.VIDEO).embed,
                 )
             case _:
                 raise RuntimeError("unexpected modality")

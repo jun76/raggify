@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from llama_index.core.schema import NodeWithScore
 
 
-@dataclass
+@dataclass(kw_only=True)
 class RerankContainer:
     """リランク関連パラメータを集約"""
 

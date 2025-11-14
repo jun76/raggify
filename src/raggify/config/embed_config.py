@@ -14,6 +14,7 @@ class EmbedProvider(StrEnum):
     HUGGINGFACE = auto()
     CLAP = auto()
     VOYAGE = auto()
+    BEDROCK = auto()
 
 
 class EmbedModel(StrEnum):
@@ -62,6 +63,13 @@ class EmbedConfig(DataClassDictMixin):
             EmbedModel.DIM.value: 2048,
         }
     )
+    bedrock_embed_model_text: dict[str, Any] = field(
+        default_factory=lambda: {
+            EmbedModel.NAME.value: "amazon.nova-2-multimodal-embeddings-v1:0",
+            EmbedModel.ALIAS.value: "n2v1",
+            EmbedModel.DIM.value: 1024,
+        }
+    )
 
     # Image
     cohere_embed_model_image: dict[str, Any] = field(
@@ -92,6 +100,13 @@ class EmbedConfig(DataClassDictMixin):
             EmbedModel.DIM.value: 1024,
         }
     )
+    bedrock_embed_model_image: dict[str, Any] = field(
+        default_factory=lambda: {
+            EmbedModel.NAME.value: "amazon.nova-2-multimodal-embeddings-v1:0",
+            EmbedModel.ALIAS.value: "n2v1",
+            EmbedModel.DIM.value: 1024,
+        }
+    )
 
     # Audio
     clap_embed_model_audio: dict[str, Any] = field(
@@ -99,5 +114,21 @@ class EmbedConfig(DataClassDictMixin):
             EmbedModel.NAME.value: "effect_varlen",
             EmbedModel.ALIAS.value: "efvl",
             EmbedModel.DIM.value: 512,
+        }
+    )
+    bedrock_embed_model_audio: dict[str, Any] = field(
+        default_factory=lambda: {
+            EmbedModel.NAME.value: "amazon.nova-2-multimodal-embeddings-v1:0",
+            EmbedModel.ALIAS.value: "n2v1",
+            EmbedModel.DIM.value: 1024,
+        }
+    )
+
+    # Video
+    bedrock_embed_model_video: dict[str, Any] = field(
+        default_factory=lambda: {
+            EmbedModel.NAME.value: "amazon.nova-2-multimodal-embeddings-v1:0",
+            EmbedModel.ALIAS.value: "n2v1",
+            EmbedModel.DIM.value: 1024,
         }
     )

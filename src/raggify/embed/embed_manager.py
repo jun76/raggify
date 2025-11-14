@@ -13,10 +13,10 @@ if TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import BaseEmbedding, Embedding
     from llama_index.core.schema import ImageType
 
-    from ..llama.embeddings.multi_modal_base import AudioType
+    from ..llama.embeddings.multi_modal_base import AudioType, VideoType
 
 
-@dataclass
+@dataclass(kw_only=True)
 class EmbedContainer:
     """モダリティ毎の埋め込み関連パラメータを集約"""
 
@@ -102,6 +102,18 @@ class EmbedManager:
             str: 空間キー
         """
         return self.get_container(Modality.AUDIO).space_key
+
+    @property
+    def space_key_video(self) -> str:
+        """動画埋め込みの空間キー。
+
+        Raises:
+            RuntimeError: 未初期化
+
+        Returns:
+            str: 空間キー
+        """
+        return self.get_container(Modality.VIDEO).space_key
 
     def get_container(self, modality: Modality) -> EmbedContainer:
         """モダリティ別の埋め込みコンテナを取得する。
@@ -211,6 +223,38 @@ class EmbedManager:
 
         return dims
 
+    async def aembed_video(self, paths: list[VideoType]) -> list[Embedding]:
+        """動画の埋め込みベクトルを取得する。
+
+        Args:
+            paths (list[VideoType]): 動画のパス
+
+        Raises:
+            RuntimeError: 未初期化または動画埋め込み器でない
+
+        Returns:
+            list[Embedding]: 埋め込みベクトル
+        """
+        from ..llama.embeddings.multi_modal_base import VideoEmbedding
+
+        if Modality.VIDEO not in self.modality:
+            logger.warning("no video embedding is specified")
+            return []
+
+        embed = self.get_container(Modality.VIDEO).embed
+        if not isinstance(embed, VideoEmbedding):
+            raise RuntimeError("video embed model is required")
+
+        logger.debug(f"now batch embedding {len(paths)} videos...")
+        dims = await embed.aget_video_embedding_batch(
+            video_file_paths=paths, show_progress=True
+        )
+
+        if dims:
+            logger.debug(f"dim = {len(dims[0])}, embed {len(dims)} videos")
+
+        return dims
+
     def _generate_space_key(self, provider: str, model: str, modality: Modality) -> str:
         """空間キー文字列を生成する。
 
@@ -226,7 +270,12 @@ class EmbedManager:
             str: 空間キー文字列
         """
         # 字数節約
-        mod = {Modality.TEXT: "te", Modality.IMAGE: "im", Modality.AUDIO: "au"}
+        mod = {
+            Modality.TEXT: "te",
+            Modality.IMAGE: "im",
+            Modality.AUDIO: "au",
+            Modality.VIDEO: "vi",
+        }
         if mod.get(modality) is None:
             raise ValueError(f"unexpected modality: {modality}")
 

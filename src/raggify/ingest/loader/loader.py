@@ -9,14 +9,12 @@ from llama_index.core.schema import Document, ImageNode, MediaResource, TextNode
 from ...core.exts import Exts
 from ...core.metadata import BasicMetaData
 from ...core.metadata import MetaKeys as MK
-from ...llama.core.schema import AudioNode
+from ...llama.core.schema import AudioNode, VideoNode
 from ...logger import logger
 from ...runtime import get_runtime as _rt
 
 if TYPE_CHECKING:
     from llama_index.core.schema import BaseNode
-
-    from ...runtime import Runtime
 
 
 class Loader:
@@ -131,7 +129,7 @@ class Loader:
         self,
         docs: list[Document],
         is_canceled: Callable[[], bool],
-    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
+    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
         """ドキュメントをモダリティ別に分ける。
 
         Args:
@@ -139,14 +137,15 @@ class Loader:
             is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
 
         Returns:
-            tuple[list[TextNode], list[ImageNode], list[AudioNode]]:
-                テキストノード、画像ノード、音声ノード
+            tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
+                テキストノード、画像ノード、音声ノード、動画ノード
         """
         self._finalize_docs(docs)
         nodes = await self._aparse_documents(docs=docs, is_canceled=is_canceled)
 
         image_nodes = []
         audio_nodes = []
+        video_nodes = []
         text_nodes = []
         for node in nodes:
             if isinstance(node, TextNode) and self._is_image_node(node):
@@ -161,12 +160,41 @@ class Loader:
                         text=node.text, ref_doc_id=node.id_, metadata=node.metadata
                     )
                 )
+            elif isinstance(node, TextNode) and self._is_video_node(node):
+                video_nodes.append(
+                    VideoNode(
+                        text=node.text, ref_doc_id=node.id_, metadata=node.metadata
+                    )
+                )
             elif isinstance(node, TextNode):
                 text_nodes.append(node)
             else:
                 logger.warning(f"unexpected node type {type(node)}, skipped")
 
-        return text_nodes, image_nodes, audio_nodes
+        return text_nodes, image_nodes, audio_nodes, video_nodes
+
+    def _is_multimodal_node(self, node: BaseNode, exts: set[str]) -> bool:
+        """マルチモーダルノードか。
+
+        Args:
+            node (BaseNode): 対象ノード
+            exts (set[str]): 拡張子セット
+
+        Returns:
+            bool: 画像ノードなら True
+        """
+        # ファイルパスか URL の末尾に特定の拡張子が含まれるものをマルチモーダルノードとする
+        path = node.metadata.get(MK.FILE_PATH, "")
+        url = node.metadata.get(MK.URL, "")
+
+        # 独自 reader を使用し、temp_file_path に画像ファイルの拡張子が含まれるものも抽出
+        temp_file_path = node.metadata.get(MK.TEMP_FILE_PATH, "")
+
+        return (
+            Exts.endswith_exts(path, exts)
+            or Exts.endswith_exts(url, exts)
+            or Exts.endswith_exts(temp_file_path, exts)
+        )
 
     def _is_image_node(self, node: BaseNode) -> bool:
         """画像ノードか。
@@ -177,18 +205,7 @@ class Loader:
         Returns:
             bool: 画像ノードなら True
         """
-        # ファイルパスか URL の末尾に画像ファイルの拡張子が含まれるものを画像ノードとする
-        path = node.metadata.get(MK.FILE_PATH, "")
-        url = node.metadata.get(MK.URL, "")
-
-        # 独自 reader を使用し、temp_file_path に画像ファイルの拡張子が含まれるものも抽出
-        temp_file_path = node.metadata.get(MK.TEMP_FILE_PATH, "")
-
-        return (
-            Exts.endswith_exts(path, Exts.IMAGE)
-            or Exts.endswith_exts(url, Exts.IMAGE)
-            or Exts.endswith_exts(temp_file_path, Exts.IMAGE)
-        )
+        return self._is_multimodal_node(node=node, exts=Exts.IMAGE)
 
     def _is_audio_node(self, node: BaseNode) -> bool:
         """音声ノードか。
@@ -199,12 +216,15 @@ class Loader:
         Returns:
             bool: 音声ノードなら True
         """
-        path = node.metadata.get(MK.FILE_PATH, "")
-        url = node.metadata.get(MK.URL, "")
-        temp_file_path = node.metadata.get(MK.TEMP_FILE_PATH, "")
+        return self._is_multimodal_node(node=node, exts=Exts.AUDIO)
 
-        return (
-            Exts.endswith_exts(path, Exts.AUDIO)
-            or Exts.endswith_exts(url, Exts.AUDIO)
-            or Exts.endswith_exts(temp_file_path, Exts.AUDIO)
-        )
+    def _is_video_node(self, node: BaseNode) -> bool:
+        """動画ノードか。
+
+        Args:
+            node (BaseNode): 対象ノード
+
+        Returns:
+            bool: 動画ノードなら True
+        """
+        return self._is_multimodal_node(node=node, exts=Exts.VIDEO)

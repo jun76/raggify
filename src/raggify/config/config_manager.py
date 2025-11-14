@@ -34,7 +34,7 @@ class PathSerializationStrategy(SerializationStrategy):
         return Path(value).expanduser()
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AppConfig(DataClassDictMixin):
     """全セクションを一括で保持するためのルート設定データクラス。"""
 

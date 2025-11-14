@@ -26,7 +26,7 @@ class JobStatus(StrEnum):
     FAILED = auto()
 
 
-@dataclass
+@dataclass(kw_only=True)
 class JobPayload:
     """ワーカーに渡すジョブ内容。"""
 
@@ -34,7 +34,7 @@ class JobPayload:
     kwargs: dict[str, Any] = field(default_factory=dict)
 
 
-@dataclass
+@dataclass(kw_only=True)
 class Job:
     """ジョブ本体。"""
 

@@ -288,5 +288,65 @@ def query_audio_audio(
     _execute_client_command(lambda client: client.query_audio_audio(path, topk))
 
 
+@app.command(
+    name="qtv",
+    help="Query Text -> Video documents.",
+)
+def query_text_video(
+    query: str = typer.Argument(help="Query string."),
+    topk: Optional[int] = typer.Option(
+        default=None, help="Show top-k results (defaults to config)."
+    ),
+):
+    logger.debug(f"query = {query}, topk = {topk}")
+    topk = topk or _cfg().rerank.topk
+    _execute_client_command(lambda client: client.query_text_video(query, topk))
+
+
+@app.command(
+    name="qiv",
+    help="Query Image -> Video documents.",
+)
+def query_image_video(
+    path: str = typer.Argument(help="Query image path."),
+    topk: Optional[int] = typer.Option(
+        default=None, help="Show top-k results (defaults to config)."
+    ),
+):
+    logger.debug(f"path = {path}, topk = {topk}")
+    topk = topk or _cfg().rerank.topk
+    _execute_client_command(lambda client: client.query_image_video(path, topk))
+
+
+@app.command(
+    name="qav",
+    help="Query Audio -> Video documents.",
+)
+def query_audio_video(
+    path: str = typer.Argument(help="Query audio path."),
+    topk: Optional[int] = typer.Option(
+        default=None, help="Show top-k results (defaults to config)."
+    ),
+):
+    logger.debug(f"path = {path}, topk = {topk}")
+    topk = topk or _cfg().rerank.topk
+    _execute_client_command(lambda client: client.query_audio_video(path, topk))
+
+
+@app.command(
+    name="qmv",
+    help="Query Video -> Video documents.",
+)
+def query_video_video(
+    path: str = typer.Argument(help="Query video path."),
+    topk: Optional[int] = typer.Option(
+        default=None, help="Show top-k results (defaults to config)."
+    ),
+):
+    logger.debug(f"path = {path}, topk = {topk}")
+    topk = topk or _cfg().rerank.topk
+    _execute_client_command(lambda client: client.query_video_video(path, topk))
+
+
 if __name__ == "__main__":
     app()

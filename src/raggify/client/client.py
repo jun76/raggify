@@ -290,3 +290,75 @@ class RestAPIClient:
             payload["topk"] = topk
 
         return self._post_json("/query/audio_audio", payload)
+
+    def query_text_video(
+        self, query: str, topk: Optional[int] = None
+    ) -> dict[str, Any]:
+        """クエリ文字列による動画ドキュメント検索 API を呼び出す。
+
+        Args:
+            query (str): クエリ文字列
+            topk (Optional[int]): 上限件数
+
+        Returns:
+            dict[str, Any]: 応答データ
+        """
+        payload: dict[str, Any] = {"query": query}
+        if topk is not None:
+            payload["topk"] = topk
+
+        return self._post_json("/query/text_video", payload)
+
+    def query_image_video(
+        self, path: str, topk: Optional[int] = None
+    ) -> dict[str, Any]:
+        """クエリ画像による動画ドキュメント検索 API を呼び出す。
+
+        Args:
+            path (str): クエリ画像パス
+            topk (Optional[int]): 上限件数
+
+        Returns:
+            dict[str, Any]: 応答データ
+        """
+        payload: dict[str, Any] = {"path": path}
+        if topk is not None:
+            payload["topk"] = topk
+
+        return self._post_json("/query/image_video", payload)
+
+    def query_audio_video(
+        self, path: str, topk: Optional[int] = None
+    ) -> dict[str, Any]:
+        """クエリ音声による動画ドキュメント検索 API を呼び出す。
+
+        Args:
+            path (str): クエリ音声パス
+            topk (Optional[int]): 上限件数
+
+        Returns:
+            dict[str, Any]: 応答データ
+        """
+        payload: dict[str, Any] = {"path": path}
+        if topk is not None:
+            payload["topk"] = topk
+
+        return self._post_json("/query/audio_video", payload)
+
+    def query_video_video(
+        self, path: str, topk: Optional[int] = None
+    ) -> dict[str, Any]:
+        """クエリ動画による動画ドキュメント検索 API を呼び出す。
+
+        Args:
+            path (str): クエリ動画パス
+            topk (Optional[int]): 上限件数
+
+        Returns:
+            dict[str, Any]: 応答データ
+        """
+        payload: dict[str, Any] = {"path": path}
+        if topk is not None:
+            payload["topk"] = topk
+
+        return self._post_json("/query/video_video", payload)

@@ -10,7 +10,7 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.retrievers.bm25 import BM25Retriever
 
 from ..config.retrieve_config import RetrieveMode
-from ..llama.core.indices.multi_modal.retriever import AudioRetriever
+from ..llama.core.indices.multi_modal.retriever import AudioRetriever, VideoRetriever
 from ..llama.core.schema import Modality
 from ..logger import logger
 from ..runtime import get_runtime as _rt
@@ -29,6 +29,14 @@ __all__ = [
     "aquery_text_audio",
     "query_audio_audio",
     "aquery_audio_audio",
+    "query_text_video",
+    "aquery_text_video",
+    "query_image_video",
+    "aquery_image_video",
+    "query_audio_video",
+    "aquery_audio_video",
+    "query_video_video",
+    "aquery_video_video",
 ]
 
 
@@ -266,7 +274,7 @@ def query_image_image(
     """クエリ画像による画像ドキュメント検索。
 
     Args:
-        path (str): クエリ画像の ローカルパス
+        path (str): クエリ画像のローカルパス
         topk (int, optional): 取得件数。Defaults to None.
 
     Returns:
@@ -284,7 +292,7 @@ async def aquery_image_image(
     """クエリ画像による画像ドキュメント非同期検索。
 
     Args:
-        path (str): クエリ画像の ローカルパス
+        path (str): クエリ画像のローカルパス
         topk (int, optional): 取得件数。Defaults to None.
 
     Returns:
@@ -392,7 +400,7 @@ def query_audio_audio(
     """クエリ音声による音声ドキュメント検索。
 
     Args:
-        path (str): クエリ音声の ローカルパス
+        path (str): クエリ音声のローカルパス
         topk (int, optional): 取得件数。Defaults to None.
 
     Returns:
@@ -410,7 +418,7 @@ async def aquery_audio_audio(
     """クエリ音声による音声ドキュメント非同期検索。
 
     Args:
-        path (str): クエリ音声の ローカルパス
+        path (str): クエリ音声のローカルパス
         topk (int, optional): 取得件数。Defaults to None.
 
     Returns:
@@ -426,6 +434,248 @@ async def aquery_audio_audio(
     topk = topk or rt.cfg.rerank.topk
     retriever_engine = AudioRetriever(index=index, top_k=topk)
     nwss = await retriever_engine.aaudio_to_audio_retrieve(path)
+
+    if len(nwss) == 0:
+        logger.warning("empty nodes")
+        return []
+
+    logger.debug(f"got {len(nwss)} nodes")
+
+    return nwss
+
+
+def query_text_video(
+    query: str,
+    topk: Optional[int] = None,
+) -> list[NodeWithScore]:
+    """クエリ文字列による動画ドキュメント検索。
+
+    Args:
+        query (str): クエリ文字列
+        topk (int, optional): 取得件数。Defaults to None.
+
+    Raises:
+        RuntimeError: テキスト --> 動画埋め込み非対応
+
+    Returns:
+        list[NodeWithScore]: 検索結果のリスト
+    """
+    topk = topk or _rt().cfg.rerank.topk
+
+    return asyncio_run(aquery_text_video(query=query, topk=topk))
+
+
+async def aquery_text_video(
+    query: str,
+    topk: Optional[int] = None,
+) -> list[NodeWithScore]:
+    """クエリ文字列による動画ドキュメント非同期検索。
+
+    Args:
+        query (str): クエリ文字列
+        topk (int, optional): 取得件数。Defaults to None.
+
+    Raises:
+        RuntimeError: テキスト --> 動画埋め込み非対応
+
+    Returns:
+        list[NodeWithScore]: 検索結果のリスト
+    """
+    rt = _rt()
+    store = rt.vector_store
+    index = store.get_index(Modality.VIDEO)
+    if index is None:
+        logger.error("store is not initialized")
+        return []
+
+    topk = topk or rt.cfg.rerank.topk
+    retriever_engine = VideoRetriever(index=index, top_k=topk)
+    try:
+        nwss = await retriever_engine.atext_to_video_retrieve(query)
+    except Exception as e:
+        raise RuntimeError(
+            "this embed model may not support text --> video embedding"
+        ) from e
+
+    if len(nwss) == 0:
+        logger.warning("empty nodes")
+        return []
+
+    rerank = rt.rerank_manager
+    if rerank is None:
+        return nwss
+
+    nwss = await rerank.arerank(nodes=nwss, query=query, topk=topk)
+    logger.debug(f"reranked {len(nwss)} nodes")
+
+    return nwss
+
+
+def query_image_video(
+    path: str,
+    topk: Optional[int] = None,
+) -> list[NodeWithScore]:
+    """クエリ画像による動画ドキュメント検索。
+
+    Args:
+        path (str): クエリ画像のローカルパス
+        topk (int, optional): 取得件数。Defaults to None.
+
+    Raises:
+        RuntimeError: 画像 --> 動画埋め込み非対応
+
+    Returns:
+        list[NodeWithScore]: 検索結果のリスト
+    """
+    topk = topk or _rt().cfg.rerank.topk
+
+    return asyncio_run(aquery_image_video(path=path, topk=topk))
+
+
+async def aquery_image_video(
+    path: str,
+    topk: Optional[int] = None,
+) -> list[NodeWithScore]:
+    """クエリ画像による動画ドキュメント非同期検索。
+
+    Args:
+        path (str): クエリ画像のローカルパス
+        topk (int, optional): 取得件数。Defaults to None.
+
+    Raises:
+        RuntimeError: 画像 --> 動画埋め込み非対応
+
+    Returns:
+        list[NodeWithScore]: 検索結果のリスト
+    """
+    rt = _rt()
+    store = rt.vector_store
+    index = store.get_index(Modality.VIDEO)
+    if index is None:
+        logger.error("store is not initialized")
+        return []
+
+    topk = topk or rt.cfg.rerank.topk
+    retriever_engine = VideoRetriever(index=index, top_k=topk)
+    try:
+        nwss = await retriever_engine.aimage_to_video_retrieve(path)
+    except Exception as e:
+        raise RuntimeError(
+            "this embed model may not support image --> video embedding"
+        ) from e
+
+    if len(nwss) == 0:
+        logger.warning("empty nodes")
+        return []
+
+    logger.debug(f"got {len(nwss)} nodes")
+
+    return nwss
+
+
+def query_audio_video(
+    path: str,
+    topk: Optional[int] = None,
+) -> list[NodeWithScore]:
+    """クエリ音声による動画ドキュメント検索。
+
+    Args:
+        path (str): クエリ音声のローカルパス
+        topk (int, optional): 取得件数。Defaults to None.
+
+    Raises:
+        RuntimeError: 音声 --> 動画埋め込み非対応
+
+    Returns:
+        list[NodeWithScore]: 検索結果のリスト
+    """
+    topk = topk or _rt().cfg.rerank.topk
+
+    return asyncio_run(aquery_audio_video(path=path, topk=topk))
+
+
+async def aquery_audio_video(
+    path: str,
+    topk: Optional[int] = None,
+) -> list[NodeWithScore]:
+    """クエリ音声による動画ドキュメント非同期検索。
+
+    Args:
+        path (str): クエリ音声のローカルパス
+        topk (int, optional): 取得件数。Defaults to None.
+
+    Raises:
+        RuntimeError: 音声 --> 動画埋め込み非対応
+
+    Returns:
+        list[NodeWithScore]: 検索結果のリスト
+    """
+    rt = _rt()
+    store = rt.vector_store
+    index = store.get_index(Modality.VIDEO)
+    if index is None:
+        logger.error("store is not initialized")
+        return []
+
+    topk = topk or rt.cfg.rerank.topk
+    retriever_engine = VideoRetriever(index=index, top_k=topk)
+    try:
+        nwss = await retriever_engine.aaudio_to_video_retrieve(path)
+    except Exception as e:
+        raise RuntimeError(
+            "this embed model may not support audio --> video embedding"
+        ) from e
+
+    if len(nwss) == 0:
+        logger.warning("empty nodes")
+        return []
+
+    logger.debug(f"got {len(nwss)} nodes")
+
+    return nwss
+
+
+def query_video_video(
+    path: str,
+    topk: Optional[int] = None,
+) -> list[NodeWithScore]:
+    """クエリ動画による動画ドキュメント検索。
+
+    Args:
+        path (str): クエリ動画のローカルパス
+        topk (int, optional): 取得件数。Defaults to None.
+
+    Returns:
+        list[NodeWithScore]: 検索結果のリスト
+    """
+    topk = topk or _rt().cfg.rerank.topk
+
+    return asyncio_run(aquery_video_video(path=path, topk=topk))
+
+
+async def aquery_video_video(
+    path: str,
+    topk: Optional[int] = None,
+) -> list[NodeWithScore]:
+    """クエリ動画による動画ドキュメント非同期検索。
+
+    Args:
+        path (str): クエリ動画のローカルパス
+        topk (int, optional): 取得件数。Defaults to None.
+
+    Returns:
+        list[NodeWithScore]: 検索結果のリスト
+    """
+    rt = _rt()
+    store = rt.vector_store
+    index = store.get_index(Modality.VIDEO)
+    if index is None:
+        logger.error("store is not initialized")
+        return []
+
+    topk = topk or rt.cfg.rerank.topk
+    retriever_engine = VideoRetriever(index=index, top_k=topk)
+    nwss = await retriever_engine.avideo_to_video_retrieve(path)
 
     if len(nwss) == 0:
         logger.warning("empty nodes")
