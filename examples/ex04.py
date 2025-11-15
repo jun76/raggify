@@ -1,13 +1,20 @@
-from raggify.config.embed_config import EmbedProvider
-from raggify.config.vector_store_config import VectorStoreProvider
-from raggify.ingest import ingest_url
-from raggify.runtime import get_runtime
+import json
 
-rt = get_runtime()
-rt.cfg.general.vector_store_provider = VectorStoreProvider.PGVECTOR
-rt.cfg.general.audio_embed_provider = EmbedProvider.CLAP
-rt.cfg.ingest.chunk_size = 300
-rt.cfg.ingest.same_origin = False
-rt.rebuild()
+from raggify.ingest import ingest_path
+from raggify.retrieve import query_image_video
 
-ingest_url("http://some.site.com")
+knowledge_path = "/path/to/movies"
+
+ingest_path(knowledge_path)
+
+query_path = "/path/to/similar/image.png"
+
+nodes = query_image_video(query_path)
+
+for node in nodes:
+    print(
+        json.dumps(
+            obj={"text": node.text, "metadata": node.metadata, "score": node.score},
+            indent=2,
+        )
+    )

@@ -71,7 +71,7 @@ def render_ragsearch_view(client: RestAPIClient) -> None:
 
     ref_file = st.file_uploader(
         "Attachment (optional)",
-        type=list(Exts.IMAGE | Exts.AUDIO),
+        type=list(Exts.IMAGE | Exts.AUDIO | Exts.VIDEO),
         key="ragsearch_image",
     )
 

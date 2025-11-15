@@ -8,6 +8,8 @@ from mashumaro import DataClassDictMixin
 
 from ..core.const import PROJECT_NAME
 
+__all__ = ["DocumentStoreProvider"]
+
 
 class DocumentStoreProvider(StrEnum):
     REDIS = auto()

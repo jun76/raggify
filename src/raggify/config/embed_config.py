@@ -6,6 +6,8 @@ from typing import Any
 
 from mashumaro import DataClassDictMixin
 
+__all__ = ["EmbedProvider", "EmbedModel"]
+
 
 class EmbedProvider(StrEnum):
     CLIP = auto()

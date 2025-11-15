@@ -200,12 +200,104 @@ async def tool_search_audio_audio(ctx: RunContextWrapper[_RagAgentContext]) -> s
     return _format_response("audio_audio", query, _TOPK, response)
 
 
+@function_tool
+async def tool_search_text_video(
+    ctx: RunContextWrapper[_RagAgentContext],
+    args: _TextSearchArgs,
+) -> str:
+    """Search video documents by a text query.
+
+    Args:
+        ctx (RunContextWrapper[_RagAgentContext]): Execution context.
+        args (_TextSearchArgs): Search parameters.
+
+    Raises:
+        ValueError: Raised when the query string is missing.
+
+    Returns:
+        str: JSON string that summarizes the search results.
+    """
+    query = args.get("query")
+    if not query:
+        raise ValueError("query is required")
+
+    response = ctx.context.client.query_text_video(query, _TOPK)
+    return _format_response("text_video", query, _TOPK, response)
+
+
+@function_tool
+async def tool_search_image_video(ctx: RunContextWrapper[_RagAgentContext]) -> str:
+    """Search video documents using an uploaded reference image.
+
+    Args:
+        ctx (RunContextWrapper[_RagAgentContext]): Execution context.
+
+    Raises:
+        ValueError: Raised when no reference image is registered.
+
+    Returns:
+        str: JSON string that summarizes the search results.
+    """
+    query = ctx.context.file_path
+    if not query:
+        raise ValueError("file_path is not provided in context")
+
+    response = ctx.context.client.query_image_video(query, _TOPK)
+    return _format_response("image_video", query, _TOPK, response)
+
+
+@function_tool
+async def tool_search_audio_video(ctx: RunContextWrapper[_RagAgentContext]) -> str:
+    """Search video documents using an uploaded reference audio file.
+
+    Args:
+        ctx (RunContextWrapper[_RagAgentContext]): Execution context.
+
+    Raises:
+        ValueError: Raised when no reference audio is registered.
+
+    Returns:
+        str: JSON string that summarizes the search results.
+    """
+    query = ctx.context.file_path
+    if not query:
+        raise ValueError("file_path is not provided in context")
+
+    response = ctx.context.client.query_audio_video(query, _TOPK)
+    return _format_response("audio_video", query, _TOPK, response)
+
+
+@function_tool
+async def tool_search_video_video(ctx: RunContextWrapper[_RagAgentContext]) -> str:
+    """Search video documents using an uploaded reference video file.
+
+    Args:
+        ctx (RunContextWrapper[_RagAgentContext]): Execution context.
+
+    Raises:
+        ValueError: Raised when no reference video is registered.
+
+    Returns:
+        str: JSON string that summarizes the search results.
+    """
+    query = ctx.context.file_path
+    if not query:
+        raise ValueError("file_path is not provided in context")
+
+    response = ctx.context.client.query_video_video(query, _TOPK)
+    return _format_response("video_video", query, _TOPK, response)
+
+
 _TOOLSET = [
     tool_search_text_text,
     tool_search_text_image,
     tool_search_image_image,
     tool_search_text_audio,
     tool_search_audio_audio,
+    tool_search_text_video,
+    tool_search_image_video,
+    tool_search_audio_video,
+    tool_search_video_video,
 ]
 
 
@@ -246,8 +338,8 @@ class RagAgentManager:
             instructions=(
                 "You are a search agent. "
                 "Always respond to the user in user language. "
-                "Before answering, you must use the provided tools to search the knowledge base. "
-                "If reference images or audio files are available, their paths are stored in file_path. "
+                "Before answering, you MUST use the provided tools to search the knowledge base. "
+                "If reference files are available, their paths are stored in file_path. "
                 "When relevant documents are found, include the file paths in the answer. "
                 "Do not include scores in the answer. "
                 'If no relevant documents are found or an error occurs, reply with "No relevant documents were found." only.'

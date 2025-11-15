@@ -25,7 +25,7 @@ from .views.search import render_search_view
 def main() -> None:
     """Entry point for the Streamlit application."""
 
-    st.set_page_config(page_title="RAG System", page_icon="🧠", layout="wide")
+    st.set_page_config(page_title="RAG System", page_icon="📚", layout="wide")
     ensure_session_state()
 
     client = RestAPIClient(Config.raggify_base_url)

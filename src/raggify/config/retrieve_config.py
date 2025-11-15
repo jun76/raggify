@@ -5,6 +5,8 @@ from enum import StrEnum, auto
 
 from mashumaro import DataClassDictMixin
 
+__all__ = ["RetrieveMode"]
+
 
 class RetrieveMode(StrEnum):
     VECTOR_ONLY = auto()

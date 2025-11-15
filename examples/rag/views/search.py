@@ -222,7 +222,7 @@ def _render_search_view_text_video(client: RestAPIClient) -> None:
         client (RestAPIClient): raggify API client.
     """
     _render_search_section(
-        title="📝→📺 Search videos with text",
+        title="📝→🎬 Search videos with text",
         caption="Find videos similar to the query.",
         input_func=lambda: st.text_input("Search query", key="text_video_query"),
         button_label="🔎 Search",
@@ -236,7 +236,7 @@ def _render_search_view_text_video(client: RestAPIClient) -> None:
         feedback_key=FeedBack.FB_SEARCH_TEXT_VIDEO,
         result_key=SearchResult.SR_SEARCH_TEXT_VIDEO,
         result_renderer=lambda data: _render_query_results_video(
-            "📺 Search results", data
+            "🎬 Search results", data
         ),
     )
 
@@ -248,7 +248,7 @@ def _render_search_view_image_video(client: RestAPIClient) -> None:
         client (RestAPIClient): raggify API client.
     """
     _render_search_section(
-        title="🖼️→📺 Search videos with an image",
+        title="🖼️→🎬 Search videos with an image",
         caption="Upload an image to find similar videos.",
         input_func=lambda: st.file_uploader(
             "Select an image to search", key="image_video_query_uploader"
@@ -264,7 +264,7 @@ def _render_search_view_image_video(client: RestAPIClient) -> None:
         feedback_key=FeedBack.FB_SEARCH_IMAGE_VIDEO,
         result_key=SearchResult.SR_SEARCH_IMAGE_VIDEO,
         result_renderer=lambda data: _render_query_results_video(
-            "📺 Search results", data
+            "🎬 Search results", data
         ),
     )
 
@@ -276,7 +276,7 @@ def _render_search_view_audio_video(client: RestAPIClient) -> None:
         client (RestAPIClient): raggify API client.
     """
     _render_search_section(
-        title="🎤→📺 Search videos with audio",
+        title="🎤→🎬 Search videos with audio",
         caption="Upload audio to find matching videos.",
         input_func=lambda: st.file_uploader(
             "Select audio to search", key="audio_video_query_uploader"
@@ -292,7 +292,7 @@ def _render_search_view_audio_video(client: RestAPIClient) -> None:
         feedback_key=FeedBack.FB_SEARCH_AUDIO_VIDEO,
         result_key=SearchResult.SR_SEARCH_AUDIO_VIDEO,
         result_renderer=lambda data: _render_query_results_video(
-            "📺 Search results", data
+            "🎬 Search results", data
         ),
     )
 
@@ -304,7 +304,7 @@ def _render_search_view_video_video(client: RestAPIClient) -> None:
         client (RestAPIClient): raggify API client.
     """
     _render_search_section(
-        title="📺→📺 Search videos with a video",
+        title="🎬→🎬 Search videos with a video",
         caption="Upload a reference video to find similar clips.",
         input_func=lambda: st.file_uploader(
             "Select a video to search", key="video_video_query_uploader"
@@ -320,7 +320,7 @@ def _render_search_view_video_video(client: RestAPIClient) -> None:
         feedback_key=FeedBack.FB_SEARCH_VIDEO_VIDEO,
         result_key=SearchResult.SR_SEARCH_VIDEO_VIDEO,
         result_renderer=lambda data: _render_query_results_video(
-            "📺 Search results", data
+            "🎬 Search results", data
         ),
     )
 
@@ -700,10 +700,10 @@ def render_search_view(client: RestAPIClient) -> None:
         "Image 🖼️ → Image 🖼️": _render_search_view_image_image,
         "Text 📝 → Audio 🎤": _render_search_view_text_audio,
         "Audio 🎤 → Audio 🎤": _render_search_view_audio_audio,
-        "Text 📝 → Video 📺": _render_search_view_text_video,
-        "Image 🖼️ → Video 📺": _render_search_view_image_video,
-        "Audio 🎤 → Video 📺": _render_search_view_audio_video,
-        "Video 📺 → Video 📺": _render_search_view_video_video,
+        "Text 📝 → Video 🎬": _render_search_view_text_video,
+        "Image 🖼️ → Video 🎬": _render_search_view_image_video,
+        "Audio 🎤 → Video 🎬": _render_search_view_audio_video,
+        "Video 🎬 → Video 🎬": _render_search_view_video_video,
     }
     choice = st.sidebar.selectbox("Choose a search option.", list(choice_map.keys()))
 

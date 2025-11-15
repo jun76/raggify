@@ -9,6 +9,8 @@ from mashumaro import DataClassDictMixin
 
 from ..core.const import DEFAULT_WORKSPACE_PATH, PROJECT_NAME
 
+__all__ = ["VectorStoreProvider"]
+
 
 class VectorStoreProvider(StrEnum):
     CHROMA = auto()
