@@ -63,16 +63,18 @@ class Runtime:
         self._html_loader = None
 
     def build(self) -> None:
+        """各管理クラスのインスタンスを生成する。"""
         self._release()
         self.touch()
 
     def rebuild(self) -> None:
-        # メモリ上の設定値を生かす
+        """各管理クラスのインスタンスを再生成する。"""
+        # build との違いは、ランタイム経由で書き換えられたメモリ上の設定値を生かす点
         self._release(False)
         self.touch()
 
     def touch(self) -> None:
-        """各シングルトンの生成が未だであれば生成する。"""
+        """各管理クラスのインスタンス生成が未だであれば生成する。"""
         from .logger import configure_logging
 
         self.embed_manager
@@ -182,6 +184,26 @@ class Runtime:
                 self.document_store.store = pipe.docstore
         except Exception as e:
             logger.warning(f"failed to persist: {e}")
+
+    def delete_all_persisted_data(self) -> None:
+        """各ストアに保存されているデータを全件削除する。"""
+        from llama_index.core.ingestion.cache import DEFAULT_CACHE_NAME
+        from llama_index.core.storage.docstore.types import DEFAULT_PERSIST_FNAME
+
+        if self._use_local_workspace():
+            persist_dir = self.cfg.ingest.pipe_persist_dir
+            persist_path_cache = str(persist_dir / DEFAULT_CACHE_NAME)
+            persist_path_docstore = str(persist_dir / DEFAULT_PERSIST_FNAME)
+        else:
+            persist_path_cache = None
+            persist_path_docstore = None
+
+        if not self.vector_store.delete_all():
+            ref_doc_ids = self.document_store.get_ref_doc_ids()
+            self.vector_store.delete_nodes(ref_doc_ids)
+
+        self.ingest_cache.delete_all(persist_path_cache)
+        self.document_store.delete_all(persist_path_docstore)
 
     # 以下、シングルトンのインスタンス取得用
     @property

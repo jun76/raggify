@@ -151,19 +151,25 @@ class Loader:
             if isinstance(node, TextNode) and self._is_image_node(node):
                 image_nodes.append(
                     ImageNode(
-                        text=node.text, ref_doc_id=node.id_, metadata=node.metadata
+                        text=node.text,
+                        ref_doc_id=node.ref_doc_id,
+                        metadata=node.metadata,
                     )
                 )
             elif isinstance(node, TextNode) and self._is_audio_node(node):
                 audio_nodes.append(
                     AudioNode(
-                        text=node.text, ref_doc_id=node.id_, metadata=node.metadata
+                        text=node.text,
+                        ref_doc_id=node.ref_doc_id,
+                        metadata=node.metadata,
                     )
                 )
             elif isinstance(node, TextNode) and self._is_video_node(node):
                 video_nodes.append(
                     VideoNode(
-                        text=node.text, ref_doc_id=node.id_, metadata=node.metadata
+                        text=node.text,
+                        ref_doc_id=node.ref_doc_id,
+                        metadata=node.metadata,
                     )
                 )
             elif isinstance(node, TextNode):

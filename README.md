@@ -2,19 +2,19 @@
 
 <img alt="Image" src="media/Raggify.png" />
 
-**Raggify** is a Python library for building multimodal retrieval-augmented generation systems that run locally or as a service. It now ships with an asynchronous ingest pipeline for files, web pages, and URL lists, normalizes metadata, persists cache fingerprints to avoid redundant upserts, and keeps a document store in sync for BM25 / hybrid retrieval. Out of the box it prepares embeddings across text, **image, audio, and video modalities (not via text)** and orchestrates vector stores through llama-index.
+**Raggify** is a llama-index based Python library for building multimodal RAG(Retrieval-Augmented Generation) systems that run locally or as a service. It now ships with an asynchronous ingest pipeline for files, web pages, and URL lists, normalizes metadata, persists cache fingerprints to avoid redundant upserts, and keeps a document store in sync for BM25 / hybrid retrieval.
+
+Raggify is designed with the goal of **natively handling multimodal data—including images, audio, video, and other unknown future modalities—from the outset, rather than repeatedly modifying systems based on text modality.** It also serves to absorb various specification changes in the embedded models and client APIs provided by each AI provider.
 
 # 🔎 Overview
 
 <img alt="Image" src="media/system.png" />
 
+Raggify can be used in three ways: as a library, a CLI, and a server.
+
 A Typer CLI and REST client simplify ingestion and querying flows, while the FastAPI server exposes production-ready endpoints for applications. Async helpers keep pipelines responsive, and configuration dataclasses make it easy to tune providers, hardware targets, and rerankers for your deployment.
 
-Latest additions focus on:
-
-- A persistable ingest pipeline (`ingest.pipe_persist_dir` / `ingest.batch_size`) that keeps document stores, vector stores, and ingest caches in lock-step per modality.
-- Pluggable document-store and ingest-cache providers (Local, Redis, Postgres) powering BM25 as well as hybrid QueryFusion retrieval.
-- Bedrock-backed video embeddings plus text/image/audio/video query endpoints across the Python API, REST server, and MCP server.
+<img alt="Image" src="media/system2.png" />
 
 # 🚀 How to Install
 
@@ -58,7 +58,7 @@ Default providers (configured at /etc/raggify/config.yaml) are:
 "rerank_provider": "cohere",
 ```
 
-⚠️ To use the following features, additional installation from the Git repository is required.
+To use the following features, additional installation from the Git repository is required.
 
 CLIP
 
@@ -122,7 +122,7 @@ ingest_url(url)
 nodes = query_text_image("what is the main character in Batman")
 ```
 
-### ⚠️ To use local CLIP, need to install clip
+### ℹ️ To use local CLIP, need to install clip
 
 ```bash
 pip install clip@git+https://github.com/openai/CLIP.git
@@ -162,7 +162,7 @@ ingest_path_list(paths)
 nodes = query_text_audio("phone call")
 ```
 
-### ⚠️ To use audio features (local CLAP), need to install openai-whisper
+### ℹ️ To use audio features (local CLAP), need to install openai-whisper
 
 ```bash
 pip install openai-whisper@git+https://github.com/openai/whisper.git
@@ -188,7 +188,7 @@ raggify server
 from raggify.ingest import ingest_path
 from raggify.retrieve import query_image_video
 
-knowledge_path = "/path/to/movies"
+knowledge_path = "/path/to/videos"
 
 ingest_path(knowledge_path)
 
@@ -197,7 +197,7 @@ query_path = "/path/to/similar/image.png"
 nodes = query_image_video(query_path)
 ```
 
-### ⚠️ To use video features
+### ℹ️ To use video features
 
 Currently, **bedrock** is the only provider that allows direct video embedding.
 
@@ -215,6 +215,11 @@ AWS_REGION="us-east-1" # (default)
 # AWS_SESSION_TOKEN = "your-token" # (optional)
 ```
 
+⚠️ bedrock/nova-2-multimodal-embeddings-v1:0 Usage Restrictions
+
+- The video must be less than 30 seconds in length.
+- The request body (video binary + JSON) must not exceed 100 MB.
+
 ### ℹ️ `use_modality_fallback` option in config.yaml
 
 You can use `video_embed_provider: null` and `use_modality_fallback: true` to ingest videos as images + audio.
@@ -231,7 +236,10 @@ After initial startup according to the /etc/raggify/config.yaml, hot-reload the 
 from raggify.config.embed_config import EmbedProvider
 from raggify.config.vector_store_config import VectorStoreProvider
 from raggify.ingest import ingest_url
+from raggify.logger import configure_logging
 from raggify.runtime import get_runtime
+
+configure_logging()
 
 rt = get_runtime()
 rt.cfg.general.vector_store_provider = VectorStoreProvider.PGVECTOR
@@ -243,7 +251,7 @@ rt.rebuild()
 ingest_url("http://some.site.com")
 ```
 
-### ⚠️ To use pgvector
+### ℹ️ To use pgvector
 
 - start postgresql server
 - exec examples/init_pgdb.sh
@@ -265,7 +273,7 @@ docker run --name pgvector \
   -d pgvector/pgvector:pg17
 ```
 
-### ⚠️ To use redis
+### ℹ️ To use redis
 
 - start redis server
 - exec examples/init_redis.sh
@@ -554,7 +562,7 @@ video_embed_provider: null
 rerank_provider: flagembedding
 ```
 
-⚠️ Video embedding (native) is not supported yet in local. You can use `video_embed_provider: null` and `use_modality_fallback: true` to ingest videos as images + audio.
+Video embedding (native) is not supported yet in local. You can use `video_embed_provider: null` and `use_modality_fallback: true` to ingest videos as images + audio.
 
 ### Variety
 
@@ -587,6 +595,8 @@ log_level: warning
 ```python
 # For reference
 # Retrievers return this structure
+import json
+
 from llama_index.core.schema import NodeWithScore
 
 # For REST API Call to the server
@@ -605,7 +615,7 @@ from raggify.config import (
 from raggify.ingest import ingest_path, ingest_path_list, ingest_url, ingest_url_list
 
 # For logging
-from raggify.logger import logger
+from raggify.logger import configure_logging, logger
 
 # For retrieval
 from raggify.retrieve import (

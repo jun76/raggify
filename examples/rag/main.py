@@ -12,7 +12,7 @@ import streamlit as st
 
 from raggify.client import RestAPIClient
 
-from .config.config import Config
+from .config import Config
 from .logger import logger
 from .state import View, ensure_session_state
 from .views.admin import render_admin_view

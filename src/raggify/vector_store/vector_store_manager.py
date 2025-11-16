@@ -148,3 +148,39 @@ class VectorStoreManager:
                 )
             case _:
                 raise RuntimeError("unexpected modality")
+
+    def delete_nodes(self, ref_doc_ids: list[str]) -> None:
+        """ref_doc_id 指定でベクトルストアからノードを削除する。
+
+        Args:
+            ref_doc_ids (list[str]): 削除対象の ID
+        """
+        for mod in self.modality:
+            store = self.get_container(mod).store
+            try:
+                for ref_doc_id in ref_doc_ids:
+                    store.delete(ref_doc_id)
+            except Exception as e:
+                logger.warning(f"failed to delete {ref_doc_id}: {e}")
+                return
+
+        logger.info(f"{len(ref_doc_ids)} nodes are deleted from vector store")
+
+    def delete_all(self) -> bool:
+        """全ノードを削除する。
+
+        Redis は clear 未実装のため注意。
+
+        Returns:
+            bool: 削除成功で True
+        """
+        try:
+            for mod in self.modality:
+                self.get_container(mod).store.clear()
+        except Exception as e:
+            logger.warning(f"failed to clear: {e}")
+            return False
+
+        logger.info("all nodes are deleted from vector store")
+
+        return True

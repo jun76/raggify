@@ -68,3 +68,24 @@ class IngestCacheManager:
             raise RuntimeError(f"{modality} cache is not initialized")
 
         return cont
+
+    def delete_all(self, persist_path: Optional[str]) -> None:
+        """キャッシュを全削除する。
+
+        Args:
+            persist_path (Optional[str]): 永続化ディレクトリ
+        """
+        for mod in self.modality:
+            cache = self.get_container(mod).cache
+            if cache is None:
+                continue
+
+            try:
+                cache.clear()
+                if persist_path is not None:
+                    cache.persist(persist_path)
+            except Exception as e:
+                logger.warning(f"failed to clear: {e}")
+                return
+
+        logger.info("all caches are deleted from cache store")

@@ -79,4 +79,54 @@ class DocumentStoreManager:
 
         docs_attr = getattr(self.store, "docs", None)
 
-        return docs_attr is not None
+        if docs_attr is None:
+            return False
+
+        try:
+            return len(docs_attr) > 0
+        except Exception:
+            # 一部の docstore 実装は __len__ を持たない可能性があるため、
+            # 属性が存在するだけで True とみなす。
+            return True
+
+    def get_ref_doc_ids(self) -> list[str]:
+        """ストアに格納済みの全 ref_doc_info 情報を取得する。
+
+        Returns:
+            dict[str, RefDocInfo] | None: 辞書
+        """
+        if self.store is None:
+            return []
+
+        infos = self.store.get_all_ref_doc_info()
+        if infos is None:
+            return []
+
+        ids = []
+        for ref_doc_id in infos:
+            ids.append(ref_doc_id)
+
+        return ids
+
+    def delete_all(self, persist_path: Optional[str]) -> None:
+        """ストアに格納済みの全 ref_doc と関連ノードを削除する。
+
+        Args:
+            persist_path (Optional[str]): 永続化ディレクトリ
+        """
+        if self.store is None:
+            return
+
+        try:
+            for doc_id in list(self.store.docs.keys()):
+                self.store.delete_document(doc_id, raise_error=False)
+        except Exception as e:
+            logger.warning(f"failed to delete doc {doc_id}: {e}")
+
+        if persist_path is not None:
+            try:
+                self.store.persist(persist_path)
+            except Exception as e:
+                logger.warning(f"failed to persist: {e}")
+
+        logger.info("all documents are deleted from document store")

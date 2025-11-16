@@ -9,7 +9,7 @@ from raggify.client import RestAPIClient
 from raggify.core import Exts
 
 from ..agent import AgentExecutionError, RagAgentManager
-from ..config.config import Config
+from ..config import Config
 from ..state import View, set_view
 from .common import emojify_robot, save_uploaded_files
 
