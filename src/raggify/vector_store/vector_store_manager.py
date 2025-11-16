@@ -178,7 +178,7 @@ class VectorStoreManager:
             for mod in self.modality:
                 self.get_container(mod).store.clear()
         except Exception as e:
-            logger.warning(f"failed to clear: {e}")
+            logger.warning(f"failed to clear {mod} store: {e}")
             return False
 
         logger.info("all nodes are deleted from vector store")

@@ -93,7 +93,7 @@ class DocumentStoreManager:
         """ストアに格納済みの全 ref_doc_info 情報を取得する。
 
         Returns:
-            dict[str, RefDocInfo] | None: 辞書
+            list[str]: ref_doc_id のリスト
         """
         if self.store is None:
             return []
@@ -102,11 +102,7 @@ class DocumentStoreManager:
         if infos is None:
             return []
 
-        ids = []
-        for ref_doc_id in infos:
-            ids.append(ref_doc_id)
-
-        return ids
+        return list(infos.keys())
 
     def delete_all(self, persist_path: Optional[str]) -> None:
         """ストアに格納済みの全 ref_doc と関連ノードを削除する。
@@ -122,11 +118,12 @@ class DocumentStoreManager:
                 self.store.delete_document(doc_id, raise_error=False)
         except Exception as e:
             logger.warning(f"failed to delete doc {doc_id}: {e}")
+            return
+
+        logger.info("all documents are deleted from document store")
 
         if persist_path is not None:
             try:
                 self.store.persist(persist_path)
             except Exception as e:
                 logger.warning(f"failed to persist: {e}")
-
-        logger.info("all documents are deleted from document store")

@@ -634,16 +634,11 @@ def _render_query_results_video(title: str, result: dict[str, Any]) -> None:
         )  # Priority order
 
         st.divider()
-        if Exts.get_ext(uri=source) is Exts.MP4:
-            try:
-                st.video(source)
-            except Exception as e:
-                logger.warning(f"failed to render result video: {e}")
-                st.warning("Unable to play the embedded file.")
-        else:
-            msg = "streamlit video player only supports .mp4"
-            logger.warning(msg)
-            st.warning(msg)
+        try:
+            st.video(source)
+        except Exception as e:
+            logger.warning(f"failed to render result video: {e}")
+            st.warning("Unable to play the embedded file.")
 
         st.markdown("##### Source")
         st.write(source)

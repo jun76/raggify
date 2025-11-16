@@ -85,7 +85,7 @@ class IngestCacheManager:
                 if persist_path is not None:
                     cache.persist(persist_path)
             except Exception as e:
-                logger.warning(f"failed to clear: {e}")
+                logger.warning(f"failed to clear {mod} cache: {e}")
                 return
 
         logger.info("all caches are deleted from cache store")
