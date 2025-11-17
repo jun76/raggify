@@ -2,19 +2,23 @@
 
 <img alt="Image" src="media/Raggify.png" />
 
-**Raggify** is a llama-index based Python library for building multimodal RAG(Retrieval-Augmented Generation) systems that run locally or as a service. It now ships with an asynchronous ingest pipeline for files, web pages, and URL lists, normalizes metadata, persists cache fingerprints to avoid redundant upserts, and keeps a document store in sync for BM25 / hybrid retrieval.
+**Raggify** is a llama-index based Python library for building multimodal RAG(Retrieval-Augmented Generation) systems that run locally or as a service. It now ships with an asynchronous ingest pipeline for files, web pages, and URL lists, normalizes metadata, persists cache fingerprints to avoid redundant upserts, and keeps a document store in sync for BM25 / Vector hybrid retrieval.
 
-Raggify is designed with the goal of **natively handling multimodal data—including images, audio, video, and other unknown future modalities—from the outset, rather than repeatedly modifying systems based on text modality.** It also serves to absorb various specification changes in the embedded models and client APIs provided by each AI provider.
+Raggify is designed with the goal of **natively handling multimodal data—including images, audio, video, and other unknown future modalities—** from the outset, rather than repeatedly modifying systems based on text modality. It also serves to absorb various specification changes in the embedded models and client APIs provided by each AI provider.
 
 # 🔎 Overview
 
 <img alt="Image" src="media/system.png" />
 
-Raggify can be used in three ways: as a library, a CLI, and a server.
-
-A Typer CLI and REST client simplify ingestion and querying flows, while the FastAPI server exposes production-ready endpoints for applications. Async helpers keep pipelines responsive, and configuration dataclasses make it easy to tune providers, hardware targets, and rerankers for your deployment.
+Raggify can be used in three ways: as a library, a CLI, and a server. Common to each usage scenario, the **Runtime** module acts as an intermediary between the various management modules and the configuration values in **/etc/raggify/config.yaml** (detail is at the end).
 
 <img alt="Image" src="media/system2.png" />
+
+**Ingestion Phase**: Raggify ingests inputs from various modalities and file formats, accumulating them as a knowledge base.
+
+**Retrieval Phase**: Searches documents across modalities (e.g., searching videos using audio) and returns results in NodeWithScore format (llama_index.core.schema).
+
+Raggify is a tool for building multimodal RAG systems, but it does not directly support LLMs or agents. Instead, it focuses solely on the upstream processes of document ingestion and retrieval.
 
 # 🚀 How to Install
 
@@ -46,27 +50,30 @@ AWS_REGION="us-east-1" # (default)
 
 Default providers (configured at /etc/raggify/config.yaml) are:
 
+```bash
+raggify config | grep provider
+```
+
 ```yaml
 "vector_store_provider": "chroma",
 "document_store_provider": "local",
 "ingest_cache_provider": "local",
 "text_embed_provider": "openai",
 "image_embed_provider": "cohere",
-"audio_embed_provider": null,
-"video_embed_provider": null,
-"use_modality_fallback": false,
+"audio_embed_provider": "bedrock",
+"video_embed_provider": "bedrock",
 "rerank_provider": "cohere",
 ```
 
 To use the following features, additional installation from the Git repository is required.
 
-CLIP
+🖼️ local CLIP
 
 ```bash
 pip install clip@git+https://github.com/openai/CLIP.git
 ```
 
-CLAP
+🎤 local CLAP
 
 ```bash
 pip install openai-whisper@git+https://github.com/openai/whisper.git
@@ -74,9 +81,9 @@ pip install openai-whisper@git+https://github.com/openai/whisper.git
 
 # 📚 Use As Library
 
-## examples/ex01.py
+## 📝 examples/ex01.py
 
-### 🔎 Let's ingest and retrieve
+### Let's ingest and retrieve
 
 Ingest from some web sites, then, search text documents by text query.
 
@@ -105,9 +112,9 @@ for node in nodes:
     )
 ```
 
-## examples/ex02.py
+## 🖼️ examples/ex02.py
 
-### 🖼️ Image features
+### Image features
 
 Ingest from llamaindex wiki, then, search image documents by text query.
 
@@ -122,27 +129,23 @@ ingest_url(url)
 nodes = query_text_image("what is the main character in Batman")
 ```
 
-### ℹ️ To use local CLIP, need to install clip
+### To use local CLIP
+
+need to install clip
 
 ```bash
 pip install clip@git+https://github.com/openai/CLIP.git
 ```
 
-and set "audio_embed_provider" /etc/raggify/config.yaml:
+and set `audio_embed_provider` /etc/raggify/config.yaml:
 
 ```yaml
-"audio_embed_provider": CLIP
+audio_embed_provider: CLIP
 ```
 
-start (or reload) server.
+## 🎤 examples/ex03.py
 
-```bash
-raggify server
-```
-
-## examples/ex03.py
-
-### 🎤 Audio Features
+### Audio Features
 
 Ingest from some local files, then, search audio documents by text query.
 
@@ -153,7 +156,6 @@ from raggify.retrieve import query_text_audio
 paths = [
     "/path/to/sound.mp3",
     "/path/to/sound.wav",
-    "/path/to/sound.flac",
     "/path/to/sound.ogg",
 ]
 
@@ -162,27 +164,23 @@ ingest_path_list(paths)
 nodes = query_text_audio("phone call")
 ```
 
-### ℹ️ To use audio features (local CLAP), need to install openai-whisper
+### To use local CLAP
+
+need to install openai-whisper
 
 ```bash
 pip install openai-whisper@git+https://github.com/openai/whisper.git
 ```
 
-and set "audio_embed_provider" /etc/raggify/config.yaml:
+and set `audio_embed_provider` /etc/raggify/config.yaml:
 
 ```yaml
-"audio_embed_provider": CLAP
+audio_embed_provider: CLAP
 ```
 
-start (or reload) server.
+## 🎬 examples/ex04.py
 
-```bash
-raggify server
-```
-
-## examples/ex04.py
-
-### 🎬 Video Features
+### Video Features
 
 ```python
 from raggify.ingest import ingest_path
@@ -197,12 +195,12 @@ query_path = "/path/to/similar/image.png"
 nodes = query_image_video(query_path)
 ```
 
-### ℹ️ To use video features
+### To use video features
 
 Currently, **bedrock** is the only provider that allows direct video embedding.
 
 ```yaml
-"video_embed_provider": "bedrock"
+video_embed_provider: bedrock
 ```
 
 When using the video modality, please enter the following credentials in the .env file.
@@ -220,15 +218,15 @@ AWS_REGION="us-east-1" # (default)
 - The video must be less than 30 seconds in length.
 - The request body (video binary + JSON) must not exceed 100 MB.
 
-### ℹ️ `use_modality_fallback` option in config.yaml
+### `use_modality_fallback` option in config.yaml
 
 You can use `video_embed_provider: null` and `use_modality_fallback: true` to ingest videos as images + audio.
 
-Please note that using this fallback will result in, for example, 100 frames of a single video being stored in the image modality store. `use_modality_fallback` is `false` in default.
+Please note that using this fallback will result in, for example, hundreds frames of a single video being stored in the image modality store. `use_modality_fallback` is `false` in default.
 
-## examples/ex05.py
+## 🔄 examples/ex05.py
 
-### 🔄 Hot-reload Config
+### Hot-reload Config
 
 After initial startup according to the /etc/raggify/config.yaml, hot-reload the config values.
 
@@ -251,43 +249,7 @@ rt.rebuild()
 ingest_url("http://some.site.com")
 ```
 
-### ℹ️ To use pgvector
-
-- start postgresql server
-- exec examples/init_pgdb.sh
-  - for the first time: `./init_pgdb.sh`
-    - If you use native postgresql (not use docker), you also need to exec at first: \
-      `sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'raggify';"`
-  - If you want to reset db (drop all tables): `./init_pgdb.sh --reset`
-- set `pgvector_password` at /etc/raggify/config.yaml
-  - init_pgdb.sh set `raggify` as default password, so write it.
-
-Using Docker containers is easy.
-
-```bash
-docker run --name pgvector \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=raggify \
-  -e POSTGRES_DB=raggify \
-  -p 5432:5432 \
-  -d pgvector/pgvector:pg17
-```
-
-### ℹ️ To use redis
-
-- start redis server
-- exec examples/init_redis.sh
-  - for the first time: `./init_redis.sh`
-    - Only connection check. Optional.
-  - If you want to reset db (drop all tables): `./init_redis.sh --reset`
-- set `redis_password` at /etc/raggify/config.yaml
-  - init_redis.sh set `raggify` as default password, so write it.
-
-Using Docker containers is easy.
-
-```bash
-docker run --rm -p 6379:6379 --name redis-stack redis/redis-stack-server:latest
-```
+To use pgvector, See also [persisted data management](#-persisted-data-management).
 
 # 💻 Use As REST API Server
 
@@ -302,8 +264,11 @@ raggify server
 Now raggify server is online.
 <img src="media/server.png" />
 
-Accepted some commands.
+Accepted some commands via REST API.
 <img src="media/server2.png" />
+
+`Ctrl + c` to shutdown.
+<img src="media/shutdown.png" />
 
 ## 📚 Sample Client App
 
@@ -365,6 +330,8 @@ By feeding the previous search results to an LLM, you can complete this RAG sear
 
 # ⌨️ Use As CLI
 
+## raggify --help
+
 At first, run:
 
 ```bash
@@ -373,14 +340,30 @@ raggify --help
 
 <img alt="Image" src="media/cli.png" />
 
+## raggify config
+
 You can edit `/etc/raggify/config.yaml` to set default values, used by raggify runtime.
 <img alt="Image" src="media/config.png" />
 
 # 🤖️ Use As MCP Server
 
-You can also specify --mcp option when you up server, or edit config.yaml.
+## raggify server --mcp
 
 <img alt="Image" src="media/mcp_help.png" />
+
+You can also specify --mcp option when you up server,
+
+```bash
+raggify server --mcp
+```
+
+or edit config.yaml.
+
+```yaml
+mcp: true
+```
+
+## LM Studio
 
 For example, LM Studio mcp.json:
 
@@ -398,7 +381,110 @@ We were able to have the LLM use the tool as an MCP server.
 
 <img alt="Image" src="media/mcp.png" />
 
-# 🛠️ Configure
+# 💾 Persisted Data Management
+
+## Chroma / Local Persisted Directory
+
+When using the following settings, `~/.local/share/raggify` is used as the default persistent directory.
+
+```yaml
+vector_store_provider: chroma
+document_store_provider: local
+ingest_cache_provider: local
+```
+
+ℹ️ To delete all data, using `rm -rf ~/.local/share/raggify`.
+
+## Databases
+
+### Pgvector / Postgres
+
+When using the following settings, it is convenient to use a dedicated script `init_pgdb.sh`.
+
+```yaml
+vector_store_provider: pgvector
+document_store_provider: postgres
+ingest_cache_provider: postgres
+```
+
+- start postgresql server
+- exec examples/init_pgdb.sh
+  - for the first time: `./init_pgdb.sh`
+    - If you use native postgresql (not use docker), you also need to exec at first: \
+      `sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'raggify';"`
+  - If you want to reset db (drop all tables): `./init_pgdb.sh --reset`. Or manually execute DELETE queries against the database.
+- set `pgvector_password` at /etc/raggify/config.yaml
+  - init_pgdb.sh set `raggify` as default password, so write it.
+
+```yaml
+vector_store:
+  pgvector_host: localhost,
+  pgvector_port: 5432,
+  pgvector_database: raggify,
+  pgvector_user: raggify,
+  pgvector_password: raggify # default is null
+```
+
+```yaml
+document_store:
+  postgres_host: localhost,
+  postgres_port: 5432,
+  postgres_database: raggify,
+  postgres_user: raggify,
+  postgres_password: raggify # default is null
+ingest_cache:
+  # as above
+```
+
+Using Docker containers is easy.
+
+```bash
+docker run --name pgvector \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=raggify \
+  -e POSTGRES_DB=raggify \
+  -p 5432:5432 \
+  -d pgvector/pgvector:pg17
+```
+
+### Redis
+
+When using the following settings, it is convenient to use a dedicated script `init_redis.sh`.
+
+```yaml
+vector_store_provider: redis
+document_store_provider: redis
+ingest_cache_provider: redis
+```
+
+- start redis server
+- exec examples/init_redis.sh
+  - for the first time: `./init_redis.sh`
+    - Only connection check. Optional.
+  - If you want to reset db (drop all tables): `./init_redis.sh --reset`. Or manually execute DELETE queries against the database.
+- set `redis_password` at /etc/raggify/config.yaml
+  - init_redis.sh set `raggify` as default password, so write it.
+
+```yaml
+vector_store:
+  redis_host: localhost
+  redis_port: 6379
+document_store:
+ingest_cache:
+  # as above
+```
+
+Using Docker containers is easy.
+
+```bash
+docker run --rm -p 6379:6379 --name redis-stack redis/redis-stack-server:latest
+```
+
+## Note
+
+We also provide `Runtime.delete_all_persisted_data()` to delete all data. However, unexpected omissions may occur due to document ID inconsistencies or other issues, so we recommend using the `rm -rf ~/.local/share/raggify` or `./init_*.sh --reset` introduced in each chapter.
+
+# 🛠️ Configure / Specs
 
 ## /etc/raggify/config.yaml
 
@@ -417,8 +503,8 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 | `ingest_cache_provider`   | Ingest cache backend.                              | `local`      | `local`, `redis`, `postgres`.                                                  |
 | `text_embed_provider`     | Provider for text embeddings.                      | `openai`     | `openai`, `cohere`, `clip`(⚠️), `huggingface`, `voyage`, `bedrock`, or `null`. |
 | `image_embed_provider`    | Provider for image embeddings.                     | `cohere`     | `cohere`, `clip`(⚠️), `huggingface`, `voyage`, `bedrock`, or `null`.           |
-| `audio_embed_provider`    | Provider for audio embeddings.                     | `null`       | `clap`(⚠️), `bedrock`, or `null`.                                              |
-| `video_embed_provider`    | Provider for video embeddings.                     | `null`       | `bedrock` or `null`.                                                           |
+| `audio_embed_provider`    | Provider for audio embeddings.                     | `bedrock`    | `clap`(⚠️), `bedrock`, or `null`.                                              |
+| `video_embed_provider`    | Provider for video embeddings.                     | `bedrock`    | `bedrock` or `null`.                                                           |
 | `use_modality_fallback`   | Decompose unsupported media into lower modalities. | `false`      | `true` / `false`.                                                              |
 | `rerank_provider`         | Provider for reranking.                            | `cohere`     | `flagembedding`, `cohere`, or `null`.                                          |
 | `openai_base_url`         | Custom OpenAI-compatible endpoint.                 | `null`       | Any URL string or `null`.                                                      |
@@ -470,50 +556,50 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 
 ### Embed
 
-| Parameter                             | Description                                 | Default                                    | Allowed values / examples                                                                      |
-| ------------------------------------- | ------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| `openai_embed_model_text.name`        | OpenAI text embed model.                    | `text-embedding-3-small`                   | Fixed model name.                                                                              |
-| `openai_embed_model_text.alias`       | Alias for OpenAI text embed model.          | `te3s`                                     | Any string.                                                                                    |
-| `openai_embed_model_text.dim`         | Dimension of OpenAI text embeddings.        | `1536`                                     | Fixed value.                                                                                   |
-| `cohere_embed_model_text.name`        | Cohere text embed model.                    | `embed-v4.0`                               | Fixed model name.                                                                              |
-| `cohere_embed_model_text.alias`       | Alias for Cohere text embed model.          | `emv4`                                     | Any string.                                                                                    |
-| `cohere_embed_model_text.dim`         | Dimension of Cohere text embeddings.        | `1536`                                     | Fixed value.                                                                                   |
-| `clip_embed_model_text.name`          | CLIP text embed model.                      | `ViT-B/32`                                 | Fixed model name.                                                                              |
-| `clip_embed_model_text.alias`         | Alias for CLIP text embed model.            | `vi32`                                     | Any string.                                                                                    |
-| `clip_embed_model_text.dim`           | Dimension of CLIP text embeddings.          | `512`                                      | Fixed value.                                                                                   |
-| `huggingface_embed_model_text.name`   | Hugging Face text embed model.              | `intfloat/multilingual-e5-base`            | Fixed model name.                                                                              |
-| `huggingface_embed_model_text.alias`  | Alias for Hugging Face text embed model.    | `imeb`                                     | Any string.                                                                                    |
-| `huggingface_embed_model_text.dim`    | Dimension of Hugging Face text embeddings.  | `768`                                      | Fixed value.                                                                                   |
-| `voyage_embed_model_text.name`        | Voyage text embed model.                    | `voyage-3.5`                               | Fixed model name.                                                                              |
-| `voyage_embed_model_text.alias`       | Alias for Voyage text embed model.          | `vo35`                                     | Any string.                                                                                    |
-| `voyage_embed_model_text.dim`         | Dimension of Voyage text embeddings.        | `2048`                                     | Fixed value.                                                                                   |
-| `bedrock_embed_model_text.name`       | Bedrock text embed model.                   | `amazon.nova-2-multimodal-embeddings-v1:0` | Fixed model name.                                                                              |
-| `bedrock_embed_model_text.alias`      | Alias for Bedrock text embed model.         | `n2v1`                                     | Any string.                                                                                    |
-| `bedrock_embed_model_text.dim`        | Dimension of Bedrock text embeddings.       | `1024`                                     | Fixed value.                                                                                   |
-| `cohere_embed_model_image.name`       | Cohere image embed model.                   | `embed-v4.0`                               | Fixed model name.                                                                              |
-| `cohere_embed_model_image.alias`      | Alias for Cohere image embed model.         | `emv4`                                     | Any string.                                                                                    |
-| `cohere_embed_model_image.dim`        | Dimension of Cohere image embeddings.       | `1536`                                     | Fixed value.                                                                                   |
-| `clip_embed_model_image.name`         | CLIP image embed model.                     | `ViT-B/32`                                 | Fixed model name.                                                                              |
-| `clip_embed_model_image.alias`        | Alias for CLIP image embed model.           | `vi32`                                     | Any string.                                                                                    |
-| `clip_embed_model_image.dim`          | Dimension of CLIP image embeddings.         | `512`                                      | Fixed value.                                                                                   |
-| `huggingface_embed_model_image.name`  | Hugging Face image embed model.             | `llamaindex/vdr-2b-multi-v1`               | Fixed model name.                                                                              |
-| `huggingface_embed_model_image.alias` | Alias for Hugging Face image embed model.   | `v2m1`                                     | Any string.                                                                                    |
-| `huggingface_embed_model_image.dim`   | Dimension of Hugging Face image embeddings. | `1536`                                     | Fixed value.                                                                                   |
-| `voyage_embed_model_image.name`       | Voyage image embed model.                   | `voyage-multimodal-3`                      | Fixed model name.                                                                              |
-| `voyage_embed_model_image.alias`      | Alias for Voyage image embed model.         | `vom3`                                     | Any string.                                                                                    |
-| `voyage_embed_model_image.dim`        | Dimension of Voyage image embeddings.       | `1024`                                     | Fixed value.                                                                                   |
-| `bedrock_embed_model_image.name`      | Bedrock image embed model.                  | `amazon.nova-2-multimodal-embeddings-v1:0` | Fixed model name.                                                                              |
-| `bedrock_embed_model_image.alias`     | Alias for Bedrock image embed model.        | `n2v1`                                     | Any string.                                                                                    |
-| `bedrock_embed_model_image.dim`       | Dimension of Bedrock image embeddings.      | `1024`                                     | Fixed value.                                                                                   |
-| `clap_embed_model_audio.name`         | CLAP audio embed model.                     | `effect_varlen`                            | `effect_short`, `effect_varlen`, `music`, `speech`, `general` (last 3 pending implementation). |
-| `clap_embed_model_audio.alias`        | Alias for CLAP audio embed model.           | `efvl`                                     | Any string.                                                                                    |
-| `clap_embed_model_audio.dim`          | Dimension of CLAP audio embeddings.         | `512`                                      | Fixed value.                                                                                   |
-| `bedrock_embed_model_audio.name`      | Bedrock audio embed model.                  | `amazon.nova-2-multimodal-embeddings-v1:0` | Fixed model name.                                                                              |
-| `bedrock_embed_model_audio.alias`     | Alias for Bedrock audio embed model.        | `n2v1`                                     | Any string.                                                                                    |
-| `bedrock_embed_model_audio.dim`       | Dimension of Bedrock audio embeddings.      | `1024`                                     | Fixed value.                                                                                   |
-| `bedrock_embed_model_video.name`      | Bedrock video embed model.                  | `amazon.nova-2-multimodal-embeddings-v1:0` | Fixed model name.                                                                              |
-| `bedrock_embed_model_video.alias`     | Alias for Bedrock video embed model.        | `n2v1`                                     | Any string.                                                                                    |
-| `bedrock_embed_model_video.dim`       | Dimension of Bedrock video embeddings.      | `1024`                                     | Fixed value.                                                                                   |
+| Parameter                             | Description                                 | Default                                    | Allowed values / examples                                                                          |
+| ------------------------------------- | ------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `openai_embed_model_text.name`        | OpenAI text embed model.                    | `text-embedding-3-small`                   | Fixed model name.                                                                                  |
+| `openai_embed_model_text.alias`       | Alias for OpenAI text embed model.          | `te3s`                                     | Any string.                                                                                        |
+| `openai_embed_model_text.dim`         | Dimension of OpenAI text embeddings.        | `1536`                                     | Fixed value.                                                                                       |
+| `cohere_embed_model_text.name`        | Cohere text embed model.                    | `embed-v4.0`                               | Fixed model name.                                                                                  |
+| `cohere_embed_model_text.alias`       | Alias for Cohere text embed model.          | `emv4`                                     | Any string.                                                                                        |
+| `cohere_embed_model_text.dim`         | Dimension of Cohere text embeddings.        | `1536`                                     | Fixed value.                                                                                       |
+| `clip_embed_model_text.name`          | CLIP text embed model.                      | `ViT-B/32`                                 | Fixed model name.                                                                                  |
+| `clip_embed_model_text.alias`         | Alias for CLIP text embed model.            | `vi32`                                     | Any string.                                                                                        |
+| `clip_embed_model_text.dim`           | Dimension of CLIP text embeddings.          | `512`                                      | Fixed value.                                                                                       |
+| `huggingface_embed_model_text.name`   | Hugging Face text embed model.              | `intfloat/multilingual-e5-base`            | Fixed model name.                                                                                  |
+| `huggingface_embed_model_text.alias`  | Alias for Hugging Face text embed model.    | `imeb`                                     | Any string.                                                                                        |
+| `huggingface_embed_model_text.dim`    | Dimension of Hugging Face text embeddings.  | `768`                                      | Fixed value.                                                                                       |
+| `voyage_embed_model_text.name`        | Voyage text embed model.                    | `voyage-3.5`                               | Fixed model name.                                                                                  |
+| `voyage_embed_model_text.alias`       | Alias for Voyage text embed model.          | `vo35`                                     | Any string.                                                                                        |
+| `voyage_embed_model_text.dim`         | Dimension of Voyage text embeddings.        | `2048`                                     | Fixed value.                                                                                       |
+| `bedrock_embed_model_text.name`       | Bedrock text embed model.                   | `amazon.nova-2-multimodal-embeddings-v1:0` | Fixed model name.                                                                                  |
+| `bedrock_embed_model_text.alias`      | Alias for Bedrock text embed model.         | `n2v1`                                     | Any string.                                                                                        |
+| `bedrock_embed_model_text.dim`        | Dimension of Bedrock text embeddings.       | `1024`                                     | Fixed value.                                                                                       |
+| `cohere_embed_model_image.name`       | Cohere image embed model.                   | `embed-v4.0`                               | Fixed model name.                                                                                  |
+| `cohere_embed_model_image.alias`      | Alias for Cohere image embed model.         | `emv4`                                     | Any string.                                                                                        |
+| `cohere_embed_model_image.dim`        | Dimension of Cohere image embeddings.       | `1536`                                     | Fixed value.                                                                                       |
+| `clip_embed_model_image.name`         | CLIP image embed model.                     | `ViT-B/32`                                 | Fixed model name.                                                                                  |
+| `clip_embed_model_image.alias`        | Alias for CLIP image embed model.           | `vi32`                                     | Any string.                                                                                        |
+| `clip_embed_model_image.dim`          | Dimension of CLIP image embeddings.         | `512`                                      | Fixed value.                                                                                       |
+| `huggingface_embed_model_image.name`  | Hugging Face image embed model.             | `llamaindex/vdr-2b-multi-v1`               | Fixed model name.                                                                                  |
+| `huggingface_embed_model_image.alias` | Alias for Hugging Face image embed model.   | `v2m1`                                     | Any string.                                                                                        |
+| `huggingface_embed_model_image.dim`   | Dimension of Hugging Face image embeddings. | `1536`                                     | Fixed value.                                                                                       |
+| `voyage_embed_model_image.name`       | Voyage image embed model.                   | `voyage-multimodal-3`                      | Fixed model name.                                                                                  |
+| `voyage_embed_model_image.alias`      | Alias for Voyage image embed model.         | `vom3`                                     | Any string.                                                                                        |
+| `voyage_embed_model_image.dim`        | Dimension of Voyage image embeddings.       | `1024`                                     | Fixed value.                                                                                       |
+| `bedrock_embed_model_image.name`      | Bedrock image embed model.                  | `amazon.nova-2-multimodal-embeddings-v1:0` | Fixed model name.                                                                                  |
+| `bedrock_embed_model_image.alias`     | Alias for Bedrock image embed model.        | `n2v1`                                     | Any string.                                                                                        |
+| `bedrock_embed_model_image.dim`       | Dimension of Bedrock image embeddings.      | `1024`                                     | Fixed value.                                                                                       |
+| `clap_embed_model_audio.name`         | CLAP audio embed model.                     | `effect_varlen`                            | `effect_short`, `effect_varlen`, ~~`music`, `speech`, `general`~~ (last 3 pending implementation). |
+| `clap_embed_model_audio.alias`        | Alias for CLAP audio embed model.           | `efvl`                                     | Any string.                                                                                        |
+| `clap_embed_model_audio.dim`          | Dimension of CLAP audio embeddings.         | `512`                                      | Fixed value.                                                                                       |
+| `bedrock_embed_model_audio.name`      | Bedrock audio embed model.                  | `amazon.nova-2-multimodal-embeddings-v1:0` | Fixed model name.                                                                                  |
+| `bedrock_embed_model_audio.alias`     | Alias for Bedrock audio embed model.        | `n2v1`                                     | Any string.                                                                                        |
+| `bedrock_embed_model_audio.dim`       | Dimension of Bedrock audio embeddings.      | `1024`                                     | Fixed value.                                                                                       |
+| `bedrock_embed_model_video.name`      | Bedrock video embed model.                  | `amazon.nova-2-multimodal-embeddings-v1:0` | Fixed model name.                                                                                  |
+| `bedrock_embed_model_video.alias`     | Alias for Bedrock video embed model.        | `n2v1`                                     | Any string.                                                                                        |
+| `bedrock_embed_model_video.dim`       | Dimension of Bedrock video embeddings.      | `1024`                                     | Fixed value.                                                                                       |
 
 ### Ingest
 
@@ -560,9 +646,14 @@ image_embed_provider: clip
 audio_embed_provider: clap
 video_embed_provider: null
 rerank_provider: flagembedding
+use_modality_fallback: true
+device: cuda
 ```
 
-Video embedding (native) is not supported yet in local. You can use `video_embed_provider: null` and `use_modality_fallback: true` to ingest videos as images + audio.
+Native video embedding is not supported yet in local (please tell us when a local model becomes available!).
+You can use `video_embed_provider: null` and `use_modality_fallback: true` to ingest videos as images + audio.
+
+Due to the heavy processing load, we recommend using a GPU (`device: cuda`).
 
 ### Variety
 
@@ -575,6 +666,7 @@ image_embed_provider: voyage
 audio_embed_provider: clap
 video_embed_provider: bedrock
 rerank_provider: cohere
+device: cuda
 ```
 
 ### Adjust Web Scraping
@@ -634,11 +726,19 @@ from raggify.retrieve import (
 from raggify.runtime import get_runtime
 ```
 
+## Supported file extensions
+
+- Image: `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`
+- Audio: `.mp3`, `.wav`, `.ogg`
+- Video: `.mp4`, `.mov`, `.mkv`, `.webm`, `.flv`, `.mpeg`, `.mpg`, `.wmv`, `.3gp`,
+- Text: `.txt`, `.text`, `.md`, `.json`, and other files(e.g. .html) which default file reader attempted to read as a text file as a fallback operation.
+
 # See Also
 
 ## Home Page
 
-- [マルチモーダルでローカルな RAG 基盤サーバを作ってみた](https://qiita.com/jun76/items/f2e392f530e24a6a8903)
+- (coming soon)
+- The predecessor of Raggify: [マルチモーダルでローカルな RAG 基盤サーバを作ってみた](https://qiita.com/jun76/items/f2e392f530e24a6a8903)
 
 ## Logo and Branding
 

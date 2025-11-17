@@ -24,8 +24,8 @@ class GeneralConfig(DataClassDictMixin):
     ingest_cache_provider: IngestCacheProvider = IngestCacheProvider.LOCAL
     text_embed_provider: Optional[EmbedProvider] = EmbedProvider.OPENAI
     image_embed_provider: Optional[EmbedProvider] = EmbedProvider.COHERE
-    audio_embed_provider: Optional[EmbedProvider] = None
-    video_embed_provider: Optional[EmbedProvider] = None
+    audio_embed_provider: Optional[EmbedProvider] = EmbedProvider.BEDROCK
+    video_embed_provider: Optional[EmbedProvider] = EmbedProvider.BEDROCK
     use_modality_fallback: bool = False
     rerank_provider: Optional[RerankProvider] = RerankProvider.COHERE
     openai_base_url: Optional[str] = None

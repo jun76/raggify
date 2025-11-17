@@ -6,7 +6,6 @@ from raggify.retrieve import query_text_audio
 paths = [
     "/path/to/sound.mp3",
     "/path/to/sound.wav",
-    "/path/to/sound.flac",
     "/path/to/sound.ogg",
 ]
 

@@ -9,7 +9,6 @@ class Exts:
     PNG: str = ".png"
     WAV: str = ".wav"
     PDF: str = ".pdf"
-    MP4: str = ".mp4"
 
     # 基本的に reader(llama_index.core.readers.file.base._try_loading_included_file_formats)
     # のサポートする拡張子に追従する。
@@ -17,13 +16,23 @@ class Exts:
     # 読み込もうとするため、逆に .txt 等のテキストファイルの拡張子は明記されていない点に注意。
 
     # base64 エンコーディングしてマルチモーダル（画像）の埋め込みモデルに渡せる拡張子
-    IMAGE: set[str] = {".gif", ".jpg", PNG, ".jpeg", ".webp"}
+    IMAGE: set[str] = {PNG, ".jpg", ".jpeg", ".gif", ".webp"}
 
     # マルチモーダル（音声）の埋め込みモデルに渡せる拡張子
-    AUDIO: set[str] = {WAV, ".flac", ".ogg", ".mp3"}
+    AUDIO: set[str] = {".mp3", WAV, ".ogg"}
 
     # マルチモーダル（動画）の埋め込みモデルに渡せる拡張子
-    VIDEO: set[str] = {".wmv", MP4, ".avi"}
+    VIDEO: set[str] = {
+        ".mp4",
+        ".mov",
+        ".mkv",
+        ".webm",
+        ".flv",
+        ".mpeg",
+        ".mpg",
+        ".wmv",
+        ".3gp",
+    }
 
     # サイトマップの抽出判定に使用する拡張子
     SITEMAP: set[str] = {".xml"}
