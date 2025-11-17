@@ -68,10 +68,20 @@ class FileLoader(Loader):
 
         try:
             path = Path(root).absolute()
+            allowed_exts = set(Exts.FETCH_TARGET) | set(
+                _rt().cfg.ingest.additional_exts
+            )
+            if path.is_file():
+                ext = Exts.get_ext(root)
+                if ext not in allowed_exts:
+                    logger.warning(f"skip unsupported extension: {ext}")
+                    return [], [], [], []
+
             reader = SimpleDirectoryReader(
                 input_dir=root if path.is_dir() else None,
                 input_files=[root] if path.is_file() else None,
                 recursive=True,
+                required_exts=list(allowed_exts),
                 file_extractor=self._readers,
                 raise_on_error=True,
             )

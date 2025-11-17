@@ -57,6 +57,8 @@ class Exts:
         ".text",
         ".md",
         ".json",
+        ".html",
+        ".tex",
     }
     FETCH_TARGET: set[str] = (
         IMAGE
