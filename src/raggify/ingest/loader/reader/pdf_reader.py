@@ -35,7 +35,7 @@ class MultiPDFReader(BaseReader):
             return []
 
         if not Exts.endswith_ext(path, Exts.PDF):
-            logger.warning(f"unsupported ext. {' '.join(Exts.PDF)} is allowed.")
+            logger.warning(f"unsupported ext. {Exts.PDF} is allowed.")
             return []
 
         try:

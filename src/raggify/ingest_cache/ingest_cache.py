@@ -138,7 +138,7 @@ def _postgres(cfg: IngestCacheConfig, table_name: str) -> IngestCacheContainer:
     from .ingest_cache_manager import IngestCacheContainer
 
     return IngestCacheContainer(
-        provider_name=IngestCacheProvider.REDIS,
+        provider_name=IngestCacheProvider.POSTGRES,
         cache=IngestionCache(
             cache=PostgresKVStore.from_params(
                 host=cfg.postgres_host,
