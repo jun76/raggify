@@ -28,19 +28,19 @@ class TextEncoderModel(StrEnum):
 
 
 class ClapEmbedding(AudioEmbedding):
-    """LAION-AI CLAP 埋め込み専用クラス
+    """Embedding class dedicated to LAION-AI CLAP.
 
-    MultiModalEmbedding を参考に実装。
-    MultiModalEmbedding 自身に音声埋め込みサポートがあれば良いが
-    未だ無いので BaseEmbedding --> AudioEmbedding を基底として実装する。
+    Implemented with reference to MultiModalEmbedding;
+    uses BaseEmbedding -> AudioEmbedding
+    because MultiModalEmbedding lacks audio support.
     """
 
     @classmethod
     def class_name(cls) -> str:
-        """クラス名
+        """Class name.
 
         Returns:
-            str: クラス名
+            str: Class name.
         """
         return "ClapEmbedding"
 
@@ -50,11 +50,11 @@ class ClapEmbedding(AudioEmbedding):
         device: str = "cuda",
         embed_batch_size: int = 8,
     ) -> None:
-        """コンストラクタ
+        """Constructor.
 
         Args:
-            model_name (str, optional): モデル名。未整備のため、ModelName として独自定義。Defaults to "general".
-            device (str, optional): 埋め込みデバイス。Defaults to "cuda".
+            model_name (str, optional): Model name (custom enum here). Defaults to "general".
+            device (str, optional): Embedding device. Defaults to "cuda".
         """
         import laion_clap
 
@@ -85,61 +85,61 @@ class ClapEmbedding(AudioEmbedding):
         self._model.load_ckpt(model_id=model_id)
 
     async def _aget_query_embedding(self, query: str) -> Embedding:
-        """クエリ文字列の非同期埋め込みを行う。
+        """Embed a query string asynchronously.
 
         Args:
-            query (str): クエリ文字列
+            query (str): Query string.
 
         Returns:
-            Embedding: 埋め込みベクトル
+            Embedding: Embedding vector.
         """
         return await asyncio.to_thread(self._get_query_embedding, query)
 
     def _get_text_embedding(self, text: str) -> Embedding:
-        """単一テキストの同期埋め込みを行う。
+        """Embed a single text synchronously.
 
         Args:
-            text (str): テキスト
+            text (str): Text content.
 
         Returns:
-            Embedding: 埋め込みベクトル
+            Embedding: Embedding vector.
         """
         return self._get_text_embeddings([text])[0]
 
     def _get_text_embeddings(self, texts: list[str]) -> list[Embedding]:
-        """複数テキストの同期埋め込みを行う。
+        """Embed multiple texts synchronously.
 
         Args:
-            texts (list[str]): テキスト
+            texts (list[str]): Texts.
 
         Returns:
-            list[Embedding]: 埋め込みベクトル
+            list[Embedding]: Embedding vectors.
         """
         vecs = self._model.get_text_embedding(x=texts)
 
         return [vec.tolist() for vec in vecs]
 
     def _get_query_embedding(self, query: str) -> Embedding:
-        """クエリ文字列の同期埋め込みを行う。
+        """Embed a query string synchronously.
 
         Args:
-            query (str): クエリ文字列
+            query (str): Query string.
 
         Returns:
-            Embedding: 埋め込みベクトル
+            Embedding: Embedding vector.
         """
         return self._get_text_embedding(query)
 
     def _get_audio_embeddings(
         self, audio_file_paths: list[AudioType]
     ) -> list[Embedding]:
-        """LAION-AI CLAP の同期 API 呼び出しラッパー。
+        """Synchronous wrapper for the CLAP audio embedding API.
 
         Args:
-            audio_file_paths (list[AudioType]): 音声ファイルパス
+            audio_file_paths (list[AudioType]): Audio file paths.
 
         Returns:
-            list[Embedding]: 埋め込みベクトル
+            list[Embedding]: Embedding vectors.
         """
         vecs = self._model.get_audio_embedding_from_filelist(x=audio_file_paths)
 
@@ -148,16 +148,15 @@ class ClapEmbedding(AudioEmbedding):
     async def aget_audio_embedding_batch(
         self, audio_file_paths: list[AudioType], show_progress: bool = False
     ) -> list[Embedding]:
-        """音声埋め込みの非同期バッチインタフェース。
-
-        MultiModalEmbedding の aget_image_embedding_batch がベース。
+        """Async batch interface for audio embeddings
+        (modeled after `aget_image_embedding_batch`).
 
         Args:
-            audio_file_paths (list[AudioType]): 音声ファイルパス
-            show_progress (bool, optional): 進捗の表示。Defaults to False.
+            audio_file_paths (list[AudioType]): Audio file paths.
+            show_progress (bool, optional): Show progress. Defaults to False.
 
         Returns:
-            list[Embedding]: 埋め込みベクトル
+            list[Embedding]: Embedding vectors.
         """
         from llama_index.core.callbacks.schema import CBEventType, EventPayload
 
@@ -217,14 +216,14 @@ class ClapEmbedding(AudioEmbedding):
     async def _aget_audio_embeddings(
         self, audio_file_paths: list[AudioType]
     ) -> list[Embedding]:
-        """LAION-AI CLAP の非同期 API 呼び出しラッパー。
+        """Async wrapper for the CLAP audio embedding API.
 
-        この関数の実装時点で、LAION-AI CLAP には未だ同期インタフェースしかない
+        At implementation time, only synchronous CLAP interfaces exist.
 
         Args:
-            audio_file_paths (list[AudioType]): 音声ファイルパス
+            audio_file_paths (list[AudioType]): Audio file paths.
 
         Returns:
-            list[Embedding]: 埋め込みベクトル
+            list[Embedding]: Embedding vectors.
         """
         return await asyncio.to_thread(self._get_audio_embeddings, audio_file_paths)

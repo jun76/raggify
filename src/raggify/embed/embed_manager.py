@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class EmbedContainer:
-    """モダリティ毎の埋め込み関連パラメータを集約"""
+    """Container for embedding-related parameters per modality."""
 
     provider_name: str
     embed: BaseEmbedding
@@ -28,13 +28,14 @@ class EmbedContainer:
 
 
 class EmbedManager:
-    """埋め込みの管理クラス。"""
+    """Manager class for embeddings."""
 
     def __init__(self, conts: dict[Modality, EmbedContainer]) -> None:
-        """コンストラクタ
+        """Constructor.
 
         Args:
-            conts (dict[Modality, EmbedContainer]): 埋め込みコンテナの辞書
+            conts (dict[Modality, EmbedContainer]):
+                Mapping of modality to embedding container.
         """
         self._conts = conts
 
@@ -51,81 +52,81 @@ class EmbedManager:
 
     @property
     def name(self) -> str:
-        """プロバイダ名。
+        """Provider names.
 
         Returns:
-            str: プロバイダ名
+            str: Provider names.
         """
         return ", ".join([cont.provider_name for cont in self._conts.values()])
 
     @property
     def modality(self) -> set[Modality]:
-        """この埋め込み管理がサポートするモダリティ一覧。
+        """Modalities supported by this embedding manager.
 
         Returns:
-            set[Modality]: モダリティ一覧
+            set[Modality]: Modalities.
         """
         return set(self._conts.keys())
 
     @property
     def space_key_text(self) -> str:
-        """テキスト埋め込みの空間キー。
+        """Space key for text embeddings.
 
         Raises:
-            RuntimeError: 未初期化
+            RuntimeError: If uninitialized.
 
         Returns:
-            str: 空間キー
+            str: Space key.
         """
         return self.get_container(Modality.TEXT).space_key
 
     @property
     def space_key_image(self) -> str:
-        """画像埋め込みの空間キー。
+        """Space key for image embeddings.
 
         Raises:
-            RuntimeError: 未初期化
+            RuntimeError: If uninitialized.
 
         Returns:
-            str: 空間キー
+            str: Space key.
         """
         return self.get_container(Modality.IMAGE).space_key
 
     @property
     def space_key_audio(self) -> str:
-        """音声埋め込みの空間キー。
+        """Space key for audio embeddings.
 
         Raises:
-            RuntimeError: 未初期化
+            RuntimeError: If uninitialized.
 
         Returns:
-            str: 空間キー
+            str: Space key.
         """
         return self.get_container(Modality.AUDIO).space_key
 
     @property
     def space_key_video(self) -> str:
-        """動画埋め込みの空間キー。
+        """Space key for video embeddings.
 
         Raises:
-            RuntimeError: 未初期化
+            RuntimeError: If uninitialized.
 
         Returns:
-            str: 空間キー
+            str: Space key.
         """
         return self.get_container(Modality.VIDEO).space_key
 
     def get_container(self, modality: Modality) -> EmbedContainer:
-        """モダリティ別の埋め込みコンテナを取得する。
+        """Get the embedding container for a modality.
 
         Args:
-            modality (Modality): モダリティ
+            modality (Modality): Modality.
 
         Raises:
-            RuntimeError: 未初期化
+            RuntimeError: If uninitialized.
 
         Returns:
-            EmbedContainer: 埋め込みコンテナ
+            EmbedContainer: Embedding container.
         """
         cont = self._conts.get(modality)
         if cont is None:
@@ -134,16 +135,16 @@ class EmbedManager:
         return cont
 
     async def aembed_text(self, texts: list[str]) -> list[Embedding]:
-        """テキストの埋め込みベクトルを取得する。
+        """Get embedding vectors for text asynchronously.
 
         Args:
-            texts (list[str]): テキスト
+            texts (list[str]): Texts to embed.
 
         Raises:
-            RuntimeError: 未初期化
+            RuntimeError: If uninitialized.
 
         Returns:
-            list[Embedding]: 埋め込みベクトル
+            list[Embedding]: Embedding vectors.
         """
         if Modality.TEXT not in self.modality:
             logger.warning("no text embedding is specified")
@@ -160,16 +161,16 @@ class EmbedManager:
         return dims
 
     async def aembed_image(self, paths: list[ImageType]) -> list[Embedding]:
-        """画像の埋め込みベクトルを取得する。
+        """Get embedding vectors for images asynchronously.
 
         Args:
-            paths (list[ImageType]): 画像のパス（または base64 画像の直渡しでも OK）
+            paths (list[ImageType]): Image paths or base64 payloads.
 
         Raises:
-            RuntimeError: 未初期化または画像埋め込み器でない
+            RuntimeError: If uninitialized or not an image embedder.
 
         Returns:
-            list[Embedding]: 埋め込みベクトル
+            list[Embedding]: Embedding vectors.
         """
         from llama_index.core.embeddings.multi_modal_base import MultiModalEmbedding
 
@@ -192,16 +193,16 @@ class EmbedManager:
         return dims
 
     async def aembed_audio(self, paths: list[AudioType]) -> list[Embedding]:
-        """音声の埋め込みベクトルを取得する。
+        """Get embedding vectors for audio asynchronously.
 
         Args:
-            paths (list[AudioType]): 音声のパス
+            paths (list[AudioType]): Audio paths.
 
         Raises:
-            RuntimeError: 未初期化または音声埋め込み器でない
+            RuntimeError: If uninitialized or not an audio embedder.
 
         Returns:
-            list[Embedding]: 埋め込みベクトル
+            list[Embedding]: Embedding vectors.
         """
         from ..llama.embeddings.multi_modal_base import AudioEmbedding
 
@@ -224,16 +225,16 @@ class EmbedManager:
         return dims
 
     async def aembed_video(self, paths: list[VideoType]) -> list[Embedding]:
-        """動画の埋め込みベクトルを取得する。
+        """Get embedding vectors for video asynchronously.
 
         Args:
-            paths (list[VideoType]): 動画のパス
+            paths (list[VideoType]): Video paths.
 
         Raises:
-            RuntimeError: 未初期化または動画埋め込み器でない
+            RuntimeError: If uninitialized or not a video embedder.
 
         Returns:
-            list[Embedding]: 埋め込みベクトル
+            list[Embedding]: Embedding vectors.
         """
         from ..llama.embeddings.multi_modal_base import VideoEmbedding
 
@@ -256,20 +257,20 @@ class EmbedManager:
         return dims
 
     def _generate_space_key(self, provider: str, model: str, modality: Modality) -> str:
-        """空間キー文字列を生成する。
+        """Generate a space key string.
 
         Args:
-            provider (str): プロバイダ名
-            model (str): モデル名
-            modality (Modality): モダリティ
+            provider (str): Provider name.
+            model (str): Model name.
+            modality (Modality): Modality.
 
         Raises:
-            ValueError: 長すぎる空間キー
+            ValueError: If the space key is too long.
 
         Returns:
-            str: 空間キー文字列
+            str: Space key string.
         """
-        # 字数節約
+        # Shorten labels
         mod = {
             Modality.TEXT: "te",
             Modality.IMAGE: "im",

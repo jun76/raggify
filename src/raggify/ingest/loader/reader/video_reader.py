@@ -16,7 +16,7 @@ __all__ = ["VideoReader"]
 
 
 class VideoReader(BaseReader):
-    """動画ファイルをフレーム画像と音声トラックに分解するためのリーダー。"""
+    """Reader that splits video files into frame images and audio tracks."""
 
     def __init__(
         self,
@@ -26,16 +26,16 @@ class VideoReader(BaseReader):
         image_suffix: str = Exts.PNG,
         audio_suffix: str = Exts.WAV,
     ) -> None:
-        """コンストラクタ。
+        """Constructor.
 
         Args:
-            fps (int, optional): 1 秒あたりの抽出フレーム数。Defaults to 1.
-            audio_sample_rate (int, optional): 音声抽出時のサンプルレート。Defaults to 16000.
-            image_suffix (str, optional): フレーム画像の拡張子。Defaults to Exts.PNG.
-            audio_suffix (str, optional): 音声ファイルの拡張子。Defaults to Exts.WAV.
+            fps (int, optional): Frames per second to extract. Defaults to 1.
+            audio_sample_rate (int, optional): Sample rate for audio extraction. Defaults to 16000.
+            image_suffix (str, optional): Frame image extension. Defaults to Exts.PNG.
+            audio_suffix (str, optional): Audio file extension. Defaults to Exts.WAV.
 
         Raises:
-            ValueError: fps が 0 以下の場合
+            ValueError: If fps is zero or negative.
         """
         super().__init__()
 
@@ -50,13 +50,13 @@ class VideoReader(BaseReader):
         return ffmpeg
 
     def _extract_frames(self, src: str) -> list[Path]:
-        """動画からフレーム画像を抽出する。
+        """Extract frame images from a video.
 
         Args:
-            src (str): 動画ファイルのパス
+            src (str): Video file path.
 
         Returns:
-            list[Path]: 抽出したフレームのパス
+            list[Path]: Extracted frame paths.
         """
         ffmpeg = self._ffmpeg()
         base_path = Path(get_temp_file_path_from(source=src, suffix=self._image_suffix))
@@ -81,13 +81,13 @@ class VideoReader(BaseReader):
         return frames
 
     def _extract_audio(self, src: str) -> Path | None:
-        """動画から音声トラックを抽出する。
+        """Extract an audio track from a video.
 
         Args:
-            src (str): 動画ファイルのパス
+            src (str): Video file path.
 
         Returns:
-            Path: 抽出した音声ファイルのパス
+            Path | None: Extracted audio file path.
         """
         ffmpeg = self._ffmpeg()
         temp_path = Path(get_temp_file_path_from(source=src, suffix=self._audio_suffix))
@@ -116,14 +116,14 @@ class VideoReader(BaseReader):
         return temp_path
 
     def _image_docs(self, frames: Sequence[Path], source: str) -> list[Document]:
-        """フレーム画像を Document に変換する。
+        """Convert frame images to Document objects.
 
         Args:
-            frames (Sequence[Path]): フレーム画像のパス一覧
-            source (str): 元動画のパス
+            frames (Sequence[Path]): Frame image paths.
+            source (str): Source video path.
 
         Returns:
-            list[Document]: 生成したドキュメント
+            list[Document]: Generated documents.
         """
         docs: list[Document] = []
         for i, frame in enumerate(frames):
@@ -137,14 +137,14 @@ class VideoReader(BaseReader):
         return docs
 
     def _audio_doc(self, audio_path: Path, source: str) -> Document:
-        """音声ファイルを Document に変換する。
+        """Convert an audio file to a Document.
 
         Args:
-            audio_path (Path): 音声ファイルのパス
-            source (str): 元動画のパス
+            audio_path (Path): Audio file path.
+            source (str): Source video path.
 
         Returns:
-            Document: 生成した音声ドキュメント
+            Document: Generated audio document.
         """
         meta = BasicMetaData()
         meta.file_path = str(audio_path)
@@ -154,17 +154,17 @@ class VideoReader(BaseReader):
         return Document(text=source, metadata=meta.to_dict())
 
     def _load_video(self, path: str, allowed_exts: Iterable[str]) -> list[Document]:
-        """動画を読み込み、フレーム＋音声のドキュメントを生成する。
+        """Load a video and generate frame and audio documents.
 
         Args:
-            path (str): 動画ファイルパス
-            allowed_exts (Iterable[str]): 許可する拡張子
+            path (str): Video file path.
+            allowed_exts (Iterable[str]): Allowed extensions.
 
         Raises:
-            ValueError: 許可されていない拡張子が指定された場合
+            ValueError: If an unsupported extension is specified.
 
         Returns:
-            list[Document]: 生成したドキュメント
+            list[Document]: Generated documents.
         """
         abs_path = os.path.abspath(path)
         if not os.path.exists(abs_path):
@@ -192,14 +192,17 @@ class VideoReader(BaseReader):
         return docs
 
     def lazy_load_data(self, path: str, extra_info: Any = None) -> Iterable[Document]:
-        """動画ファイルを画像＋音声ドキュメントに分解する。
+        """Split a video file into image and audio documents.
 
         Args:
-            path (str): 動画ファイルパス
-            extra_info (Any, optional): 追加情報（未使用）。Defaults to None.
+            path (str): Video file path.
+            extra_info (Any, optional): Unused extra info. Defaults to None.
+
+        Raises:
+            ValueError: If the extension is unsupported.
 
         Returns:
-            Iterable[Document]: 抽出したドキュメント
+            Iterable[Document]: Extracted documents.
         """
         abs_path = os.path.abspath(path)
         if not os.path.exists(abs_path):

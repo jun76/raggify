@@ -5,7 +5,7 @@ from typing import Any, Optional
 
 
 class MetaKeysFrom:
-    # ライブラリ側定義ラベル（字列変更不可）
+    # Labels defined by the library (do not change strings)
     ## SimpleDirectoryReader
     FILE_PATH = "file_path"
     FILE_TYPE = "file_type"
@@ -15,7 +15,7 @@ class MetaKeysFrom:
 
 
 class MetaKeys(MetaKeysFrom):
-    # 正規化し、アプリ側で付与するラベル
+    # Normalized labels added by the app
     CHUNK_NO = "chunk_no"
     URL = "url"
     BASE_SOURCE = "base_source"
@@ -26,10 +26,12 @@ class MetaKeys(MetaKeysFrom):
 
 @dataclass(kw_only=True)
 class BasicMetaData:
-    """ドキュメント、ノードの metadata フィールド用。
-    Reader が自動付与するものを利用しつつ、アプリ側で明示的に挿入・利用するものはここで定義。
+    """Metadata container for document/node `metadata` fields.
 
-    参考
+    Uses fields auto-attached by readers and defines additional fields explicitly
+    inserted and consumed by the app.
+
+    Reference
         SimpleDirectoryReader:
             file_path
             file_name
@@ -39,7 +41,7 @@ class BasicMetaData:
             last_modified_date
             last_accessed_date
 
-    後段の各 Reader（基本、実装依存）
+    Downstream readers (implementation-specific)
         PDFReader:
             page_label
 
@@ -56,33 +58,34 @@ class BasicMetaData:
             text_sections
 
         ImageReader:
-            下位 Reader 独自メタを合流する形のため色々
-
-        等
+            Various merged metadata from lower readers
     """
 
-    # メタデータの中身
-    # 追加・削除する場合、ノードのインスタンスを生成する loader 系の実装と
-    # メタ情報を管理する meta_store 系の実装とも整合させること
+    # Metadata payload.
+    # When adding/removing fields, keep consistency with loaders creating node instances
+    # and metadata-store implementations managing metadata.
     #
-    file_path: str = ""  # 取得元ファイルパス
-    file_type: str = ""  # ファイル種別（mimetype）
-    file_size: int = 0  # ファイルサイズ
-    file_created_at: str = ""  # ファイル作成日時
-    file_lastmod_at: str = ""  # 最終更新日時
-    chunk_no: int = 0  # テキストのチャンク番号
-    url: str = ""  # 取得元 URL
-    base_source: str = ""  # 出典情報（直リンク画像の親ページ等）
-    temp_file_path: str = ""  # ダウンロード画像等の一時ファイルパス
-    page_no: int = 0  # ページ番号
-    asset_no: int = 0  # アセット番号（同一ページ内の画像等）
+    file_path: str = ""  # Source file path
+    file_type: str = ""  # File type (mimetype)
+    file_size: int = 0  # File size
+    file_created_at: str = ""  # File creation timestamp
+    file_lastmod_at: str = ""  # Last modified timestamp
+    chunk_no: int = 0  # Chunk number of text
+    url: str = ""  # Source URL
+    base_source: str = ""  # Origin info (e.g., parent page of direct-linked image)
+    temp_file_path: str = ""  # Temporary file path for downloaded assets
+    page_no: int = 0  # Page number
+    asset_no: int = 0  # Asset number (e.g., image within the same page)
 
     @classmethod
     def from_dict(cls, meta: Optional[dict[str, Any]] = None) -> "BasicMetaData":
-        """dict からメタデータインスタンスを生成する。
+        """Create a metadata instance from a dict.
 
         Args:
-            meta (Optional[dict[str, Any]], optional): メタデータの dict。 Defaults to None.
+            meta (Optional[dict[str, Any]], optional): Metadata dict. Defaults to None.
+
+        Returns:
+            BasicMetaData: Generated metadata instance.
         """
         data = meta or {}
 
@@ -101,26 +104,26 @@ class BasicMetaData:
         )
 
     def to_dict(self) -> dict[str, Any]:
-        """メタデータの dict を返す。
+        """Return metadata as a dict.
 
         Returns:
-            dict[str, Any]: メタデータの dict
+            dict[str, Any]: Metadata dict.
         """
         return asdict(self)
 
 
 def get_temp_file_path_from(source: str, suffix: str) -> str:
-    """ソース情報に一意に対応付く一時ファイルパスを取得する。
+    """Get a temporary file path uniquely tied to the source.
 
-    PDF ファイルから抽出した画像ファイル等の管理用途を想定。
-    ランダムな字列だと metadata に含まれた時に hash を揺らす原因となるため。
+    Intended for managing assets extracted from PDFs, etc. Avoid random strings
+    so hashes stay stable when metadata contains the path.
 
     Args:
-        source (str): パスまたは URL。ページ番号等がなければ区別できない場合はそれも付加
-        suffix (str): 拡張子等
+        source (str): Path or URL. Include page numbers, etc., if needed for uniqueness.
+        suffix (str): Extension or suffix.
 
     Returns:
-        str: 一時ファイルパス
+        str: Temporary file path.
     """
     import hashlib
     import tempfile

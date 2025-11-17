@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 class DocumentStoreManager:
-    """ドキュメントストアの管理クラス。"""
+    """Manager class for the document store."""
 
     def __init__(
         self,
@@ -17,12 +17,12 @@ class DocumentStoreManager:
         store: Optional[BaseDocumentStore],
         table_name: Optional[str],
     ) -> None:
-        """コンストラクタ
+        """Constructor.
 
         Args:
-            provider_name (str): プロバイダ名
-            store (Optional[BaseDocumentStore]): ドキュメントストア
-            table_name (Optional[str]): テーブル名
+            provider_name (str): Provider name.
+            store (Optional[BaseDocumentStore]): Document store.
+            table_name (Optional[str]): Table name.
         """
         self._provider_name = provider_name
         self._store = store
@@ -32,47 +32,47 @@ class DocumentStoreManager:
 
     @property
     def name(self) -> str:
-        """プロバイダ名。
+        """Provider name.
 
         Returns:
-            str: プロバイダ名
+            str: Provider name.
         """
         return self._provider_name
 
     @property
     def store(self) -> Optional[BaseDocumentStore]:
-        """ドキュメントストア。
+        """Document store.
 
         Returns:
-            Optional[BaseDocumentStore]: ドキュメントストア
+            Optional[BaseDocumentStore]: Document store.
         """
         return self._store
 
     @store.setter
     def store(self, value: Optional[BaseDocumentStore]) -> None:
-        """ドキュメントストアを設定する。
+        """Set the document store.
 
         Args:
-            value (Optional[BaseDocumentStore]): 設定するドキュメントストア
+            value (Optional[BaseDocumentStore]): Document store to set.
         """
         self._store = value
 
     @property
     def table_name(self) -> Optional[str]:
-        """テーブル名。
+        """Table name.
 
         Returns:
-            Optional[str]: テーブル名
+            Optional[str]: Table name.
         """
         return self._table_name
 
     def has_bm25_corpus(self) -> bool:
-        """BM25 検索用のテキストコーパスを持っているか。
+        """Return whether a BM25 text corpus exists.
 
-        pipe.arun(store_doc_text=True) のデフォルト設定になっていれば持っているはず。
+        The default `pipe.arun(store_doc_text=True)` should populate it.
 
         Returns:
-            bool: コーパスを持っているか
+            bool: True if the corpus exists.
         """
         if self.store is None:
             return False
@@ -85,15 +85,15 @@ class DocumentStoreManager:
         try:
             return len(docs_attr) > 0
         except Exception:
-            # 一部の docstore 実装は __len__ を持たない可能性があるため、
-            # 属性が存在するだけで True とみなす。
+            # Some docstore implementations may not implement __len__;
+            # treat presence as True.
             return True
 
     def get_ref_doc_ids(self) -> list[str]:
-        """ストアに格納済みの全 ref_doc_info 情報を取得する。
+        """Get all ref_doc_info keys stored in the docstore.
 
         Returns:
-            list[str]: ref_doc_id のリスト
+            list[str]: List of ref_doc_id values.
         """
         if self.store is None:
             return []
@@ -105,10 +105,10 @@ class DocumentStoreManager:
         return list(infos.keys())
 
     def delete_all(self, persist_path: Optional[str]) -> None:
-        """ストアに格納済みの全 ref_doc と関連ノードを削除する。
+        """Delete all ref_docs and related nodes stored.
 
         Args:
-            persist_path (Optional[str]): 永続化ディレクトリ
+            persist_path (Optional[str]): Persist directory.
         """
         if self.store is None:
             return

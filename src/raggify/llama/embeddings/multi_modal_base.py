@@ -14,54 +14,54 @@ VideoType = Union[str, BytesIO]
 
 
 class AudioEmbedding(BaseEmbedding):
-    """音声埋め込みクラスの抽象
+    """Abstract audio embedding class.
 
-    MultiModalEmbedding 自身に音声埋め込みサポートがあれば良いが未だ無いので
-    このクラスを音声埋め込みの抽象として一段噛ませる。
+    MultiModalEmbedding currently lacks audio support, so this class serves
+    as an intermediate abstraction for audio embeddings.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """コンストラクタ"""
+        """Constructor."""
         super().__init__(*args, **kwargs)
 
     @abstractmethod
     async def aget_audio_embedding_batch(
         self, audio_file_paths: list[AudioType], show_progress: bool = False
     ) -> list[Embedding]:
-        """音声埋め込みの非同期バッチインタフェース。
+        """Async batch interface for audio embeddings.
 
         Args:
-            audio_file_paths (list[AudioType]): 音声ファイルパス
-            show_progress (bool, optional): 進捗の表示。Defaults to False.
+            audio_file_paths (list[AudioType]): Audio file paths.
+            show_progress (bool, optional): Whether to show progress. Defaults to False.
 
         Returns:
-            list[Embedding]: 埋め込みベクトル
+            list[Embedding]: Embedding vectors.
         """
         ...
 
 
 class VideoEmbedding(AudioEmbedding, MultiModalEmbedding):
-    """動画埋め込みクラスの抽象
+    """Abstract video embedding class.
 
-    MultiModalEmbedding 自身に動画埋め込みサポートがあれば良いが未だ無いので
-    このクラスを動画埋め込みの抽象として一段噛ませる。
+    MultiModalEmbedding currently lacks video support, so this class serves
+    as an intermediate abstraction for video embeddings.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """コンストラクタ"""
+        """Constructor."""
         super().__init__(*args, **kwargs)
 
     @abstractmethod
     async def aget_video_embedding_batch(
         self, video_file_paths: list[VideoType], show_progress: bool = False
     ) -> list[Embedding]:
-        """動画埋め込みの非同期バッチインタフェース。
+        """Async batch interface for video embeddings.
 
         Args:
-            video_file_paths (list[VideoType]): 動画ファイルパス
-            show_progress (bool, optional): 進捗の表示。Defaults to False.
+            video_file_paths (list[VideoType]): Video file paths.
+            show_progress (bool, optional): Whether to show progress. Defaults to False.
 
         Returns:
-            list[Embedding]: 埋め込みベクトル
+            list[Embedding]: Embedding vectors.
         """
         ...

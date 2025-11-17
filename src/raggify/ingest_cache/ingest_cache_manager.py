@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class IngestCacheContainer:
-    """モダリティ毎のインジェストキャッシュ関連パラメータを集約"""
+    """Container for ingest cache parameters per modality."""
 
     provider_name: str
     cache: Optional[IngestionCache]
@@ -20,13 +20,14 @@ class IngestCacheContainer:
 
 
 class IngestCacheManager:
-    """インジェストキャッシュの管理クラス。"""
+    """Manager class for ingest caches."""
 
     def __init__(self, conts: dict[Modality, IngestCacheContainer]) -> None:
-        """コンストラクタ
+        """Constructor.
 
         Args:
-            conts (dict[Modality, IngestCacheContainer]): インジェストキャッシュコンテナの辞書
+            conts (dict[Modality, IngestCacheContainer]):
+                Mapping of modality to ingest cache container.
         """
         self._conts = conts
 
@@ -35,33 +36,33 @@ class IngestCacheManager:
 
     @property
     def name(self) -> str:
-        """プロバイダ名。
+        """Provider names.
 
         Returns:
-            str: プロバイダ名
+            str: Provider names.
         """
         return ", ".join([cont.provider_name for cont in self._conts.values()])
 
     @property
     def modality(self) -> set[Modality]:
-        """このインジェストキャッシュがサポートするモダリティ一覧。
+        """Modalities supported by this ingest cache manager.
 
         Returns:
-            set[Modality]: モダリティ一覧
+            set[Modality]: Modalities.
         """
         return set(self._conts.keys())
 
     def get_container(self, modality: Modality) -> IngestCacheContainer:
-        """モダリティ別のインジェストキャッシュコンテナを取得する。
+        """Get the ingest cache container for a modality.
 
         Args:
-            modality (Modality): モダリティ
+            modality (Modality): Modality.
 
         Raises:
-            RuntimeError: 未初期化
+            RuntimeError: If uninitialized.
 
         Returns:
-            IngestCacheContainer: インジェストキャッシュコンテナ
+            IngestCacheContainer: Ingest cache container.
         """
         cont = self._conts.get(modality)
         if cont is None:
@@ -70,10 +71,10 @@ class IngestCacheManager:
         return cont
 
     def delete_all(self, persist_path: Optional[str]) -> None:
-        """キャッシュを全削除する。
+        """Delete all caches.
 
         Args:
-            persist_path (Optional[str]): 永続化ディレクトリ
+            persist_path (Optional[str]): Persist directory.
         """
         for mod in self.modality:
             cache = self.get_container(mod).cache

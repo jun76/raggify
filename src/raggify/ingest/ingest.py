@@ -34,13 +34,13 @@ __all__ = [
 
 
 def _read_list(path: str) -> list[str]:
-    """path や URL のリストをファイルから読み込む
+    """Read a list of paths or URLs from a file.
 
     Args:
-        path (str): リストのパス
+        path (str): Path to the list file.
 
     Returns:
-        list[str]: 読み込んだリスト
+        list[str]: Loaded list.
     """
     lst = []
     try:
@@ -59,13 +59,13 @@ def _read_list(path: str) -> list[str]:
 
 
 def _build_text_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
-    """テキスト用パイプラインを構築する。
+    """Build an ingestion pipeline for text.
 
     Args:
-        persist_dir (Optional[Path]): 永続化ディレクトリ
+        persist_dir (Optional[Path]): Persist directory.
 
     Returns:
-        IngestionPipeline: パイプライン
+        IngestionPipeline: Pipeline instance.
     """
     from llama_index.core.node_parser import SentenceSplitter
 
@@ -88,13 +88,13 @@ def _build_text_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
 
 
 def _build_image_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
-    """画像用パイプラインを構築する。
+    """Build an ingestion pipeline for images.
 
     Args:
-        persist_dir (Optional[Path]): 永続化ディレクトリ
+        persist_dir (Optional[Path]): Persist directory.
 
     Returns:
-        IngestionPipeline: パイプライン
+        IngestionPipeline: Pipeline instance.
     """
     from .transform import make_image_embed_transform
 
@@ -111,13 +111,13 @@ def _build_image_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
 
 
 def _build_audio_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
-    """音声用パイプラインを構築する。
+    """Build an ingestion pipeline for audio.
 
     Args:
-        persist_dir (Optional[Path]): 永続化ディレクトリ
+        persist_dir (Optional[Path]): Persist directory.
 
     Returns:
-        IngestionPipeline: パイプライン
+        IngestionPipeline: Pipeline instance.
     """
     from .transform import make_audio_embed_transform
 
@@ -134,13 +134,13 @@ def _build_audio_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
 
 
 def _build_video_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
-    """動画用パイプラインを構築する。
+    """Build an ingestion pipeline for video.
 
     Args:
-        persist_dir (Optional[Path]): 永続化ディレクトリ
+        persist_dir (Optional[Path]): Persist directory.
 
     Returns:
-        IngestionPipeline: パイプライン
+        IngestionPipeline: Pipeline instance.
     """
     from .transform import make_video_embed_transform
 
@@ -163,14 +163,14 @@ async def _process_batches(
     batch_size: int,
     is_canceled: Callable[[], bool],
 ) -> None:
-    """大量ノードのアップサートで長時間ブロックしないようにバッチ化する。
+    """Batch upserts to avoid long blocking when handling many nodes.
 
     Args:
-        nodes (Sequence[BaseNode]): ノード
-        modality (Modality): モダリティ
-        persist_dir (Optional[Path]): 永続化ディレクトリ
-        batch_size (int): バッチサイズ
-        is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
+        nodes (Sequence[BaseNode]): Nodes.
+        modality (Modality): Target modality.
+        persist_dir (Optional[Path]): Persist directory.
+        batch_size (int): Batch size.
+        is_canceled (Callable[[], bool]): Cancellation flag for the job.
     """
     if not nodes or is_canceled():
         return
@@ -219,16 +219,16 @@ async def _aupsert_nodes(
     batch_size: int,
     is_canceled: Callable[[], bool],
 ) -> None:
-    """ノードをアップサートする。
+    """Upsert nodes into stores.
 
     Args:
-        text_nodes (Sequence[TextNode]): テキストノード
-        image_nodes (Sequence[ImageNode]): 画像ノード
-        audio_nodes (Sequence[AudioNode]): 音声ノード
-        video_nodes (Sequence[VideoNode]): 動画ノード
-        persist_dir (Optional[Path]): 永続化ディレクトリ
-        batch_size (int): バッチサイズ
-        is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
+        text_nodes (Sequence[TextNode]): Text nodes.
+        image_nodes (Sequence[ImageNode]): Image nodes.
+        audio_nodes (Sequence[AudioNode]): Audio nodes.
+        video_nodes (Sequence[VideoNode]): Video nodes.
+        persist_dir (Optional[Path]): Persist directory.
+        batch_size (int): Batch size.
+        is_canceled (Callable[[], bool]): Cancellation flag for the job.
     """
     import asyncio
 
@@ -276,9 +276,9 @@ async def _aupsert_nodes(
 
 
 def _cleanup_temp_files() -> None:
-    """プレフィックスにマッチする一時ファイルをまとめて削除する。
+    """Remove temporary files that match the prefix.
 
-    思わぬ取りこぼしがあるかもしれないので、ノードから一時ファイル名を取ることはしない。
+    Avoid deriving names from nodes to prevent accidental misses.
     """
     import tempfile
     from pathlib import Path
@@ -314,14 +314,15 @@ def ingest_path(
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
-    """ローカルパス（ディレクトリ、ファイル）からコンテンツを収集、埋め込み、ストアに格納する。
-    ディレクトリの場合はツリーを下りながら複数ファイルを取り込む。
+    """Ingest, embed, and store content from a local path (directory or file).
+
+    Directories are traversed recursively to ingest multiple files.
 
     Args:
-        path (str): 対象パス
-        batch_size (Optional[int]): バッチサイズ。Defaults to None.
+        path (str): Target path.
+        batch_size (Optional[int]): Batch size. Defaults to None.
         is_canceled (Callable[[], bool], optional):
-            このジョブがキャンセルされたか。Defaults to lambda:False.
+            Cancellation flag. Defaults to lambda:False.
     """
     asyncio_run(aingest_path(path, batch_size=batch_size, is_canceled=is_canceled))
 
@@ -331,14 +332,15 @@ async def aingest_path(
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
-    """ローカルパス（ディレクトリ、ファイル）から非同期でコンテンツを収集、埋め込み、ストアに格納する。
-    ディレクトリの場合はツリーを下りながら複数ファイルを取り込む。
+    """Asynchronously ingest, embed, and store content from a local path.
+
+    Directories are traversed recursively to ingest multiple files.
 
     Args:
-        path (str): 対象パス
-        batch_size (Optional[int]): バッチサイズ。Defaults to None.
+        path (str): Target path.
+        batch_size (Optional[int]): Batch size. Defaults to None.
         is_canceled (Callable[[], bool], optional):
-            このジョブがキャンセルされたか。Defaults to lambda:False.
+            Cancellation flag. Defaults to lambda:False.
     """
     rt = _rt()
     file_loader = rt.file_loader
@@ -363,13 +365,13 @@ def ingest_path_list(
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
-    """パスリスト内の複数パスからコンテンツを収集、埋め込み、ストアに格納する。
+    """Ingest, embed, and store content from multiple paths in a list.
 
     Args:
-        lst (str | Sequence[str]): テキストファイルまたは Sequence 形式のリスト
-        batch_size (Optional[int]): バッチサイズ。Defaults to None.
+        lst (str | Sequence[str]): Text file path or in-memory sequence.
+        batch_size (Optional[int]): Batch size. Defaults to None.
         is_canceled (Callable[[], bool], optional):
-            このジョブがキャンセルされたか。Defaults to lambda:False.
+            Cancellation flag. Defaults to lambda:False.
     """
     asyncio_run(aingest_path_list(lst, batch_size=batch_size, is_canceled=is_canceled))
 
@@ -379,13 +381,13 @@ async def aingest_path_list(
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
-    """パスリスト内の複数パスから非同期でコンテンツを収集、埋め込み、ストアに格納する。
+    """Asynchronously ingest, embed, and store content from multiple paths.
 
     Args:
-        list (str | Sequence[str]): テキストファイルまたは Sequence 形式のリスト
-        batch_size (Optional[int]): バッチサイズ。Defaults to None.
+        lst (str | Sequence[str]): Text file path or in-memory sequence.
+        batch_size (Optional[int]): Batch size. Defaults to None.
         is_canceled (Callable[[], bool], optional):
-            このジョブがキャンセルされたか。Defaults to lambda:False.
+            Cancellation flag. Defaults to lambda:False.
     """
     if isinstance(lst, str):
         lst = _read_list(lst)
@@ -413,14 +415,15 @@ def ingest_url(
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
-    """URL からコンテンツを収集、埋め込み、ストアに格納する。
-    サイトマップ（.xml）の場合はツリーを下りながら複数サイトから取り込む。
+    """Ingest, embed, and store content from a URL.
+
+    For sitemaps (.xml), traverse the tree to ingest multiple sites.
 
     Args:
-        url (str): 対象 URL
-        batch_size (Optional[int]): バッチサイズ。Defaults to None.
+        url (str): Target URL.
+        batch_size (Optional[int]): Batch size. Defaults to None.
         is_canceled (Callable[[], bool], optional):
-            このジョブがキャンセルされたか。Defaults to lambda:False.
+            Cancellation flag. Defaults to lambda:False.
     """
     asyncio_run(aingest_url(url=url, batch_size=batch_size, is_canceled=is_canceled))
 
@@ -430,14 +433,15 @@ async def aingest_url(
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
-    """URL から非同期でコンテンツを収集、埋め込み、ストアに格納する。
-    サイトマップ（.xml）の場合はツリーを下りながら複数サイトから取り込む。
+    """Asynchronously ingest, embed, and store content from a URL.
+
+    For sitemaps (.xml), traverse the tree to ingest multiple sites.
 
     Args:
-        url (str): 対象 URL
-        batch_size (Optional[int]): バッチサイズ。Defaults to None.
+        url (str): Target URL.
+        batch_size (Optional[int]): Batch size. Defaults to None.
         is_canceled (Callable[[], bool], optional):
-            このジョブがキャンセルされたか。Defaults to lambda:False.
+            Cancellation flag. Defaults to lambda:False.
     """
     rt = _rt()
     html_loader = rt.html_loader
@@ -462,13 +466,13 @@ def ingest_url_list(
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
-    """URL リスト内の複数サイトからコンテンツを収集、埋め込み、ストアに格納する。
+    """Ingest, embed, and store content from multiple URLs in a list.
 
     Args:
-        lst (str | Sequence[str]): テキストファイルまたは Sequence 形式のリスト
-        batch_size (Optional[int]): バッチサイズ。Defaults to None.
+        lst (str | Sequence[str]): Text file path or in-memory URL list.
+        batch_size (Optional[int]): Batch size. Defaults to None.
         is_canceled (Callable[[], bool], optional):
-            このジョブがキャンセルされたか。Defaults to lambda:False.
+            Cancellation flag. Defaults to lambda:False.
     """
     asyncio_run(aingest_url_list(lst, batch_size=batch_size, is_canceled=is_canceled))
 
@@ -478,13 +482,13 @@ async def aingest_url_list(
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
-    """URL リスト内の複数サイトから非同期でコンテンツを収集、埋め込み、ストアに格納する。
+    """Asynchronously ingest, embed, and store content from multiple URLs.
 
     Args:
-        lst (str | Sequence[str]): テキストファイルまたは Sequence 形式のリスト
-        batch_size (Optional[int]): バッチサイズ。Defaults to None.
+        lst (str | Sequence[str]): Text file path or in-memory URL list.
+        batch_size (Optional[int]): Batch size. Defaults to None.
         is_canceled (Callable[[], bool], optional):
-            このジョブがキャンセルされたか。Defaults to lambda:False.
+            Cancellation flag. Defaults to lambda:False.
     """
     if isinstance(lst, str):
         lst = _read_list(lst)

@@ -16,16 +16,16 @@ __all__ = ["MultiPDFReader"]
 
 
 class MultiPDFReader(BaseReader):
-    """画像抽出も行うための独自 PDF リーダー"""
+    """Custom PDF reader that also extracts images."""
 
     def lazy_load_data(self, path: str, extra_info: Any = None) -> Iterable[Document]:
-        """PDF ファイルを読み込み、テキストと画像のドキュメントをそれぞれ生成する。
+        """Load a PDF file and generate text and image documents.
 
         Args:
-            path (str): ファイルパス
+            path (str): File path.
 
         Returns:
-            Iterable[Document]: テキストドキュメントと画像ドキュメント
+            Iterable[Document]: Text and image documents.
         """
         import pymupdf as fitz
 
@@ -61,14 +61,14 @@ class MultiPDFReader(BaseReader):
         pdf: FDoc,
         path: str,
     ) -> list[Document]:
-        """PDF ファイルを読み込み、テキスト部分からドキュメントを生成する。
+        """Generate documents from the text portion of a PDF.
 
         Args:
-            pdf (FDoc): pdf インスタンス
-            path (str): ファイルパス
+            pdf (FDoc): PDF instance.
+            path (str): File path.
 
         Returns:
-            list[Document]: 生成したドキュメントリスト
+            list[Document]: Generated documents.
         """
         from ....core.metadata import BasicMetaData
 
@@ -81,7 +81,7 @@ class MultiPDFReader(BaseReader):
                 logger.exception(e)
                 continue
 
-            # 空ならスキップ
+            # Skip if empty
             if not content.strip():  # type: ignore
                 continue
 
@@ -99,14 +99,14 @@ class MultiPDFReader(BaseReader):
         pdf: FDoc,
         path: str,
     ) -> list[Document]:
-        """PDF ファイルを読み込み、画像部分からドキュメントを生成する。
+        """Generate documents from images in a PDF.
 
         Args:
-            pdf (FDoc): pdf インスタンス
-            path (str): ファイルパス
+            pdf (FDoc): PDF instance.
+            path (str): File path.
 
         Returns:
-            list[Document]: 生成したドキュメントリスト
+            list[Document]: Generated documents.
         """
         import pymupdf as fitz
 
@@ -122,14 +122,14 @@ class MultiPDFReader(BaseReader):
                 continue
 
             for image_no, image in enumerate(contents):
-                xref = image[0]  # 画像の参照番号
+                xref = image[0]  # Image reference number
                 pix = None
                 try:
                     pix = fitz.Pixmap(pdf, xref)
 
                     if (
                         pix.n - (1 if pix.alpha else 0) == 4
-                    ):  # CMYK (アルファの有無に関わらず)
+                    ):  # CMYK (regardless of alpha)
                         old_pix = pix
                         pix = fitz.Pixmap(fitz.csRGB, pix)
                         del old_pix
@@ -140,9 +140,9 @@ class MultiPDFReader(BaseReader):
                     pix.save(temp)
 
                     meta = BasicMetaData()
-                    meta.file_path = temp  # MultiModalVectorStoreIndex 参照用
-                    meta.temp_file_path = temp  # 削除用
-                    meta.base_source = path  # 元パスの復元用
+                    meta.file_path = temp  # For MultiModalVectorStoreIndex
+                    meta.temp_file_path = temp  # For cleanup
+                    meta.base_source = path  # For restoring original path
                     meta.page_no = page_no
                     meta.asset_no = image_no
 

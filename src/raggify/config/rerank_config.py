@@ -15,7 +15,7 @@ class RerankProvider(StrEnum):
 
 @dataclass(kw_only=True)
 class RerankConfig(DataClassDictMixin):
-    """リランク関連の設定用データクラス"""
+    """Config dataclass for rerank settings."""
 
     flagembedding_rerank_model: str = "BAAI/bge-reranker-v2-m3"
     cohere_rerank_model: str = "rerank-multilingual-v3.0"

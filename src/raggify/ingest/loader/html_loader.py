@@ -26,12 +26,12 @@ class HTMLLoader(Loader):
         persist_dir: Optional[Path],
         cfg: IngestConfig,
     ):
-        """HTML を読み込み、ノードを生成するためのクラス。
+        """Loader for HTML that generates nodes.
 
         Args:
-            file_loader (FileLoader): ファイル読み込み用
-            persist_dir (Optional[Path]): 永続化ディレクトリ
-            cfg (IngestConfig): 各種設定値
+            file_loader (FileLoader): Helper for file loading.
+            persist_dir (Optional[Path]): Persist directory.
+            cfg (IngestConfig): Ingest configuration.
         """
         super().__init__(persist_dir)
 
@@ -42,23 +42,23 @@ class HTMLLoader(Loader):
         self._user_agent = cfg.user_agent
         self._same_origin = cfg.same_origin
 
-        # doc_id に base_url を含めず、url が同じドキュメントを同一視する。
-        # さらに、同一 ingest 処理内では asset_url_cache に一度処理した url を保持
-        # しておくことで、pipeline.arun に制御を渡さずフェッチ自体をスキップする。
+        # Do not include base_url in doc_id so identical URLs are treated
+        # as the same document. Cache processed URLs in the same ingest run
+        # so repeated assets are skipped without invoking pipeline.arun.
         self._asset_url_cache: set[str] = set()
 
     async def _arequest_get(self, url: str) -> requests.Response:
-        """HTTP GET を実行する非同期ラッパー。
+        """Async wrapper for HTTP GET.
 
         Args:
-            url (str): 対象 URL
+            url (str): Target URL.
 
         Raises:
-            requests.HTTPError: GET 時の例外
-            RuntimeError: フェッチ失敗
+            requests.HTTPError: On HTTP errors.
+            RuntimeError: When fetching fails.
 
         Returns:
-            requests.Response: 取得した Response データ
+            requests.Response: Response object.
         """
         headers = {"User-Agent": self._user_agent}
         res: Optional[requests.Response] = None
@@ -85,13 +85,13 @@ class HTMLLoader(Loader):
         self,
         url: str,
     ) -> str:
-        """HTML を取得し、テキストを返す。
+        """Fetch HTML and return the response text.
 
         Args:
-            url (str): 取得先 URL
+            url (str): Target URL.
 
         Returns:
-            str: レスポンス本文
+            str: Response body.
         """
         try:
             res = await self._arequest_get(url)
@@ -102,13 +102,13 @@ class HTMLLoader(Loader):
         return res.text
 
     def _sanitize_html_text(self, html: str) -> str:
-        """キャッシュバスター等の余分な要素を除外する。
+        """Remove extra elements such as cache busters.
 
         Args:
-            html (str): フェッチしてきた HTML テキスト
+            html (str): Raw HTML text.
 
         Returns:
-            str: 整形後のテキスト
+            str: Sanitized text.
         """
         import re
 
@@ -121,16 +121,16 @@ class HTMLLoader(Loader):
         allowed_exts: set[str],
         limit: int = 20,
     ) -> list[str]:
-        """HTML からアセット URL を収集する。
+        """Collect asset URLs from HTML.
 
         Args:
-            html (str): HTML 文字列
-            base_url (str): 相対 URL 解決用の基準 URL
-            allowed_exts (set[str]): 許可される拡張子集合（ドット付き小文字）
-            limit (int, optional): 返却する最大件数.Defaults to 20.
+            html (str): HTML string.
+            base_url (str): Base URL for resolving relatives.
+            allowed_exts (set[str]): Allowed extensions (lowercase with dot).
+            limit (int, optional): Max results. Defaults to 20.
 
         Returns:
-            list[str]: 収集した絶対 URL
+            list[str]: Absolute URLs collected.
         """
         from bs4 import BeautifulSoup
 
@@ -183,15 +183,15 @@ class HTMLLoader(Loader):
         allowed_exts: set[str],
         max_asset_bytes: int = 100 * 1024 * 1024,
     ) -> Optional[str]:
-        """直リンクのファイルをダウンロードし、ローカルの一時ファイルパスを返す。
+        """Download a direct-linked file and return the local temp file path.
 
         Args:
-            url (str): 対象 URL
-            allowed_exts (set[str]): 許可される拡張子集合（ドット付き小文字）
-            max_asset_bytes (int, optional): データサイズ上限。Defaults to 100*1024*1024.
+            url (str): Target URL.
+            allowed_exts (set[str]): Allowed extensions (lowercase with dot).
+            max_asset_bytes (int, optional): Max size in bytes. Defaults to 100*1024*1024.
 
         Returns:
-            Optional[str]: ローカルの一時ファイルパス
+            Optional[str]: Local temporary file path.
         """
         from ...core.metadata import get_temp_file_path_from
 
@@ -231,14 +231,14 @@ class HTMLLoader(Loader):
     async def _aload_direct_linked_file(
         self, url: str, base_url: Optional[str] = None
     ) -> Optional[Document]:
-        """直リンクのファイルからドキュメントを生成する。
+        """Create a document from a direct-linked file.
 
         Args:
-            url (str): 対象 URL
-            base_url (Optional[str], optional): source の取得元を指定する場合。Defaults to None.
+            url (str): Target URL.
+            base_url (Optional[str], optional): Base source URL. Defaults to None.
 
         Returns:
-            Optional[Document]: 生成したドキュメント
+            Optional[Document]: Generated document.
         """
         from llama_index.core.schema import Document
 
@@ -252,21 +252,21 @@ class HTMLLoader(Loader):
             return None
 
         meta = BasicMetaData()
-        meta.file_path = temp_file_path  # MultiModalVectorStoreIndex 参照用
+        meta.file_path = temp_file_path  # For MultiModalVectorStoreIndex
         meta.url = url
         meta.base_source = base_url or ""
-        meta.temp_file_path = temp_file_path  # 削除用
+        meta.temp_file_path = temp_file_path  # For cleanup
 
         return Document(text=url, metadata=meta.to_dict())
 
     def _register_asset_url(self, url: str) -> bool:
-        """新出アセット URL の場合、キャッシュに登録する。
+        """Register an asset URL in the cache if it is new.
 
         Args:
-            url (str): アセットファイルの URL
+            url (str): Asset URL.
 
         Returns:
-            bool: 今回登録したか
+            bool: True if added this time.
         """
         if url in self._asset_url_cache:
             return False
@@ -280,14 +280,14 @@ class HTMLLoader(Loader):
         base_url: str,
         html: Optional[str] = None,
     ) -> list[Document]:
-        """HTML を読み込み、アセットファイルからドキュメントを生成する。
+        """Load HTML and create documents from asset files.
 
         Args:
-            base_url (str): 対象 URL
-            html (str): プリフェッチした html
+            base_url (str): Target URL.
+            html (str): Prefetched HTML.
 
         Returns:
-            list[Document]: 生成したドキュメント
+            list[Document]: Generated documents.
         """
         if html is None:
             html = await self._afetch_text(base_url)
@@ -299,7 +299,7 @@ class HTMLLoader(Loader):
         docs = []
         for url in urls:
             if not self._register_asset_url(url):
-                # 同一アセットはフェッチ自体をスキップ
+                # Skip fetching identical assets
                 continue
 
             doc = await self._aload_direct_linked_file(url=url, base_url=base_url)
@@ -315,13 +315,13 @@ class HTMLLoader(Loader):
         self,
         url: str,
     ) -> list[Document]:
-        """単一サイトからコンテンツを取得し、ドキュメントを生成する。
+        """Fetch content from a single site and create documents.
 
         Args:
-            url (str): 対象 URL
+            url (str): Target URL.
 
         Returns:
-            list[Document]: 生成したドキュメント
+            list[Document]: Generated documents.
         """
         import html2text
         from llama_index.core.schema import Document
@@ -334,7 +334,7 @@ class HTMLLoader(Loader):
 
         docs = []
         if Exts.endswith_exts(url, Exts.FETCH_TARGET):
-            # 直リンクファイル
+            # Direct-linked file
             if self._register_asset_url(url):
                 doc = await self._aload_direct_linked_file(url)
                 if doc is None:
@@ -342,20 +342,20 @@ class HTMLLoader(Loader):
                 else:
                     docs.append(doc)
         else:
-            # Not Found ページを ingest しないように下見
+            # Prefetch to avoid ingesting Not Found pages
             html = await self._afetch_text(url)
             if not html:
                 logger.warning(f"failed to fetch html from {url}, skipped")
                 return []
 
-            # 本文テキスト
+            # Body text
             text = self._sanitize_html_text(html)
             text = html2text.html2text(text)
             doc = Document(text=text, metadata={MK.URL: url})
             docs.append(doc)
 
             if self._load_asset:
-                # アセットファイル
+                # Asset files
                 docs.extend(await self._aload_html_asset_files(base_url=url, html=html))
 
         logger.debug(f"loaded {len(docs)} docs from {url}")
@@ -368,29 +368,30 @@ class HTMLLoader(Loader):
         is_canceled: Callable[[], bool],
         inloop: bool = False,
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
-        """URL からコンテンツを取得し、ノードを生成する。
-        サイトマップ（.xml）の場合はツリーを下りながら複数サイトから取り込む。
+        """Fetch content from a URL and generate nodes.
+
+        For sitemaps (.xml), traverse the tree to ingest multiple sites.
 
         Args:
-            url (str): 対象 URL
-            is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
-            inloop (bool, optional): URL リストの上位ループ内で実行中か。Defaults to False.
+            url (str): Target URL.
+            is_canceled (Callable[[], bool]): Whether this job has been canceled.
+            inloop (bool, optional): Whether called inside an upper URL loop. Defaults to False.
 
         Returns:
             tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
-                テキストノード、画像ノード、音声ノード、動画ノード
+                Text, image, audio, and video nodes.
         """
         from llama_index.readers.web.sitemap.base import SitemapReader
 
         if not inloop:
             self._asset_url_cache.clear()
 
-        # サイトマップ以外は単一のサイトとして読み込み
+        # For non-sitemaps, treat as a single site
         if not Exts.endswith_exts(url, Exts.SITEMAP):
             docs = await self._aload_from_site(url)
             return await self._asplit_docs_modality(docs=docs, is_canceled=is_canceled)
 
-        # 以下、サイトマップの解析と読み込み
+        # Parse and ingest sitemap
         try:
             loader = SitemapReader()
             raw_sitemap = loader._load_sitemap(url)
@@ -415,15 +416,15 @@ class HTMLLoader(Loader):
         urls: list[str],
         is_canceled: Callable[[], bool],
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
-        """URL リスト内の複数サイトからコンテンツを取得し、ノードを生成する。
+        """Fetch content from multiple URLs and generate nodes.
 
         Args:
-            urls (list[str]): URL リスト
-            is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
+            urls (list[str]): URL list.
+            is_canceled (Callable[[], bool]): Whether this job has been canceled.
 
         Returns:
             tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
-                テキストノード、画像ノード、音声ノード、動画ノード
+                Text, image, audio, and video nodes.
         """
         self._asset_url_cache.clear()
 

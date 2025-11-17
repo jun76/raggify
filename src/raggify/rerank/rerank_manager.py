@@ -12,55 +12,54 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class RerankContainer:
-    """リランク関連パラメータを集約"""
+    """Aggregate parameters for reranking."""
 
     provider_name: str
     rerank: BaseNodePostprocessor
 
 
 class RerankManager:
-    """リランクの管理クラス。"""
+    """Manager class for reranking."""
 
     def __init__(self, cont: Optional[RerankContainer] = None) -> None:
-        """コンストラクタ
+        """Constructor.
 
         Args:
-            cont (RerankContainer): リランクコンテナ
+            cont (RerankContainer): Rerank container.
         """
         self._cont = cont
 
     @property
     def name(self) -> str:
-        """プロバイダ名。
+        """Provider name.
 
         Returns:
-            str: プロバイダ名
+            str: Provider name.
         """
         return self._cont.provider_name if self._cont else "none"
 
     async def arerank(
         self, nodes: list[NodeWithScore], query: str, topk: int
     ) -> list[NodeWithScore]:
-        """クエリに基づきリランカーで結果を並べ替える。
+        """Reorder results with a reranker based on the query.
 
         Args:
-            nodes (list[NodeWithScore]): 並べ替え対象ノード
-            query (str): クエリ文字列
-            topk (int): 取得件数
+            nodes (list[NodeWithScore]): Nodes to rerank.
+            query (str): Query string.
+            topk (int): Number of items to retrieve.
 
         Returns:
-            list[NodeWithScore]: 並べ替え済みのノード
+            list[NodeWithScore]: Reranked nodes.
 
         Raises:
-            RuntimeError: リランカーが処理に失敗した場合
+            RuntimeError: When reranking fails.
         """
         if self._cont is None:
             logger.info("rerank provider is not specified")
             return nodes
 
-        # reranker の top_n は本来インスタンス生成時に値を指定するが
-        # 単発 retrieve 時に一時的に値を変更したい場合もあるので
-        # 必ずここで書き換え・書き戻す運用とする。
+        # top_n should be set at instantiation,
+        # but allow temporary changes for one-off retrievals by rewriting here.
         original_top_n: Optional[int] = None
         if hasattr(self._cont.rerank, "top_n"):
             original_top_n = getattr(self._cont.rerank, "top_n")

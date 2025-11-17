@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class VectorStoreContainer:
-    """モダリティ毎のベクトルストア関連パラメータを集約"""
+    """Aggregate vector store parameters per modality."""
 
     provider_name: str
     store: BasePydanticVectorStore
@@ -23,9 +23,9 @@ class VectorStoreContainer:
 
 
 class VectorStoreManager:
-    """ベクトルストアの管理クラス。
+    """Manager class for vector stores.
 
-    空間キーごとにテーブルを一つ割り当て、ノードを管理する想定。"""
+    One table is allocated per space key to manage nodes."""
 
     def __init__(
         self,
@@ -33,12 +33,12 @@ class VectorStoreManager:
         embed: EmbedManager,
         docstore: DocumentStoreManager,
     ) -> None:
-        """コンストラクタ
+        """Constructor.
 
         Args:
-            conts (dict[Modality, VectorStoreContainer]): ベクトルストアコンテナの辞書
-            embed (EmbedManager): 埋め込み管理
-            docstore (DocumentStoreManager): ドキュメントストア管理
+            conts (dict[Modality, VectorStoreContainer]): Map of vector store containers.
+            embed (EmbedManager): Embedding manager.
+            docstore (DocumentStoreManager): Document store manager.
         """
         self._conts = conts
         self._embed = embed
@@ -50,39 +50,39 @@ class VectorStoreManager:
 
     @property
     def name(self) -> str:
-        """プロバイダ名。
+        """Provider name.
 
         Returns:
-            str: プロバイダ名
+            str: Provider name.
         """
         return ", ".join([cont.provider_name for cont in self._conts.values()])
 
     @property
     def modality(self) -> set[Modality]:
-        """このベクトルストアがサポートするモダリティ一覧。
+        """Set of modalities supported by this vector store.
 
         Returns:
-            set[Modality]: モダリティ一覧
+            set[Modality]: Modalities.
         """
         return set(self._conts.keys())
 
     @property
     def table_names(self) -> list[str]:
-        """このベクトルストアが保持するテーブル名一覧。
+        """List of table names maintained by this vector store.
 
         Returns:
-            list[str]: テーブル名一覧
+            list[str]: Table names.
         """
         return [cont.table_name for cont in self._conts.values()]
 
     def get_index(self, modality: Modality) -> VectorStoreIndex:
-        """ストレージから生成したインデックス。
+        """Index generated from the underlying storage.
 
         Raises:
-            RuntimeError: 未初期化
+            RuntimeError: Index is not initialized.
 
         Returns:
-            VectorStoreIndex: インデックス
+            VectorStoreIndex: Index instance.
         """
         index = self.get_container(modality).index
         if index is None:
@@ -91,16 +91,16 @@ class VectorStoreManager:
         return index
 
     def get_container(self, modality: Modality) -> VectorStoreContainer:
-        """モダリティ別のベクトルストアコンテナを取得する。
+        """Get the vector store container for the given modality.
 
         Args:
-            modality (Modality): モダリティ
+            modality (Modality): Modality.
 
         Raises:
-            RuntimeError: 未初期化
+            RuntimeError: Container is not initialized.
 
         Returns:
-            VectorStoreContainer: ベクトルストアコンテナ
+            VectorStoreContainer: Vector store container.
         """
         cont = self._conts.get(modality)
         if cont is None:
@@ -109,16 +109,16 @@ class VectorStoreManager:
         return cont
 
     def _create_index(self, modality: Modality) -> VectorStoreIndex:
-        """インデックスを生成する。
+        """Create an index for the given modality.
 
         Args:
-            modality (Modality): モダリティ
+            modality (Modality): Modality.
 
         Raises:
-            RuntimeError: コンテナ未初期化
+            RuntimeError: Container is not initialized.
 
         Returns:
-            VectorStoreIndex: 生成したインデックス
+            VectorStoreIndex: Created index.
         """
         from llama_index.core.indices import VectorStoreIndex
         from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
@@ -150,10 +150,10 @@ class VectorStoreManager:
                 raise RuntimeError("unexpected modality")
 
     def delete_nodes(self, ref_doc_ids: list[str]) -> None:
-        """ref_doc_id 指定でベクトルストアからノードを削除する。
+        """Delete nodes from the vector store by ref_doc_id.
 
         Args:
-            ref_doc_ids (list[str]): 削除対象の ID
+            ref_doc_ids (list[str]): IDs to delete.
         """
         for mod in self.modality:
             store = self.get_container(mod).store
@@ -167,12 +167,12 @@ class VectorStoreManager:
         logger.info(f"{len(ref_doc_ids)} nodes are deleted from vector store")
 
     def delete_all(self) -> bool:
-        """全ノードを削除する。
+        """Delete all nodes.
 
-        Redis は clear 未実装のため注意。
+        Note that Redis does not implement clear.
 
         Returns:
-            bool: 削除成功で True
+            bool: True if the deletion succeeds.
         """
         try:
             for mod in self.modality:

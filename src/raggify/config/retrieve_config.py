@@ -16,7 +16,7 @@ class RetrieveMode(StrEnum):
 
 @dataclass(kw_only=True)
 class RetrieveConfig(DataClassDictMixin):
-    """リトリーバー関連の設定用データクラス"""
+    """Config dataclass for retriever settings."""
 
     mode: RetrieveMode = RetrieveMode.FUSION
     bm25_topk: int = 10

@@ -6,8 +6,8 @@ from typing import Any
 from llama_index.core.schema import TextNode
 
 
-# モダリティ
-# ! 字列を変更すると空間キーの字列が変わって別空間（ingest やり直し）になるので注意 !
+# Modalities
+# ! Changing the string will change the space key and require reingest !
 class Modality(StrEnum):
     TEXT = auto()
     IMAGE = auto()
@@ -16,16 +16,16 @@ class Modality(StrEnum):
 
 
 class AudioNode(TextNode):
-    """音声モダリティのノード実装用クラス"""
+    """Node implementation for audio modality."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """コンストラクタ"""
+        """Constructor."""
         super().__init__(*args, **kwargs)
 
 
 class VideoNode(TextNode):
-    """動画モダリティのノード実装用クラス"""
+    """Node implementation for video modality."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """コンストラクタ"""
+        """Constructor."""
         super().__init__(*args, **kwargs)

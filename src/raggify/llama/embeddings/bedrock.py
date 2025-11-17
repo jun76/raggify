@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class Models(StrEnum):
-    # 本家の Models
+    # Official models
     TITAN_EMBEDDING = "amazon.titan-embed-text-v1"
     TITAN_EMBEDDING_V2_0 = "amazon.titan-embed-text-v2:0"
     TITAN_EMBEDDING_G1_TEXT_02 = "amazon.titan-embed-g1-text-02"
@@ -32,27 +32,27 @@ class Models(StrEnum):
     COHERE_EMBED_MULTILINGUAL_V3 = "cohere.embed-multilingual-v3"
     COHERE_EMBED_V4 = "cohere.embed-v4:0"
 
-    # 追加サポート
+    # Additional support
     NOVA_2_MULTIMODAL_V1 = "amazon.nova-2-multimodal-embeddings-v1:0"
 
 
 class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
-    """BedrockEmbedding のマルチモーダル対応版"""
+    """Multimodal-capable variant of BedrockEmbedding."""
 
     def _is_nova_model(self) -> bool:
-        """現在のモデルが Nova 系か判定する。
+        """Return True if the current model is from the Nova series.
 
         Returns:
-            bool: Nova 系モデルなら True
+            bool: True for Nova models.
         """
         return "amazon.nova" in self.model_name.lower()
 
     @classmethod
     def class_name(cls) -> str:
-        """クラス名
+        """Class name string.
 
         Returns:
-            str: クラス名
+            str: Class name.
         """
         return "MultiModalBedrockEmbedding"
 
@@ -66,10 +66,10 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         region_name: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
-        """コンストラクタ
+        """Constructor.
 
         Args:
-            kwargs (Any): BedrockEmbedding 初期化用
+            kwargs (Any): Additional args for BedrockEmbedding initialization.
         """
         super().__init__(
             model_name=model_name,
@@ -82,13 +82,13 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         )
 
     def _get_text_embedding(self, text: str) -> Embedding:
-        """テキスト埋め込みの同期インタフェース。
+        """Synchronous interface for text embeddings.
 
         Args:
-            text (str): テキスト
+            text (str): Text to embed.
 
         Returns:
-            Embedding: 埋め込みベクトル
+            Embedding: Embedding vector.
         """
         if not self._is_nova_model():
             return super()._get_text_embedding(text)
@@ -107,13 +107,13 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         return self._invoke_single_embedding(request_body)
 
     async def _aget_text_embedding(self, text: str) -> Embedding:
-        """テキスト埋め込みの非同期インタフェース。
+        """Asynchronous interface for text embeddings.
 
         Args:
-            text (str): テキスト
+            text (str): Text to embed.
 
         Returns:
-            Embedding: 埋め込みベクトル
+            Embedding: Embedding vector.
         """
         if not self._is_nova_model():
             return await super()._aget_text_embedding(text)
@@ -121,13 +121,13 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         return await asyncio.to_thread(self._get_text_embedding, text)
 
     def _get_text_embeddings(self, texts: list[str]) -> list[Embedding]:
-        """テキスト埋め込みの同期バッチインタフェース。
+        """Synchronous batch interface for text embeddings.
 
         Args:
-            texts (list[str]): テキストリスト
+            texts (list[str]): Text list.
 
         Returns:
-            list[Embedding]: 埋め込みベクトルリスト
+            list[Embedding]: Embedding vectors.
         """
         if not self._is_nova_model():
             return super()._get_text_embeddings(texts)
@@ -135,13 +135,13 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         return [self._get_text_embedding(text) for text in texts]
 
     async def _aget_text_embeddings(self, texts: list[str]) -> list[Embedding]:
-        """テキスト埋め込みの非同期バッチインタフェース。
+        """Asynchronous batch interface for text embeddings.
 
         Args:
-            texts (list[str]): テキストリスト
+            texts (list[str]): Text list.
 
         Returns:
-            list[Embedding]: 埋め込みベクトルリスト
+            list[Embedding]: Embedding vectors.
         """
         if not self._is_nova_model():
             return await super()._aget_text_embeddings(texts)
@@ -151,13 +151,13 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         )
 
     def _get_image_embedding(self, img_file_path: ImageType) -> Embedding:
-        """画像埋め込みの同期インタフェース。
+        """Synchronous interface for image embeddings.
 
         Args:
-            img_file_path (ImageType): 画像ファイルパス
+            img_file_path (ImageType): Image file path.
 
         Returns:
-            Embedding: 埋め込みベクトル
+            Embedding: Embedding vector.
         """
         encoded, fmt = self._read_media_payload(
             img_file_path,
@@ -178,26 +178,26 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         return self._invoke_single_embedding(request_body)
 
     async def _aget_image_embedding(self, img_file_path: ImageType) -> Embedding:
-        """画像埋め込みの非同期インタフェース。
+        """Asynchronous interface for image embeddings.
 
         Args:
-            img_file_path (ImageType): 画像ファイルパス
+            img_file_path (ImageType): Image file path.
 
         Returns:
-            Embedding: 埋め込みベクトル
+            Embedding: Embedding vector.
         """
         return await asyncio.to_thread(self._get_image_embedding, img_file_path)
 
     def _get_audio_embeddings(
         self, audio_file_paths: list[AudioType]
     ) -> list[Embedding]:
-        """音声埋め込みの同期インタフェース。
+        """Synchronous interface for audio embeddings.
 
         Args:
-            audio_file_paths (list[AudioType]): 音声ファイルパス
+            audio_file_paths (list[AudioType]): Audio file paths.
 
         Returns:
-            list[Embedding]: 埋め込みベクトル
+            list[Embedding]: Embedding vectors.
         """
         vecs: list[Embedding] = []
         for audio in audio_file_paths:
@@ -223,27 +223,27 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
     async def _aget_audio_embeddings(
         self, audio_file_paths: list[AudioType]
     ) -> list[Embedding]:
-        """音声埋め込みの非同期インタフェース。
+        """Asynchronous interface for audio embeddings.
 
         Args:
-            audio_file_paths (list[AudioType]): 音声ファイルパス
+            audio_file_paths (list[AudioType]): Audio file paths.
 
         Returns:
-            list[Embedding]: 埋め込みベクトル
+            list[Embedding]: Embedding vectors.
         """
         return await asyncio.to_thread(self._get_audio_embeddings, audio_file_paths)
 
     async def aget_audio_embedding_batch(
         self, audio_file_paths: list[AudioType], show_progress: bool = False
     ) -> list[Embedding]:
-        """音声埋め込みの非同期バッチインタフェース。
+        """Async batch interface for audio embeddings.
 
         Args:
-            audio_file_paths (list[AudioType]): 音声ファイルパス
-            show_progress (bool, optional): 進捗の表示。Defaults to False.
+            audio_file_paths (list[AudioType]): Audio file paths.
+            show_progress (bool, optional): Show progress. Defaults to False.
 
         Returns:
-            list[Embedding]: 埋め込みベクトル
+            list[Embedding]: Embedding vectors.
         """
         return await self._aget_media_embedding_batch(
             audio_file_paths,
@@ -254,13 +254,13 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
     def _get_video_embeddings(
         self, video_file_paths: list[VideoType]
     ) -> list[Embedding]:
-        """動画埋め込みの同期インタフェース。
+        """Synchronous interface for video embeddings.
 
         Args:
-            video_file_paths (list[VideoType]): 動画ファイルパス
+            video_file_paths (list[VideoType]): Video file paths.
 
         Returns:
-            list[Embedding]: 埋め込みベクトル
+            list[Embedding]: Embedding vectors.
         """
         vecs: list[Embedding] = []
         video_overrides = self.additional_kwargs.get("video_payload_overrides", {})
@@ -295,27 +295,27 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
     async def _aget_video_embeddings(
         self, video_file_paths: list[VideoType]
     ) -> list[Embedding]:
-        """動画埋め込みの非同期インタフェース。
+        """Asynchronous interface for video embeddings.
 
         Args:
-            video_file_paths (list[VideoType]): 動画ファイルパス
+            video_file_paths (list[VideoType]): Video file paths.
 
         Returns:
-            list[Embedding]: 埋め込みベクトル
+            list[Embedding]: Embedding vectors.
         """
         return await asyncio.to_thread(self._get_video_embeddings, video_file_paths)
 
     async def aget_video_embedding_batch(
         self, video_file_paths: list[VideoType], show_progress: bool = False
     ) -> list[Embedding]:
-        """動画埋め込みの非同期バッチインタフェース。
+        """Async batch interface for video embeddings.
 
         Args:
-            video_file_paths (list[VideoType]): 動画ファイルパス
-            show_progress (bool, optional): 進捗の表示。Defaults to False.
+            video_file_paths (list[VideoType]): Video file paths.
+            show_progress (bool, optional): Show progress. Defaults to False.
 
         Returns:
-            list[Embedding]: 埋め込みベクトル
+            list[Embedding]: Embedding vectors.
         """
         return await self._aget_media_embedding_batch(
             video_file_paths,
@@ -329,15 +329,16 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         worker: Callable[[list[Any]], Awaitable[list[Embedding]]],
         show_progress: bool,
     ) -> list[Embedding]:
-        """メディア埋め込みの汎用非同期バッチ処理。
+        """Generic async batch processing for media embeddings.
 
         Args:
-            media_file_paths (list[Any]): メディアファイルパス
-            worker (Callable[[list[Any]], Awaitable[list[Embedding]]]): 埋め込み実行関数
-            show_progress (bool): 進捗表示フラグ
+            media_file_paths (list[Any]): Media file paths.
+            worker (Callable[[list[Any]], Awaitable[list[Embedding]]]):
+                Embedding executor.
+            show_progress (bool): Whether to show progress.
 
         Returns:
-            list[Embedding]: 埋め込みベクトル
+            list[Embedding]: Embedding vectors.
         """
         from llama_index.core.callbacks.schema import CBEventType, EventPayload
 
@@ -398,15 +399,15 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         expected_exts: set[str],
         fallback_format_key: str,
     ) -> tuple[str, str]:
-        """メディアファイルから base64 文字列とフォーマットを取得する。
+        """Obtain a base64 string and media format from a media file.
 
         Args:
-            media (AudioType | VideoType): メディアファイル
-            expected_exts (set[str]): 許可された拡張子セット
-            fallback_format_key (str): 追加設定で参照するフォーマットのキー
+            media (AudioType | VideoType | ImageType): Media file.
+            expected_exts (set[str]): Allowed extension set.
+            fallback_format_key (str): Key to look up a format override.
 
         Returns:
-            tuple[str, str]: (base64 文字列, フォーマット文字列)
+            tuple[str, str]: Base64 string and format string.
         """
         file_name: Optional[str] = None
         if isinstance(media, BytesIO):
@@ -436,15 +437,15 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         expected_exts: set[str],
         fallback_format_key: str,
     ) -> str:
-        """メディアフォーマットを決定する。
+        """Determine the media format.
 
         Args:
-            file_name (Optional[str]): ファイル名
-            expected_exts (set[str]): 許可された拡張子セット
-            fallback_format_key (str): 追加設定で参照するフォーマットのキー
+            file_name (Optional[str]): File name.
+            expected_exts (set[str]): Allowed extension set.
+            fallback_format_key (str): Key to look up a format override.
 
         Returns:
-            str: フォーマット名
+            str: Format name.
         """
         if file_name:
             ext = Path(file_name).suffix.lower()
@@ -464,15 +465,15 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         media_payload: dict[str, Any],
         params_override_key: Optional[str] = None,
     ) -> dict[str, Any]:
-        """Nova への単一埋め込みリクエストボディを構築する。
+        """Build a single-embedding request body for Nova.
 
         Args:
-            media_field (str): メディアフィールド名
-            media_payload (dict[str, Any]): メディアペイロード
-            params_override_key (Optional[str]): 追加設定キー
+            media_field (str): Media field name.
+            media_payload (dict[str, Any]): Media payload.
+            params_override_key (Optional[str]): Additional override key.
 
         Returns:
-            dict[str, Any]: リクエストボディ
+            dict[str, Any]: Request body.
         """
         default_task_type = "SINGLE_EMBEDDING"
         task_type = self.additional_kwargs.get(
@@ -508,13 +509,13 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         }
 
     def _invoke_single_embedding(self, body: dict[str, Any]) -> Embedding:
-        """Bedrock にリクエストを送り埋め込みを取得する。
+        """Send a request to Bedrock and retrieve the embedding.
 
         Args:
-            body (dict[str, Any]): リクエストボディ
+            body (dict[str, Any]): Request body.
 
         Returns:
-            Embedding: 埋め込みベクトル
+            Embedding: Embedding vector.
         """
 
         if self._client is None:

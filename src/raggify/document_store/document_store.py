@@ -16,16 +16,16 @@ __all__ = ["create_document_store_manager"]
 
 
 def create_document_store_manager(cfg: ConfigManager) -> DocumentStoreManager:
-    """同一ソースの更新用ドキュメントストア管理を生成する。
+    """Create the document store manager for tracking source updates.
 
     Args:
-        cfg (ConfigManager): 設定管理
+        cfg (ConfigManager): Config manager.
 
     Raises:
-        RuntimeError: サポート外のプロバイダ
+        RuntimeError: If the provider is unsupported.
 
     Returns:
-        DocumentStoreManager: ドキュメントストア管理
+        DocumentStoreManager: Document store manager.
     """
     table_name = _generate_table_name(cfg)
     match cfg.general.document_store_provider:
@@ -42,21 +42,21 @@ def create_document_store_manager(cfg: ConfigManager) -> DocumentStoreManager:
 
 
 def _generate_table_name(cfg: ConfigManager) -> str:
-    """テーブル名を生成する。
+    """Generate the table name.
 
     Args:
-        cfg (ConfigManager): 設定管理
+        cfg (ConfigManager): Config manager.
 
     Raises:
-        ValueError: 長すぎるテーブル名
+        ValueError: If the table name is too long.
 
     Returns:
-        str: テーブル名
+        str: Table name.
     """
     return sanitize_str(f"{PJNAME_ALIAS}_{cfg.general.knowledgebase_name}_doc")
 
 
-# 以下、プロバイダ毎のコンテナ生成ヘルパー
+# Container factory helpers per provider
 def _redis(cfg: DocumentStoreConfig, table_name: str) -> DocumentStoreManager:
     from llama_index.storage.docstore.redis import RedisDocumentStore
 
@@ -100,8 +100,8 @@ def _local(persist_dir: Path) -> DocumentStoreManager:
 
     if persist_dir.exists():
         try:
-            # IngestionPipeline.persist/load の仕様に追従して、ナレッジベース毎に
-            # サブディレクトリを切って区別するのでテーブル名はデフォルトのものを使用
+            # Follow IngestionPipeline.persist/load:
+            # separate subdirectories per knowledge base, so use default table name.
             store = SimpleDocumentStore.from_persist_dir(str(persist_dir))
             logger.info(f"loaded from persist dir: {persist_dir}")
         except Exception as e:

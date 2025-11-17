@@ -18,16 +18,16 @@ __all__ = ["create_embed_manager"]
 
 
 def create_embed_manager(cfg: ConfigManager) -> EmbedManager:
-    """埋め込み管理のインスタンスを生成する。
+    """Create an embedding manager instance.
 
     Args:
-        cfg (ConfigManager): 設定管理
+        cfg (ConfigManager): Config manager.
 
     Raises:
-        RuntimeError: インスタンス生成に失敗またはプロバイダ指定漏れ
+        RuntimeError: If instantiation fails or providers are not specified.
 
     Returns:
-        EmbedManager: 埋め込み管理
+        EmbedManager: Embedding manager.
     """
     from .embed_manager import EmbedManager
 
@@ -107,7 +107,7 @@ def create_embed_manager(cfg: ConfigManager) -> EmbedManager:
     return EmbedManager(conts)
 
 
-# 以下、プロバイダ毎のコンテナ生成ヘルパー
+# Container generation helpers per provider
 def _openai_text(cfg: ConfigManager) -> EmbedContainer:
     from llama_index.embeddings.openai.base import OpenAIEmbedding
 

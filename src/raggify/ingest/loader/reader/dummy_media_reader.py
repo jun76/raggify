@@ -13,16 +13,16 @@ __all__ = ["DummyMediaReader"]
 
 
 class DummyMediaReader(BaseReader):
-    """後段のデフォルトリーダーにテキストとして解釈・スプリットさせないためのダミーリーダー"""
+    """Dummy reader to prevent downstream default readers from splitting media as text."""
 
     def lazy_load_data(self, path: str, extra_info: Any = None) -> Iterable[Document]:
-        """メディアファイルをダミーとして読み込み、ファイルパスを含むドキュメントを生成する。
+        """Load media files as dummy documents containing file paths.
 
         Args:
-            path (str): ファイルパス
+            path (str): File path.
 
         Returns:
-            Iterable[Document]: テキストドキュメントと画像ドキュメント
+            Iterable[Document]: Documents containing the file path.
         """
         from ....core.metadata import MetaKeys as MK
 
@@ -37,7 +37,7 @@ class DummyMediaReader(BaseReader):
             )
             return []
 
-        # MultiModalVectorStoreIndex 参照用
+        # For MultiModalVectorStoreIndex
         doc = Document(text=path, metadata={MK.FILE_PATH: path})
 
         logger.debug(f"loaded 1 doc from {path}")

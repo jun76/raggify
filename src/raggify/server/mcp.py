@@ -7,7 +7,7 @@ from .fastapi import app as fastapi
 
 __all__ = ["app"]
 
-# FastAPI アプリを MCP サーバとして公開
+# Expose the FastAPI app as an MCP server
 app = FastApiMCP(
     fastapi,
     name=PROJECT_NAME,

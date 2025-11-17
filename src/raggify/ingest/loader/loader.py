@@ -18,40 +18,39 @@ if TYPE_CHECKING:
 
 
 class Loader:
-    """ローダー基底クラス"""
+    """Base loader class."""
 
     def __init__(self, persist_dir: Optional[Path]) -> None:
-        """コンストラクタ
+        """Constructor.
 
         Args:
-            persist_dir (Optional[Path]): 永続化ディレクトリ
+            persist_dir (Optional[Path]): Persist directory.
         """
         self._persist_dir = persist_dir
 
     def _finalize_docs(self, docs: list[Document]) -> None:
-        """メタデータを調整してドキュメントの内容を確定する。
+        """Adjust metadata and finalize documents.
 
         Args:
-            docs (list[Document]): ドキュメント
+            docs (list[Document]): Documents.
         """
         counters: dict[str, int] = defaultdict(int)
         for doc in docs:
             meta = BasicMetaData.from_dict(doc.metadata)
 
-            # IPYNBReader が分割後のドキュメントを全て同一 metadata で返してくるため
-            # こちらで chunk_no として連番を付与
+            # IPYNBReader returns all split documents with identical metadata;
+            # assign chunk_no here.
             counter_key = meta.temp_file_path or meta.file_path or meta.url
             meta.chunk_no = counters[counter_key]
             counters[counter_key] += 1
             doc.metadata[MK.CHUNK_NO] = meta.chunk_no
 
-            # 一意な ID を付与。二回目以降、同一 ID のドキュメントに対しては
-            # IngestionPipeline 内でハッシュ比較が行われ、変更がない場合は戻り値の
-            # ノードリストに含まれない。
+            # Assign a unique ID;
+            # subsequent runs compare hashes in IngestionPipeline and skip unchanged docs.
             doc.id_ = self._generate_doc_id(meta)
             doc.doc_id = doc.id_
 
-            # BM25 が text_resource を参照するため、中身が空なら .text を転記する
+            # BM25 refers to text_resource; if empty, copy .text into it.
             text_resource = getattr(doc, "text_resource", None)
             text_value = getattr(text_resource, "text", None) if text_resource else None
             if not text_value:
@@ -63,13 +62,13 @@ class Loader:
                     )
 
     def _generate_doc_id(self, meta: BasicMetaData) -> str:
-        """doc_id を生成する。
+        """Generate a doc_id string.
 
         Args:
-            meta (BasicMetaData): メタデータの辞書
+            meta (BasicMetaData): Metadata container.
 
         Returns:
-            str: doc_id 文字列
+            str: Doc ID string.
         """
         return (
             f"{MK.FILE_PATH}:{meta.file_path}_"
@@ -79,7 +78,7 @@ class Loader:
             f"{MK.ASSET_NO}:{meta.asset_no}_"
             f"{MK.CHUNK_NO}:{meta.chunk_no}_"
             f"{MK.URL}:{meta.url}_"
-            f"{MK.TEMP_FILE_PATH}:{meta.temp_file_path}"  # PDF 埋め込み画像等の識別用
+            f"{MK.TEMP_FILE_PATH}:{meta.temp_file_path}"  # To identify embedded images in PDFs, etc.
         )
 
     async def _aparse_documents(
@@ -87,14 +86,14 @@ class Loader:
         docs: Sequence[Document],
         is_canceled: Callable[[], bool],
     ) -> Sequence[BaseNode]:
-        """ドキュメントをノードに分割する。
+        """Split documents into nodes.
 
         Args:
-            docs (Sequence[Document]): ドキュメント
-            is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
+            docs (Sequence[Document]): Documents.
+            is_canceled (Callable[[], bool]): Cancellation flag for the job.
 
         Returns:
-            Sequence[BaseNode]: 分割後のノード
+            Sequence[BaseNode]: Parsed nodes.
         """
         if not docs or is_canceled():
             return []
@@ -130,15 +129,15 @@ class Loader:
         docs: list[Document],
         is_canceled: Callable[[], bool],
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
-        """ドキュメントをモダリティ別に分ける。
+        """Split documents by modality.
 
         Args:
-            docs (list[Document]): 入力ドキュメント
-            is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
+            docs (list[Document]): Input documents.
+            is_canceled (Callable[[], bool]): Cancellation flag for the job.
 
         Returns:
             tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
-                テキストノード、画像ノード、音声ノード、動画ノード
+                Text, image, audio, and video nodes.
         """
         self._finalize_docs(docs)
         nodes = await self._aparse_documents(docs=docs, is_canceled=is_canceled)
@@ -180,20 +179,21 @@ class Loader:
         return text_nodes, image_nodes, audio_nodes, video_nodes
 
     def _is_multimodal_node(self, node: BaseNode, exts: set[str]) -> bool:
-        """マルチモーダルノードか。
+        """Return True if the node matches multimodal extensions.
 
         Args:
-            node (BaseNode): 対象ノード
-            exts (set[str]): 拡張子セット
+            node (BaseNode): Target node.
+            exts (set[str]): Extension set.
 
         Returns:
-            bool: 画像ノードなら True
+            bool: True if matched.
         """
-        # ファイルパスか URL の末尾に特定の拡張子が含まれるものをマルチモーダルノードとする
+        # Treat nodes whose file path or URL ends with specific extensions as multimodal
         path = node.metadata.get(MK.FILE_PATH, "")
         url = node.metadata.get(MK.URL, "")
 
-        # 独自 reader を使用し、temp_file_path に画像ファイルの拡張子が含まれるものも抽出
+        # Include those whose temp_file_path
+        # (via custom readers) contains relevant extensions
         temp_file_path = node.metadata.get(MK.TEMP_FILE_PATH, "")
 
         return (
@@ -203,34 +203,34 @@ class Loader:
         )
 
     def _is_image_node(self, node: BaseNode) -> bool:
-        """画像ノードか。
+        """Return True if the node is an image node.
 
         Args:
-            node (BaseNode): 対象ノード
+            node (BaseNode): Target node.
 
         Returns:
-            bool: 画像ノードなら True
+            bool: True when the node represents an image.
         """
         return self._is_multimodal_node(node=node, exts=Exts.IMAGE)
 
     def _is_audio_node(self, node: BaseNode) -> bool:
-        """音声ノードか。
+        """Return True if the node is an audio node.
 
         Args:
-            node (BaseNode): 対象ノード
+            node (BaseNode): Target node.
 
         Returns:
-            bool: 音声ノードなら True
+            bool: True when the node represents audio.
         """
         return self._is_multimodal_node(node=node, exts=Exts.AUDIO)
 
     def _is_video_node(self, node: BaseNode) -> bool:
-        """動画ノードか。
+        """Return True if the node is a video node.
 
         Args:
-            node (BaseNode): 対象ノード
+            node (BaseNode): Target node.
 
         Returns:
-            bool: 動画ノードなら True
+            bool: True when the node represents video.
         """
         return self._is_multimodal_node(node=node, exts=Exts.VIDEO)

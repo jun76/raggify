@@ -17,20 +17,20 @@ if TYPE_CHECKING:
 
 
 class FileLoader(Loader):
-    """ローカルファイルを読み込み、ノードを生成するためのクラス。"""
+    """Loader that reads local files and generates nodes."""
 
     def __init__(self, persist_dir: Optional[Path]) -> None:
-        """コンストラクタ
+        """Constructor.
 
         Args:
-            persist_dir (Optional[Path]): 永続化ディレクトリ
+            persist_dir (Optional[Path]): Persist directory.
         """
         super().__init__(persist_dir)
 
-        # 独自 reader の辞書。後段で SimpleDirectoryReader に渡す
+        # Dictionary of custom readers to pass to SimpleDirectoryReader
         self._readers: dict[str, BaseReader] = {Exts.PDF: MultiPDFReader()}
 
-        # 動画 -> 画像＋音声のように、他のモダリティに分解して処理する場合は reader を通す
+        # For cases like video -> image + audio decomposition, use a reader
         cfg = _rt().cfg.general
         if cfg.use_modality_fallback:
             if cfg.video_embed_provider is None:
@@ -38,7 +38,7 @@ class FileLoader(Loader):
                 for ext in Exts.VIDEO:
                     self._readers[ext] = video_reader
 
-            # TODO: 画像や音声の文字起こし等に対応する場合はここに追加
+            # TODO: Add readers for image/audio transcription if supported in the future
 
         dummy_reader = DummyMediaReader()
         for ext in Exts.PASS_THROUGH_MEDIA:
@@ -49,19 +49,20 @@ class FileLoader(Loader):
         root: str,
         is_canceled: Callable[[], bool],
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
-        """ローカルパス（ディレクトリ、ファイル）からコンテンツを取り込み、ノードを生成する。
-        ディレクトリの場合はツリーを下りながら複数ファイルを取り込む。
+        """Load content from a local path and generate nodes.
+
+        Directories are traversed recursively to ingest multiple files.
 
         Args:
-            root (str): 対象パス
-            is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
+            root (str): Target path.
+            is_canceled (Callable[[], bool]): Whether this job has been canceled.
 
         Raises:
-            ValueError: パスの指定誤り等
+            ValueError: For invalid path or load errors.
 
         Returns:
             tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
-                テキストノード、画像ノード、音声ノード、動画ノード
+                Text, image, audio, and video nodes.
         """
         from llama_index.core.readers.file.base import SimpleDirectoryReader
 
@@ -87,15 +88,15 @@ class FileLoader(Loader):
         paths: list[str],
         is_canceled: Callable[[], bool],
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
-        """パスリスト内の複数パスからコンテンツを取得し、ノードを生成する。
+        """Load content from multiple paths and generate nodes.
 
         Args:
-            paths (list[str]): パスリスト
-            is_canceled (Callable[[], bool]): このジョブがキャンセルされたか。
+            paths (list[str]): Path list.
+            is_canceled (Callable[[], bool]): Whether this job has been canceled.
 
         Returns:
             tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
-                テキストノード、画像ノード、音声ノード、動画ノード
+                Text, image, audio, and video nodes.
         """
         texts = []
         images = []

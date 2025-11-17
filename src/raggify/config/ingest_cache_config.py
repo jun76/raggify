@@ -19,7 +19,7 @@ class IngestCacheProvider(StrEnum):
 
 @dataclass(kw_only=True)
 class IngestCacheConfig(DataClassDictMixin):
-    """インジェストキャッシュ関連の設定用データクラス"""
+    """Config dataclass for ingest cache settings."""
 
     # Redis
     redis_host: str = "localhost"

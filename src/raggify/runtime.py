@@ -30,10 +30,10 @@ _lock = threading.Lock()
 
 
 class Runtime:
-    """実行時プロセスのコンテキストで各種インスタンスを維持管理するためのクラス。"""
+    """Manage various instances in the context of the runtime process."""
 
     def __init__(self) -> None:
-        """コンストラクタ"""
+        """Constructor."""
         self._cfg: Optional[ConfigManager] = None
         self._embed_manager: Optional[EmbedManager] = None
         self._vector_store: Optional[VectorStoreManager] = None
@@ -46,10 +46,10 @@ class Runtime:
         self._pipeline_lock = threading.Lock()
 
     def _release(self, with_cfg: bool = True) -> None:
-        """既存のリソースを破棄する。
+        """Dispose of existing resources.
 
         Args:
-            with_cfg (bool, optional): メモリ上の設定値も破棄するか。Defaults to True.
+            with_cfg (bool, optional): Whether to also clear in-memory config. Defaults to True.
         """
         if with_cfg:
             self._cfg = None
@@ -63,18 +63,18 @@ class Runtime:
         self._html_loader = None
 
     def build(self) -> None:
-        """各管理クラスのインスタンスを生成する。"""
+        """Create instances for each manager class."""
         self._release()
         self.touch()
 
     def rebuild(self) -> None:
-        """各管理クラスのインスタンスを再生成する。"""
-        # build との違いは、ランタイム経由で書き換えられたメモリ上の設定値を生かす点
+        """Recreate instances for each manager class."""
+        # Unlike build, keep in-memory config updates made via the runtime.
         self._release(False)
         self.touch()
 
     def touch(self) -> None:
-        """各管理クラスのインスタンス生成が未だであれば生成する。"""
+        """Instantiate manager classes if they are not yet created."""
         from .logger import configure_logging
 
         self.embed_manager
@@ -89,10 +89,10 @@ class Runtime:
         logger.setLevel(self.cfg.general.log_level)
 
     def _use_local_workspace(self) -> bool:
-        """キャッシュやドキュメントストアをローカルに保存するか
+        """Whether to persist cache or document store locally.
 
         Returns:
-            bool: ローカルに保存する場合 True
+            bool: True when persisting locally.
         """
         from .config.document_store_config import DocumentStoreProvider
         from .config.ingest_cache_config import IngestCacheProvider
@@ -111,16 +111,16 @@ class Runtime:
         modality: Optional[Modality] = None,
         persist_dir: Optional[Path] = None,
     ) -> IngestionPipeline:
-        """パイプラインを新規作成またはロードする。
+        """Create or load an ingestion pipeline.
 
         Args:
-            transformations (list[TransformComponent] | None): 変換一式
-            modality (Optional[Modality], optional): モダリティ。Defaults to None.
-                None の場合は docstore 専用。Defaults to None.
-            persist_dir (Optional[Path], optional): 永続化ディレクトリ。Defaults to None.
+            transformations (list[TransformComponent] | None): Sequence of transforms.
+            modality (Optional[Modality], optional): Modality. Defaults to None.
+                When None, the pipeline is docstore-only. Defaults to None.
+            persist_dir (Optional[Path], optional): Persistence directory. Defaults to None.
 
         Returns:
-            IngestionPipeline: パイプライン
+            IngestionPipeline: Pipeline instance.
         """
         from llama_index.core.ingestion import DocstoreStrategy
 
@@ -162,12 +162,12 @@ class Runtime:
         modality: Optional[Modality] = None,
         persist_dir: Optional[Path] = None,
     ) -> None:
-        """パイプラインを永続化する。
+        """Persist the pipeline to storage.
 
         Args:
-            pipe (IngestionPipeline): パイプライン
-            modality (Optional[Modality], optional): モダリティ。Defaults to None.
-            persist_dir (Optional[Path], optional): 永続化ディレクトリ。Defaults to None.
+            pipe (IngestionPipeline): Pipeline instance.
+            modality (Optional[Modality], optional): Modality. Defaults to None.
+            persist_dir (Optional[Path], optional): Persistence directory. Defaults to None.
         """
         if not self._use_local_workspace():
             return
@@ -186,7 +186,7 @@ class Runtime:
             logger.warning(f"failed to persist: {e}")
 
     def delete_all_persisted_data(self) -> None:
-        """各ストアに保存されているデータを全件削除する。"""
+        """Delete all data persisted in each store."""
         from llama_index.core.ingestion.cache import DEFAULT_CACHE_NAME
         from llama_index.core.storage.docstore.types import DEFAULT_PERSIST_FNAME
 
@@ -206,7 +206,7 @@ class Runtime:
             self.ingest_cache.delete_all(persist_path_cache)
             self.document_store.delete_all(persist_path_docstore)
 
-    # 以下、シングルトンのインスタンス取得用
+    # Singleton getters follow.
     @property
     def cfg(self) -> ConfigManager:
         if self._cfg is None:
@@ -287,10 +287,10 @@ class Runtime:
 
 
 def get_runtime() -> Runtime:
-    """ランタイムシングルトンの getter。
+    """Getter for the runtime singleton.
 
     Returns:
-        Runtime: ランタイム
+        Runtime: Runtime instance.
     """
     global _runtime
 
@@ -303,7 +303,7 @@ def get_runtime() -> Runtime:
 
 
 def _shutdown_runtime() -> None:
-    """ランタイムの終了処理"""
+    """Shutdown handler for the runtime."""
     global _runtime
 
     if _runtime is not None:

@@ -17,16 +17,16 @@ if TYPE_CHECKING:
 
 
 class AddChunkIndexTransform(TransformComponent):
-    """チャンク番号付与用トランスフォーム"""
+    """Transform to assign chunk indexes."""
 
     def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
-        """パイプライン側から呼ばれるインタフェース。
+        """Interface called from the pipeline.
 
         Args:
-            nodes (list[BaseNode]): 分割済みのノード
+            nodes (list[BaseNode]): Nodes already split.
 
         Returns:
-            list[BaseNode]: チャンク番号付与後のノード
+            list[BaseNode]: Nodes with chunk numbers assigned.
         """
         from ..core.metadata import MetaKeys as MK
 
@@ -47,45 +47,46 @@ class AddChunkIndexTransform(TransformComponent):
 
 
 class _BaseEmbedTransform(TransformComponent):
-    """埋め込み用トランスフォーム"""
+    """Base transform for embedding."""
 
     def __init__(
         self,
         batch_embed_fn: Callable[[list], Awaitable[list[list[float]]]],
         extract_fn: Callable[[BaseNode], object],
     ):
-        """コンストラクタ。
+        """Constructor.
 
         Args:
-            batch_embed_fn (Callable[[list], Awaitable[list[list[float]]]]): バッチ埋め込み関数
-            extract_fn (Callable[[BaseNode], object]): モダリティ別のノード抽出関数
+            batch_embed_fn (Callable[[list], Awaitable[list[list[float]]]]):
+                Batch embedding function.
+            extract_fn (Callable[[BaseNode], object]): Modality-specific extractor.
         """
         self._batch_embed_fn = batch_embed_fn
         self._extract_fn = extract_fn
 
     def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
-        """同期インタフェース。
+        """Synchronous interface.
 
         Args:
-            nodes (list[BaseNode]): 埋め込み対象ノード
+            nodes (list[BaseNode]): Nodes to embed.
 
         Returns:
-            list[BaseNode]: 埋め込み後のノード
+            list[BaseNode]: Nodes after embedding.
         """
         return asyncio_run(self.acall(nodes=nodes, **kwargs))
 
     async def acall(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
-        """パイプライン側から呼ばれるインタフェース。
+        """Interface called from the pipeline asynchronously.
 
         Args:
-            nodes (list[BaseNode]): 埋め込み対象ノード
+            nodes (list[BaseNode]): Nodes to embed.
 
         Returns:
-            list[BaseNode]: 埋め込み後のノード
+            list[BaseNode]: Nodes after embedding.
         """
         from ..core.metadata import MetaKeys as MK
 
-        # 入力抽出（欠損はスキップしつつ、元ノードへの逆写像を保持）
+        # Extract inputs (skip missing while keeping back-references to original nodes)
         inputs: list[object] = []
         backrefs: list[int] = []
         for i, node in enumerate(nodes):
@@ -99,55 +100,56 @@ class _BaseEmbedTransform(TransformComponent):
         if not inputs:
             return nodes
 
-        # バッチ埋め込み
+        # Batch embedding
         vecs = await self._batch_embed_fn(inputs)
         if not vecs:
             return nodes
 
         if len(vecs) != len(inputs):
-            # 安全側: 長さ不一致なら何も書かない（ログは上位で）
+            # Safety: do not write when lengths differ (log at caller)
             return nodes
 
-        # node へ戻し書き
+        # Write back to nodes
         for i, vec in zip(backrefs, vecs):
             nodes[i].embedding = vec
 
             if nodes[i].metadata.get(MK.TEMP_FILE_PATH):
-                # 一時ファイルを持つノードの file_path は base_source で上書き
-                # （空になるか、PDF 等の独自 reader が退避していた元パスが復元されるか）
+                # Overwrite file_path with base_source for nodes with temp files
+                # (either becomes empty or restores original path kept by
+                # custom readers such as PDF)
                 nodes[i].metadata[MK.FILE_PATH] = nodes[i].metadata[MK.BASE_SOURCE]
 
         return nodes
 
 
 def _get_media_path(node: BaseNode) -> str:
-    """テキスト以外の埋め込み対象メディアのパスを取得する。
+    """Get media path for embedded non-text content.
 
     Args:
-        node (BaseNode): 対象ノード
+        node (BaseNode): Target node.
 
     Returns:
-        str: メディアのパス
+        str: Media path.
     """
     from ..core.metadata import MetaKeys as MK
 
     temp = node.metadata.get(MK.TEMP_FILE_PATH)
     if temp:
-        # フェッチした一時ファイル
+        # Temp file fetched
         return temp
 
-    # ローカルファイル
+    # Local file
     return node.metadata[MK.FILE_PATH]
 
 
 def make_text_embed_transform(embed: EmbedManager) -> _BaseEmbedTransform:
-    """テキストノードの埋め込みトランスフォーム生成用ラッパー。
+    """Factory for text embedding transform.
 
     Args:
-        embed (EmbedManager): 埋め込み管理
+        embed (EmbedManager): Embedding manager.
 
     Returns:
-        _BaseEmbedTransform: トランスフォーム
+        _BaseEmbedTransform: Transform instance.
     """
     from llama_index.core.schema import TextNode
 
@@ -165,13 +167,13 @@ def make_text_embed_transform(embed: EmbedManager) -> _BaseEmbedTransform:
 
 
 def make_image_embed_transform(embed: EmbedManager) -> _BaseEmbedTransform:
-    """画像ノードの埋め込みトランスフォーム生成用ラッパー。
+    """Factory for image embedding transform.
 
     Args:
-        embed (EmbedManager): 埋め込み管理
+        embed (EmbedManager): Embedding manager.
 
     Returns:
-        _BaseEmbedTransform: トランスフォーム
+        _BaseEmbedTransform: Transform instance.
     """
     from llama_index.core.schema import ImageNode
 
@@ -189,13 +191,13 @@ def make_image_embed_transform(embed: EmbedManager) -> _BaseEmbedTransform:
 
 
 def make_audio_embed_transform(embed: EmbedManager) -> _BaseEmbedTransform:
-    """音声ノードの埋め込みトランスフォーム生成用ラッパー。
+    """Factory for audio embedding transform.
 
     Args:
-        embed (EmbedManager): 埋め込み管理
+        embed (EmbedManager): Embedding manager.
 
     Returns:
-        _BaseEmbedTransform: トランスフォーム
+        _BaseEmbedTransform: Transform instance.
     """
     from ..llama.core.schema import AudioNode
 
@@ -213,13 +215,13 @@ def make_audio_embed_transform(embed: EmbedManager) -> _BaseEmbedTransform:
 
 
 def make_video_embed_transform(embed: EmbedManager) -> _BaseEmbedTransform:
-    """動画ノードの埋め込みトランスフォーム生成用ラッパー。
+    """Factory for video embedding transform.
 
     Args:
-        embed (EmbedManager): 埋め込み管理
+        embed (EmbedManager): Embedding manager.
 
     Returns:
-        _BaseEmbedTransform: トランスフォーム
+        _BaseEmbedTransform: Transform instance.
     """
     from ..llama.core.schema import VideoNode
 

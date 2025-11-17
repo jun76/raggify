@@ -41,14 +41,14 @@ __all__ = [
 
 
 def _get_vector_retriever(rt: Runtime, index: VectorStoreIndex) -> BaseRetriever:
-    """ベクトル検索用リトリーバーを取得する。
+    """Get a retriever for vector search.
 
     Args:
-        rt (Runtime): ランタイム
-        index (VectorStoreIndex): インデックス
+        rt (Runtime): Runtime instance.
+        index (VectorStoreIndex): Index instance.
 
     Returns:
-        BaseRetriever: リトリーバー
+        BaseRetriever: Retriever.
     """
     logger.debug("vector only")
 
@@ -56,15 +56,15 @@ def _get_vector_retriever(rt: Runtime, index: VectorStoreIndex) -> BaseRetriever
 
 
 def _get_bm25_retriever(rt: Runtime) -> Optional[BaseRetriever]:
-    """BM25 モード検索用リトリーバーを取得する。
+    """Get a retriever for BM25 mode.
 
-    コーパスが無い場合は不発。
+    If there is no corpus, this is skipped.
 
     Args:
-        rt (Runtime): ランタイム
+        rt (Runtime): Runtime instance.
 
     Returns:
-        Optional[BaseRetriever]: リトリーバー
+        Optional[BaseRetriever]: Retriever.
     """
     docstore = rt.document_store
     if not docstore.has_bm25_corpus():
@@ -84,16 +84,16 @@ def _get_bm25_retriever(rt: Runtime) -> Optional[BaseRetriever]:
 
 
 def _get_fusion_retriever(rt: Runtime, index: VectorStoreIndex) -> BaseRetriever:
-    """ベクトルと BM25 のフュージョン検索用リトリーバーを取得する。
+    """Get a retriever for fusion search of vector and BM25.
 
-    コーパスが無い場合はベクトル検索にフォールバック。
+    Falls back to vector-only search when there is no corpus.
 
     Args:
-        rt (Runtime): ランタイム
-        index (VectorStoreIndex): インデックス
+        rt (Runtime): Runtime instance.
+        index (VectorStoreIndex): Index instance.
 
     Returns:
-        BaseRetriever: リトリーバー
+        BaseRetriever: Retriever.
     """
     docstore = rt.document_store
     topk = rt.cfg.rerank.topk
@@ -129,15 +129,15 @@ def query_text_text(
     topk: Optional[int] = None,
     mode: Optional[RetrieveMode] = None,
 ) -> list[NodeWithScore]:
-    """クエリ文字列によるテキストドキュメント検索。
+    """Search text documents with a query string.
 
     Args:
-        query (str): クエリ文字列
-        topk (int, optional): 取得件数。Defaults to None.
-        mode (Optional[RetrieveMode], optional): 検索モード。Defaults to None.
+        query (str): Query string.
+        topk (int, optional): Number of results to take. Defaults to None.
+        mode (Optional[RetrieveMode], optional): Retrieval mode. Defaults to None.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[NodeWithScore]: Retrieval results.
     """
     return asyncio_run(aquery_text_text(query=query, topk=topk, mode=mode))
 
@@ -147,15 +147,15 @@ async def aquery_text_text(
     topk: Optional[int] = None,
     mode: Optional[RetrieveMode] = None,
 ) -> list[NodeWithScore]:
-    """クエリ文字列によるテキストドキュメント非同期検索。
+    """Asynchronously search text documents with a query string.
 
     Args:
-        query (str): クエリ文字列
-        topk (int, optional): 取得件数。Defaults to None.
-        mode (Optional[RetrieveMode], optional): 検索モード。Defaults to None.
+        query (str): Query string.
+        topk (int, optional): Number of results to take. Defaults to None.
+        mode (Optional[RetrieveMode], optional): Retrieval mode. Defaults to None.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[NodeWithScore]: Retrieval results.
     """
     rt = _rt()
     store = rt.vector_store
@@ -199,17 +199,17 @@ def query_text_image(
     query: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
-    """クエリ文字列による画像ドキュメント検索。
+    """Search image documents with a text query.
 
     Args:
-        query (str): クエリ文字列
-        topk (int, optional): 取得件数。Defaults to None.
+        query (str): Query string.
+        topk (int, optional): Number of results to take. Defaults to None.
 
     Raises:
-        RuntimeError: テキスト --> 画像埋め込み非対応
+        RuntimeError: The embed model does not support text-to-image embeddings.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[NodeWithScore]: Retrieval results.
     """
     return asyncio_run(aquery_text_image(query=query, topk=topk))
 
@@ -218,17 +218,17 @@ async def aquery_text_image(
     query: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
-    """クエリ文字列による画像ドキュメント非同期検索。
+    """Asynchronously search image documents with a text query.
 
     Args:
-        query (str): クエリ文字列
-        topk (int, optional): 取得件数。Defaults to None.
+        query (str): Query string.
+        topk (int, optional): Number of results to take. Defaults to None.
 
     Raises:
-        RuntimeError: テキスト --> 画像埋め込み非対応
+        RuntimeError: The embed model does not support text-to-image embeddings.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[NodeWithScore]: Retrieval results.
     """
     from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
 
@@ -273,14 +273,14 @@ def query_image_image(
     path: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
-    """クエリ画像による画像ドキュメント検索。
+    """Search image documents with a query image.
 
     Args:
-        path (str): クエリ画像のローカルパス
-        topk (int, optional): 取得件数。Defaults to None.
+        path (str): Local path to the query image.
+        topk (int, optional): Number of results to take. Defaults to None.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[NodeWithScore]: Retrieval results.
     """
     return asyncio_run(aquery_image_image(path=path, topk=topk))
 
@@ -289,14 +289,14 @@ async def aquery_image_image(
     path: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
-    """クエリ画像による画像ドキュメント非同期検索。
+    """Asynchronously search image documents with a query image.
 
     Args:
-        path (str): クエリ画像のローカルパス
-        topk (int, optional): 取得件数。Defaults to None.
+        path (str): Local path to the query image.
+        topk (int, optional): Number of results to take. Defaults to None.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[NodeWithScore]: Retrieval results.
     """
     from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
 
@@ -330,17 +330,17 @@ def query_text_audio(
     query: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
-    """クエリ文字列による音声ドキュメント検索。
+    """Search audio documents with a text query.
 
     Args:
-        query (str): クエリ文字列
-        topk (int, optional): 取得件数。Defaults to None.
+        query (str): Query string.
+        topk (int, optional): Number of results to take. Defaults to None.
 
     Raises:
-        RuntimeError: テキスト --> 音声埋め込み非対応
+        RuntimeError: The embed model does not support text-to-audio embeddings.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[NodeWithScore]: Retrieval results.
     """
     return asyncio_run(aquery_text_audio(query=query, topk=topk))
 
@@ -349,17 +349,17 @@ async def aquery_text_audio(
     query: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
-    """クエリ文字列による音声ドキュメント非同期検索。
+    """Asynchronously search audio documents with a text query.
 
     Args:
-        query (str): クエリ文字列
-        topk (int, optional): 取得件数。Defaults to None.
+        query (str): Query string.
+        topk (int, optional): Number of results to take. Defaults to None.
 
     Raises:
-        RuntimeError: テキスト --> 音声埋め込み非対応
+        RuntimeError: The embed model may not support text-to-audio embeddings.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[NodeWithScore]: Retrieval results.
     """
     rt = _rt()
     store = rt.vector_store
@@ -395,14 +395,14 @@ def query_audio_audio(
     path: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
-    """クエリ音声による音声ドキュメント検索。
+    """Search audio documents with a query audio file.
 
     Args:
-        path (str): クエリ音声のローカルパス
-        topk (int, optional): 取得件数。Defaults to None.
+        path (str): Local path to the query audio file.
+        topk (int, optional): Number of results to take. Defaults to None.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[NodeWithScore]: Retrieval results.
     """
     return asyncio_run(aquery_audio_audio(path=path, topk=topk))
 
@@ -411,14 +411,14 @@ async def aquery_audio_audio(
     path: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
-    """クエリ音声による音声ドキュメント非同期検索。
+    """Asynchronously search audio documents with a query audio file.
 
     Args:
-        path (str): クエリ音声のローカルパス
-        topk (int, optional): 取得件数。Defaults to None.
+        path (str): Local path to the query audio file.
+        topk (int, optional): Number of results to take. Defaults to None.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[NodeWithScore]: Retrieval results.
     """
     rt = _rt()
     store = rt.vector_store
@@ -444,17 +444,17 @@ def query_text_video(
     query: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
-    """クエリ文字列による動画ドキュメント検索。
+    """Search video documents with a text query.
 
     Args:
-        query (str): クエリ文字列
-        topk (int, optional): 取得件数。Defaults to None.
+        query (str): Query string.
+        topk (int, optional): Number of results to take. Defaults to None.
 
     Raises:
-        RuntimeError: テキスト --> 動画埋め込み非対応
+        RuntimeError: The embed model does not support text-to-video embeddings.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[NodeWithScore]: Retrieval results.
     """
     return asyncio_run(aquery_text_video(query=query, topk=topk))
 
@@ -463,17 +463,17 @@ async def aquery_text_video(
     query: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
-    """クエリ文字列による動画ドキュメント非同期検索。
+    """Asynchronously search video documents with a text query.
 
     Args:
-        query (str): クエリ文字列
-        topk (int, optional): 取得件数。Defaults to None.
+        query (str): Query string.
+        topk (int, optional): Number of results to take. Defaults to None.
 
     Raises:
-        RuntimeError: テキスト --> 動画埋め込み非対応
+        RuntimeError: The embed model does not support text-to-video embeddings.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[NodeWithScore]: Retrieval results.
     """
     rt = _rt()
     store = rt.vector_store
@@ -509,17 +509,17 @@ def query_image_video(
     path: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
-    """クエリ画像による動画ドキュメント検索。
+    """Search video documents with a query image.
 
     Args:
-        path (str): クエリ画像のローカルパス
-        topk (int, optional): 取得件数。Defaults to None.
+        path (str): Local path to the query image.
+        topk (int, optional): Number of results to take. Defaults to None.
 
     Raises:
-        RuntimeError: 画像 --> 動画埋め込み非対応
+        RuntimeError: The embed model does not support image-to-video embeddings.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[NodeWithScore]: Retrieval results.
     """
     return asyncio_run(aquery_image_video(path=path, topk=topk))
 
@@ -528,17 +528,17 @@ async def aquery_image_video(
     path: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
-    """クエリ画像による動画ドキュメント非同期検索。
+    """Asynchronously search video documents with a query image.
 
     Args:
-        path (str): クエリ画像のローカルパス
-        topk (int, optional): 取得件数。Defaults to None.
+        path (str): Local path to the query image.
+        topk (int, optional): Number of results to take. Defaults to None.
 
     Raises:
-        RuntimeError: 画像 --> 動画埋め込み非対応
+        RuntimeError: The embed model does not support image-to-video embeddings.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[NodeWithScore]: Retrieval results.
     """
     rt = _rt()
     store = rt.vector_store
@@ -569,17 +569,17 @@ def query_audio_video(
     path: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
-    """クエリ音声による動画ドキュメント検索。
+    """Search video documents with a query audio file.
 
     Args:
-        path (str): クエリ音声のローカルパス
-        topk (int, optional): 取得件数。Defaults to None.
+        path (str): Local path to the query audio file.
+        topk (int, optional): Number of results to take. Defaults to None.
 
     Raises:
-        RuntimeError: 音声 --> 動画埋め込み非対応
+        RuntimeError: The embed model does not support audio-to-video embeddings.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[NodeWithScore]: Retrieval results.
     """
     return asyncio_run(aquery_audio_video(path=path, topk=topk))
 
@@ -588,17 +588,17 @@ async def aquery_audio_video(
     path: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
-    """クエリ音声による動画ドキュメント非同期検索。
+    """Asynchronously search video documents with a query audio file.
 
     Args:
-        path (str): クエリ音声のローカルパス
-        topk (int, optional): 取得件数。Defaults to None.
+        path (str): Local path to the query audio file.
+        topk (int, optional): Number of results to take. Defaults to None.
 
     Raises:
-        RuntimeError: 音声 --> 動画埋め込み非対応
+        RuntimeError: The embed model does not support audio-to-video embeddings.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[NodeWithScore]: Retrieval results.
     """
     rt = _rt()
     store = rt.vector_store
@@ -629,14 +629,14 @@ def query_video_video(
     path: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
-    """クエリ動画による動画ドキュメント検索。
+    """Search video documents with a query video file.
 
     Args:
-        path (str): クエリ動画のローカルパス
-        topk (int, optional): 取得件数。Defaults to None.
+        path (str): Local path to the query video file.
+        topk (int, optional): Number of results to take. Defaults to None.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[NodeWithScore]: Retrieval results.
     """
     return asyncio_run(aquery_video_video(path=path, topk=topk))
 
@@ -645,14 +645,14 @@ async def aquery_video_video(
     path: str,
     topk: Optional[int] = None,
 ) -> list[NodeWithScore]:
-    """クエリ動画による動画ドキュメント非同期検索。
+    """Asynchronously search video documents with a query video file.
 
     Args:
-        path (str): クエリ動画のローカルパス
-        topk (int, optional): 取得件数。Defaults to None.
+        path (str): Local path to the query video file.
+        topk (int, optional): Number of results to take. Defaults to None.
 
     Returns:
-        list[NodeWithScore]: 検索結果のリスト
+        list[NodeWithScore]: Retrieval results.
     """
     rt = _rt()
     store = rt.vector_store

@@ -20,7 +20,7 @@ class VectorStoreProvider(StrEnum):
 
 @dataclass(kw_only=True)
 class VectorStoreConfig(DataClassDictMixin):
-    """ベクトルストア関連の設定用データクラス"""
+    """Config dataclass for vector store settings."""
 
     # Chroma
     chroma_persist_dir: Path = DEFAULT_WORKSPACE_PATH / "chroma_db"

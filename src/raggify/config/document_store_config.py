@@ -19,7 +19,7 @@ class DocumentStoreProvider(StrEnum):
 
 @dataclass(kw_only=True)
 class DocumentStoreConfig(DataClassDictMixin):
-    """ドキュメントストア関連の設定用データクラス"""
+    """Config dataclass for document store settings."""
 
     # Redis
     redis_host: str = "localhost"

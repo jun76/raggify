@@ -13,16 +13,16 @@ __all__ = ["create_rerank_manager"]
 
 
 def create_rerank_manager(cfg: ConfigManager) -> RerankManager:
-    """リランク管理のインスタンスを生成する。
+    """Create an instance of the rerank manager.
 
     Args:
-        cfg (ConfigManager): 設定管理
+        cfg (ConfigManager): Configuration manager.
 
     Raises:
-        RuntimeError: インスタンス生成に失敗
+        RuntimeError: Failed to create an instance.
 
     Returns:
-        RerankManager: リランク管理
+        RerankManager: Rerank manager.
     """
     from .rerank_manager import RerankManager
 
@@ -40,7 +40,7 @@ def create_rerank_manager(cfg: ConfigManager) -> RerankManager:
         raise RuntimeError(f"failed to create rerank: {e}") from e
 
 
-# 以下、プロバイダ毎のコンテナ生成ヘルパー
+# Container constructors for each provider.
 def _cohere(cfg: ConfigManager) -> RerankContainer:
     from llama_index.postprocessor.cohere_rerank import CohereRerank
 

@@ -21,18 +21,18 @@ def create_vector_store_manager(
     embed: EmbedManager,
     docstore: DocumentStoreManager,
 ) -> VectorStoreManager:
-    """ベクトルストア管理のインスタンスを生成する。
+    """Create an instance of the vector store manager.
 
     Args:
-        cfg (ConfigManager): 設定管理
-        embed (EmbedManager): 埋め込み管理
-        docstore (DocumentStoreManager): ドキュメントストア管理
+        cfg (ConfigManager): Configuration manager.
+        embed (EmbedManager): Embedding manager.
+        docstore (DocumentStoreManager): Document store manager.
 
     Raises:
-        RuntimeError: インスタンス生成に失敗またはプロバイダ指定漏れ
+        RuntimeError: Failed to create an instance or provider not specified.
 
     Returns:
-        VectorStoreManager: ベクトルストア管理
+        VectorStoreManager: Vector store manager.
     """
     from .vector_store_manager import VectorStoreManager
 
@@ -77,18 +77,18 @@ def create_vector_store_manager(
 def _create_container(
     cfg: ConfigManager, space_key: str, dim: int
 ) -> VectorStoreContainer:
-    """空間キー毎のコンテナを生成する。
+    """Create a container for each space key.
 
     Args:
-        cfg (ConfigManager): 設定管理
-        space_key (str): 空間キー
-        dim (int): 埋め込み次元
+        cfg (ConfigManager): Configuration manager.
+        space_key (str): Space key.
+        dim (int): Embedding dimension.
 
     Raises:
-        RuntimeError: サポート外のプロバイダ
+        RuntimeError: Unsupported provider.
 
     Returns:
-        VectorStoreContainer: コンテナ
+        VectorStoreContainer: Container instance.
     """
     table_name = _generate_table_name(cfg, space_key)
     match cfg.general.vector_store_provider:
@@ -107,24 +107,24 @@ def _create_container(
 
 
 def _generate_table_name(cfg: ConfigManager, space_key: str) -> str:
-    """テーブル名を生成する。
+    """Generate a table name.
 
     Args:
-        cfg (ConfigManager): 設定管理
-        space_key (str): 空間キー
+        cfg (ConfigManager): Configuration manager.
+        space_key (str): Space key.
 
     Raises:
-        ValueError: 長すぎるテーブル名
+        ValueError: Table name is too long.
 
     Returns:
-        str: テーブル名
+        str: Table name.
     """
     return sanitize_str(
         f"{PJNAME_ALIAS}_{cfg.general.knowledgebase_name}_{space_key}_vec"
     )
 
 
-# 以下、プロバイダ毎のコンテナ生成ヘルパー
+# Container generators for each provider.
 def _pgvector(
     cfg: VectorStoreConfig, table_name: str, dim: int
 ) -> VectorStoreContainer:

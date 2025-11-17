@@ -29,10 +29,10 @@ Embeddings = Sequence[float]
 
 @dataclass(kw_only=True)
 class AudioEncoders:
-    """音声検索用エンコーダ群。
+    """Encoders for audio retrieval.
 
-    text_encoder / audio_encoder には、それぞれクエリのリストを受け取り
-    埋め込みベクトルのリストを返す非同期関数を渡す。
+    Provide async functions that take lists of queries and return lists of embeddings
+    for text_encoder and audio_encoder respectively.
     """
 
     text_encoder: Optional[Callable[[list[str]], Awaitable[list[Embeddings]]]] = None
@@ -40,13 +40,13 @@ class AudioEncoders:
 
     @classmethod
     def from_embed_model(cls, embed_model: Optional[BaseEmbedding]) -> AudioEncoders:
-        """埋め込みモデルから利用可能なエンコーダを生成する。
+        """Create encoders available from the embedding model.
 
         Args:
-            embed_model (Optional[BaseEmbedding]): 埋め込みモデル
+            embed_model (Optional[BaseEmbedding]): Embedding model.
 
         Returns:
-            AudioEncoders: テキスト・音声エンコーダを含むインスタンス
+            AudioEncoders: Instance containing text and audio encoders.
         """
         if embed_model is None:
             return cls()
@@ -77,13 +77,13 @@ class AudioEncoders:
         return cls(text_encoder=text_encoder, audio_encoder=audio_encoder)
 
     async def aencode_text(self, queries: list[str]) -> list[Embeddings]:
-        """テキストクエリ群を埋め込みベクトルへ変換する。
+        """Convert text queries to embeddings.
 
         Args:
-            queries (list[str]): テキストクエリのリスト
+            queries (list[str]): List of text queries.
 
         Returns:
-            list[Embeddings]: テキスト埋め込みベクトルのリスト
+            list[Embeddings]: List of text embeddings.
         """
         if self.text_encoder is None:
             raise RuntimeError("text encoder for audio retrieval is not available")
@@ -91,13 +91,13 @@ class AudioEncoders:
         return await self.text_encoder(queries)
 
     async def aencode_audio(self, paths: list[str]) -> list[Embeddings]:
-        """音声ファイル群を埋め込みベクトルへ変換する。
+        """Convert audio files to embeddings.
 
         Args:
-            paths (list[str]): 音声ファイルパスのリスト
+            paths (list[str]): List of audio file paths.
 
         Returns:
-            list[Embeddings]: 音声埋め込みベクトルのリスト
+            list[Embeddings]: List of audio embeddings.
         """
         if self.audio_encoder is None:
             raise RuntimeError("audio encoder for audio retrieval is not available")
@@ -107,20 +107,20 @@ class AudioEncoders:
 
 @dataclass(kw_only=True)
 class VideoEncoders(AudioEncoders):
-    """動画検索用エンコーダ群。"""
+    """Encoders for video retrieval."""
 
     image_encoder: Optional[Callable[[list[str]], Awaitable[list[Embeddings]]]] = None
     video_encoder: Optional[Callable[[list[str]], Awaitable[list[Embeddings]]]] = None
 
     @classmethod
     def from_embed_model(cls, embed_model: Optional[BaseEmbedding]) -> VideoEncoders:
-        """埋め込みモデルから利用可能なエンコーダを生成する。
+        """Create encoders available from the embedding model.
 
         Args:
-            embed_model (Optional[BaseEmbedding]): 埋め込みモデル
+            embed_model (Optional[BaseEmbedding]): Embedding model.
 
         Returns:
-            VideoEncoders: テキスト・音声・画像・動画エンコーダを含むインスタンス
+            VideoEncoders: Instance containing text, audio, image, and video encoders.
         """
         base = super().from_embed_model(embed_model)
         image_encoder: Optional[Callable[[list[str]], Awaitable[list[Embeddings]]]] = (
@@ -160,13 +160,13 @@ class VideoEncoders(AudioEncoders):
         )
 
     async def aencode_image(self, paths: list[str]) -> list[Embeddings]:
-        """画像ファイル群を埋め込みベクトルへ変換する。
+        """Convert image files to embeddings.
 
         Args:
-            paths (list[str]): 画像ファイルパスのリスト
+            paths (list[str]): List of image file paths.
 
         Returns:
-            list[Embeddings]: 画像埋め込みベクトルのリスト
+            list[Embeddings]: List of image embeddings.
         """
         if self.image_encoder is None:
             raise RuntimeError("image encoder for video retrieval is not available")
@@ -174,13 +174,13 @@ class VideoEncoders(AudioEncoders):
         return await self.image_encoder(paths)
 
     async def aencode_video(self, paths: list[str]) -> list[Embeddings]:
-        """動画ファイル群を埋め込みベクトルへ変換する。
+        """Convert video files to embeddings.
 
         Args:
-            paths (list[str]): 動画ファイルパスのリスト
+            paths (list[str]): List of video file paths.
 
         Returns:
-            list[Embeddings]: 動画埋め込みベクトルのリスト
+            list[Embeddings]: List of video embeddings.
         """
         if self.video_encoder is None:
             raise RuntimeError("video encoder for video retrieval is not available")
@@ -189,7 +189,7 @@ class VideoEncoders(AudioEncoders):
 
 
 class AudioRetriever(BaseRetriever):
-    """音声モダリティ専用リトリーバー。"""
+    """Retriever specialized for the audio modality."""
 
     def __init__(
         self,
@@ -203,17 +203,17 @@ class AudioRetriever(BaseRetriever):
         doc_ids: Optional[list[str]] = None,
         vector_store_kwargs: Optional[dict] = None,
     ) -> None:
-        """リトリーバーを初期化する。
+        """Initialize the retriever.
 
         Args:
-            index (VectorStoreIndex): ベクトルストアインデックス
-            top_k (int, optional): 類似ドキュメントの最大取得件数。Defaults to 10.
-            encoders (Optional[AudioEncoders], optional): 事前構築済みエンコーダ。Defaults to None.
-            filters (Optional[MetadataFilters], optional): メタデータフィルタ条件。Defaults to None.
-            vector_store_query_mode (VectorStoreQueryMode, optional): クエリモード。Defaults to VectorStoreQueryMode.DEFAULT.
-            node_ids (Optional[list[str]], optional): 対象ノード ID の制限。Defaults to None.
-            doc_ids (Optional[list[str]], optional): 対象ドキュメント ID の制限。Defaults to None.
-            vector_store_kwargs (Optional[dict], optional): ベクトルストアへ渡す追加パラメータ。Defaults to None.
+            index (VectorStoreIndex): Vector store index.
+            top_k (int, optional): Maximum number of similar documents to fetch. Defaults to 10.
+            encoders (Optional[AudioEncoders], optional): Pre-built encoders. Defaults to None.
+            filters (Optional[MetadataFilters], optional): Metadata filter conditions. Defaults to None.
+            vector_store_query_mode (VectorStoreQueryMode, optional): Query mode. Defaults to VectorStoreQueryMode.DEFAULT.
+            node_ids (Optional[list[str]], optional): Restrict target node IDs. Defaults to None.
+            doc_ids (Optional[list[str]], optional): Restrict target document IDs. Defaults to None.
+            vector_store_kwargs (Optional[dict], optional): Extra parameters passed to the vector store. Defaults to None.
         """
         self._index = index
         self._vector_store = index.vector_store
@@ -233,27 +233,27 @@ class AudioRetriever(BaseRetriever):
         self._encoders = encoders
 
     def _retrieve(self, query_bundle: QueryBundle) -> list[NodeWithScore]:
-        """埋め込み済みクエリを利用して同期検索を実施する。
+        """Run synchronous search using a pre-embedded query.
 
         Args:
-            query_bundle (QueryBundle): クエリ情報
+            query_bundle (QueryBundle): Query information.
 
         Raises:
-            NotImplementedError: 未実装
+            NotImplementedError: Not implemented.
 
         Returns:
-            list[NodeWithScore]: 類似ノードのリスト
+            list[NodeWithScore]: Similar nodes.
         """
         raise NotImplementedError("AudioRetriever only supports async retrieval APIs")
 
     async def _aretrieve(self, query_bundle: QueryBundle) -> list[NodeWithScore]:
-        """埋め込み済みクエリを利用して非同期検索を実施する。
+        """Run async search using a pre-embedded query.
 
         Args:
-            query_bundle (QueryBundle): クエリ情報
+            query_bundle (QueryBundle): Query information.
 
         Returns:
-            list[NodeWithScore]: 類似ノードのリスト
+            list[NodeWithScore]: Similar nodes.
         """
         if query_bundle.embedding is None:
             raise RuntimeError("embedding is required for async retrieval")
@@ -266,13 +266,13 @@ class AudioRetriever(BaseRetriever):
     async def atext_to_audio_retrieve(
         self, query: Union[str, QueryBundle]
     ) -> list[NodeWithScore]:
-        """テキストクエリから音声モダリティを検索する。
+        """Retrieve audio modality using a text query.
 
         Args:
-            query (Union[str, QueryBundle]): テキストクエリまたは QueryBundle
+            query (Union[str, QueryBundle]): Text query or QueryBundle.
 
         Returns:
-            list[NodeWithScore]: 類似ノードのリスト
+            list[NodeWithScore]: Similar nodes.
         """
         from llama_index.core.schema import QueryBundle
 
@@ -295,13 +295,13 @@ class AudioRetriever(BaseRetriever):
         return await self._aquery_with_embedding(embedding=embedding, query_str=query)
 
     async def aaudio_to_audio_retrieve(self, audio_path: str) -> list[NodeWithScore]:
-        """音声ファイルをクエリとして検索する。
+        """Search using an audio file as the query.
 
         Args:
-            audio_path (str): クエリ音声ファイルパス
+            audio_path (str): Query audio file path.
 
         Returns:
-            list[NodeWithScore]: 類似ノードのリスト
+            list[NodeWithScore]: Similar nodes.
         """
         embedding = (await self._encoders.aencode_audio([audio_path]))[0]  # type: ignore
 
@@ -312,14 +312,14 @@ class AudioRetriever(BaseRetriever):
         embedding: Sequence[float],
         query_str: str,
     ) -> list[NodeWithScore]:
-        """埋め込みベクトルを用いてベクトルストアを検索する。
+        """Search the vector store using an embedding vector.
 
         Args:
-            embedding (Sequence[float]): クエリ埋め込みベクトル
-            query_str (str): クエリ文字列
+            embedding (Sequence[float]): Query embedding vector.
+            query_str (str): Query string.
 
         Returns:
-            list[NodeWithScore]: 類似ノードのリスト
+            list[NodeWithScore]: Similar nodes.
         """
         from llama_index.core.vector_stores.types import VectorStoreQuery
 
@@ -340,20 +340,20 @@ class AudioRetriever(BaseRetriever):
     def _build_node_list_from_query_result(
         self, query_result: VectorStoreQueryResult
     ) -> list[NodeWithScore]:
-        """検索結果を NodeWithScore のリストへ変換する。
+        """Convert search results into a list of NodeWithScore.
 
         Args:
-            query_result (VectorStoreQueryResult): ベクトルストアの検索結果
+            query_result (VectorStoreQueryResult): Query result from the vector store.
 
         Returns:
-            list[NodeWithScore]: 変換後のノード一覧
+            list[NodeWithScore]: Converted node list.
         """
         from llama_index.core.schema import NodeWithScore
 
         nodes: Iterable[BaseNode] = query_result.nodes or []
         nodes = list(nodes)
 
-        # docstore を利用可能なら node を再取得
+        # Re-fetch node from docstore when available.
         for idx, node in enumerate(nodes):
             if node is None:
                 continue
@@ -374,7 +374,7 @@ class AudioRetriever(BaseRetriever):
 
 
 class VideoRetriever(AudioRetriever):
-    """動画モダリティ専用リトリーバー。"""
+    """Retriever specialized for the video modality."""
 
     def __init__(
         self,
@@ -388,17 +388,17 @@ class VideoRetriever(AudioRetriever):
         doc_ids: Optional[list[str]] = None,
         vector_store_kwargs: Optional[dict] = None,
     ) -> None:
-        """リトリーバーを初期化する。
+        """Initialize the retriever.
 
         Args:
-            index (VectorStoreIndex): ベクトルストアインデックス
-            top_k (int, optional): 類似ドキュメントの最大取得件数。Defaults to 10.
-            encoders (Optional[VideoEncoders], optional): 事前構築済みエンコーダ。Defaults to None.
-            filters (Optional[MetadataFilters], optional): メタデータフィルタ条件。Defaults to None.
-            vector_store_query_mode (VectorStoreQueryMode, optional): クエリモード。Defaults to VectorStoreQueryMode.DEFAULT.
-            node_ids (Optional[list[str]], optional): 対象ノード ID の制限。Defaults to None.
-            doc_ids (Optional[list[str]], optional): 対象ドキュメント ID の制限。Defaults to None.
-            vector_store_kwargs (Optional[dict], optional): ベクトルストアへ渡す追加パラメータ。Defaults to None.
+            index (VectorStoreIndex): Vector store index.
+            top_k (int, optional): Maximum number of similar documents to fetch. Defaults to 10.
+            encoders (Optional[VideoEncoders], optional): Pre-built encoders. Defaults to None.
+            filters (Optional[MetadataFilters], optional): Metadata filter conditions. Defaults to None.
+            vector_store_query_mode (VectorStoreQueryMode, optional): Query mode. Defaults to VectorStoreQueryMode.DEFAULT.
+            node_ids (Optional[list[str]], optional): Restrict target node IDs. Defaults to None.
+            doc_ids (Optional[list[str]], optional): Restrict target document IDs. Defaults to None.
+            vector_store_kwargs (Optional[dict], optional): Extra parameters passed to the vector store. Defaults to None.
         """
         if encoders is None:
             embed_model = getattr(index, "_embed_model", None)
@@ -417,23 +417,23 @@ class VideoRetriever(AudioRetriever):
 
     @property
     def video_encoders(self) -> VideoEncoders:
-        """動画モダリティ用エンコーダを返す。
+        """Return the encoders for the video modality.
 
         Returns:
-            VideoEncoders: エンコーダ群
+            VideoEncoders: Encoder set.
         """
         return cast(VideoEncoders, self._encoders)
 
     async def atext_to_video_retrieve(
         self, query: Union[str, QueryBundle]
     ) -> list[NodeWithScore]:
-        """テキストクエリから動画モダリティを検索する。
+        """Retrieve video modality using a text query.
 
         Args:
-            query (Union[str, QueryBundle]): テキストクエリまたは QueryBundle
+            query (Union[str, QueryBundle]): Text query or QueryBundle.
 
         Returns:
-            list[NodeWithScore]: 類似ノードのリスト
+            list[NodeWithScore]: Similar nodes.
         """
         from llama_index.core.schema import QueryBundle
 
@@ -457,13 +457,13 @@ class VideoRetriever(AudioRetriever):
         return await self._aquery_with_embedding(embedding=embedding, query_str=query)
 
     async def aimage_to_video_retrieve(self, image_path: str) -> list[NodeWithScore]:
-        """画像ファイルをクエリとして検索する。
+        """Search using an image file as the query.
 
         Args:
-            image_path (str): クエリ画像ファイルパス
+            image_path (str): Query image file path.
 
         Returns:
-            list[NodeWithScore]: 類似ノードのリスト
+            list[NodeWithScore]: Similar nodes.
         """
         encoders = self.video_encoders
         embedding = (await encoders.aencode_image([image_path]))[0]
@@ -471,13 +471,13 @@ class VideoRetriever(AudioRetriever):
         return await self._aquery_with_embedding(embedding=embedding, query_str="")
 
     async def aaudio_to_video_retrieve(self, audio_path: str) -> list[NodeWithScore]:
-        """音声ファイルをクエリとして検索する。
+        """Search using an audio file as the query.
 
         Args:
-            audio_path (str): クエリ音声ファイルパス
+            audio_path (str): Query audio file path.
 
         Returns:
-            list[NodeWithScore]: 類似ノードのリスト
+            list[NodeWithScore]: Similar nodes.
         """
         encoders = self.video_encoders
         embedding = (await encoders.aencode_audio([audio_path]))[0]
@@ -485,13 +485,13 @@ class VideoRetriever(AudioRetriever):
         return await self._aquery_with_embedding(embedding=embedding, query_str="")
 
     async def avideo_to_video_retrieve(self, video_path: str) -> list[NodeWithScore]:
-        """動画ファイルをクエリとして検索する。
+        """Search using a video file as the query.
 
         Args:
-            video_path (str): クエリ動画ファイルパス
+            video_path (str): Query video file path.
 
         Returns:
-            list[NodeWithScore]: 類似ノードのリスト
+            list[NodeWithScore]: Similar nodes.
         """
         encoders = self.video_encoders
         embedding = (await encoders.aencode_video([video_path]))[0]

@@ -18,7 +18,7 @@ _lock = threading.Lock()
 
 
 class JobStatus(StrEnum):
-    """ジョブの実行状態。"""
+    """Execution status of a job."""
 
     PENDING = auto()
     RUNNING = auto()
@@ -28,15 +28,15 @@ class JobStatus(StrEnum):
 
 @dataclass(kw_only=True)
 class JobPayload:
-    """ワーカーに渡すジョブ内容。"""
+    """Payload passed to the worker."""
 
-    kind: str  # ingest_path 等
+    kind: str  # e.g. ingest_path, ingest_url, etc.
     kwargs: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(kw_only=True)
 class Job:
-    """ジョブ本体。"""
+    """Job object."""
 
     job_id: str
     payload: JobPayload
@@ -48,10 +48,10 @@ class Job:
 
 
 class BackgroundWorker:
-    """ingest 処理を非同期に実行するための簡易ワーカー。"""
+    """Lightweight worker to execute ingest tasks asynchronously."""
 
     def __init__(self) -> None:
-        """コンストラクタ。"""
+        """Constructor."""
         self._queue: asyncio.Queue[Job] = asyncio.Queue()
         self._jobs: Dict[str, Job] = {}
         self._worker_task: Optional[asyncio.Task[None]] = None
@@ -59,7 +59,7 @@ class BackgroundWorker:
         self._jobs_lock = threading.Lock()
 
     async def start(self) -> None:
-        """ワーカーを起動する。"""
+        """Start the worker."""
         if self._worker_task is not None:
             return
 
@@ -68,7 +68,7 @@ class BackgroundWorker:
         )
 
     async def shutdown(self) -> None:
-        """ワーカーを終了する。"""
+        """Shut down the worker."""
         if self._worker_task is None:
             return
 
@@ -79,22 +79,22 @@ class BackgroundWorker:
         self._worker_task = None
 
     def _update(self, job: Job, status: JobStatus) -> None:
-        """ジョブの状態を更新する。
+        """Update the status of a job.
 
         Args:
-            job (Job): ジョブ
+            job (Job): Job to update.
         """
         job.status = status
         job.last_update = str(datetime.datetime.now())
 
     def submit(self, payload: JobPayload) -> Job:
-        """ジョブをキューに追加する。
+        """Add a job to the queue.
 
         Args:
-            payload (JobPayload): ワーカーに渡すジョブ内容
+            payload (JobPayload): Job payload passed to the worker.
 
         Returns:
-            Job: ジョブ
+            Job: Created job.
         """
         from ..runtime import get_runtime as _rt
 
@@ -116,35 +116,35 @@ class BackgroundWorker:
         return job
 
     def get_job(self, job_id: str) -> Optional[Job]:
-        """特定 ID のジョブを取得する。
+        """Get a job by ID.
 
         Args:
-            job_id (str): ジョブ ID
+            job_id (str): Job ID.
 
         Returns:
-            Optional[Job]: ジョブ
+            Optional[Job]: Job if found.
         """
         return self._jobs.get(job_id)
 
     def get_jobs(self) -> Dict[str, Job]:
-        """ジョブを全件取得する。
+        """Get all jobs.
 
         Returns:
-            Dict[str, Job]: ジョブ
+            Dict[str, Job]: All jobs keyed by job_id.
         """
         return self._jobs.copy()
 
     def remove_job(self, job_id: str) -> None:
-        """ジョブをキューから削除する。
+        """Remove a job from the queue.
 
         Args:
-            job_id (str): ジョブ ID
+            job_id (str): Job ID.
         """
         with self._jobs_lock:
             self._jobs.pop(job_id, None)
 
     def remove_completed_jobs(self) -> None:
-        """実行完了しているジョブをキューから削除する。"""
+        """Remove jobs that have finished execution from the queue."""
         completed_ids = [
             job_id
             for job_id, job in self._jobs.items()
@@ -154,20 +154,20 @@ class BackgroundWorker:
             self.remove_job(job_id)
 
     async def _worker_loop(self) -> None:
-        """ワーカーループ。"""
+        """Worker loop."""
         while True:
             job = await self._queue.get()
             await self._dispatch(job)
             self._queue.task_done()
 
     async def _dispatch(self, job: Job) -> None:
-        """ディスパッチャー。
+        """Dispatcher that executes a job.
 
         Args:
-            job (Job): 次に実行するジョブ
+            job (Job): Job to execute.
 
         Raises:
-            ValueError: 未知のジョブ種別
+            ValueError: Unknown job kind.
         """
         from ..ingest import ingest
 
@@ -205,10 +205,10 @@ class BackgroundWorker:
 
 
 def get_worker() -> BackgroundWorker:
-    """バックグラウンドワーカーシングルトンの getter。
+    """Getter for the background worker singleton.
 
     Returns:
-        BackgroundWorker: ワーカー
+        BackgroundWorker: Worker instance.
     """
     global _worker
 

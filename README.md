@@ -54,7 +54,7 @@ Default providers (configured at /etc/raggify/config.yaml) are:
 raggify config | grep provider
 ```
 
-```yaml
+```json
 "vector_store_provider": "chroma",
 "document_store_provider": "local",
 "ingest_cache_provider": "local",
@@ -85,7 +85,7 @@ pip install openai-whisper@git+https://github.com/openai/whisper.git
 
 ### Let's ingest and retrieve
 
-Ingest from some web sites, then, search text documents by text query.
+Ingest from some web sites, then, search text documents by text query. For a list of interfaces available as library APIs, see [main-modules](#main-modules).
 
 ```python
 import json
@@ -137,10 +137,10 @@ need to install clip
 pip install clip@git+https://github.com/openai/CLIP.git
 ```
 
-and set `audio_embed_provider` /etc/raggify/config.yaml:
+and set `image_embed_provider` /etc/raggify/config.yaml:
 
 ```yaml
-audio_embed_provider: CLIP
+image_embed_provider: CLIP
 ```
 
 ## 🎤 examples/ex03.py

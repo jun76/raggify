@@ -14,7 +14,7 @@ from ..core.const import (
 
 @dataclass(kw_only=True)
 class IngestConfig(DataClassDictMixin):
-    """ドキュメント取り込み処理関連の設定用データクラス"""
+    """Config dataclass for document ingestion settings."""
 
     # General
     chunk_size: int = 500

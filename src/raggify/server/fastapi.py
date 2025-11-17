@@ -68,23 +68,23 @@ class JobRequest(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """サーバ起動前後の処理用ライフスパン。
+    """Lifespan hook for pre/post server processing.
 
-    CLI のヘルプコマンド等を軽量に済ませるために初期化処理を遅延しているが、
-    サーバとして起動する場合はここで先に済ませておく。
+    Init processing is deferred for lightweight CLI help,
+    but is performed here when starting the server.
 
     Args:
-        app (FastAPI): サーバインスタンス
+        app (FastAPI): Server instance.
     """
     configure_logging()
     logger.setLevel(_rt().cfg.general.log_level)
 
-    # 初期化処理
+    # Initialization
     _setup()
     wk = _wk()
     await wk.start()
 
-    # リクエストの受付開始
+    # Begin accepting requests
     try:
         yield
     finally:
@@ -92,27 +92,27 @@ async def lifespan(app: FastAPI):
         console.print(f"🛑 now {PROJECT_NAME} server is stopped.")
 
 
-# FastAPIインスタンスを作成し、lifespanを渡す
+# Create FastAPI instance and pass lifespan handler
 app = FastAPI(title=PROJECT_NAME, version=VERSION, lifespan=lifespan)
 
 _request_lock = asyncio.Lock()
 
 
 def _setup() -> None:
-    """各種インスタンスを生成"""
+    """Create required instances."""
     console.print(f"⏳ {PROJECT_NAME} server is starting up.")
     _rt().build()
     console.print(f"✅ now {PROJECT_NAME} server is online.")
 
 
 def _nodes_to_response(nodes: list[NodeWithScore]) -> list[dict[str, Any]]:
-    """NodeWithScore リストを JSON 返却可能な辞書リストへ変換する。
+    """Convert a NodeWithScore list to a JSON-serializable list of dicts.
 
     Args:
-        nodes (list[NodeWithScore]): 変換対象ノード
+        nodes (list[NodeWithScore]): Nodes to convert.
 
     Returns:
-        list[dict[str, Any]]: JSON 変換済みノードリスト
+        list[dict[str, Any]]: Converted node list.
     """
     return [
         {"text": node.text, "metadata": node.metadata, "score": node.score}
@@ -122,10 +122,10 @@ def _nodes_to_response(nodes: list[NodeWithScore]) -> list[dict[str, Any]]:
 
 @app.get("/v1/health")
 async def health() -> dict[str, Any]:
-    """サーバの稼働状態を返却する。
+    """Return server health status.
 
     Returns:
-        dict[str, Any]: 結果
+        dict[str, Any]: Result.
     """
     logger.debug("exec /v1/health")
 
@@ -143,10 +143,10 @@ async def health() -> dict[str, Any]:
 
 @app.get("/v1/reload")
 async def reload() -> dict[str, Any]:
-    """サーバの設定ファイルをリロードする。
+    """Reload the server configuration file.
 
     Returns:
-        dict[str, Any]: 結果
+        dict[str, Any]: Result.
     """
     logger.debug("exec /v1/reload")
 
@@ -157,17 +157,17 @@ async def reload() -> dict[str, Any]:
 
 @app.post("/v1/upload", operation_id="upload")
 async def upload(files: list[UploadFile] = File(...)) -> dict[str, Any]:
-    """ファイルを（クライアントから）アップロードする。
+    """Upload files from a client.
 
     Args:
-        files (list[UploadFile], optional): ファイル群。Defaults to File(...).
+        files (list[UploadFile], optional): Files to upload. Defaults to File(...).
 
     Raises:
-        HTTPException(500): 初期化やファイル作成に失敗
-        HTTPException(400): ファイル名が空
+        HTTPException(500): When initialization or file creation fails.
+        HTTPException(400): When filename is missing.
 
     Returns:
-        dict[str, Any]: 結果
+        dict[str, Any]: Result.
     """
     logger.debug("exec /v1/upload")
 
@@ -216,18 +216,18 @@ async def upload(files: list[UploadFile] = File(...)) -> dict[str, Any]:
 
 @app.post("/v1/job")
 async def job(payload: JobRequest) -> dict[str, Any]:
-    """バックグラウンドワーカーが保持するジョブの実行状態を返却する。
+    """Return job status managed by the background worker.
 
     Args:
         payload (JobRequest):
-            job_id: ジョブ ID（未指定の場合全件）
-            rm: True の場合、完了済みジョブ（job_id 未指定時）または指定ジョブを削除
+            job_id: Job ID (all jobs if empty).
+            rm: If True, remove completed jobs (when job_id is empty) or the specified job.
 
     Raises:
-        HTTPException(400): 不正なジョブ ID
+        HTTPException(400): Invalid job ID.
 
     Returns:
-        dict[str, Any]: 結果
+        dict[str, Any]: Result.
     """
     logger.debug("exec /v1/job")
 
@@ -266,14 +266,15 @@ async def job(payload: JobRequest) -> dict[str, Any]:
 
 @app.post("/v1/ingest/path", operation_id="ingest_path")
 async def ingest_path(payload: PathRequest) -> dict[str, str]:
-    """ローカルパス（ディレクトリ、ファイル）からコンテンツを収集、埋め込み、ストアに格納する。
-    ディレクトリの場合はツリーを下りながら複数ファイルを取り込む。
+    """Collect, embed, and store content from a local path (file or directory).
+
+    Directories are traversed recursively to ingest multiple files.
 
     Args:
-        payload (PathRequest): 対象パス
+        payload (PathRequest): Target path.
 
     Returns:
-        dict[str, str]: 実行結果
+        dict[str, str]: Result.
     """
     logger.debug("exec /v1/ingest/path")
 
@@ -284,13 +285,14 @@ async def ingest_path(payload: PathRequest) -> dict[str, str]:
 
 @app.post("/v1/ingest/path_list", operation_id="ingest_path_list")
 async def ingest_path_list(payload: PathRequest) -> dict[str, str]:
-    """パスリストに記載の複数パスからコンテンツを収集、埋め込み、ストアに格納する。
+    """Collect, embed, and store content from multiple paths listed in a file.
 
     Args:
-        payload (PathRequest): パスリストのパス（テキストファイル。# で始まるコメント行・空行はスキップ）
+        payload (PathRequest): Path to a list file (text file; comment lines
+            starting with # and blank lines are skipped).
 
     Returns:
-        dict[str, str]: 実行結果
+        dict[str, str]: Result.
     """
     logger.debug("exec /v1/ingest/path_list")
 
@@ -303,14 +305,15 @@ async def ingest_path_list(payload: PathRequest) -> dict[str, str]:
 
 @app.post("/v1/ingest/url", operation_id="ingest_url")
 async def ingest_url(payload: URLRequest) -> dict[str, str]:
-    """URL からコンテンツを収集、埋め込み、ストアに格納する。
-    サイトマップ（.xml）の場合はツリーを下りながら複数サイトから取り込む。
+    """Collect, embed, and store content from a URL.
+
+    For sitemaps (.xml), traverse the tree to ingest multiple sites.
 
     Args:
-        payload (URLRequest): 対象 URL
+        payload (URLRequest): Target URL.
 
     Returns:
-        dict[str, str]: 実行結果
+        dict[str, str]: Result.
     """
     logger.debug("exec /v1/ingest/url")
 
@@ -321,13 +324,14 @@ async def ingest_url(payload: URLRequest) -> dict[str, str]:
 
 @app.post("/v1/ingest/url_list", operation_id="ingest_url_list")
 async def ingest_url_list(payload: PathRequest) -> dict[str, str]:
-    """URL リストに記載の複数サイトからコンテンツを収集、埋め込み、ストアに格納する。
+    """Collect, embed, and store content from multiple URLs listed in a file.
 
     Args:
-        payload (PathRequest): URL リストのパス（テキストファイル。# で始まるコメント行・空行はスキップ）
+        payload (PathRequest): Path to a URL list file (text file; comment lines
+            starting with # and blank lines are skipped).
 
     Returns:
-        dict[str, str]: 実行結果
+        dict[str, str]: Result.
     """
     logger.debug("exec /v1/ingest/url_list")
 
@@ -339,18 +343,18 @@ async def ingest_url_list(payload: PathRequest) -> dict[str, str]:
 async def _query_handler(
     modality: Modality, query_func: Callable, operation_name: str, **kwargs
 ) -> dict[str, Any]:
-    """query 系コマンドの共通ハンドラ。
+    """Common handler for query endpoints.
 
     Args:
-        modality (Modality): モダリティ
-        query_func (Callable): query 系コマンド
-        operation_name (str): 表示用
+        modality (Modality): Modality.
+        query_func (Callable): Query function.
+        operation_name (str): Operation label for logging.
 
     Raises:
-        HTTPException: 検索処理に失敗
+        HTTPException: When the search processing fails.
 
     Returns:
-        dict[str, Any]: 検索結果
+        dict[str, Any]: Search results.
     """
     if modality not in _rt().embed_manager.modality:
         msg = f"{modality.value} embeddings is not available in current setting"
@@ -370,16 +374,16 @@ async def _query_handler(
 
 @app.post("/v1/query/text_text", operation_id="query_text_text")
 async def query_text_text(payload: QueryTextTextRequest) -> dict[str, Any]:
-    """クエリ文字列によるテキストドキュメント検索。
+    """Search text documents by text query.
 
     Args:
-        payload (QueryTextTextRequest): クエリ内容
+        payload (QueryTextTextRequest): Query content.
 
     Raises:
-        HTTPException: 検索処理に失敗
+        HTTPException: When the search processing fails.
 
     Returns:
-        dict[str, Any]: 検索結果
+        dict[str, Any]: Search results.
     """
     from ..retrieve.retrieve import aquery_text_text
 
@@ -397,16 +401,16 @@ async def query_text_text(payload: QueryTextTextRequest) -> dict[str, Any]:
 
 @app.post("/v1/query/text_image", operation_id="query_text_image")
 async def query_text_image(payload: QueryTextRequest) -> dict[str, Any]:
-    """クエリ文字列による画像ドキュメント検索。
+    """Search image documents by text query.
 
     Args:
-        payload (QueryTextRequest): クエリ内容
+        payload (QueryTextRequest): Query content.
 
     Raises:
-        HTTPException: 検索処理に失敗
+        HTTPException: When the search processing fails.
 
     Returns:
-        dict[str, Any]: 検索結果
+        dict[str, Any]: Search results.
     """
     from ..retrieve.retrieve import aquery_text_image
 
@@ -423,16 +427,16 @@ async def query_text_image(payload: QueryTextRequest) -> dict[str, Any]:
 
 @app.post("/v1/query/image_image", operation_id="query_image_image")
 async def query_image_image(payload: QueryMultimodalRequest) -> dict[str, Any]:
-    """クエリ画像による画像ドキュメント検索。
+    """Search image documents by image query.
 
     Args:
-        payload (QueryMultimodalRequest): クエリ内容
+        payload (QueryMultimodalRequest): Query content.
 
     Raises:
-        HTTPException: 検索処理に失敗
+        HTTPException: When the search processing fails.
 
     Returns:
-        dict[str, Any]: 検索結果
+        dict[str, Any]: Search results.
     """
     from ..retrieve.retrieve import aquery_image_image
 
@@ -449,16 +453,16 @@ async def query_image_image(payload: QueryMultimodalRequest) -> dict[str, Any]:
 
 @app.post("/v1/query/text_audio", operation_id="query_text_audio")
 async def query_text_audio(payload: QueryTextRequest) -> dict[str, Any]:
-    """クエリ文字列による音声ドキュメント検索。
+    """Search audio documents by text query.
 
     Args:
-        payload (QueryTextRequest): クエリ内容
+        payload (QueryTextRequest): Query content.
 
     Raises:
-        HTTPException: 検索処理に失敗
+        HTTPException: When the search processing fails.
 
     Returns:
-        dict[str, Any]: 検索結果
+        dict[str, Any]: Search results.
     """
     from ..retrieve.retrieve import aquery_text_audio
 
@@ -475,16 +479,16 @@ async def query_text_audio(payload: QueryTextRequest) -> dict[str, Any]:
 
 @app.post("/v1/query/audio_audio", operation_id="query_audio_audio")
 async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
-    """クエリ音声による音声ドキュメント検索。
+    """Search audio documents by audio query.
 
     Args:
-        payload (QueryMultimodalRequest): クエリ内容
+        payload (QueryMultimodalRequest): Query content.
 
     Raises:
-        HTTPException: 検索処理に失敗
+        HTTPException: When the search processing fails.
 
     Returns:
-        dict[str, Any]: 検索結果
+        dict[str, Any]: Search results.
     """
     from ..retrieve.retrieve import aquery_audio_audio
 
@@ -501,16 +505,16 @@ async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
 
 @app.post("/v1/query/text_video", operation_id="query_text_video")
 async def query_text_video(payload: QueryTextRequest) -> dict[str, Any]:
-    """クエリ文字列による動画ドキュメント検索。
+    """Search video documents by text query.
 
     Args:
-        payload (QueryTextRequest): クエリ内容
+        payload (QueryTextRequest): Query content.
 
     Raises:
-        HTTPException: 検索処理に失敗
+        HTTPException: When the search processing fails.
 
     Returns:
-        dict[str, Any]: 検索結果
+        dict[str, Any]: Search results.
     """
     from ..retrieve.retrieve import aquery_text_video
 
@@ -527,16 +531,16 @@ async def query_text_video(payload: QueryTextRequest) -> dict[str, Any]:
 
 @app.post("/v1/query/image_video", operation_id="query_image_video")
 async def query_image_video(payload: QueryMultimodalRequest) -> dict[str, Any]:
-    """クエリ画像による動画ドキュメント検索。
+    """Search video documents by image query.
 
     Args:
-        payload (QueryMultimodalRequest): クエリ内容
+        payload (QueryMultimodalRequest): Query content.
 
     Raises:
-        HTTPException: 検索処理に失敗
+        HTTPException: When the search processing fails.
 
     Returns:
-        dict[str, Any]: 検索結果
+        dict[str, Any]: Search results.
     """
     from ..retrieve.retrieve import aquery_image_video
 
@@ -553,16 +557,16 @@ async def query_image_video(payload: QueryMultimodalRequest) -> dict[str, Any]:
 
 @app.post("/v1/query/audio_video", operation_id="query_audio_video")
 async def query_audio_video(payload: QueryMultimodalRequest) -> dict[str, Any]:
-    """クエリ音声による動画ドキュメント検索。
+    """Search video documents by audio query.
 
     Args:
-        payload (QueryMultimodalRequest): クエリ内容
+        payload (QueryMultimodalRequest): Query content.
 
     Raises:
-        HTTPException: 検索処理に失敗
+        HTTPException: When the search processing fails.
 
     Returns:
-        dict[str, Any]: 検索結果
+        dict[str, Any]: Search results.
     """
     from ..retrieve.retrieve import aquery_audio_video
 
@@ -579,16 +583,16 @@ async def query_audio_video(payload: QueryMultimodalRequest) -> dict[str, Any]:
 
 @app.post("/v1/query/video_video", operation_id="query_video_video")
 async def query_video_video(payload: QueryMultimodalRequest) -> dict[str, Any]:
-    """クエリ動画による動画ドキュメント検索。
+    """Search video documents by video query.
 
     Args:
-        payload (QueryMultimodalRequest): クエリ内容
+        payload (QueryMultimodalRequest): Query content.
 
     Raises:
-        HTTPException: 検索処理に失敗
+        HTTPException: When the search processing fails.
 
     Returns:
-        dict[str, Any]: 検索結果
+        dict[str, Any]: Search results.
     """
     from ..retrieve.retrieve import aquery_video_video
 

@@ -27,7 +27,7 @@ class EmbedModel(StrEnum):
 
 @dataclass(kw_only=True)
 class EmbedConfig(DataClassDictMixin):
-    """埋め込み関連の設定用データクラス"""
+    """Config dataclass for embedding settings."""
 
     # Text
     openai_embed_model_text: dict[str, Any] = field(

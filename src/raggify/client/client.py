@@ -10,31 +10,31 @@ __all__ = ["RestAPIClient"]
 
 
 class RestAPIClient:
-    """raggify サーバの REST API を呼び出すクライアント"""
+    """Client for calling the raggify server REST API."""
 
     def __init__(self, base_url: str) -> None:
-        """コンストラクタ
+        """Constructor.
 
         Args:
-            base_url (str): raggify サーバへのベース URL
+            base_url (str): Base URL of the raggify server.
         """
         self._base_url = base_url.rstrip("/")
 
     def _make_request(
         self, endpoint: str, func: Callable, timeout: int = 120, **kwargs
     ) -> dict[str, Any]:
-        """共通のリクエスト処理とエラーハンドリング。
+        """Common request handling and error processing.
 
         Args:
-            endpoint (str): エンドポイント
-            func (Callable): requests.post/get
-            timeout (int, optional): タイムアウト（秒）Defaults to 120.
+            endpoint (str): Endpoint path.
+            func (Callable): `requests.post` or `requests.get`.
+            timeout (int, optional): Timeout in seconds. Defaults to 120.
 
         Raises:
-            RuntimeError: リクエスト失敗または JSON 解析失敗時
+            RuntimeError: If the request fails or JSON parsing fails.
 
         Returns:
-            dict[str, Any]: JSON 応答
+            dict[str, Any]: JSON response.
         """
         url = f"{self._base_url}{endpoint}"
         try:
@@ -55,79 +55,79 @@ class RestAPIClient:
             raise RuntimeError(f"raggify server response is not json: {e}") from e
 
     def _get_json(self, endpoint: str) -> dict[str, Any]:
-        """GET リクエストを送信し、JSON 応答を辞書で返す。
+        """Send a GET request and return the JSON response.
 
         Args:
-            endpoint (str): ベース URL からの相対パス
+            endpoint (str): Relative path from base URL.
 
         Raises:
-            RuntimeError: リクエスト失敗または JSON 解析失敗時
+            RuntimeError: If the request fails or JSON parsing fails.
 
         Returns:
-            dict[str, Any]: JSON 応答
+            dict[str, Any]: JSON response.
         """
         return self._make_request(endpoint=endpoint, func=requests.get)
 
     def _post_json(self, endpoint: str, payload: dict[str, Any]) -> dict[str, Any]:
-        """POST リクエストを送信し、JSON 応答を辞書で返す。
+        """Send a POST request and return the JSON response.
 
         Args:
-            endpoint (str): ベース URL からの相対パス
-            payload (dict[str, Any]): POST ボディ
+            endpoint (str): Relative path from base URL.
+            payload (dict[str, Any]): POST body.
 
         Raises:
-            RuntimeError: リクエスト失敗または JSON 解析失敗時
+            RuntimeError: If the request fails or JSON parsing fails.
 
         Returns:
-            dict[str, Any]: JSON 応答
+            dict[str, Any]: JSON response.
         """
         return self._make_request(endpoint=endpoint, func=requests.post, json=payload)
 
     def _post_form_data_json(
         self, endpoint: str, files: list[tuple[str, tuple[str, bytes, str]]]
     ) -> dict[str, Any]:
-        """multipart/form-data POST を送信し、JSON 応答を辞書で返す。
+        """Send a multipart/form-data POST and return the JSON response.
 
         Args:
-            endpoint (str): ベース URL からの相対パス
-            files (list[tuple[str, tuple[str, bytes, str]]]): multipart/form-data 用ファイル情報
+            endpoint (str): Relative path from base URL.
+            files (list[tuple[str, tuple[str, bytes, str]]]): File tuples for multipart upload.
 
         Raises:
-            RuntimeError: リクエスト失敗または JSON 解析失敗時
+            RuntimeError: If the request fails or JSON parsing fails.
 
         Returns:
-            dict[str, Any]: JSON 応答
+            dict[str, Any]: JSON response.
         """
         return self._make_request(endpoint=endpoint, func=requests.post, files=files)
 
     def health(self) -> dict[str, str]:
-        """サーバの稼働状態を取得する。
+        """Get server health status.
 
         Returns:
-            dict[str, str]: 応答データ
+            dict[str, str]: Response data.
         """
         return self._get_json("/health")
 
     def reload(self) -> dict[str, str]:
-        """サーバの設定ファイルをリロードする。
+        """Reload the server configuration file.
 
         Returns:
-            dict[str, str]: 応答データ
+            dict[str, str]: Response data.
         """
         return self._get_json("/reload")
 
     def upload(self, files: list[tuple[str, bytes, Optional[str]]]) -> dict[str, Any]:
-        """ファイルアップロード API を呼び出す。
+        """Call the file upload API.
 
         Args:
-            files (list[tuple[str, bytes, Optional[str]]]): アップロードするファイル情報
+            files (list[tuple[str, bytes, Optional[str]]]): Files to upload.
 
         Returns:
-            dict[str, Any]: 応答データ
+            dict[str, Any]: Response data.
 
         Raises:
-            ValueError: 入力値が不正な場合
-            RuntimeError: リクエスト失敗または JSON 解析失敗時
+            ValueError: If inputs are invalid.
+            RuntimeError: If the request fails or JSON parsing fails.
         """
         if not files:
             raise ValueError("files must not be empty")
@@ -146,62 +146,62 @@ class RestAPIClient:
         return self._post_form_data_json("/upload", files_payload)
 
     def job(self, job_id: str = "", rm: bool = False) -> dict[str, str]:
-        """バックグラウンドジョブ操作 API を呼び出す。
+        """Call the background job API.
 
         Args:
-            job_id (str, optional): ジョブ ID。Defaults to "".
-            rm (bool, optional): 削除フラグ。Defaults to False.
+            job_id (str, optional): Job ID. Defaults to "" for all jobs.
+            rm (bool, optional): Remove flag. Defaults to False.
 
         Returns:
-            dict[str, str]: 応答データ
+            dict[str, str]: Response data.
 
         Note:
-            job_id が空の時、全ジョブの実行状態を取得する。
-            job_id が空かつ rm オプション指定の時、完了済みジョブを全削除する。
+            If job_id is empty, returns status for all jobs.
+            If job_id is empty and rm is True, removes all completed jobs.
         """
         return self._post_json("/job", {"job_id": job_id, "rm": rm})
 
     def ingest_path(self, path: str) -> dict[str, Any]:
-        """パス指定の取り込み API を呼び出す。
+        """Call the ingest-from-path API.
 
         Args:
-            path (str): 取り込み対象パス
+            path (str): Target path.
 
         Returns:
-            dict[str, Any]: 応答データ
+            dict[str, Any]: Response data.
         """
         return self._post_json("/ingest/path", {"path": path})
 
     def ingest_path_list(self, path: str) -> dict[str, Any]:
-        """パスリスト指定の取り込み API を呼び出す。
+        """Call the ingest-from-path-list API.
 
         Args:
-            path (str): パスリストのファイルパス
+            path (str): Path to the path list file.
 
         Returns:
-            dict[str, Any]: 応答データ
+            dict[str, Any]: Response data.
         """
         return self._post_json("/ingest/path_list", {"path": path})
 
     def ingest_url(self, url: str) -> dict[str, Any]:
-        """URL 指定の取り込み API を呼び出す。
+        """Call the ingest-from-URL API.
 
         Args:
-            url (str): 取り込み対象 URL
+            url (str): Target URL.
 
         Returns:
-            dict[str, Any]: 応答データ
+            dict[str, Any]: Response data.
         """
         return self._post_json("/ingest/url", {"url": url})
 
     def ingest_url_list(self, path: str) -> dict[str, Any]:
-        """URL リスト指定の取り込み API を呼び出す。
+        """Call the ingest-from-URL-list API.
 
         Args:
-            path (str): URL リストファイルのパス
+            path (str): Path to the URL list file.
 
         Returns:
-            dict[str, Any]: 応答データ
+            dict[str, Any]: Response data.
         """
         return self._post_json("/ingest/url_list", {"path": path})
 
@@ -211,15 +211,15 @@ class RestAPIClient:
         topk: Optional[int] = None,
         mode: Optional[RetrieveMode] = None,
     ) -> dict[str, Any]:
-        """クエリ文字列によるテキストドキュメント検索 API を呼び出す。
+        """Call the text->text search API.
 
         Args:
-            query (str): クエリ文字列
-            topk (Optional[int]): 上限件数
-            mode (Optional[RetrieveMode], optional): 検索モード。Defaults to None.
+            query (str): Query string.
+            topk (Optional[int]): Max count.
+            mode (Optional[RetrieveMode], optional): Retrieval mode. Defaults to None.
 
         Returns:
-            dict[str, Any]: 応答データ
+            dict[str, Any]: Response data.
         """
         payload: dict[str, Any] = {"query": query}
         if topk is not None:
@@ -233,14 +233,14 @@ class RestAPIClient:
     def query_text_image(
         self, query: str, topk: Optional[int] = None
     ) -> dict[str, Any]:
-        """クエリ文字列による画像ドキュメント検索 API を呼び出す。
+        """Call the text->image search API.
 
         Args:
-            query (str): クエリ文字列
-            topk (Optional[int]): 上限件数
+            query (str): Query string.
+            topk (Optional[int]): Max count.
 
         Returns:
-            dict[str, Any]: 応答データ
+            dict[str, Any]: Response data.
         """
         payload: dict[str, Any] = {"query": query}
         if topk is not None:
@@ -251,14 +251,14 @@ class RestAPIClient:
     def query_image_image(
         self, path: str, topk: Optional[int] = None
     ) -> dict[str, Any]:
-        """クエリ画像による画像ドキュメント検索 API を呼び出す。
+        """Call the image->image search API.
 
         Args:
-            path (str): クエリ画像パス
-            topk (Optional[int]): 上限件数
+            path (str): Query image path.
+            topk (Optional[int]): Max count.
 
         Returns:
-            dict[str, Any]: 応答データ
+            dict[str, Any]: Response data.
         """
         payload: dict[str, Any] = {"path": path}
         if topk is not None:
@@ -269,14 +269,14 @@ class RestAPIClient:
     def query_text_audio(
         self, query: str, topk: Optional[int] = None
     ) -> dict[str, Any]:
-        """クエリ文字列による音声ドキュメント検索 API を呼び出す。
+        """Call the text->audio search API.
 
         Args:
-            query (str): クエリ文字列
-            topk (Optional[int]): 上限件数
+            query (str): Query string.
+            topk (Optional[int]): Max count.
 
         Returns:
-            dict[str, Any]: 応答データ
+            dict[str, Any]: Response data.
         """
         payload: dict[str, Any] = {"query": query}
         if topk is not None:
@@ -287,14 +287,14 @@ class RestAPIClient:
     def query_audio_audio(
         self, path: str, topk: Optional[int] = None
     ) -> dict[str, Any]:
-        """クエリ音声による音声ドキュメント検索 API を呼び出す。
+        """Call the audio->audio search API.
 
         Args:
-            path (str): クエリ音声パス
-            topk (Optional[int]): 上限件数
+            path (str): Query audio path.
+            topk (Optional[int]): Max count.
 
-        Returns:
-            dict[str, Any]: 応答データ
+            Returns:
+            dict[str, Any]: Response data.
         """
         payload: dict[str, Any] = {"path": path}
         if topk is not None:
@@ -305,14 +305,14 @@ class RestAPIClient:
     def query_text_video(
         self, query: str, topk: Optional[int] = None
     ) -> dict[str, Any]:
-        """クエリ文字列による動画ドキュメント検索 API を呼び出す。
+        """Call the text->video search API.
 
         Args:
-            query (str): クエリ文字列
-            topk (Optional[int]): 上限件数
+            query (str): Query string.
+            topk (Optional[int]): Max count.
 
         Returns:
-            dict[str, Any]: 応答データ
+            dict[str, Any]: Response data.
         """
         payload: dict[str, Any] = {"query": query}
         if topk is not None:
@@ -323,14 +323,14 @@ class RestAPIClient:
     def query_image_video(
         self, path: str, topk: Optional[int] = None
     ) -> dict[str, Any]:
-        """クエリ画像による動画ドキュメント検索 API を呼び出す。
+        """Call the image->video search API.
 
         Args:
-            path (str): クエリ画像パス
-            topk (Optional[int]): 上限件数
+            path (str): Query image path.
+            topk (Optional[int]): Max count.
 
         Returns:
-            dict[str, Any]: 応答データ
+            dict[str, Any]: Response data.
         """
         payload: dict[str, Any] = {"path": path}
         if topk is not None:
@@ -341,14 +341,14 @@ class RestAPIClient:
     def query_audio_video(
         self, path: str, topk: Optional[int] = None
     ) -> dict[str, Any]:
-        """クエリ音声による動画ドキュメント検索 API を呼び出す。
+        """Call the audio->video search API.
 
         Args:
-            path (str): クエリ音声パス
-            topk (Optional[int]): 上限件数
+            path (str): Query audio path.
+            topk (Optional[int]): Max count.
 
         Returns:
-            dict[str, Any]: 応答データ
+            dict[str, Any]: Response data.
         """
         payload: dict[str, Any] = {"path": path}
         if topk is not None:
@@ -359,14 +359,14 @@ class RestAPIClient:
     def query_video_video(
         self, path: str, topk: Optional[int] = None
     ) -> dict[str, Any]:
-        """クエリ動画による動画ドキュメント検索 API を呼び出す。
+        """Call the video->video search API.
 
         Args:
-            path (str): クエリ動画パス
-            topk (Optional[int]): 上限件数
+            path (str): Query video path.
+            topk (Optional[int]): Max count.
 
         Returns:
-            dict[str, Any]: 応答データ
+            dict[str, Any]: Response data.
         """
         payload: dict[str, Any] = {"path": path}
         if topk is not None:

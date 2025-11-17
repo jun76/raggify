@@ -20,10 +20,10 @@ __all__ = ["app"]
 
 
 def _cfg() -> ConfigManager:
-    """遅延ロード用 getter。
+    """Getter for lazy-loading the runtime config.
 
     Returns:
-        ConfigManager: 設定管理
+        ConfigManager: Config manager.
     """
     from ..runtime import get_runtime
 
@@ -45,12 +45,13 @@ app = typer.Typer(
 
 
 def _get_server_base_url() -> str:
-    """raggify サーバのベース URL 文字列を取得する。
+    """Get the base URL string of the raggify server.
 
-    プロトコル等修正する場合は uvicorn.run 側と形式を合わせること。
+    Keep the format aligned with the settings passed to `uvicorn.run`
+    if protocol, etc. are adjusted.
 
     Returns:
-        str: ベース URL 文字列
+        str: Base URL string.
     """
     cfg = _cfg()
 
@@ -58,10 +59,10 @@ def _get_server_base_url() -> str:
 
 
 def _create_rest_client() -> RestAPIClient:
-    """REST API クライアントを生成する。
+    """Create a REST API client.
 
     Returns:
-        RestAPIClient: REST API クライアント
+        RestAPIClient: REST API client instance.
     """
     from ..client.client import RestAPIClient
 
@@ -69,17 +70,17 @@ def _create_rest_client() -> RestAPIClient:
 
 
 def _echo_json(data: dict[str, Any]) -> None:
-    """JSON 文字列として整形出力する。
+    """Pretty-print data as JSON.
 
     Args:
-        data (dict[str, Any]): 出力データ
+        data (dict[str, Any]): Data to output.
     """
     console.print(json.dumps(data, ensure_ascii=False, indent=2))
 
 
 @app.command(help="Show version.")
 def version() -> None:
-    """バージョンコマンド"""
+    """Version command."""
     console.print(f"{PROJECT_NAME} version {VERSION}")
 
 
@@ -95,12 +96,12 @@ def server(
         default=None, help="Up server also as MCP (defaults to config)."
     ),
 ) -> None:
-    """ローカルサーバとして起動する。
+    """Start the application as a local server.
 
     Args:
-        host (str, optional): ホスト。Defaults to cfg.general.host.
-        port (int, optional): ポート番号。Defaults to cfg.general.port.
-        mcp (bool, optional): MCP サーバとして公開するか。Defaults to cfg.general.mcp.
+        host (str, optional): Hostname. Defaults to cfg.general.host.
+        port (int, optional): Port number. Defaults to cfg.general.port.
+        mcp (bool, optional): Whether to expose as MCP. Defaults to cfg.general.mcp.
     """
     from ..server.fastapi import app as fastapi
 
@@ -133,7 +134,7 @@ def config() -> None:
         cfg.write_yaml()
 
 
-# 以下、REST API Client のラッパーコマンドを定義
+# Define wrapper commands for the REST API client
 
 
 class ClientCommand(Protocol):

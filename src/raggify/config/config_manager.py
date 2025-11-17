@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class PathSerializationStrategy(SerializationStrategy):
-    """Path <-> str の相互変換を mashumaro 経由で行うためのストラテジークラス。"""
+    """Strategy class for Path <-> str conversion via mashumaro."""
 
     def serialize(self, value: Path) -> str:
         return str(value)
@@ -36,7 +36,7 @@ class PathSerializationStrategy(SerializationStrategy):
 
 @dataclass(kw_only=True)
 class AppConfig(DataClassDictMixin):
-    """全セクションを一括で保持するためのルート設定データクラス。"""
+    """Root config dataclass to keep all sections together."""
 
     general: GeneralConfig = field(default_factory=GeneralConfig)
     vector_store: VectorStoreConfig = field(default_factory=VectorStoreConfig)
@@ -52,7 +52,7 @@ class AppConfig(DataClassDictMixin):
 
 
 class ConfigManager:
-    """各種設定管理クラス。"""
+    """Configuration manager."""
 
     def __init__(self) -> None:
         load_dotenv()
@@ -64,10 +64,10 @@ class ConfigManager:
             self.read_yaml()
 
     def read_yaml(self) -> None:
-        """YAML ファイルから設定を読み込み、AppConfig にマッピングする。
+        """Read YAML config and map it into AppConfig.
 
         Raises:
-            RuntimeError: 読み込み失敗
+            RuntimeError: If reading fails.
         """
         try:
             with open(USER_CONFIG_PATH, "r", encoding="utf-8") as fp:
@@ -82,7 +82,7 @@ class ConfigManager:
             self._config = AppConfig()
 
     def write_yaml(self) -> None:
-        """現在の設定を YAML として書き出す。"""
+        """Write the current configuration as YAML."""
         config_dir = os.path.dirname(USER_CONFIG_PATH)
         try:
             os.makedirs(config_dir, exist_ok=True)
@@ -130,9 +130,9 @@ class ConfigManager:
         return self._config.retrieve
 
     def get_dict(self) -> dict[str, object]:
-        """現在保持している設定を辞書形式で取得する。
+        """Get the current configuration as a dictionary.
 
         Returns:
-            dict[str, object]: 辞書
+            dict[str, object]: Dictionary form.
         """
         return self._config.to_dict()

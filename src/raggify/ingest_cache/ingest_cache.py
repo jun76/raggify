@@ -20,17 +20,17 @@ __all__ = ["create_ingest_cache_manager"]
 def create_ingest_cache_manager(
     cfg: ConfigManager, embed: EmbedManager
 ) -> IngestCacheManager:
-    """インジェストキャッシュ管理のインスタンスを生成する。
+    """Create an ingest cache manager instance.
 
     Args:
-        cfg (ConfigManager): 設定管理
-        embed (EmbedManager): 埋め込み管理
+        cfg (ConfigManager): Config manager.
+        embed (EmbedManager): Embedding manager.
 
     Raises:
-        RuntimeError: インスタンス生成に失敗またはプロバイダ指定漏れ
+        RuntimeError: If instantiation fails or providers are missing.
 
     Returns:
-        IngestCacheManager: インジェストキャッシュ管理
+        IngestCacheManager: Ingest cache manager.
     """
     from .ingest_cache_manager import IngestCacheManager
 
@@ -65,17 +65,17 @@ def create_ingest_cache_manager(
 
 
 def _create_container(cfg: ConfigManager, space_key: str) -> IngestCacheContainer:
-    """空間キー毎のコンテナを生成する。
+    """Create a container for each space key.
 
     Args:
-        cfg (ConfigManager): 設定管理
-        space_key (str): 空間キー
+        cfg (ConfigManager): Config manager.
+        space_key (str): Space key.
 
     Raises:
-        RuntimeError: サポート外のプロバイダ
+        RuntimeError: When the provider is unsupported.
 
     Returns:
-        IngestCacheContainer: コンテナ
+        IngestCacheContainer: Container instance.
     """
     table_name = _generate_table_name(cfg, space_key)
     match cfg.general.ingest_cache_provider:
@@ -94,24 +94,24 @@ def _create_container(cfg: ConfigManager, space_key: str) -> IngestCacheContaine
 
 
 def _generate_table_name(cfg: ConfigManager, space_key: str) -> str:
-    """テーブル名を生成する。
+    """Generate a table name.
 
     Args:
-        cfg (ConfigManager): 設定管理
-        space_key (str): 空間キー
+        cfg (ConfigManager): Config manager.
+        space_key (str): Space key.
 
     Raises:
-        ValueError: 長すぎるテーブル名
+        ValueError: When the table name is too long.
 
     Returns:
-        str: テーブル名
+        str: Table name.
     """
     return sanitize_str(
         f"{PJNAME_ALIAS}_{cfg.general.knowledgebase_name}_{space_key}_ic"
     )
 
 
-# 以下、プロバイダ毎のコンテナ生成ヘルパー
+# Container factory helpers per provider
 def _redis(cfg: IngestCacheConfig, table_name: str) -> IngestCacheContainer:
     from llama_index.core.ingestion import IngestionCache
     from llama_index.storage.kvstore.redis import RedisKVStore
