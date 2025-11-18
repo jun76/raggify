@@ -134,3 +134,5 @@ class EmbedConfig(DataClassDictMixin):
             EmbedModel.DIM.value: 1024,
         }
     )
+
+    # video_duration_seconds: int = 15

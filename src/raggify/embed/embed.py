@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from pydantic import ValidationError
 
@@ -247,11 +247,18 @@ def _voyage_image(cfg: EmbedConfig) -> EmbedContainer:
     return _voyage(cfg.voyage_embed_model_image)
 
 
-def _bedrock(model: dict[str, Any]) -> EmbedContainer:
+def _bedrock(
+    model: dict[str, Any], cfg: Optional[EmbedConfig] = None
+) -> EmbedContainer:
     from ..llama.embeddings.bedrock import MultiModalBedrockEmbedding
     from .embed_manager import EmbedContainer
 
-    kwargs = {"dimensions": model[EM.DIM], "embedding_dimension": model[EM.DIM]}
+    kwargs = {
+        "dimensions": model[EM.DIM],
+        "embedding_dimension": model[EM.DIM],
+        # FIXME: Since nova2 won't accept the embeddingConfig, I've commented it out for now.
+        # "video_duration_seconds": cfg.video_duration_seconds if cfg else None,
+    }
 
     return EmbedContainer(
         provider_name=EmbedProvider.BEDROCK,
@@ -282,4 +289,4 @@ def _bedrock_audio(cfg: EmbedConfig) -> EmbedContainer:
 
 
 def _bedrock_video(cfg: EmbedConfig) -> EmbedContainer:
-    return _bedrock(cfg.bedrock_embed_model_video)
+    return _bedrock(model=cfg.bedrock_embed_model_video, cfg=cfg)

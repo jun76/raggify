@@ -340,9 +340,12 @@ raggify --help
 
 <img alt="Image" src="media/cli.png" />
 
+Some subcommands can be run independently, but all Ingest and Query subcommands require the Raggify server to be running. Therefore, you must first execute `raggify server` to start it.
+
 ## raggify config
 
 You can edit `/etc/raggify/config.yaml` to set default values, used by raggify runtime.
+Note that if you run `raggify config` with the config.yaml file deleted, it will regenerate the files using the default settings.
 <img alt="Image" src="media/config.png" />
 
 # 🤖️ Use As MCP Server
@@ -395,6 +398,14 @@ ingest_cache_provider: local
 
 ℹ️ To delete all data, using `rm -rf ~/.local/share/raggify`.
 
+You can also edit persistent directory.
+
+```yaml
+chroma_persist_dir: /root/.local/share/raggify/chroma_db
+upload_dir: /root/.local/share/raggify/upload
+pipe_persist_dir: /root/.local/share/raggify/default_kb
+```
+
 ## Databases
 
 ### Pgvector / Postgres
@@ -402,7 +413,7 @@ ingest_cache_provider: local
 When using the following settings, it is convenient to use a dedicated script `init_pgdb.sh`.
 
 ```yaml
-vector_store_provider: pgvector
+vector_store_provider: pgvector # Note: pgvector (not postgres)
 document_store_provider: postgres
 ingest_cache_provider: postgres
 ```
@@ -610,6 +621,7 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 | `upload_dir`       | Directory for uploaded files.                | `~/.local/share/raggify/upload`     | Any filesystem path.               |
 | `pipe_persist_dir` | Pipeline persistence root per KB.            | `~/.local/share/raggify/default_kb` | Any filesystem path.               |
 | `batch_size`       | Number of nodes processed per async batch.   | `100`                               | Any positive integer.              |
+| `additional_exts`  | Extra whitelist extensions for local ingest. | `[".c", ".py", ".rst"]`             | List of dot-prefixed extensions.   |
 | `user_agent`       | User-Agent header for web ingestion.         | `raggify`                           | Any string.                        |
 | `load_asset`       | Download linked assets during web ingestion. | `true`                              | `true` / `false`.                  |
 | `req_per_sec`      | Request rate limit for web ingestion.        | `2`                                 | Any integer.                       |
@@ -687,8 +699,6 @@ log_level: warning
 ```python
 # For reference
 # Retrievers return this structure
-import json
-
 from llama_index.core.schema import NodeWithScore
 
 # For REST API Call to the server

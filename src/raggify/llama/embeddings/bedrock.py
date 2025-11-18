@@ -69,6 +69,12 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         """Constructor.
 
         Args:
+            model_name (str, optional): Bedrock embedding model name. Defaults to Models.NOVA_2_MULTIMODAL_V1.
+            profile_name (Optional[str], optional): AWS profile name. Defaults to None.
+            aws_access_key_id (Optional[str], optional): AWS access key. Defaults to None.
+            aws_secret_access_key (Optional[str], optional): AWS secret key. Defaults to None.
+            aws_session_token (Optional[str], optional): AWS session token. Defaults to None.
+            region_name (Optional[str], optional): AWS region name. Defaults to None.
             kwargs (Any): Additional args for BedrockEmbedding initialization.
         """
         super().__init__(
@@ -277,18 +283,29 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
                 ),
                 "source": {"bytes": encoded},
             }
-            segmentation = self.additional_kwargs.get("video_segmentation_config")
-            if segmentation:
-                payload["segmentationConfig"] = segmentation
+            duration_seconds = self.additional_kwargs.get("video_duration_seconds")
 
             payload.update(video_overrides)
 
-            request_body = self._build_single_embedding_body(
-                media_field="video",
-                media_payload=payload,
-                params_override_key="video_params_overrides",
-            )
-            vecs.append(self._invoke_single_embedding(request_body))
+            if duration_seconds is not None:
+                payload["segmentationConfig"] = {"durationSeconds": duration_seconds}
+                request_body = self._build_segmented_embedding_body(
+                    media_field="video",
+                    media_payload=payload,
+                    params_override_key="video_params_overrides",
+                )
+
+                embeddings = self._invoke_segmented_embedding(request_body)
+                if embeddings:
+                    vecs.append(embeddings[0])
+            else:
+                request_body = self._build_single_embedding_body(
+                    media_field="video",
+                    media_payload=payload,
+                    params_override_key="video_params_overrides",
+                )
+
+                vecs.append(self._invoke_single_embedding(request_body))
 
         return vecs
 
@@ -508,14 +525,51 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
             params_key: params,
         }
 
-    def _invoke_single_embedding(self, body: dict[str, Any]) -> Embedding:
-        """Send a request to Bedrock and retrieve the embedding.
+    def _build_segmented_embedding_body(
+        self,
+        *,
+        media_field: str,
+        media_payload: dict[str, Any],
+        params_override_key: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Build a segmented-embedding request body for Nova.
+
+        Args:
+            media_field (str): Media field name.
+            media_payload (dict[str, Any]): Media payload.
+            params_override_key (Optional[str]): Additional override key.
+
+        Returns:
+            dict[str, Any]: Request body.
+        """
+        params: dict[str, Any] = {
+            "embeddingPurpose": self.additional_kwargs.get(
+                "embedding_purpose", "GENERIC_INDEX"
+            ),
+            media_field: media_payload,
+        }
+        dimension = self.additional_kwargs.get("embedding_dimension", 3072)
+        if dimension is not None:
+            params["embeddingDimension"] = dimension
+
+        if params_override_key:
+            overrides = self.additional_kwargs.get(params_override_key)
+            if overrides:
+                params.update(overrides)
+
+        return {
+            "taskType": "SEGMENTED_EMBEDDING",
+            "segmentedEmbeddingParams": params,
+        }
+
+    def _invoke_embeddings(self, body: dict[str, Any]) -> list[Embedding]:
+        """Send a request to Bedrock and retrieve embedding list.
 
         Args:
             body (dict[str, Any]): Request body.
 
         Returns:
-            Embedding: Embedding vector.
+            list[Embedding]: Embedding vectors.
         """
 
         if self._client is None:
@@ -544,10 +598,35 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         if not embeddings:
             raise RuntimeError("Bedrock response does not include embeddings")
 
-        first = embeddings[0]
-        if isinstance(first, dict) and "embedding" in first:
-            return first["embedding"]
-        elif isinstance(first, list):
-            return first
-        else:
-            raise RuntimeError(f"Unexpected embedding format: {type(first)}")
+        results: list[Embedding] = []
+        for emb in embeddings:
+            if isinstance(emb, dict) and "embedding" in emb:
+                results.append(emb["embedding"])
+            elif isinstance(emb, list):
+                results.append(emb)
+            else:
+                raise RuntimeError(f"Unexpected embedding format: {type(emb)}")
+
+        return results
+
+    def _invoke_single_embedding(self, body: dict[str, Any]) -> Embedding:
+        """Send a single-embedding request to Bedrock and retrieve the first embedding.
+
+        Args:
+            body (dict[str, Any]): Request body.
+
+        Returns:
+            Embedding: Embedding vector.
+        """
+        return self._invoke_embeddings(body)[0]
+
+    def _invoke_segmented_embedding(self, body: dict[str, Any]) -> list[Embedding]:
+        """Send a segmented-embedding request to Bedrock and retrieve embeddings.
+
+        Args:
+            body (dict[str, Any]): Request body.
+
+        Returns:
+            list[Embedding]: Embedding vectors.
+        """
+        return self._invoke_embeddings(body)
