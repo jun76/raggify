@@ -55,10 +55,12 @@ class QueryMultimodalRequest(BaseModel):
 
 class PathRequest(BaseModel):
     path: str
+    force: bool = False
 
 
 class URLRequest(BaseModel):
     url: str
+    force: bool = False
 
 
 class JobRequest(BaseModel):
@@ -272,13 +274,18 @@ async def ingest_path(payload: PathRequest) -> dict[str, str]:
 
     Args:
         payload (PathRequest): Target path.
+            force (bool, optional): Force execution of the transformation pipeline.
 
     Returns:
         dict[str, str]: Result.
     """
     logger.debug("exec /v1/ingest/path")
 
-    job = _wk().submit(JobPayload(kind="ingest_path", kwargs={"path": payload.path}))
+    job = _wk().submit(
+        JobPayload(
+            kind="ingest_path", kwargs={"path": payload.path, "force": payload.force}
+        )
+    )
 
     return {"status": "accepted", "job_id": job.job_id}
 
@@ -290,6 +297,7 @@ async def ingest_path_list(payload: PathRequest) -> dict[str, str]:
     Args:
         payload (PathRequest): Path to a list file (text file; comment lines
             starting with # and blank lines are skipped).
+            force (bool, optional): Force execution of the transformation pipeline.
 
     Returns:
         dict[str, str]: Result.
@@ -297,7 +305,10 @@ async def ingest_path_list(payload: PathRequest) -> dict[str, str]:
     logger.debug("exec /v1/ingest/path_list")
 
     job = _wk().submit(
-        JobPayload(kind="ingest_path_list", kwargs={"lst": payload.path})
+        JobPayload(
+            kind="ingest_path_list",
+            kwargs={"lst": payload.path, "force": payload.force},
+        )
     )
 
     return {"status": "accepted", "job_id": job.job_id}
@@ -311,13 +322,18 @@ async def ingest_url(payload: URLRequest) -> dict[str, str]:
 
     Args:
         payload (URLRequest): Target URL.
+            force (bool, optional): Force execution of the transformation pipeline.
 
     Returns:
         dict[str, str]: Result.
     """
     logger.debug("exec /v1/ingest/url")
 
-    job = _wk().submit(JobPayload(kind="ingest_url", kwargs={"url": payload.url}))
+    job = _wk().submit(
+        JobPayload(
+            kind="ingest_url", kwargs={"url": payload.url, "force": payload.force}
+        )
+    )
 
     return {"status": "accepted", "job_id": job.job_id}
 
@@ -329,13 +345,18 @@ async def ingest_url_list(payload: PathRequest) -> dict[str, str]:
     Args:
         payload (PathRequest): Path to a URL list file (text file; comment lines
             starting with # and blank lines are skipped).
+            force (bool, optional): Force execution of the transformation pipeline.
 
     Returns:
         dict[str, str]: Result.
     """
     logger.debug("exec /v1/ingest/url_list")
 
-    job = _wk().submit(JobPayload(kind="ingest_url_list", kwargs={"lst": payload.path}))
+    job = _wk().submit(
+        JobPayload(
+            kind="ingest_url_list", kwargs={"lst": payload.path, "force": payload.force}
+        )
+    )
 
     return {"status": "accepted", "job_id": job.job_id}
 

@@ -81,22 +81,48 @@ class Loader:
             f"{MK.TEMP_FILE_PATH}:{meta.temp_file_path}"  # To identify embedded images in PDFs, etc.
         )
 
+    async def _minimal_pipeline(self, docs: Sequence[Document]) -> Sequence[BaseNode]:
+        """Run only default parser (e.g. ImageDocument -> ImageNode) with no docstore.
+
+        Args:
+            docs (Sequence[Document]): Documents.
+
+        Returns:
+            Sequence[BaseNode]: Parsed nodes.
+        """
+        from llama_index.core.ingestion import IngestionPipeline
+
+        try:
+            nodes = await IngestionPipeline().arun(documents=docs)
+            logger.debug(f"{len(docs)} docs --minimal pipeline--> {len(nodes)} nodes")
+
+            return nodes
+        except Exception as e:
+            logger.error(f"failed to process documents with minimal pipeline: {e}")
+
+        return []
+
     async def _aparse_documents(
         self,
         docs: Sequence[Document],
         is_canceled: Callable[[], bool],
+        force: bool = False,
     ) -> Sequence[BaseNode]:
         """Split documents into nodes.
 
         Args:
             docs (Sequence[Document]): Documents.
             is_canceled (Callable[[], bool]): Cancellation flag for the job.
+            force (bool, optional): Force execution of the transformation pipeline.
 
         Returns:
             Sequence[BaseNode]: Parsed nodes.
         """
         if not docs or is_canceled():
             return []
+
+        if force:
+            return await self._minimal_pipeline(docs)
 
         rt = _rt()
         batch_size = rt.cfg.ingest.batch_size
@@ -128,19 +154,23 @@ class Loader:
         self,
         docs: list[Document],
         is_canceled: Callable[[], bool],
+        force: bool = False,
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
         """Split documents by modality.
 
         Args:
             docs (list[Document]): Input documents.
             is_canceled (Callable[[], bool]): Cancellation flag for the job.
+            force (bool, optional): Force execution of the transformation pipeline.
 
         Returns:
             tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
                 Text, image, audio, and video nodes.
         """
         self._finalize_docs(docs)
-        nodes = await self._aparse_documents(docs=docs, is_canceled=is_canceled)
+        nodes = await self._aparse_documents(
+            docs=docs, is_canceled=is_canceled, force=force
+        )
 
         image_nodes = []
         audio_nodes = []

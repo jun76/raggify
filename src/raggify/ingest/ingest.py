@@ -313,6 +313,7 @@ def ingest_path(
     path: str,
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
+    force: bool = False,
 ) -> None:
     """Ingest, embed, and store content from a local path (directory or file).
 
@@ -323,14 +324,18 @@ def ingest_path(
         batch_size (Optional[int]): Batch size. Defaults to None.
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
+        force (bool, optional): Force execution of the transformation pipeline.
     """
-    asyncio_run(aingest_path(path, batch_size=batch_size, is_canceled=is_canceled))
+    asyncio_run(
+        aingest_path(path, batch_size=batch_size, is_canceled=is_canceled, force=force)
+    )
 
 
 async def aingest_path(
     path: str,
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
+    force: bool = False,
 ) -> None:
     """Asynchronously ingest, embed, and store content from a local path.
 
@@ -341,11 +346,14 @@ async def aingest_path(
         batch_size (Optional[int]): Batch size. Defaults to None.
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
+        force (bool, optional): Force execution of the transformation pipeline.
     """
     rt = _rt()
     file_loader = rt.file_loader
     text_nodes, image_nodes, audio_nodes, video_nodes = (
-        await file_loader.aload_from_path(root=path, is_canceled=is_canceled)
+        await file_loader.aload_from_path(
+            root=path, is_canceled=is_canceled, force=force
+        )
     )
     batch_size = batch_size or rt.cfg.ingest.batch_size
 
@@ -364,6 +372,7 @@ def ingest_path_list(
     lst: str | Sequence[str],
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
+    force: bool = False,
 ) -> None:
     """Ingest, embed, and store content from multiple paths in a list.
 
@@ -372,14 +381,20 @@ def ingest_path_list(
         batch_size (Optional[int]): Batch size. Defaults to None.
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
+        force (bool, optional): Force execution of the transformation pipeline.
     """
-    asyncio_run(aingest_path_list(lst, batch_size=batch_size, is_canceled=is_canceled))
+    asyncio_run(
+        aingest_path_list(
+            lst, batch_size=batch_size, is_canceled=is_canceled, force=force
+        )
+    )
 
 
 async def aingest_path_list(
     lst: str | Sequence[str],
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
+    force: bool = False,
 ) -> None:
     """Asynchronously ingest, embed, and store content from multiple paths.
 
@@ -388,6 +403,7 @@ async def aingest_path_list(
         batch_size (Optional[int]): Batch size. Defaults to None.
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
+        force (bool, optional): Force execution of the transformation pipeline.
     """
     if isinstance(lst, str):
         lst = _read_list(lst)
@@ -395,7 +411,9 @@ async def aingest_path_list(
     rt = _rt()
     file_loader = rt.file_loader
     text_nodes, image_nodes, audio_nodes, video_nodes = (
-        await file_loader.aload_from_paths(paths=list(lst), is_canceled=is_canceled)
+        await file_loader.aload_from_paths(
+            paths=list(lst), is_canceled=is_canceled, force=force
+        )
     )
     batch_size = batch_size or rt.cfg.ingest.batch_size
 
@@ -414,6 +432,7 @@ def ingest_url(
     url: str,
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
+    force: bool = False,
 ) -> None:
     """Ingest, embed, and store content from a URL.
 
@@ -424,14 +443,20 @@ def ingest_url(
         batch_size (Optional[int]): Batch size. Defaults to None.
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
+        force (bool, optional): Force execution of the transformation pipeline.
     """
-    asyncio_run(aingest_url(url=url, batch_size=batch_size, is_canceled=is_canceled))
+    asyncio_run(
+        aingest_url(
+            url=url, batch_size=batch_size, is_canceled=is_canceled, force=force
+        )
+    )
 
 
 async def aingest_url(
     url: str,
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
+    force: bool = False,
 ) -> None:
     """Asynchronously ingest, embed, and store content from a URL.
 
@@ -442,11 +467,12 @@ async def aingest_url(
         batch_size (Optional[int]): Batch size. Defaults to None.
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
+        force (bool, optional): Force execution of the transformation pipeline.
     """
     rt = _rt()
     html_loader = rt.html_loader
     text_nodes, image_nodes, audio_nodes, video_nodes = (
-        await html_loader.aload_from_url(url=url, is_canceled=is_canceled)
+        await html_loader.aload_from_url(url=url, is_canceled=is_canceled, force=force)
     )
     batch_size = batch_size or rt.cfg.ingest.batch_size
 
@@ -465,6 +491,7 @@ def ingest_url_list(
     lst: str | Sequence[str],
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
+    force: bool = False,
 ) -> None:
     """Ingest, embed, and store content from multiple URLs in a list.
 
@@ -473,14 +500,20 @@ def ingest_url_list(
         batch_size (Optional[int]): Batch size. Defaults to None.
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
+        force (bool, optional): Force execution of the transformation pipeline.
     """
-    asyncio_run(aingest_url_list(lst, batch_size=batch_size, is_canceled=is_canceled))
+    asyncio_run(
+        aingest_url_list(
+            lst, batch_size=batch_size, is_canceled=is_canceled, force=force
+        )
+    )
 
 
 async def aingest_url_list(
     lst: str | Sequence[str],
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
+    force: bool = False,
 ) -> None:
     """Asynchronously ingest, embed, and store content from multiple URLs.
 
@@ -489,6 +522,7 @@ async def aingest_url_list(
         batch_size (Optional[int]): Batch size. Defaults to None.
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
+        force (bool, optional): Force execution of the transformation pipeline.
     """
     if isinstance(lst, str):
         lst = _read_list(lst)
@@ -496,7 +530,9 @@ async def aingest_url_list(
     rt = _rt()
     html_loader = rt.html_loader
     text_nodes, image_nodes, audio_nodes, video_nodes = (
-        await html_loader.aload_from_urls(urls=list(lst), is_canceled=is_canceled)
+        await html_loader.aload_from_urls(
+            urls=list(lst), is_canceled=is_canceled, force=force
+        )
     )
     batch_size = batch_size or rt.cfg.ingest.batch_size
 

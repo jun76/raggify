@@ -48,6 +48,7 @@ class FileLoader(Loader):
         self,
         root: str,
         is_canceled: Callable[[], bool],
+        force: bool = False,
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
         """Load content from a local path and generate nodes.
 
@@ -56,6 +57,7 @@ class FileLoader(Loader):
         Args:
             root (str): Target path.
             is_canceled (Callable[[], bool]): Whether this job has been canceled.
+            force (bool, optional): Force execution of the transformation pipeline.
 
         Raises:
             ValueError: For invalid path or load errors.
@@ -91,18 +93,22 @@ class FileLoader(Loader):
             logger.exception(e)
             raise ValueError("failed to load from path") from e
 
-        return await self._asplit_docs_modality(docs=docs, is_canceled=is_canceled)
+        return await self._asplit_docs_modality(
+            docs=docs, is_canceled=is_canceled, force=force
+        )
 
     async def aload_from_paths(
         self,
         paths: list[str],
         is_canceled: Callable[[], bool],
+        force: bool = False,
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
         """Load content from multiple paths and generate nodes.
 
         Args:
             paths (list[str]): Path list.
             is_canceled (Callable[[], bool]): Whether this job has been canceled.
+            force (bool, optional): Force execution of the transformation pipeline.
 
         Returns:
             tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
@@ -115,7 +121,9 @@ class FileLoader(Loader):
         for path in paths:
             try:
                 temp_text, temp_image, temp_audio, temp_video = (
-                    await self.aload_from_path(root=path, is_canceled=is_canceled)
+                    await self.aload_from_path(
+                        root=path, is_canceled=is_canceled, force=force
+                    )
                 )
                 texts.extend(temp_text)
                 images.extend(temp_image)
