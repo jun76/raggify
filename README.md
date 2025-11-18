@@ -31,7 +31,7 @@ pip install raggify
 If you also use examples, run:
 
 ```bash
-pip install raggify[exam]
+pip install 'raggify[exam]'
 ```
 
 Then, put your required API-KEYs and credentials in .env file.
@@ -282,7 +282,7 @@ cd examples/rag
 If you haven't installed the dependency packages yet, please run the following.
 
 ```bash
-pip install raggify[exam]
+pip install 'raggify[exam]'
 ```
 
 ### Main menu
