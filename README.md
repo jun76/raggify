@@ -747,7 +747,7 @@ from raggify.runtime import get_runtime
 
 ## Home Page
 
-- (coming soon)
+- [マルチモーダルでローカルな RAG 基盤ライブラリを作ってみた](https://qiita.com/jun76/items/a82bf6962cd3f3ad79d9)
 - The predecessor of Raggify: [マルチモーダルでローカルな RAG 基盤サーバを作ってみた](https://qiita.com/jun76/items/f2e392f530e24a6a8903)
 
 ## Logo and Branding
