@@ -1,6 +1,6 @@
 # Raggify
 
-<img alt="Image" src="media/Raggify.png" />
+<img alt="Image" src="https://raw.githubusercontent.com/jun76/raggify/main/media/Raggify.png" />
 
 **Raggify** is a llama-index based Python library for building multimodal RAG(Retrieval-Augmented Generation) systems that run locally or as a service. It now ships with an asynchronous ingest pipeline for files, web pages, and URL lists, normalizes metadata, persists cache fingerprints to avoid redundant upserts, and keeps a document store in sync for BM25 / Vector hybrid retrieval.
 
@@ -8,11 +8,11 @@ Raggify is designed with the goal of **natively handling multimodal data—inclu
 
 # 🔎 Overview
 
-<img alt="Image" src="media/system.png" />
+<img alt="Image" src="https://raw.githubusercontent.com/jun76/raggify/main/media/system.png" />
 
 Raggify can be used in three ways: as a library, a CLI, and a server. Common to each usage scenario, the **Runtime** module acts as an intermediary between the various management modules and the configuration values in **/etc/raggify/config.yaml** (detail is at the end).
 
-<img alt="Image" src="media/system2.png" />
+<img alt="Image" src="https://raw.githubusercontent.com/jun76/raggify/main/media/system2.png" />
 
 **Ingestion Phase**: Raggify ingests inputs from various modalities and file formats, accumulating them as a knowledge base.
 
@@ -262,13 +262,13 @@ raggify server
 ```
 
 Now raggify server is online.
-<img src="media/server.png" />
+<img src="https://raw.githubusercontent.com/jun76/raggify/main/media/server.png" />
 
 Accepted some commands via REST API.
-<img src="media/server2.png" />
+<img src="https://raw.githubusercontent.com/jun76/raggify/main/media/server2.png" />
 
 `Ctrl + c` to shutdown.
-<img src="media/shutdown.png" />
+<img src="https://raw.githubusercontent.com/jun76/raggify/main/media/shutdown.png" />
 
 ## 📚 Sample Client App
 
@@ -287,14 +287,14 @@ pip install raggify[exam]
 
 ### Main menu
 
-<img src="media/menu.png" />
+<img src="https://raw.githubusercontent.com/jun76/raggify/main/media/menu.png" />
 
 The server's startup status and various menus are displayed.
 Vector store, embed, and ingest caches are initialized for each modalities.
 
 ### Knowledge Ingestion
 
-<img src="media/ingest.png" />
+<img src="https://raw.githubusercontent.com/jun76/raggify/main/media/ingest.png" />
 
 You can
 
@@ -318,13 +318,13 @@ Sitemaps with the .xml extension are parsed by a dedicated parser, which recursi
 
 ### Search
 
-<img src="media/retrieve.png" />
+<img src="https://raw.githubusercontent.com/jun76/raggify/main/media/retrieve.png" />
 
 You can search for source information (file paths or URLs) across modalities. The image shows an example where an mp3 file containing the sound of a **chainsaw cutting wood** is used to search for **footage of a motorcycle driving**. (A buzzing sound can be heard in the video.)
 
 ### RAG Search
 
-<img src="media/ragsearch.png" />
+<img src="https://raw.githubusercontent.com/jun76/raggify/main/media/ragsearch.png" />
 
 By feeding the previous search results to an LLM, you can complete this RAG search system.
 
@@ -338,7 +338,7 @@ At first, run:
 raggify --help
 ```
 
-<img alt="Image" src="media/cli.png" />
+<img alt="Image" src="https://raw.githubusercontent.com/jun76/raggify/main/media/cli.png" />
 
 Some subcommands can be run independently, but all Ingest and Query subcommands require the Raggify server to be running. Therefore, you must first execute `raggify server` to start it.
 
@@ -346,13 +346,13 @@ Some subcommands can be run independently, but all Ingest and Query subcommands 
 
 You can edit `/etc/raggify/config.yaml` to set default values, used by raggify runtime.
 Note that if you run `raggify config` with the config.yaml file deleted, it will regenerate the files using the default settings.
-<img alt="Image" src="media/config.png" />
+<img alt="Image" src="https://raw.githubusercontent.com/jun76/raggify/main/media/config.png" />
 
 # 🤖️ Use As MCP Server
 
 ## raggify server --mcp
 
-<img alt="Image" src="media/mcp_help.png" />
+<img alt="Image" src="https://raw.githubusercontent.com/jun76/raggify/main/media/mcp_help.png" />
 
 You can also specify --mcp option when you up server,
 
@@ -382,7 +382,7 @@ For example, LM Studio mcp.json:
 
 We were able to have the LLM use the tool as an MCP server.
 
-<img alt="Image" src="media/mcp.png" />
+<img alt="Image" src="https://raw.githubusercontent.com/jun76/raggify/main/media/mcp.png" />
 
 # 💾 Persisted Data Management
 

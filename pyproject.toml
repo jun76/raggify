@@ -5,7 +5,7 @@ build-backend = "uv_build"
 
 [project]
 name = "raggify"
-version = "0.1.1"
+version = "0.1.2"
 description = "llama index based library for building multimodal RAG systems"
 authors = [
     { name = "jun76", email = "jun76.git@gmail.com" }
