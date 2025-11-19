@@ -47,8 +47,7 @@ class EmbedManager:
             )
             logger.debug(f"space_key: {cont.space_key} generated")
 
-        if Modality.TEXT in self._conts:
-            Settings.embed_model = self._conts[Modality.TEXT].embed
+        Settings.embed_model = None  # disable llama_index default embed model
 
     @property
     def name(self) -> str:

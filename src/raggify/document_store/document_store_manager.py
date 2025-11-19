@@ -14,14 +14,14 @@ class DocumentStoreManager:
     def __init__(
         self,
         provider_name: str,
-        store: Optional[BaseDocumentStore],
+        store: BaseDocumentStore,
         table_name: Optional[str],
     ) -> None:
         """Constructor.
 
         Args:
             provider_name (str): Provider name.
-            store (Optional[BaseDocumentStore]): Document store.
+            store (BaseDocumentStore): Document store.
             table_name (Optional[str]): Table name.
         """
         self._provider_name = provider_name
@@ -40,20 +40,20 @@ class DocumentStoreManager:
         return self._provider_name
 
     @property
-    def store(self) -> Optional[BaseDocumentStore]:
+    def store(self) -> BaseDocumentStore:
         """Document store.
 
         Returns:
-            Optional[BaseDocumentStore]: Document store.
+            BaseDocumentStore: Document store.
         """
         return self._store
 
     @store.setter
-    def store(self, value: Optional[BaseDocumentStore]) -> None:
+    def store(self, value: BaseDocumentStore) -> None:
         """Set the document store.
 
         Args:
-            value (Optional[BaseDocumentStore]): Document store to set.
+            value (BaseDocumentStore): Document store to set.
         """
         self._store = value
 

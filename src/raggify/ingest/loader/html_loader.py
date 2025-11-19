@@ -367,7 +367,6 @@ class HTMLLoader(Loader):
         url: str,
         is_canceled: Callable[[], bool],
         inloop: bool = False,
-        force: bool = False,
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
         """Fetch content from a URL and generate nodes.
 
@@ -377,7 +376,6 @@ class HTMLLoader(Loader):
             url (str): Target URL.
             is_canceled (Callable[[], bool]): Whether this job has been canceled.
             inloop (bool, optional): Whether called inside an upper URL loop. Defaults to False.
-            force (bool, optional): Force execution of the transformation pipeline.
 
         Returns:
             tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
@@ -391,9 +389,7 @@ class HTMLLoader(Loader):
         # For non-sitemaps, treat as a single site
         if not Exts.endswith_exts(url, Exts.SITEMAP):
             docs = await self._aload_from_site(url)
-            return await self._asplit_docs_modality(
-                docs=docs, is_canceled=is_canceled, force=force
-            )
+            return await self._asplit_docs_modality(docs)
 
         # Parse and ingest sitemap
         try:
@@ -408,27 +404,23 @@ class HTMLLoader(Loader):
         for url in urls:
             if is_canceled():
                 logger.info("Job is canceled, aborting batch processing")
-                break
+                return [], [], [], []
 
             temp = await self._aload_from_site(url)
             docs.extend(temp)
 
-        return await self._asplit_docs_modality(
-            docs=docs, is_canceled=is_canceled, force=force
-        )
+        return await self._asplit_docs_modality(docs)
 
     async def aload_from_urls(
         self,
         urls: list[str],
         is_canceled: Callable[[], bool],
-        force: bool = False,
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
         """Fetch content from multiple URLs and generate nodes.
 
         Args:
             urls (list[str]): URL list.
             is_canceled (Callable[[], bool]): Whether this job has been canceled.
-            force (bool, optional): Force execution of the transformation pipeline.
 
         Returns:
             tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
@@ -443,7 +435,7 @@ class HTMLLoader(Loader):
         for url in urls:
             if is_canceled():
                 logger.info("Job is canceled, aborting batch processing")
-                break
+                return [], [], [], []
             try:
                 temp_text, temp_image, temp_audio, temp_video = (
                     await self.aload_from_url(

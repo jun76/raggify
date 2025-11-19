@@ -188,14 +188,9 @@ def job(
 
 
 @app.command(name="ip", help=f"Ingest from local Path.")
-def ingest_path(
-    path: str = typer.Argument(help="Target path."),
-    force: bool = typer.Option(
-        default=False, help="Force execution of the transformation pipeline."
-    ),
-):
-    logger.debug(f"path = {path}, force = {force}")
-    _execute_client_command(lambda client: client.ingest_path(path, force=force))
+def ingest_path(path: str = typer.Argument(help="Target path.")):
+    logger.debug(f"path = {path}")
+    _execute_client_command(lambda client: client.ingest_path(path))
 
 
 @app.command(name="ipl", help="Ingest from local Path List.")
@@ -203,25 +198,15 @@ def ingest_path_list(
     list_path: str = typer.Argument(
         help="Target path-list path. The list can include comment(#) or blank line."
     ),
-    force: bool = typer.Option(
-        default=False, help="Force execution of the transformation pipeline."
-    ),
 ):
-    logger.debug(f"list_path = {list_path}, force = {force}")
-    _execute_client_command(
-        lambda client: client.ingest_path_list(list_path, force=force)
-    )
+    logger.debug(f"list_path = {list_path}")
+    _execute_client_command(lambda client: client.ingest_path_list(list_path))
 
 
 @app.command(name="iu", help="Ingest from Url.")
-def ingest_url(
-    url: str = typer.Argument(help="Target url."),
-    force: bool = typer.Option(
-        default=False, help="Force execution of the transformation pipeline."
-    ),
-):
-    logger.debug(f"url = {url}, force = {force}")
-    _execute_client_command(lambda client: client.ingest_url(url, force=force))
+def ingest_url(url: str = typer.Argument(help="Target url.")):
+    logger.debug(f"url = {url}")
+    _execute_client_command(lambda client: client.ingest_url(url))
 
 
 @app.command(name="iul", help="Ingest from Url List.")
@@ -229,14 +214,9 @@ def ingest_url_list(
     list_path: str = typer.Argument(
         help="Target url-list path. The list can include comment(#) or blank line."
     ),
-    force: bool = typer.Option(
-        default=False, help="Force execution of the transformation pipeline."
-    ),
 ):
-    logger.debug(f"list_path = {list_path}, force = {force}")
-    _execute_client_command(
-        lambda client: client.ingest_url_list(list_path, force=force)
-    )
+    logger.debug(f"list_path = {list_path}")
+    _execute_client_command(lambda client: client.ingest_url_list(list_path))
 
 
 @app.command(

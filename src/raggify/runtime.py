@@ -107,16 +107,16 @@ class Runtime:
 
     def build_pipeline(
         self,
+        modality: Modality,
         transformations: list[TransformComponent] | None = None,
-        modality: Optional[Modality] = None,
         persist_dir: Optional[Path] = None,
     ) -> IngestionPipeline:
         """Create or load an ingestion pipeline.
 
         Args:
-            transformations (list[TransformComponent] | None): Sequence of transforms.
-            modality (Optional[Modality], optional): Modality. Defaults to None.
-                When None, the pipeline is docstore-only. Defaults to None.
+            modality (Modality): Modality.
+            transformations (list[TransformComponent] | None):
+                Sequence of transforms. Defaults to None.
             persist_dir (Optional[Path], optional): Persistence directory. Defaults to None.
 
         Returns:
@@ -124,20 +124,13 @@ class Runtime:
         """
         from llama_index.core.ingestion import DocstoreStrategy
 
-        if modality is None:
-            pipe = IngestionPipeline(
-                transformations=transformations,
-                docstore=self.document_store.store,
-                docstore_strategy=DocstoreStrategy.DUPLICATES_ONLY,
-            )
-        else:
-            pipe = IngestionPipeline(
-                transformations=transformations,
-                vector_store=self.vector_store.get_container(modality).store,
-                cache=self.ingest_cache.get_container(modality).cache,
-                docstore=self.document_store.store,
-                docstore_strategy=DocstoreStrategy.UPSERTS,
-            )
+        pipe = IngestionPipeline(
+            transformations=transformations,
+            vector_store=self.vector_store.get_container(modality).store,
+            cache=self.ingest_cache.get_container(modality).cache,
+            docstore=self.document_store.store,
+            docstore_strategy=DocstoreStrategy.UPSERTS,
+        )
 
         if not self._use_local_workspace():
             return pipe
@@ -148,9 +141,12 @@ class Runtime:
         try:
             pipe.load(str(persist_dir))
             with self._pipeline_lock:
-                if modality is not None:
-                    self.ingest_cache.get_container(modality).cache = pipe.cache
-                self.document_store.store = pipe.docstore
+                self.ingest_cache.get_container(modality).cache = pipe.cache
+                if pipe.docstore is None:
+                    logger.warning("pipeline has no docstore")
+                else:
+                    self.document_store.store = pipe.docstore
+                logger.debug(f"loaded pipeline from {persist_dir}")
         except Exception as e:
             logger.warning(f"failed to load persist dir: {e}")
 
@@ -159,14 +155,14 @@ class Runtime:
     def persist_pipeline(
         self,
         pipe: IngestionPipeline,
-        modality: Optional[Modality] = None,
+        modality: Modality,
         persist_dir: Optional[Path] = None,
     ) -> None:
         """Persist the pipeline to storage.
 
         Args:
             pipe (IngestionPipeline): Pipeline instance.
-            modality (Optional[Modality], optional): Modality. Defaults to None.
+            modality (Modality): Modality.
             persist_dir (Optional[Path], optional): Persistence directory. Defaults to None.
         """
         if not self._use_local_workspace():
@@ -179,9 +175,12 @@ class Runtime:
         try:
             pipe.persist(str(persist_dir))
             with self._pipeline_lock:
-                if modality:
-                    self.ingest_cache.get_container(modality).cache = pipe.cache
-                self.document_store.store = pipe.docstore
+                self.ingest_cache.get_container(modality).cache = pipe.cache
+                if pipe.docstore is None:
+                    logger.warning("pipeline has no docstore")
+                else:
+                    self.document_store.store = pipe.docstore
+                logger.debug(f"persisted pipeline to {persist_dir}")
         except Exception as e:
             logger.warning(f"failed to persist: {e}")
 

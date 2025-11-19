@@ -198,6 +198,7 @@ class BackgroundWorker:
                     raise ValueError(f"unknown job kind: {job.payload.kind}")
 
             self._update(job=job, status=JobStatus.SUCCEEDED)
+            logger.info(f"{job.payload.kind} (job_id: {job.job_id}) succeeded")
         except Exception as e:
             logger.exception(e)
             self._update(job=job, status=JobStatus.FAILED)

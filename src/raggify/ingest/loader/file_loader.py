@@ -45,10 +45,7 @@ class FileLoader(Loader):
             self._readers[ext] = dummy_reader
 
     async def aload_from_path(
-        self,
-        root: str,
-        is_canceled: Callable[[], bool],
-        force: bool = False,
+        self, root: str
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
         """Load content from a local path and generate nodes.
 
@@ -56,8 +53,6 @@ class FileLoader(Loader):
 
         Args:
             root (str): Target path.
-            is_canceled (Callable[[], bool]): Whether this job has been canceled.
-            force (bool, optional): Force execution of the transformation pipeline.
 
         Raises:
             ValueError: For invalid path or load errors.
@@ -93,22 +88,18 @@ class FileLoader(Loader):
             logger.exception(e)
             raise ValueError("failed to load from path") from e
 
-        return await self._asplit_docs_modality(
-            docs=docs, is_canceled=is_canceled, force=force
-        )
+        return await self._asplit_docs_modality(docs)
 
     async def aload_from_paths(
         self,
         paths: list[str],
         is_canceled: Callable[[], bool],
-        force: bool = False,
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
         """Load content from multiple paths and generate nodes.
 
         Args:
             paths (list[str]): Path list.
             is_canceled (Callable[[], bool]): Whether this job has been canceled.
-            force (bool, optional): Force execution of the transformation pipeline.
 
         Returns:
             tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
@@ -119,11 +110,12 @@ class FileLoader(Loader):
         audios = []
         videos = []
         for path in paths:
+            if is_canceled():
+                logger.info("Job is canceled, aborting batch processing")
+                return [], [], [], []
             try:
                 temp_text, temp_image, temp_audio, temp_video = (
-                    await self.aload_from_path(
-                        root=path, is_canceled=is_canceled, force=force
-                    )
+                    await self.aload_from_path(path)
                 )
                 texts.extend(temp_text)
                 images.extend(temp_image)

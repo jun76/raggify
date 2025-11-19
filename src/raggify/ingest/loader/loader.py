@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Optional, Sequence
+from typing import TYPE_CHECKING, Optional
 
 from llama_index.core.schema import Document, ImageNode, MediaResource, TextNode
 
@@ -11,7 +11,6 @@ from ...core.metadata import BasicMetaData
 from ...core.metadata import MetaKeys as MK
 from ...llama.core.schema import AudioNode, VideoNode
 from ...logger import logger
-from ...runtime import get_runtime as _rt
 
 if TYPE_CHECKING:
     from llama_index.core.schema import BaseNode
@@ -81,186 +80,89 @@ class Loader:
             f"{MK.TEMP_FILE_PATH}:{meta.temp_file_path}"  # To identify embedded images in PDFs, etc.
         )
 
-    async def _minimal_pipeline(self, docs: Sequence[Document]) -> Sequence[BaseNode]:
-        """Run only default parser (e.g. ImageDocument -> ImageNode) with no docstore.
-
-        Args:
-            docs (Sequence[Document]): Documents.
-
-        Returns:
-            Sequence[BaseNode]: Parsed nodes.
-        """
-        from llama_index.core.ingestion import IngestionPipeline
-
-        try:
-            nodes = await IngestionPipeline().arun(documents=docs)
-            logger.debug(f"{len(docs)} docs --minimal pipeline--> {len(nodes)} nodes")
-
-            return nodes
-        except Exception as e:
-            logger.error(f"failed to process documents with minimal pipeline: {e}")
-
-        return []
-
-    async def _aparse_documents(
-        self,
-        docs: Sequence[Document],
-        is_canceled: Callable[[], bool],
-        force: bool = False,
-    ) -> Sequence[BaseNode]:
-        """Split documents into nodes.
-
-        Args:
-            docs (Sequence[Document]): Documents.
-            is_canceled (Callable[[], bool]): Cancellation flag for the job.
-            force (bool, optional): Force execution of the transformation pipeline.
-
-        Returns:
-            Sequence[BaseNode]: Parsed nodes.
-        """
-        if not docs or is_canceled():
-            return []
-
-        if force:
-            return await self._minimal_pipeline(docs)
-
-        rt = _rt()
-        batch_size = rt.cfg.ingest.batch_size
-        total_batches = (len(docs) + batch_size - 1) // batch_size
-        nodes = []
-        pipe = rt.build_pipeline(persist_dir=self._persist_dir)
-        for idx in range(0, len(docs), batch_size):
-            if is_canceled():
-                logger.info("Job is canceled, aborting batch processing")
-                return nodes
-
-            batch = docs[idx : idx + batch_size]
-            prog = f"{idx // batch_size + 1}/{total_batches}"
-            logger.debug(
-                f"parse documents pipeline: processing batch {prog} "
-                f"({len(batch)} docs)"
-            )
-            try:
-                nodes.extend(await pipe.arun(documents=batch))
-            except Exception as e:
-                logger.error(f"failed to process batch {prog}, continue: {e}")
-
-        rt.persist_pipeline(pipe=pipe, persist_dir=self._persist_dir)
-        logger.debug(f"{len(docs)} docs --pipeline--> {len(nodes)} nodes")
-
-        return nodes
-
     async def _asplit_docs_modality(
-        self,
-        docs: list[Document],
-        is_canceled: Callable[[], bool],
-        force: bool = False,
+        self, docs: list[Document]
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
         """Split documents by modality.
 
         Args:
             docs (list[Document]): Input documents.
-            is_canceled (Callable[[], bool]): Cancellation flag for the job.
-            force (bool, optional): Force execution of the transformation pipeline.
 
         Returns:
             tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
                 Text, image, audio, and video nodes.
         """
         self._finalize_docs(docs)
-        nodes = await self._aparse_documents(
-            docs=docs, is_canceled=is_canceled, force=force
-        )
 
         image_nodes = []
         audio_nodes = []
         video_nodes = []
         text_nodes = []
-        for node in nodes:
-            if isinstance(node, TextNode) and self._is_image_node(node):
+        for doc in docs:
+            if self._has_media(doc=doc, exts=Exts.IMAGE):
                 image_nodes.append(
                     ImageNode(
-                        text=node.text,
-                        ref_doc_id=node.ref_doc_id,
-                        metadata=node.metadata,
+                        text=doc.text,
+                        id_=doc.id_,
+                        doc_id=doc.doc_id,
+                        ref_doc_id=doc.ref_doc_id,
+                        metadata=doc.metadata,
                     )
                 )
-            elif isinstance(node, TextNode) and self._is_audio_node(node):
+            elif self._has_media(doc=doc, exts=Exts.AUDIO):
                 audio_nodes.append(
                     AudioNode(
-                        text=node.text,
-                        ref_doc_id=node.ref_doc_id,
-                        metadata=node.metadata,
+                        text=doc.text,
+                        id_=doc.id_,
+                        doc_id=doc.doc_id,
+                        ref_doc_id=doc.ref_doc_id,
+                        metadata=doc.metadata,
                     )
                 )
-            elif isinstance(node, TextNode) and self._is_video_node(node):
+            elif self._has_media(doc=doc, exts=Exts.VIDEO):
                 video_nodes.append(
                     VideoNode(
-                        text=node.text,
-                        ref_doc_id=node.ref_doc_id,
-                        metadata=node.metadata,
+                        text=doc.text,
+                        id_=doc.id_,
+                        doc_id=doc.doc_id,
+                        ref_doc_id=doc.ref_doc_id,
+                        metadata=doc.metadata,
                     )
                 )
-            elif isinstance(node, TextNode):
-                text_nodes.append(node)
+            elif isinstance(doc, Document):
+                text_nodes.append(
+                    TextNode(
+                        text=doc.text,
+                        id_=doc.id_,
+                        doc_id=doc.doc_id,
+                        ref_doc_id=doc.ref_doc_id,
+                        metadata=doc.metadata,
+                    )
+                )
             else:
-                logger.warning(f"unexpected node type {type(node)}, skipped")
+                logger.warning(f"unexpected node type {type(doc)}, skipped")
 
         return text_nodes, image_nodes, audio_nodes, video_nodes
 
-    def _is_multimodal_node(self, node: BaseNode, exts: set[str]) -> bool:
-        """Return True if the node matches multimodal extensions.
+    def _has_media(self, doc: Document, exts: set[str]) -> bool:
+        """Return True if the document has media extensions.
 
         Args:
-            node (BaseNode): Target node.
+            doc (Document): Target document.
             exts (set[str]): Extension set.
 
         Returns:
             bool: True if matched.
         """
-        # Treat nodes whose file path or URL ends with specific extensions as multimodal
-        path = node.metadata.get(MK.FILE_PATH, "")
-        url = node.metadata.get(MK.URL, "")
+        path = doc.metadata.get(MK.FILE_PATH, "")
+        url = doc.metadata.get(MK.URL, "")
 
         # Include those whose temp_file_path
         # (via custom readers) contains relevant extensions
-        temp_file_path = node.metadata.get(MK.TEMP_FILE_PATH, "")
+        temp_file_path = doc.metadata.get(MK.TEMP_FILE_PATH, "")
 
         return (
             Exts.endswith_exts(path, exts)
             or Exts.endswith_exts(url, exts)
             or Exts.endswith_exts(temp_file_path, exts)
         )
-
-    def _is_image_node(self, node: BaseNode) -> bool:
-        """Return True if the node is an image node.
-
-        Args:
-            node (BaseNode): Target node.
-
-        Returns:
-            bool: True when the node represents an image.
-        """
-        return self._is_multimodal_node(node=node, exts=Exts.IMAGE)
-
-    def _is_audio_node(self, node: BaseNode) -> bool:
-        """Return True if the node is an audio node.
-
-        Args:
-            node (BaseNode): Target node.
-
-        Returns:
-            bool: True when the node represents audio.
-        """
-        return self._is_multimodal_node(node=node, exts=Exts.AUDIO)
-
-    def _is_video_node(self, node: BaseNode) -> bool:
-        """Return True if the node is a video node.
-
-        Args:
-            node (BaseNode): Target node.
-
-        Returns:
-            bool: True when the node represents video.
-        """
-        return self._is_multimodal_node(node=node, exts=Exts.VIDEO)

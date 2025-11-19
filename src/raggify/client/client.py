@@ -161,53 +161,49 @@ class RestAPIClient:
         """
         return self._post_json("/job", {"job_id": job_id, "rm": rm})
 
-    def ingest_path(self, path: str, force: bool = False) -> dict[str, Any]:
+    def ingest_path(self, path: str) -> dict[str, Any]:
         """Call the ingest-from-path API.
 
         Args:
             path (str): Target path.
-            force (bool, optional): Force execution of the transformation pipeline.
 
         Returns:
             dict[str, Any]: Response data.
         """
-        return self._post_json("/ingest/path", {"path": path, "force": force})
+        return self._post_json("/ingest/path", {"path": path})
 
-    def ingest_path_list(self, path: str, force: bool = False) -> dict[str, Any]:
+    def ingest_path_list(self, path: str) -> dict[str, Any]:
         """Call the ingest-from-path-list API.
 
         Args:
             path (str): Path to the path list file.
-            force (bool, optional): Force execution of the transformation pipeline.
 
         Returns:
             dict[str, Any]: Response data.
         """
-        return self._post_json("/ingest/path_list", {"path": path, "force": force})
+        return self._post_json("/ingest/path_list", {"path": path})
 
-    def ingest_url(self, url: str, force: bool = False) -> dict[str, Any]:
+    def ingest_url(self, url: str) -> dict[str, Any]:
         """Call the ingest-from-URL API.
 
         Args:
             url (str): Target URL.
-            force (bool, optional): Force execution of the transformation pipeline.
 
         Returns:
             dict[str, Any]: Response data.
         """
-        return self._post_json("/ingest/url", {"url": url, "force": force})
+        return self._post_json("/ingest/url", {"url": url})
 
-    def ingest_url_list(self, path: str, force: bool = False) -> dict[str, Any]:
+    def ingest_url_list(self, path: str) -> dict[str, Any]:
         """Call the ingest-from-URL-list API.
 
         Args:
             path (str): Path to the URL list file.
-            force (bool, optional): Force execution of the transformation pipeline.
 
         Returns:
             dict[str, Any]: Response data.
         """
-        return self._post_json("/ingest/url_list", {"path": path, "force": force})
+        return self._post_json("/ingest/url_list", {"path": path})
 
     def query_text_text(
         self,

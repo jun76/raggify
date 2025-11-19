@@ -761,7 +761,7 @@ from raggify.runtime import get_runtime
 - Video: `.mp4`, `.mov`, `.mkv`, `.webm`, `.flv`, `.mpeg`, `.mpg`, `.wmv`, `.3gp`,
 - Text: `.txt`, `.text`, `.md`, `.json`, `.html`, `.tex`
 
-Additionally, extensions added via the `additional_exts` configuration and readable by the reader.
+Additionally, any extensions added via the `additional_exts` configuration parameter are also supported.
 
 # See Also
 
