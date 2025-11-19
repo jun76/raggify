@@ -32,7 +32,10 @@ logging.getLogger("unstructured.trace").setLevel(logging.WARNING)
 
 warnings.filterwarnings(
     "ignore",
-    message="The 'validate_default' attribute with value True was provided to the `Field\\(\\)` function.*",
+    message=(
+        "The 'validate_default' attribute with value True was provided "
+        "to the `Field\\(\\)` function.*"
+    ),
     category=UserWarning,
 )
 

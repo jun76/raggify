@@ -714,13 +714,31 @@ from raggify.config import (
 )
 
 # For ingestion
-from raggify.ingest import ingest_path, ingest_path_list, ingest_url, ingest_url_list
+from raggify.ingest import (
+    aingest_path,
+    aingest_path_list,
+    aingest_url,
+    aingest_url_list,
+    ingest_path,
+    ingest_path_list,
+    ingest_url,
+    ingest_url_list,
+)
 
 # For logging
 from raggify.logger import configure_logging, logger
 
 # For retrieval
 from raggify.retrieve import (
+    aquery_audio_audio,
+    aquery_audio_video,
+    aquery_image_image,
+    aquery_image_video,
+    aquery_text_audio,
+    aquery_text_image,
+    aquery_text_text,
+    aquery_text_video,
+    aquery_video_video,
     query_audio_audio,
     query_audio_video,
     query_image_image,
@@ -741,7 +759,9 @@ from raggify.runtime import get_runtime
 - Image: `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`
 - Audio: `.mp3`, `.wav`, `.ogg`
 - Video: `.mp4`, `.mov`, `.mkv`, `.webm`, `.flv`, `.mpeg`, `.mpg`, `.wmv`, `.3gp`,
-- Text: `.txt`, `.text`, `.md`, `.json`, and other files(e.g. .html) which default file reader attempted to read as a text file as a fallback operation.
+- Text: `.txt`, `.text`, `.md`, `.json`, `.html`, `.tex`
+
+Additionally, extensions added via the `additional_exts` configuration and readable by the reader.
 
 # See Also
 

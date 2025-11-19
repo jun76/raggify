@@ -35,7 +35,10 @@ def _cfg() -> ConfigManager:
 
 warnings.filterwarnings(
     "ignore",
-    message="The 'validate_default' attribute with value True was provided to the `Field\\(\\)` function.*",
+    message=(
+        "The 'validate_default' attribute with value True was provided "
+        "to the `Field\\(\\)` function.*"
+    ),
     category=UserWarning,
 )
 app = typer.Typer(
@@ -152,7 +155,8 @@ def _execute_client_command(
     except Exception as e:
         console.print(e)
         console.print(
-            f"❌ Command failed. If you haven't already started the server, run '{PROJECT_NAME} server'."
+            "❌ Command failed. If you haven't already started the server, "
+            f"run '{PROJECT_NAME} server'."
         )
         raise typer.Exit(code=1)
 
