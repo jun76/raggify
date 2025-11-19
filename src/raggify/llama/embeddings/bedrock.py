@@ -110,6 +110,7 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
             media_payload=payload,
             params_override_key="text_params_overrides",
         )
+
         return self._invoke_single_embedding(request_body)
 
     async def _aget_text_embedding(self, text: str) -> Embedding:
@@ -125,6 +126,34 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
             return await super()._aget_text_embedding(text)
 
         return await asyncio.to_thread(self._get_text_embedding, text)
+
+    def _get_query_embedding(self, query: str) -> Embedding:
+        """Synchronous interface for query embeddings.
+
+        Args:
+            query (str): Query string.
+
+        Returns:
+            Embedding: Embedding vector.
+        """
+        if not self._is_nova_model():
+            return super()._get_query_embedding(query)
+
+        return self._get_text_embedding(query)
+
+    async def _aget_query_embedding(self, query: str) -> Embedding:
+        """Asynchronous interface for query embeddings.
+
+        Args:
+            query (str): Query string.
+
+        Returns:
+            Embedding: Embedding vector.
+        """
+        if not self._is_nova_model():
+            return await super()._aget_query_embedding(query)
+
+        return await self._aget_text_embedding(query)
 
     def _get_text_embeddings(self, texts: list[str]) -> list[Embedding]:
         """Synchronous batch interface for text embeddings.
@@ -467,13 +496,28 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         if file_name:
             ext = Path(file_name).suffix.lower()
             if ext in expected_exts:
-                return ext.lstrip(".")
+                return self._normalize_media_format(ext.lstrip("."))
 
         override = self.additional_kwargs.get(fallback_format_key)
         if override:
             return str(override).lower()
 
         raise ValueError(f"unsupported media format: {file_name or 'unknown'}")
+
+    def _normalize_media_format(self, fmt: str) -> str:
+        """Normalize media format strings to the ones accepted by Bedrock.
+
+        Args:
+            fmt (str): Format string from file extension.
+
+        Returns:
+            str: Normalized format string.
+        """
+        normalization_map = {
+            "jpg": "jpeg",
+        }
+
+        return normalization_map.get(fmt, fmt)
 
     def _build_single_embedding_body(
         self,

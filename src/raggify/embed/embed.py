@@ -253,12 +253,16 @@ def _bedrock(
     from ..llama.embeddings.bedrock import MultiModalBedrockEmbedding
     from .embed_manager import EmbedContainer
 
-    kwargs = {
-        "dimensions": model[EM.DIM],
-        "embedding_dimension": model[EM.DIM],
-        # FIXME: Since nova2 won't accept the embeddingConfig, I've commented it out for now.
-        # "video_duration_seconds": cfg.video_duration_seconds if cfg else None,
-    }
+    if model[EM.NAME].startswith("amazon.titan-"):
+        kwargs = {
+            "dimensions": model[EM.DIM],
+        }
+    elif model[EM.NAME].startswith("amazon.nova-"):
+        kwargs = {
+            "embedding_dimension": model[EM.DIM],
+            # FIXME: Since nova2 won't accept the embeddingConfig, I've commented it out for now.
+            # "video_duration_seconds": cfg.video_duration_seconds if cfg else None,
+        }
 
     return EmbedContainer(
         provider_name=EmbedProvider.BEDROCK,
