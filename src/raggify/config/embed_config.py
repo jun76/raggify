@@ -135,4 +135,4 @@ class EmbedConfig(DataClassDictMixin):
         }
     )
 
-    # video_duration_seconds: int = 15
+    video_duration_seconds: int = 15

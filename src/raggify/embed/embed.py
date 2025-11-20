@@ -261,7 +261,7 @@ def _bedrock(
         kwargs = {
             "embedding_dimension": model[EM.DIM],
             # FIXME: Since nova2 won't accept the embeddingConfig, I've commented it out for now.
-            # "video_duration_seconds": cfg.video_duration_seconds if cfg else None,
+            "video_duration_seconds": cfg.video_duration_seconds if cfg else None,
         }
 
     return EmbedContainer(
