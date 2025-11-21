@@ -9,7 +9,6 @@ from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional
 
-from llama_index.core.async_utils import asyncio_run
 from llama_index.embeddings.bedrock import BedrockEmbedding
 
 from raggify.core.exts import Exts
@@ -224,6 +223,51 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         """
         return await asyncio.to_thread(self._get_image_embedding, img_file_path)
 
+    def _embed_media_files(
+        self,
+        file_paths: list[Any],
+        *,
+        expected_exts: set[str],
+        fallback_format_key: str,
+        media_field: str,
+        payload_overrides_key: str,
+        params_override_key: str,
+        payload_builder: Callable[[str, str], dict[str, Any]],
+    ) -> list[Embedding]:
+        """Embed multiple media files that share a similar payload structure.
+
+        Args:
+            file_paths (list[Any]): Media file paths or file-like objects.
+            expected_exts (set[str]): Allowed extensions.
+            fallback_format_key (str): Additional kwargs fallback key for format.
+            media_field (str): Media field identifier (audio/video).
+            payload_overrides_key (str): Additional kwargs key for payload overrides.
+            params_override_key (str): Additional kwargs key for body overrides.
+            payload_builder (Callable[[str, str], dict[str, Any]]):
+                Function to build media payload.
+
+        Returns:
+            list[Embedding]: Embedded vectors.
+        """
+        vecs: list[Embedding] = []
+        overrides = self.additional_kwargs.get(payload_overrides_key, {})
+        for media in file_paths:
+            encoded, fmt = self._read_media_payload(
+                media,
+                expected_exts=expected_exts,
+                fallback_format_key=fallback_format_key,
+            )
+            payload = payload_builder(fmt, encoded)
+            payload.update(overrides)
+            request_body = self._build_single_embedding_body(
+                media_field=media_field,
+                media_payload=payload,
+                params_override_key=params_override_key,
+            )
+            vecs.append(self._invoke_single_embedding(request_body))
+
+        return vecs
+
     def _get_audio_embeddings(
         self, audio_file_paths: list[AudioType]
     ) -> list[Embedding]:
@@ -235,26 +279,18 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         Returns:
             list[Embedding]: Embedding vectors.
         """
-        vecs: list[Embedding] = []
-        for audio in audio_file_paths:
-            encoded, fmt = self._read_media_payload(
-                audio,
-                expected_exts=Exts.AUDIO,
-                fallback_format_key="audio_format",
-            )
-            payload = {
+        return self._embed_media_files(
+            audio_file_paths,
+            expected_exts=Exts.AUDIO,
+            fallback_format_key="audio_format",
+            media_field="audio",
+            payload_overrides_key="audio_payload_overrides",
+            params_override_key="audio_params_overrides",
+            payload_builder=lambda fmt, encoded: {
                 "format": fmt,
                 "source": {"bytes": encoded},
-            }
-            payload.update(self.additional_kwargs.get("audio_payload_overrides", {}))
-            request_body = self._build_single_embedding_body(
-                media_field="audio",
-                media_payload=payload,
-                params_override_key="audio_params_overrides",
-            )
-            vecs.append(self._invoke_single_embedding(request_body))
-
-        return vecs
+            },
+        )
 
     async def _aget_audio_embeddings(
         self, audio_file_paths: list[AudioType]
@@ -298,45 +334,21 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         Returns:
             list[Embedding]: Embedding vectors.
         """
-        vecs: list[Embedding] = []
-        video_overrides = self.additional_kwargs.get("video_payload_overrides", {})
-        for video in video_file_paths:
-            encoded, fmt = self._read_media_payload(
-                video,
-                expected_exts=Exts.VIDEO,
-                fallback_format_key="video_format",
-            )
-            payload = {
+        return self._embed_media_files(
+            video_file_paths,
+            expected_exts=Exts.VIDEO,
+            fallback_format_key="video_format",
+            media_field="video",
+            payload_overrides_key="video_payload_overrides",
+            params_override_key="video_params_overrides",
+            payload_builder=lambda fmt, encoded: {
                 "format": fmt,
+                "source": {"bytes": encoded},
                 "embeddingMode": self.additional_kwargs.get(
                     "video_embedding_mode", "AUDIO_VIDEO_COMBINED"
                 ),
-                "source": {"bytes": encoded},
-            }
-            payload.update(video_overrides)
-
-            duration_seconds = self.additional_kwargs.get("video_duration_seconds")
-            if duration_seconds is not None:
-                payload["segmentationConfig"] = {"durationSeconds": duration_seconds}
-                request_body = self._build_segmented_embedding_body(
-                    media_field="video",
-                    media_payload=payload,
-                    params_override_key="video_params_overrides",
-                )
-
-                embeddings = self._invoke_segmented_embedding(request_body)
-                if embeddings:
-                    vecs.append(embeddings[0])
-            else:
-                request_body = self._build_single_embedding_body(
-                    media_field="video",
-                    media_payload=payload,
-                    params_override_key="video_params_overrides",
-                )
-
-                vecs.append(self._invoke_single_embedding(request_body))
-
-        return vecs
+            },
+        )
 
     async def _aget_video_embeddings(
         self, video_file_paths: list[VideoType]
@@ -568,67 +580,6 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
             params_key: params,
         }
 
-    def _build_segmented_embedding_body(
-        self,
-        *,
-        media_field: str,
-        media_payload: dict[str, Any],
-        params_override_key: Optional[str] = None,
-    ) -> dict[str, Any]:
-        """Build a segmented-embedding request body for Nova.
-
-        Args:
-            media_field (str): Media field name.
-            media_payload (dict[str, Any]): Media payload.
-            params_override_key (Optional[str]): Additional override key.
-
-        Returns:
-            dict[str, Any]: Request body.
-        """
-        params: dict[str, Any] = {
-            "embeddingPurpose": self.additional_kwargs.get(
-                "embedding_purpose", "GENERIC_INDEX"
-            ),
-            media_field: media_payload,
-        }
-        dim = self.additional_kwargs.get("embedding_dimension")
-        params["embeddingDimension"] = dim
-
-        if params_override_key:
-            overrides = self.additional_kwargs.get(params_override_key)
-            if overrides:
-                params.update(overrides)
-
-        return {
-            "taskType": "SEGMENTED_EMBEDDING",
-            "segmentedEmbeddingParams": params,
-        }
-
-    def _get_results(self, content: str) -> list[Embedding]:
-        """Parse embedding results from Bedrock response content.
-
-        Args:
-            content (str): Response content.
-
-        Returns:
-            list[Embedding]: Embedding vectors.
-        """
-        parsed = json.loads(content)
-        embeddings = parsed.get("embeddings") or []
-        if not embeddings:
-            raise RuntimeError("Bedrock response does not include embeddings")
-
-        results: list[Embedding] = []
-        for emb in embeddings:
-            if isinstance(emb, dict) and "embedding" in emb:
-                results.append(emb["embedding"])
-            elif isinstance(emb, list):
-                results.append(emb)
-            else:
-                raise RuntimeError(f"Unexpected embedding format: {type(emb)}")
-
-        return results
-
     def _invoke_embeddings(self, body: dict[str, Any]) -> list[Embedding]:
         """Send a request to Bedrock and retrieve embedding list.
 
@@ -659,40 +610,21 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         if isinstance(content, bytes):
             content = content.decode("utf-8")
 
-        return self._get_results(content)
+        parsed = json.loads(content)
+        embeddings = parsed.get("embeddings") or []
+        if not embeddings:
+            raise RuntimeError("Bedrock response does not include embeddings")
 
-    async def _ainvoke_embeddings(self, body: dict[str, Any]) -> list[Embedding]:
-        """Send a request to Bedrock and retrieve embedding list.
-
-        Args:
-            body (dict[str, Any]): Request body.
-
-        Returns:
-            list[Embedding]: Embedding vectors.
-        """
-        if self._asession is None:
-            self.set_credentials()
-            if self._asession is None:
-                raise RuntimeError("Bedrock async client is not initialized")
-
-        async with self._asession.client(
-            "bedrock-runtime", config=self._config
-        ) as client:
-            response = await client.invoke_model(
-                body=json.dumps(body),
-                modelId=self.model_name,
-                accept="application/json",
-                contentType="application/json",
-            )
-            raw_body = response.get("body")
-            if raw_body is None:
-                content = "{}"
+        results: list[Embedding] = []
+        for emb in embeddings:
+            if isinstance(emb, dict) and "embedding" in emb:
+                results.append(emb["embedding"])
+            elif isinstance(emb, list):
+                results.append(emb)
             else:
-                content = await raw_body.read()
-                if isinstance(content, bytes):
-                    content = content.decode("utf-8")
+                raise RuntimeError(f"Unexpected embedding format: {type(emb)}")
 
-        return self._get_results(content)
+        return results
 
     def _invoke_single_embedding(self, body: dict[str, Any]) -> Embedding:
         """Send a single-embedding request to Bedrock and retrieve the first embedding.
@@ -704,14 +636,3 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
             Embedding: Embedding vector.
         """
         return self._invoke_embeddings(body)[0]
-
-    def _invoke_segmented_embedding(self, body: dict[str, Any]) -> list[Embedding]:
-        """Send a segmented-embedding request to Bedrock and retrieve embeddings.
-
-        Args:
-            body (dict[str, Any]): Request body.
-
-        Returns:
-            list[Embedding]: Embedding vectors.
-        """
-        return asyncio_run(self._ainvoke_embeddings(body))

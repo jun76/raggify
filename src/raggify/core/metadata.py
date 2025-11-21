@@ -110,28 +110,3 @@ class BasicMetaData:
             dict[str, Any]: Metadata dict.
         """
         return asdict(self)
-
-
-def get_temp_file_path_from(source: str, suffix: str) -> str:
-    """Get a temporary file path uniquely tied to the source.
-
-    Intended for managing assets extracted from PDFs, etc. Avoid random strings
-    so hashes stay stable when metadata contains the path.
-
-    Args:
-        source (str): Path or URL. Include page numbers, etc., if needed for uniqueness.
-        suffix (str): Extension or suffix.
-
-    Returns:
-        str: Temporary file path.
-    """
-    import hashlib
-    import tempfile
-    from pathlib import Path
-
-    from .const import TEMP_FILE_PREFIX
-
-    temp_dir = Path(tempfile.gettempdir())
-    filename = TEMP_FILE_PREFIX + hashlib.md5(source.encode()).hexdigest() + suffix
-
-    return str(temp_dir / filename)

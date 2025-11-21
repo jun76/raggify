@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from ..config.config_manager import ConfigManager
 from ..config.vector_store_config import VectorStoreConfig, VectorStoreProvider
 from ..core.const import PJNAME_ALIAS
-from ..core.util import sanitize_str
+from ..core.utils import sanitize_str
 from ..document_store.document_store_manager import DocumentStoreManager
 from ..llama.core.schema import Modality
 

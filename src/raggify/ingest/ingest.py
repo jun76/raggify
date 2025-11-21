@@ -121,12 +121,15 @@ def _build_audio_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
     Returns:
         IngestionPipeline: Pipeline instance.
     """
-    from .transform import make_audio_embed_transform
+    from .transform import AudioSplitter, make_audio_embed_transform
 
     rt = _rt()
-    transformations: list[TransformComponent] = [
-        make_audio_embed_transform(rt.embed_manager),
-    ]
+    transformations: list[TransformComponent] = []
+    if rt.cfg.ingest.audio_chunk_seconds:
+        transformations.append(
+            AudioSplitter(chunk_seconds=rt.cfg.ingest.audio_chunk_seconds)
+        )
+    transformations.append(make_audio_embed_transform(rt.embed_manager))
 
     return rt.build_pipeline(
         modality=Modality.AUDIO,
@@ -144,12 +147,15 @@ def _build_video_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
     Returns:
         IngestionPipeline: Pipeline instance.
     """
-    from .transform import make_video_embed_transform
+    from .transform import VideoSplitter, make_video_embed_transform
 
     rt = _rt()
-    transformations: list[TransformComponent] = [
-        make_video_embed_transform(rt.embed_manager),
-    ]
+    transformations: list[TransformComponent] = []
+    if rt.cfg.ingest.video_chunk_seconds:
+        transformations.append(
+            VideoSplitter(chunk_seconds=rt.cfg.ingest.video_chunk_seconds)
+        )
+    transformations.append(make_video_embed_transform(rt.embed_manager))
 
     return rt.build_pipeline(
         modality=Modality.VIDEO,
@@ -215,6 +221,21 @@ async def _process_batches(
                 rt.document_store.store.delete_ref_doc(
                     ref_doc_id=node.ref_doc_id, raise_error=False
                 )
+
+            # Roll back cache entries
+            # TODO:
+            # Since we must accurately reproduce the nodes passed to each transformation,
+            # we cannot uniformly set nodes=batch. Considering the cost of managing
+            # the node set passed to each transformation and the risk of unexpected
+            # deletion omissions, we currently delete all.
+
+            # rt.ingest_cache.delete(
+            #     modality=modality,
+            #     nodes=batch,
+            #     transformations=pipe.transformations,
+            #     persist_dir=persist_dir,
+            # )
+            rt.ingest_cache.delete_all(persist_dir)
 
             logger.error(f"failed to process batch {prog}, rolled back: {e}")
 

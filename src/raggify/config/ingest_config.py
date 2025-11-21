@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional
 
 from mashumaro import DataClassDictMixin
 
@@ -22,6 +23,8 @@ class IngestConfig(DataClassDictMixin):
     upload_dir: Path = DEFAULT_WORKSPACE_PATH / "upload"
     pipe_persist_dir: Path = DEFAULT_WORKSPACE_PATH / DEFAULT_KNOWLEDGEBASE_NAME
     batch_size: int = 100
+    audio_chunk_seconds: Optional[int] = 25
+    video_chunk_seconds: Optional[int] = 25
     additional_exts: list[str] = field(default_factory=lambda: [".c", ".py", ".rst"])
 
     # Web
