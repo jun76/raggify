@@ -517,7 +517,7 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 | `audio_embed_provider`    | Provider for audio embeddings.                     | `bedrock`    | `clap`(⚠️), `bedrock`, or `null`.                                              |
 | `video_embed_provider`    | Provider for video embeddings.                     | `bedrock`    | `bedrock` or `null`.                                                           |
 | `use_modality_fallback`   | Decompose unsupported media into lower modalities. | `false`      | `true` / `false`.                                                              |
-| `rerank_provider`         | Provider for reranking.                            | `cohere`     | `flagembedding`, `cohere`, or `null`.                                          |
+| `rerank_provider`         | Provider for reranking.                            | `cohere`     | `flagembedding`, `cohere`, `voyage`, or `null`.                                |
 | `openai_base_url`         | Custom OpenAI-compatible endpoint.                 | `null`       | Any URL string or `null`.                                                      |
 | `device`                  | Target device for embedding models.                | `cpu`        | `cpu`, `cuda`, `mps`.                                                          |
 | `log_level`               | Logging verbosity.                                 | `DEBUG`      | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.                               |
@@ -614,19 +614,21 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 
 ### Ingest
 
-| Parameter          | Description                                  | Default                             | Allowed values / examples          |
-| ------------------ | -------------------------------------------- | ----------------------------------- | ---------------------------------- |
-| `chunk_size`       | Chunk size for text splitting.               | `500`                               | Any integer (e.g., `500`, `1024`). |
-| `chunk_overlap`    | Overlap between adjacent chunks.             | `50`                                | Any integer.                       |
-| `upload_dir`       | Directory for uploaded files.                | `~/.local/share/raggify/upload`     | Any filesystem path.               |
-| `pipe_persist_dir` | Pipeline persistence root per KB.            | `~/.local/share/raggify/default_kb` | Any filesystem path.               |
-| `batch_size`       | Number of nodes processed per async batch.   | `100`                               | Any positive integer.              |
-| `additional_exts`  | Extra whitelist extensions for local ingest. | `[".c", ".py", ".rst"]`             | List of dot-prefixed extensions.   |
-| `user_agent`       | User-Agent header for web ingestion.         | `raggify`                           | Any string.                        |
-| `load_asset`       | Download linked assets during web ingestion. | `true`                              | `true` / `false`.                  |
-| `req_per_sec`      | Request rate limit for web ingestion.        | `2`                                 | Any integer.                       |
-| `timeout_sec`      | Timeout for web ingestion (seconds).         | `30`                                | Any integer.                       |
-| `same_origin`      | Restrict crawling to same origin.            | `true`                              | `true` / `false`.                  |
+| Parameter             | Description                                  | Default                             | Allowed values / examples                         |
+| --------------------- | -------------------------------------------- | ----------------------------------- | ------------------------------------------------- |
+| `chunk_size`          | Chunk size for text splitting.               | `500`                               | Any integer (e.g., `500`, `1024`).                |
+| `chunk_overlap`       | Overlap between adjacent chunks.             | `50`                                | Any integer.                                      |
+| `upload_dir`          | Directory for uploaded files.                | `~/.local/share/raggify/upload`     | Any filesystem path.                              |
+| `pipe_persist_dir`    | Pipeline persistence root per KB.            | `~/.local/share/raggify/default_kb` | Any filesystem path.                              |
+| `batch_size`          | Number of nodes processed per async batch.   | `100`                               | Any positive integer.                             |
+| `audio_chunk_seconds` | Chunk length for audio splitting (seconds).  | `25`                                | Positive integer, or `null` to disable splitting. |
+| `video_chunk_seconds` | Chunk length for video splitting (seconds).  | `25`                                | Positive integer, or `null` to disable splitting. |
+| `additional_exts`     | Extra whitelist extensions for local ingest. | `[".c", ".py", ".rst"]`             | List of dot-prefixed extensions.                  |
+| `user_agent`          | User-Agent header for web ingestion.         | `raggify`                           | Any string.                                       |
+| `load_asset`          | Download linked assets during web ingestion. | `true`                              | `true` / `false`.                                 |
+| `req_per_sec`         | Request rate limit for web ingestion.        | `2`                                 | Any integer.                                      |
+| `timeout_sec`         | Timeout for web ingestion (seconds).         | `30`                                | Any integer.                                      |
+| `same_origin`         | Restrict crawling to same origin.            | `true`                              | `true` / `false`.                                 |
 
 ### Rerank
 
@@ -634,6 +636,7 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 | ---------------------------- | ---------------------------------------------- | -------------------------- | ------------------------------- |
 | `flagembedding_rerank_model` | FlagEmbedding reranker model name.             | `BAAI/bge-reranker-v2-m3`  | Fixed model name.               |
 | `cohere_rerank_model`        | Cohere reranker model name.                    | `rerank-multilingual-v3.0` | Fixed model name.               |
+| `voyage_rerank_model`        | Voyage reranker model name.                    | `rerank-2.5`               | Fixed model name.               |
 | `topk`                       | Number of candidates considered for reranking. | `20`                       | Any integer (e.g., `10`, `20`). |
 
 ### Retrieve
