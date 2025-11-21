@@ -2337,6 +2337,19 @@ wheels = [
 ]
 
 [[package]]
+name = "llama-index-postprocessor-voyageai-rerank"
+version = "0.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "llama-index-core" },
+    { name = "voyageai", marker = "python_full_version < '3.13'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3c/9e/0ee318d27d8d2a72a1bd37e08a6582b2439a0daf16595af1d321fc8e3ab7/llama_index_postprocessor_voyageai_rerank-0.4.1.tar.gz", hash = "sha256:4517a8119d56cbfe29476d63f006bf9ea6ae63f1e896b0c1e444e17b737402eb", size = 4226, upload-time = "2025-09-08T20:48:27.235Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fe/da/331e3f714b671dc7b7ddc87dc04c368c2e64b38c5cb68f70931bee550d59/llama_index_postprocessor_voyageai_rerank-0.4.1-py3-none-any.whl", hash = "sha256:6a2167264eedf05722fb59c89efdcd81e1c5969f63f59116b3fe04ca113f48e8", size = 3839, upload-time = "2025-09-08T20:48:26.521Z" },
+]
+
+[[package]]
 name = "llama-index-readers-file"
 version = "0.5.4"
 source = { registry = "https://pypi.org/simple" }
@@ -4604,7 +4617,7 @@ wheels = [
 
 [[package]]
 name = "raggify"
-version = "0.1.0"
+version = "0.1.4"
 source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
@@ -4625,6 +4638,7 @@ dependencies = [
     { name = "llama-index-embeddings-voyageai" },
     { name = "llama-index-postprocessor-cohere-rerank" },
     { name = "llama-index-postprocessor-flag-embedding-reranker" },
+    { name = "llama-index-postprocessor-voyageai-rerank" },
     { name = "llama-index-readers-file" },
     { name = "llama-index-readers-web" },
     { name = "llama-index-retrievers-bm25" },
@@ -4679,6 +4693,7 @@ requires-dist = [
     { name = "llama-index-embeddings-voyageai" },
     { name = "llama-index-postprocessor-cohere-rerank" },
     { name = "llama-index-postprocessor-flag-embedding-reranker" },
+    { name = "llama-index-postprocessor-voyageai-rerank" },
     { name = "llama-index-readers-file" },
     { name = "llama-index-readers-web" },
     { name = "llama-index-retrievers-bm25" },

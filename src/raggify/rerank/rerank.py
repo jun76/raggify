@@ -32,6 +32,8 @@ def create_rerank_manager(cfg: ConfigManager) -> RerankManager:
                 rerank = _cohere(cfg)
             case RerankProvider.FLAGEMBEDDING:
                 rerank = _flagembedding(cfg)
+            case RerankProvider.VOYAGE:
+                rerank = _voyage(cfg)
             case _:
                 rerank = None
 
@@ -60,4 +62,15 @@ def _flagembedding(cfg: ConfigManager) -> RerankContainer:
     return RerankContainer(
         provider_name=RerankProvider.FLAGEMBEDDING,
         rerank=FlagEmbeddingReranker(model=cfg.rerank.flagembedding_rerank_model),
+    )
+
+
+def _voyage(cfg: ConfigManager) -> RerankContainer:
+    from llama_index.postprocessor.voyageai_rerank import VoyageAIRerank
+
+    from .rerank_manager import RerankContainer
+
+    return RerankContainer(
+        provider_name=RerankProvider.VOYAGE,
+        rerank=VoyageAIRerank(model=cfg.rerank.voyage_rerank_model),
     )

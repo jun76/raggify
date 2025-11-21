@@ -11,6 +11,7 @@ __all__ = ["RerankProvider"]
 class RerankProvider(StrEnum):
     FLAGEMBEDDING = auto()
     COHERE = auto()
+    VOYAGE = auto()
 
 
 @dataclass(kw_only=True)
@@ -19,4 +20,5 @@ class RerankConfig(DataClassDictMixin):
 
     flagembedding_rerank_model: str = "BAAI/bge-reranker-v2-m3"
     cohere_rerank_model: str = "rerank-multilingual-v3.0"
+    voyage_rerank_model: str = "rerank-2.5"
     topk: int = 20
