@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from ..config.config_manager import ConfigManager
 from ..config.document_store_config import DocumentStoreConfig, DocumentStoreProvider
 from ..core.const import PJNAME_ALIAS
-from ..core.util import sanitize_str
+from ..core.utils import sanitize_str
 from ..logger import logger
 
 if TYPE_CHECKING:

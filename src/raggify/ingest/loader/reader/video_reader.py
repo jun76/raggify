@@ -9,7 +9,8 @@ from llama_index.core.readers.base import BaseReader
 from llama_index.core.schema import Document
 
 from ....core.exts import Exts
-from ....core.metadata import BasicMetaData, get_temp_file_path_from
+from ....core.metadata import BasicMetaData
+from ....core.utils import get_temp_file_path_from
 from ....logger import logger
 
 __all__ = ["VideoReader"]
@@ -44,11 +45,6 @@ class VideoReader(BaseReader):
         self._image_suffix = image_suffix
         self._audio_suffix = audio_suffix
 
-    def _ffmpeg(self) -> Any:
-        import ffmpeg  # type: ignore
-
-        return ffmpeg
-
     def _extract_frames(self, src: str) -> list[Path]:
         """Extract frame images from a video.
 
@@ -58,24 +54,29 @@ class VideoReader(BaseReader):
         Returns:
             list[Path]: Extracted frame paths.
         """
-        ffmpeg = self._ffmpeg()
+        import ffmpeg
+
         base_path = Path(get_temp_file_path_from(source=src, suffix=self._image_suffix))
-        frames_dir = base_path.parent / f"{base_path.stem}_frames"
+        temp_dir = base_path.parent / f"{base_path.stem}_frames"
 
-        if frames_dir.exists():
-            shutil.rmtree(frames_dir)
+        if temp_dir.exists():
+            shutil.rmtree(temp_dir)
 
-        frames_dir.mkdir(parents=True, exist_ok=True)
-        pattern = str(frames_dir / f"{base_path.stem}_%05d{self._image_suffix}")
-        (
-            ffmpeg.input(src)
-            .filter("fps", self._fps)
-            .output(pattern, format="image2", vcodec="png")
-            .overwrite_output()
-            .run(quiet=True)
-        )
-        frames = sorted(frames_dir.glob(f"{base_path.stem}_*{self._image_suffix}"))
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        pattern = str(temp_dir / f"{base_path.stem}_%05d{self._image_suffix}")
+        try:
+            (
+                ffmpeg.input(src)
+                .filter("fps", self._fps)
+                .output(pattern, format="image2", vcodec="png")
+                .overwrite_output()
+                .run(quiet=True)
+            )
+        except Exception as e:
+            logger.warning(f"ffmpeg frame extraction from {src} failure: {e}")
+            return []
 
+        frames = sorted(temp_dir.glob(f"{base_path.stem}_*{self._image_suffix}"))
         logger.debug(f"extracted {len(frames)} frame(s) from {src}")
 
         return frames
@@ -89,7 +90,8 @@ class VideoReader(BaseReader):
         Returns:
             Path | None: Extracted audio file path.
         """
-        ffmpeg = self._ffmpeg()
+        import ffmpeg
+
         temp_path = Path(get_temp_file_path_from(source=src, suffix=self._audio_suffix))
         temp_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -105,33 +107,32 @@ class VideoReader(BaseReader):
                 .overwrite_output()
                 .run(quiet=True)
             )
-        except ffmpeg.Error as err:  # type: ignore[attr-defined]
-            logger.warning(f"ffmpeg audio extraction failure: {err}")
-            try:
-                temp_path.unlink()
-            except OSError:
-                pass
+        except Exception as e:
+            logger.warning(f"ffmpeg audio extraction from {src} failure: {e}")
             return None
+
+        logger.debug(f"extracted 1 audio track from {src}")
 
         return temp_path
 
-    def _image_docs(self, frames: Sequence[Path], source: str) -> list[Document]:
+    def _image_docs(self, frame_paths: Sequence[Path], source: str) -> list[Document]:
         """Convert frame images to Document objects.
 
         Args:
-            frames (Sequence[Path]): Frame image paths.
+            frame_paths (Sequence[Path]): Frame image paths.
             source (str): Source video path.
 
         Returns:
             list[Document]: Generated documents.
         """
         docs: list[Document] = []
-        for i, frame in enumerate(frames):
+        for i, frame_path in enumerate(frame_paths):
             meta = BasicMetaData()
-            meta.file_path = str(frame)
-            meta.temp_file_path = str(frame)
+            meta.file_path = str(frame_path)
+            meta.temp_file_path = str(frame_path)
             meta.base_source = source
             meta.page_no = i
+
             docs.append(Document(text=source, metadata=meta.to_dict()))
 
         return docs

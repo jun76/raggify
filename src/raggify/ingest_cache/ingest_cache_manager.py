@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional, Sequence
 
 from ..embed.embed_manager import Modality
 from ..logger import logger
 
 if TYPE_CHECKING:
     from llama_index.core.ingestion import IngestionCache
+    from llama_index.core.schema import BaseNode, TransformComponent
 
 
 @dataclass(kw_only=True)
@@ -70,12 +72,53 @@ class IngestCacheManager:
 
         return cont
 
-    def delete_all(self, persist_path: Optional[str]) -> None:
+    def delete(
+        self,
+        modality: Modality,
+        nodes: Sequence[BaseNode],
+        transformations: Sequence[TransformComponent],
+        persist_dir: Optional[Path],
+    ) -> None:
+        """Delete cache entries for given nodes and transformations.
+
+        Args:
+            modality (Modality): Modality.
+            nodes (Sequence[BaseNode]): Nodes.
+            transformations (Sequence[TransformComponent]): Transformations.
+            persist_dir (Optional[Path]): Persist directory.
+
+        Notes:
+            Nodes must be the same (each transformations)
+            as those used to create the cache entries.
+        """
+        from llama_index.core.ingestion.cache import DEFAULT_CACHE_NAME
+        from llama_index.core.ingestion.pipeline import get_transformation_hash
+
+        cache = self.get_container(modality).cache
+        if cache is None:
+            return
+
+        for transform in transformations:
+            try:
+                key = get_transformation_hash(nodes, transform)
+                cache.cache.delete(key=key, collection=cache.collection)
+            except Exception as e:
+                logger.warning(f"failed to delete cache entry: {e}")
+
+        try:
+            if persist_dir is not None:
+                cache.persist(str(persist_dir / DEFAULT_CACHE_NAME))
+        except Exception as e:
+            logger.warning(f"failed to persist cache after delete: {e}")
+
+    def delete_all(self, persist_dir: Optional[Path]) -> None:
         """Delete all caches.
 
         Args:
-            persist_path (Optional[str]): Persist directory.
+            persist_dir (Optional[Path]): Persist directory.
         """
+        from llama_index.core.ingestion.cache import DEFAULT_CACHE_NAME
+
         for mod in self.modality:
             cache = self.get_container(mod).cache
             if cache is None:
@@ -83,10 +126,10 @@ class IngestCacheManager:
 
             try:
                 cache.clear()
-                if persist_path is not None:
-                    cache.persist(persist_path)
+                if persist_dir is not None:
+                    cache.persist(str(persist_dir / DEFAULT_CACHE_NAME))
             except Exception as e:
-                logger.warning(f"failed to clear {mod} cache: {e}")
-                return
+                logger.warning(f"failed to clear {mod} cache, skipped: {e}")
+                continue
 
         logger.info("all caches are deleted from cache store")

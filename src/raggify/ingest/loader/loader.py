@@ -2,18 +2,16 @@ from __future__ import annotations
 
 from collections import defaultdict
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from llama_index.core.schema import Document, ImageNode, MediaResource, TextNode
 
 from ...core.exts import Exts
 from ...core.metadata import BasicMetaData
 from ...core.metadata import MetaKeys as MK
+from ...core.utils import has_media
 from ...llama.core.schema import AudioNode, VideoNode
 from ...logger import logger
-
-if TYPE_CHECKING:
-    from llama_index.core.schema import BaseNode
 
 
 class Loader:
@@ -99,33 +97,33 @@ class Loader:
         video_nodes = []
         text_nodes = []
         for doc in docs:
-            if self._has_media(doc=doc, exts=Exts.IMAGE):
+            if has_media(node=doc, exts=Exts.IMAGE):
                 image_nodes.append(
                     ImageNode(
                         text=doc.text,
                         id_=doc.id_,
                         doc_id=doc.doc_id,
-                        ref_doc_id=doc.ref_doc_id,
+                        ref_doc_id=doc.doc_id,
                         metadata=doc.metadata,
                     )
                 )
-            elif self._has_media(doc=doc, exts=Exts.AUDIO):
+            elif has_media(node=doc, exts=Exts.AUDIO):
                 audio_nodes.append(
                     AudioNode(
                         text=doc.text,
                         id_=doc.id_,
                         doc_id=doc.doc_id,
-                        ref_doc_id=doc.ref_doc_id,
+                        ref_doc_id=doc.doc_id,
                         metadata=doc.metadata,
                     )
                 )
-            elif self._has_media(doc=doc, exts=Exts.VIDEO):
+            elif has_media(node=doc, exts=Exts.VIDEO):
                 video_nodes.append(
                     VideoNode(
                         text=doc.text,
                         id_=doc.id_,
                         doc_id=doc.doc_id,
-                        ref_doc_id=doc.ref_doc_id,
+                        ref_doc_id=doc.doc_id,
                         metadata=doc.metadata,
                     )
                 )
@@ -135,7 +133,7 @@ class Loader:
                         text=doc.text,
                         id_=doc.id_,
                         doc_id=doc.doc_id,
-                        ref_doc_id=doc.ref_doc_id,
+                        ref_doc_id=doc.doc_id,
                         metadata=doc.metadata,
                     )
                 )
@@ -143,26 +141,3 @@ class Loader:
                 logger.warning(f"unexpected node type {type(doc)}, skipped")
 
         return text_nodes, image_nodes, audio_nodes, video_nodes
-
-    def _has_media(self, doc: Document, exts: set[str]) -> bool:
-        """Return True if the document has media extensions.
-
-        Args:
-            doc (Document): Target document.
-            exts (set[str]): Extension set.
-
-        Returns:
-            bool: True if matched.
-        """
-        path = doc.metadata.get(MK.FILE_PATH, "")
-        url = doc.metadata.get(MK.URL, "")
-
-        # Include those whose temp_file_path
-        # (via custom readers) contains relevant extensions
-        temp_file_path = doc.metadata.get(MK.TEMP_FILE_PATH, "")
-
-        return (
-            Exts.endswith_exts(path, exts)
-            or Exts.endswith_exts(url, exts)
-            or Exts.endswith_exts(temp_file_path, exts)
-        )

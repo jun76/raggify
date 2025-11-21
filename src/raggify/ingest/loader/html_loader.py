@@ -193,7 +193,7 @@ class HTMLLoader(Loader):
         Returns:
             Optional[str]: Local temporary file path.
         """
-        from ...core.metadata import get_temp_file_path_from
+        from ...core.utils import get_temp_file_path_from
 
         if not Exts.endswith_exts(url, allowed_exts):
             logger.warning(f"unsupported ext. {' '.join(allowed_exts)} are allowed.")

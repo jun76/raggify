@@ -186,24 +186,18 @@ class Runtime:
 
     def delete_all_persisted_data(self) -> None:
         """Delete all data persisted in each store."""
-        from llama_index.core.ingestion.cache import DEFAULT_CACHE_NAME
-        from llama_index.core.storage.docstore.types import DEFAULT_PERSIST_FNAME
-
         with self._pipeline_lock:
             if self._use_local_workspace():
                 persist_dir = self.cfg.ingest.pipe_persist_dir
-                persist_path_cache = str(persist_dir / DEFAULT_CACHE_NAME)
-                persist_path_docstore = str(persist_dir / DEFAULT_PERSIST_FNAME)
             else:
-                persist_path_cache = None
-                persist_path_docstore = None
+                persist_dir = None
 
             if not self.vector_store.delete_all():
                 ref_doc_ids = self.document_store.get_ref_doc_ids()
                 self.vector_store.delete_nodes(ref_doc_ids)
 
-            self.ingest_cache.delete_all(persist_path_cache)
-            self.document_store.delete_all(persist_path_docstore)
+            self.ingest_cache.delete_all(persist_dir)
+            self.document_store.delete_all(persist_dir)
 
     # Singleton getters follow.
     @property

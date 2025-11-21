@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 from ..logger import logger
@@ -104,12 +105,14 @@ class DocumentStoreManager:
 
         return list(infos.keys())
 
-    def delete_all(self, persist_path: Optional[str]) -> None:
+    def delete_all(self, persist_dir: Optional[Path]) -> None:
         """Delete all ref_docs and related nodes stored.
 
         Args:
-            persist_path (Optional[str]): Persist directory.
+            persist_dir (Optional[Path]): Persist directory.
         """
+        from llama_index.core.storage.docstore.types import DEFAULT_PERSIST_FNAME
+
         if self.store is None:
             return
 
@@ -122,8 +125,8 @@ class DocumentStoreManager:
 
         logger.info("all documents are deleted from document store")
 
-        if persist_path is not None:
+        if persist_dir is not None:
             try:
-                self.store.persist(persist_path)
+                self.store.persist(str(persist_dir / DEFAULT_PERSIST_FNAME))
             except Exception as e:
                 logger.warning(f"failed to persist: {e}")

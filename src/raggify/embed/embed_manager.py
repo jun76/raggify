@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from llama_index.core.settings import Settings
 
-from ..core.util import sanitize_str
+from ..core.utils import sanitize_str
 from ..llama.core.schema import Modality
 from ..logger import logger
 

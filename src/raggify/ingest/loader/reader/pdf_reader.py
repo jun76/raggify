@@ -110,7 +110,8 @@ class MultiPDFReader(BaseReader):
         """
         import pymupdf as fitz
 
-        from ....core.metadata import BasicMetaData, get_temp_file_path_from
+        from ....core.metadata import BasicMetaData
+        from ....core.utils import get_temp_file_path_from
 
         docs = []
         for page_no in range(pdf.page_count):
