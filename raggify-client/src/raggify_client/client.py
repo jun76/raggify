@@ -254,7 +254,7 @@ class RestAPIClient:
         """Call the image->image search API.
 
         Args:
-            path (str): Query image path.
+            path (str): Path to the query image file.
             topk (Optional[int]): Max count.
 
         Returns:
@@ -265,6 +265,24 @@ class RestAPIClient:
             payload["topk"] = topk
 
         return self._post_json("/query/image_image", payload)
+
+    def query_audio_audio(
+        self, path: str, topk: Optional[int] = None
+    ) -> dict[str, Any]:
+        """Call the audio->audio search API.
+
+        Args:
+            path (str): Path to the query audio file.
+            topk (Optional[int]): Max count.
+
+        Returns:
+            dict[str, Any]: Response data.
+        """
+        payload: dict[str, Any] = {"path": path}
+        if topk is not None:
+            payload["topk"] = topk
+
+        return self._post_json("/query/audio_audio", payload)
 
     def query_text_audio(
         self, query: str, topk: Optional[int] = None
@@ -283,24 +301,6 @@ class RestAPIClient:
             payload["topk"] = topk
 
         return self._post_json("/query/text_audio", payload)
-
-    def query_audio_audio(
-        self, path: str, topk: Optional[int] = None
-    ) -> dict[str, Any]:
-        """Call the audio->audio search API.
-
-        Args:
-            path (str): Query audio path.
-            topk (Optional[int]): Max count.
-
-            Returns:
-            dict[str, Any]: Response data.
-        """
-        payload: dict[str, Any] = {"path": path}
-        if topk is not None:
-            payload["topk"] = topk
-
-        return self._post_json("/query/audio_audio", payload)
 
     def query_text_video(
         self, query: str, topk: Optional[int] = None
@@ -326,7 +326,7 @@ class RestAPIClient:
         """Call the image->video search API.
 
         Args:
-            path (str): Query image path.
+            path (str): Path to the query image file.
             topk (Optional[int]): Max count.
 
         Returns:
@@ -344,7 +344,7 @@ class RestAPIClient:
         """Call the audio->video search API.
 
         Args:
-            path (str): Query audio path.
+            path (str): Path to the query audio file.
             topk (Optional[int]): Max count.
 
         Returns:
@@ -362,7 +362,7 @@ class RestAPIClient:
         """Call the video->video search API.
 
         Args:
-            path (str): Query video path.
+            path (str): Path to the query video file.
             topk (Optional[int]): Max count.
 
         Returns:

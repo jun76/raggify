@@ -1,0 +1,49 @@
+
+[build-system]
+requires = ["uv_build>=0.9.4,<0.10.0"]
+build-backend = "uv_build"
+
+[project]
+name = "raggify-client"
+version = "0.1.4"
+description = "client tool for raggify, a llama index based library for building multimodal RAG systems"
+authors = [
+    { name = "jun76", email = "jun76.git@gmail.com" }
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+]
+keywords = ["rag", "multimodal", "embedding", "cli", "fastapi", "streamlit", "typer"]
+dependencies = [
+    "mashumaro",
+    "python-dotenv",
+    "pyyaml",
+    "requests",
+    "typer",
+]
+
+[project.urls]
+Homepage = "https://github.com/jun76/raggify"
+Issues = "https://github.com/jun76/raggify/issues"
+
+[project.scripts]
+raggify-client = "raggify_client.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests as integration tests",
+]

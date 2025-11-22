@@ -1,0 +1,63 @@
+from __future__ import annotations
+
+import logging
+
+from rich.console import Console
+
+from .const import PROJECT_NAME
+
+__all__ = ["configure_logging", "logger", "console"]
+
+
+class Color:
+    ResetAll = "\033[0m"
+
+    Bold = "\033[1m"
+    Dim = "\033[2m"
+    Underlined = "\033[4m"
+    Blink = "\033[5m"
+    Reverse = "\033[7m"
+    Hidden = "\033[8m"
+
+    ResetBold = "\033[21m"
+    ResetDim = "\033[22m"
+    ResetUnderlined = "\033[24m"
+    ResetBlink = "\033[25m"
+    ResetReverse = "\033[27m"
+    ResetHidden = "\033[28m"
+
+    Default = "\033[39m"
+    Black = "\033[30m"
+    Red = "\033[31m"
+    Green = "\033[32m"
+    Yellow = "\033[33m"
+    Blue = "\033[34m"
+    Magenta = "\033[35m"
+    Cyan = "\033[36m"
+    LightGray = "\033[37m"
+    DarkGray = "\033[90m"
+    LightRed = "\033[91m"
+    LightGreen = "\033[92m"
+    LightYellow = "\033[93m"
+    LightBlue = "\033[94m"
+    LightMagenta = "\033[95m"
+    LightCyan = "\033[96m"
+    White = "\033[97m"
+
+
+_LOG_FORMAT = (
+    f"{Color.Blue}%(levelname)s{Color.ResetAll}: "
+    f"{Color.DarkGray}%(asctime)s "
+    f"{Color.DarkGray}%(name)s "
+    f"{Color.White}%(message)s "
+    f"{Color.DarkGray}@ %(pathname)s:%(lineno)d %(funcName)s "
+    f"{Color.ResetAll}"
+)
+
+
+def configure_logging() -> None:
+    logging.basicConfig(level=logging.INFO, format=_LOG_FORMAT, force=True)
+
+
+logger = logging.getLogger(PROJECT_NAME)
+console = Console()

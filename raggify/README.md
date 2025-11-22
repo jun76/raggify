@@ -270,7 +270,23 @@ Accepted some commands via REST API.
 `Ctrl + c` to shutdown.
 <img src="https://raw.githubusercontent.com/jun76/raggify/main/media/shutdown.png" />
 
+## 🌐 Access Endpoint
+
+### Curl
+
+...
+
+### RestAPIClient
+
+You can also use `raggify.client.RestAPIClient` module in your python app.
+
+```python
+...
+```
+
 ## 📚 Sample Client App
+
+### How to try
 
 Sample RAG system is `examples/rag`. which uses raggify server as backend.
 

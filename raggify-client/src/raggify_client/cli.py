@@ -1,36 +1,21 @@
 from __future__ import annotations
 
 import json
-import os
 import warnings
 from typing import TYPE_CHECKING, Any, Literal, Optional, Protocol
 
 import typer
-import uvicorn
 
-from ..core.const import PROJECT_NAME, USER_CONFIG_PATH, VERSION
-from ..logger import console, logger
+from .config_manager import ConfigManager
+from .const import PROJECT_BASE_NAME, PROJECT_NAME, VERSION
+from .logger import console, logger
 
 if TYPE_CHECKING:
-    from ..client import RestAPIClient
-    from ..config.config_manager import ConfigManager
+    from .client import RestAPIClient
 
 __all__ = ["app"]
 
-
-def _cfg() -> ConfigManager:
-    """Getter for lazy-loading the runtime config.
-
-    Returns:
-        ConfigManager: Config manager.
-    """
-    from ..runtime import get_runtime
-
-    cfg = get_runtime().cfg
-    logger.setLevel(cfg.general.log_level)
-
-    return cfg
-
+cfg = ConfigManager()
 
 warnings.filterwarnings(
     "ignore",
@@ -41,8 +26,7 @@ warnings.filterwarnings(
     category=UserWarning,
 )
 app = typer.Typer(
-    help="raggify CLI: Interface to ingest/query knowledge into/from raggify server. "
-    f"User config is {USER_CONFIG_PATH}."
+    help="raggify-client CLI: Interface to ingest/query knowledge into/from raggify server. "
 )
 
 
@@ -52,9 +36,7 @@ def _create_rest_client() -> RestAPIClient:
     Returns:
         RestAPIClient: REST API client instance.
     """
-    from ..client.client import RestAPIClient
-
-    cfg = _cfg()
+    from .client import RestAPIClient
 
     return RestAPIClient(host=cfg.general.host, port=cfg.general.port)
 
@@ -72,56 +54,6 @@ def _echo_json(data: dict[str, Any]) -> None:
 def version() -> None:
     """Version command."""
     console.print(f"{PROJECT_NAME} version {VERSION}")
-
-
-@app.command(help="Start as a local server.")
-def server(
-    host: Optional[str] = typer.Option(
-        default=None, help="Server hostname (defaults to config)."
-    ),
-    port: Optional[int] = typer.Option(
-        default=None, help="Server port number (defaults to config)."
-    ),
-    mcp: Optional[bool] = typer.Option(
-        default=None, help="Up server also as MCP (defaults to config)."
-    ),
-) -> None:
-    """Start the application as a local server.
-
-    Args:
-        host (str, optional): Hostname. Defaults to cfg.general.host.
-        port (int, optional): Port number. Defaults to cfg.general.port.
-        mcp (bool, optional): Whether to expose as MCP. Defaults to cfg.general.mcp.
-    """
-    from ..server.fastapi import app as fastapi
-
-    logger.debug("exec cli server command")
-    cfg = _cfg()
-    host = host or cfg.general.host
-    port = port or cfg.general.port
-    mcp = mcp or cfg.general.mcp
-    logger.debug(f"up server @ host = {host}, port = {port}")
-
-    if mcp:
-        from ..server.mcp import app as _mcp
-
-        _mcp.mount_http()
-
-    uvicorn.run(
-        app=fastapi,
-        host=host,
-        port=port,
-        log_level=cfg.general.log_level.lower(),
-    )
-
-
-@app.command(help=f"Show current config file.")
-def config() -> None:
-    cfg = _cfg()
-    _echo_json(cfg.get_dict())
-
-    if not os.path.exists(USER_CONFIG_PATH):
-        cfg.write_yaml()
 
 
 # Define wrapper commands for the REST API client
@@ -143,7 +75,7 @@ def _execute_client_command(
         console.print(e)
         console.print(
             "❌ Command failed. If you haven't already started the server, "
-            f"run '{PROJECT_NAME} server'."
+            f"run '{PROJECT_BASE_NAME} server'."
         )
         raise typer.Exit(code=1)
 
@@ -156,12 +88,6 @@ def health():
     _execute_client_command(lambda client: client.health())
 
 
-@app.command(name="reload", help="Reload config file.")
-def reload():
-    logger.debug("")
-    _execute_client_command(lambda client: client.reload())
-
-
 @app.command(name="job", help="Access background jobs.")
 def job(
     job_id: str = typer.Argument(default="", help="Job id to get status."),
@@ -172,22 +98,6 @@ def job(
 ):
     logger.debug(f"id = {job_id}, rm = {rm}")
     _execute_client_command(lambda client: client.job(job_id=job_id, rm=rm))
-
-
-@app.command(name="ip", help=f"Ingest from local Path.")
-def ingest_path(path: str = typer.Argument(help="Target path.")):
-    logger.debug(f"path = {path}")
-    _execute_client_command(lambda client: client.ingest_path(path))
-
-
-@app.command(name="ipl", help="Ingest from local Path List.")
-def ingest_path_list(
-    list_path: str = typer.Argument(
-        help="Target path-list path. The list can include comment(#) or blank line."
-    ),
-):
-    logger.debug(f"list_path = {list_path}")
-    _execute_client_command(lambda client: client.ingest_path_list(list_path))
 
 
 @app.command(name="iu", help="Ingest from Url.")
@@ -219,8 +129,8 @@ def query_text_text(
         default=None, help="You can specify text retrieve mode."
     ),
 ):
-    topk = topk or _cfg().rerank.topk
     logger.debug(f"query = {query}, topk = {topk}, mode = {mode}")
+    topk = topk or cfg.general.topk
     _execute_client_command(
         lambda client: client.query_text_text(query=query, topk=topk, mode=mode)
     )
@@ -236,7 +146,7 @@ def query_text_image(
         default=None, help="Show top-k results (defaults to config)."
     ),
 ):
-    topk = topk or _cfg().rerank.topk
+    topk = topk or cfg.general.topk
     logger.debug(f"query = {query}, topk = {topk}")
     _execute_client_command(lambda client: client.query_text_image(query, topk))
 
@@ -251,7 +161,7 @@ def query_image_image(
         default=None, help="Show top-k results (defaults to config)."
     ),
 ):
-    topk = topk or _cfg().rerank.topk
+    topk = topk or cfg.general.topk
     logger.debug(f"path = {path}, topk = {topk}")
     _execute_client_command(lambda client: client.query_image_image(path, topk))
 
@@ -266,7 +176,7 @@ def query_text_audio(
         default=None, help="Show top-k results (defaults to config)."
     ),
 ):
-    topk = topk or _cfg().rerank.topk
+    topk = topk or cfg.general.topk
     logger.debug(f"query = {query}, topk = {topk}")
     _execute_client_command(lambda client: client.query_text_audio(query, topk))
 
@@ -281,7 +191,7 @@ def query_audio_audio(
         default=None, help="Show top-k results (defaults to config)."
     ),
 ):
-    topk = topk or _cfg().rerank.topk
+    topk = topk or cfg.general.topk
     logger.debug(f"path = {path}, topk = {topk}")
     _execute_client_command(lambda client: client.query_audio_audio(path, topk))
 
@@ -296,7 +206,7 @@ def query_text_video(
         default=None, help="Show top-k results (defaults to config)."
     ),
 ):
-    topk = topk or _cfg().rerank.topk
+    topk = topk or cfg.general.topk
     logger.debug(f"query = {query}, topk = {topk}")
     _execute_client_command(lambda client: client.query_text_video(query, topk))
 
@@ -311,7 +221,7 @@ def query_image_video(
         default=None, help="Show top-k results (defaults to config)."
     ),
 ):
-    topk = topk or _cfg().rerank.topk
+    topk = topk or cfg.general.topk
     logger.debug(f"path = {path}, topk = {topk}")
     _execute_client_command(lambda client: client.query_image_video(path, topk))
 
@@ -326,7 +236,7 @@ def query_audio_video(
         default=None, help="Show top-k results (defaults to config)."
     ),
 ):
-    topk = topk or _cfg().rerank.topk
+    topk = topk or cfg.general.topk
     logger.debug(f"path = {path}, topk = {topk}")
     _execute_client_command(lambda client: client.query_audio_video(path, topk))
 
@@ -341,7 +251,7 @@ def query_video_video(
         default=None, help="Show top-k results (defaults to config)."
     ),
 ):
-    topk = topk or _cfg().rerank.topk
+    topk = topk or cfg.general.topk
     logger.debug(f"path = {path}, topk = {topk}")
     _execute_client_command(lambda client: client.query_video_video(path, topk))
 
