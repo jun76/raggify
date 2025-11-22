@@ -270,19 +270,102 @@ Accepted some commands via REST API.
 `Ctrl + c` to shutdown.
 <img src="https://raw.githubusercontent.com/jun76/raggify/main/media/shutdown.png" />
 
-## 🌐 Access Endpoint
+## 🌐 POST/GET Endpoint
 
-### Curl
+### With Curl
 
-...
+After starting the server, you can send POST/GET requests using curl as follows.
 
-### RestAPIClient
+```bash
+# /status: Return server status.
+curl -X GET http://localhost:8000/v1/status \
+  -H "Content-Type: application/json"
 
-You can also use `raggify.client.RestAPIClient` module in your python app.
+# /reload: Reload server configuration.
+curl -X GET http://localhost:8000/v1/reload \
+  -H "Content-Type: application/json"
 
-```python
-...
+# /upload: Upload files (multipart/form-data).
+curl -X POST http://localhost:8000/v1/upload \
+  -F "files=@/path/to/file1.pdf" \
+  -F "files=@/path/to/file2.png"
+
+# /job: Inspect or remove background jobs.
+curl -X POST http://localhost:8000/v1/job \
+  -H "Content-Type: application/json" \
+  -d '{"job_id": "", "rm": false}'
+
+# /ingest/path: Ingest from a local path.
+curl -X POST http://localhost:8000/v1/ingest/path \
+  -H "Content-Type: application/json" \
+  -d '{"path": "/path/to/data"}'
+
+# /ingest/path_list: Ingest paths listed in a file.
+curl -X POST http://localhost:8000/v1/ingest/path_list \
+  -H "Content-Type: application/json" \
+  -d '{"path": "/path/to/path_list.txt"}'
+
+# /ingest/url: Ingest a single URL.
+curl -X POST http://localhost:8000/v1/ingest/url \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com"}'
+
+# /ingest/url_list: Ingest URLs listed in a file.
+curl -X POST http://localhost:8000/v1/ingest/url_list \
+  -H "Content-Type: application/json" \
+  -d '{"path": "/path/to/url_list.txt"}'
+
+# /query/text_text: Search text by text query.
+curl -X POST http://localhost:8000/v1/query/text_text \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Half-Blood Prince", "topk": 5, "mode": "fusion"}'
+
+# /query/text_image: Search images by text query.
+curl -X POST http://localhost:8000/v1/query/text_image \
+  -H "Content-Type: application/json" \
+  -d '{"query": "main character in Batman", "topk": 3}'
+
+# /query/image_image: Search images by image file.
+curl -X POST http://localhost:8000/v1/query/image_image \
+  -H "Content-Type: application/json" \
+  -d '{"path": "/path/to/query.jpg", "topk": 3}'
+
+# /query/text_audio: Search audio by text query.
+curl -X POST http://localhost:8000/v1/query/text_audio \
+  -H "Content-Type: application/json" \
+  -d '{"query": "phone call", "topk": 3}'
+
+# /query/audio_audio: Search audio by audio file.
+curl -X POST http://localhost:8000/v1/query/audio_audio \
+  -H "Content-Type: application/json" \
+  -d '{"path": "/path/to/query.wav", "topk": 3}'
+
+# /query/text_video: Search videos by text query.
+curl -X POST http://localhost:8000/v1/query/text_video \
+  -H "Content-Type: application/json" \
+  -d '{"query": "chainsaw cutting wood", "topk": 3}'
+
+# /query/image_video: Search videos by image file.
+curl -X POST http://localhost:8000/v1/query/image_video \
+  -H "Content-Type: application/json" \
+  -d '{"path": "/path/to/frame.png", "topk": 3}'
+
+# /query/audio_video: Search videos by audio file.
+curl -X POST http://localhost:8000/v1/query/audio_video \
+  -H "Content-Type: application/json" \
+  -d '{"path": "/path/to/query.mp3", "topk": 3}'
+
+# /query/video_video: Search videos by video file.
+curl -X POST http://localhost:8000/v1/query/video_video \
+  -H "Content-Type: application/json" \
+  -d '{"path": "/path/to/query.mp4", "topk": 3}'
 ```
+
+### With RestAPIClient module
+
+You can also use `raggify_client.RestAPIClient` module in your python app.
+The raggify_client module can be installed separately as a distinct library named [raggify-client](https://github.com/jun76/raggify/tree/main/raggify-client).
+The raggify library (server-side) includes raggify-client as a standard dependency package.
 
 ## 📚 Sample Client App
 
@@ -715,22 +798,11 @@ log_level: warning
 
 ## Main Modules
 
-```python
-# For reference
-# Retrievers return this structure
-from llama_index.core.schema import NodeWithScore
+### Raggify (Server)
 
-# For REST API Call to the server
-from raggify.client import RestAPIClient
-from raggify.config import (
-    DocumentStoreProvider,
-    EmbedModel,
-    EmbedProvider,
-    IngestCacheProvider,
-    RerankProvider,
-    RetrieveMode,
-    VectorStoreProvider,
-)
+```python
+# For reference. Retrievers return this structure
+from llama_index.core.schema import NodeWithScore
 
 # For ingestion
 from raggify.ingest import (
@@ -771,14 +843,30 @@ from raggify.retrieve import (
 
 # For hot reloading config
 from raggify.runtime import get_runtime
+from raggify.config import (
+    DocumentStoreProvider,
+    EmbedModel,
+    EmbedProvider,
+    IngestCacheProvider,
+    RerankProvider,
+    RetrieveMode,
+    VectorStoreProvider,
+)
+```
+
+### Raggify Client
+
+```python
+# For REST API Call to the server
+from raggify_client import RestAPIClient
 ```
 
 ## Supported file extensions
 
+- Text: `.txt`, `.text`, `.md`, `.json`, `.html`, `.tex`
 - Image: `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`
 - Audio: `.mp3`, `.wav`, `.ogg`
 - Video: `.mp4`, `.mov`, `.mkv`, `.webm`, `.flv`, `.mpeg`, `.mpg`, `.wmv`, `.3gp`,
-- Text: `.txt`, `.text`, `.md`, `.json`, `.html`, `.tex`
 
 Additionally, any extensions added via the `additional_exts` configuration parameter are also supported.
 

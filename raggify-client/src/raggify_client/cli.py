@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import json
-import warnings
+import os
 from typing import TYPE_CHECKING, Any, Literal, Optional, Protocol
 
 import typer
 
 from .config_manager import ConfigManager
-from .const import PROJECT_BASE_NAME, PROJECT_NAME, VERSION
+from .const import PROJECT_BASE_NAME, PROJECT_NAME, USER_CONFIG_PATH, VERSION
 from .logger import console, logger
 
 if TYPE_CHECKING:
@@ -16,15 +16,8 @@ if TYPE_CHECKING:
 __all__ = ["app"]
 
 cfg = ConfigManager()
+logger.setLevel(cfg.general.log_level)
 
-warnings.filterwarnings(
-    "ignore",
-    message=(
-        "The 'validate_default' attribute with value True was provided "
-        "to the `Field\\(\\)` function.*"
-    ),
-    category=UserWarning,
-)
 app = typer.Typer(
     help="raggify-client CLI: Interface to ingest/query knowledge into/from raggify server. "
 )
@@ -53,7 +46,26 @@ def _echo_json(data: dict[str, Any]) -> None:
 @app.command(help="Show version.")
 def version() -> None:
     """Version command."""
+    logger.debug("")
     console.print(f"{PROJECT_NAME} version {VERSION}")
+
+
+@app.command(help="(Not supported in client CLI)")
+def server() -> None:
+    logger.debug("")
+    console.print(
+        "❌ Client CLI does not support server sub command. "
+        f"Please use `{PROJECT_BASE_NAME} server` instead."
+    )
+
+
+@app.command(help=f"Show current config file.")
+def config() -> None:
+    logger.debug("")
+    _echo_json(cfg.get_dict())
+
+    if not os.path.exists(USER_CONFIG_PATH):
+        cfg.write_yaml()
 
 
 # Define wrapper commands for the REST API client
@@ -83,9 +95,18 @@ def _execute_client_command(
 
 
 @app.command(name="stat", help="Get server status.")
-def health():
+def status():
     logger.debug("")
-    _execute_client_command(lambda client: client.health())
+    _execute_client_command(lambda client: client.status())
+
+
+@app.command(name="reload", help=f"(Not supported in client CLI)")
+def reload():
+    logger.debug("")
+    console.print(
+        "❌ Client CLI does not support reload sub command. "
+        f"Please use `{PROJECT_BASE_NAME} reload` instead."
+    )
 
 
 @app.command(name="job", help="Access background jobs.")
@@ -98,6 +119,24 @@ def job(
 ):
     logger.debug(f"id = {job_id}, rm = {rm}")
     _execute_client_command(lambda client: client.job(job_id=job_id, rm=rm))
+
+
+@app.command(name="ip", help=f"(Not supported in client CLI)")
+def ingest_path():
+    logger.debug("")
+    console.print(
+        "❌ Client CLI does not support ingest-path sub command. "
+        f"Please use `{PROJECT_BASE_NAME} ip` instead."
+    )
+
+
+@app.command(name="ipl", help=f"(Not supported in client CLI)")
+def ingest_path_list():
+    logger.debug("")
+    console.print(
+        "❌ Client CLI does not support ingest-path-list sub command. "
+        f"Please use `{PROJECT_BASE_NAME} ipl` instead."
+    )
 
 
 @app.command(name="iu", help="Ingest from Url.")

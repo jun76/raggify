@@ -3,8 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 import streamlit as st
-
-from raggify.client import RestAPIClient
+from raggify_client import RestAPIClient
 
 from ..logger import logger
 from ..state import (
@@ -30,7 +29,7 @@ def register_local_path_callback(
     """Run ingestion for a local path.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
         path_value (str): Target path for ingestion.
         feedback_key (FeedBack): Feedback state key.
     """
@@ -58,7 +57,7 @@ def register_path_list_callback(
     """Run ingestion for a local path list file.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
         file_obj (Any): Uploaded path list file.
         feedback_key (FeedBack): Feedback state key.
     """
@@ -82,16 +81,16 @@ def render_admin_view(client: RestAPIClient) -> None:
     """Render the administrator menu view.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
     """
     st.title("🛠️ Admin Menu")
-    st.button(
-        "⬅️ Back to menu", key="admin_back", on_click=set_view, args=(View.MAIN,)
-    )
+    st.button("⬅️ Back to menu", key="admin_back", on_click=set_view, args=(View.MAIN,))
 
     st.divider()
     st.subheader("🗂️ Register a local raggify path")
-    st.caption("Register knowledge from files or folders already placed on the raggify host.")
+    st.caption(
+        "Register knowledge from files or folders already placed on the raggify host."
+    )
     path_value = st.text_input("Target path", key="admin_path")
     st.button(
         "🗂️ Register",
@@ -102,7 +101,9 @@ def render_admin_view(client: RestAPIClient) -> None:
 
     st.divider()
     st.subheader("📄 Upload a raggify path list")
-    st.caption("Register knowledge from a text file (*.txt) listing local files or folders on the raggify host.")
+    st.caption(
+        "Register knowledge from a text file (*.txt) listing local files or folders on the raggify host."
+    )
     path_list = st.file_uploader("Select a path list", key="admin_path_list")
     st.button(
         "📄 Register",

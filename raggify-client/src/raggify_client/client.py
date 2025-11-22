@@ -99,13 +99,13 @@ class RestAPIClient:
         """
         return self._make_request(endpoint=endpoint, func=requests.post, files=files)
 
-    def health(self) -> dict[str, str]:
-        """Get server health status.
+    def status(self) -> dict[str, str]:
+        """Get server status.
 
         Returns:
             dict[str, str]: Response data.
         """
-        return self._get_json("/health")
+        return self._get_json("/status")
 
     def reload(self) -> dict[str, str]:
         """Reload the server configuration file.

@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import streamlit as st
-
-from raggify.client import RestAPIClient
+from raggify_client import RestAPIClient
 
 from ..logger import logger
 from ..state import View, set_view
@@ -14,30 +13,30 @@ __all__ = ["render_main_menu"]
 
 
 def _summarize_status(
-    raggify_stat: dict[str, Any],
+    server_stat: dict[str, Any],
 ) -> dict[str, str]:
-    """Summarize the health check result into display text.
+    """Summarize server status into display text.
 
     Args:
-        raggify_stat (dict[str, Any]): raggify status payload.
+        server_stat (dict[str, Any]): server status payload.
 
     Returns:
         dict[str, str]: Service status description.
     """
     details = "\n".join(
         [
-            f"- vector store: {raggify_stat.get('vector store', 'N/A')}",
-            f"- embed: {raggify_stat.get('embed', 'N/A')}",
-            f"- rerank: {raggify_stat.get('rerank', 'N/A')}",
-            f"- document store: {raggify_stat.get('document store', 'N/A')}",
-            f"- ingest cache: {raggify_stat.get('ingest cache', 'N/A')}",
+            f"- vector store: {server_stat.get('vector store', 'N/A')}",
+            f"- embed: {server_stat.get('embed', 'N/A')}",
+            f"- rerank: {server_stat.get('rerank', 'N/A')}",
+            f"- document store: {server_stat.get('document store', 'N/A')}",
+            f"- ingest cache: {server_stat.get('ingest cache', 'N/A')}",
         ]
     )
 
     return {
         "raggify": (
             f"✅ Online\n{details}"
-            if raggify_stat.get("status") == "ok"
+            if server_stat.get("status") == "ok"
             else "🛑 Offline"
         )
     }
@@ -47,11 +46,11 @@ def _refresh_status(client: RestAPIClient) -> None:
     """Refresh service status and store it in the session state.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
     """
     try:
-        raggify_stat = client.health()
-        texts = _summarize_status(raggify_stat)
+        server_stat = client.status()
+        texts = _summarize_status(server_stat)
         st.session_state["status_texts"] = texts
         st.session_state["status_dirty"] = False
     except Exception:
@@ -65,7 +64,7 @@ def _render_status_section(client: RestAPIClient) -> None:
     """Render the status section for the main menu.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
     """
     if st.session_state.get("status_dirty", False):
         _refresh_status(client)
@@ -84,7 +83,7 @@ def render_main_menu(client: RestAPIClient) -> None:
     """Render the main menu view.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
     """
     st.title("📚 RAG System")
     _render_status_section(client)

@@ -3,8 +3,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 import streamlit as st
-
-from raggify.client import RestAPIClient
+from raggify_client import RestAPIClient
 
 from ..logger import logger
 from ..state import (
@@ -33,7 +32,7 @@ def register_uploaded_files_callback(
     """Register knowledge by uploading files.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
         files (Optional[list[Any]]): Uploaded files.
         feedback_key (FeedBack): Feedback state key.
     """
@@ -60,7 +59,7 @@ def register_url_callback(
     """Register knowledge by specifying a URL.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
         url_value (str): URL to ingest.
         feedback_key (FeedBack): Feedback state key.
     """
@@ -88,7 +87,7 @@ def register_url_list_callback(
     """Register knowledge by uploading a URL list file.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
         file_obj (Any): Uploaded URL list file.
         feedback_key (FeedBack): Feedback state key.
     """
@@ -112,7 +111,7 @@ def render_ingest_view(client: RestAPIClient) -> None:
     """Render the ingestion view.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
     """
     st.title("📝 Knowledge Ingestion")
     st.button("⬅️ Back to menu", on_click=set_view, args=(View.MAIN,))

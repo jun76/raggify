@@ -2,17 +2,18 @@ from __future__ import annotations
 
 import json
 import os
-import warnings
-from typing import TYPE_CHECKING, Any, Literal, Optional, Protocol
+from typing import TYPE_CHECKING, Any, Optional, Protocol
 
 import typer
 import uvicorn
+from raggify_client import app as client_app
 
 from ..core.const import PROJECT_NAME, USER_CONFIG_PATH, VERSION
 from ..logger import console, logger
 
 if TYPE_CHECKING:
-    from ..client import RestAPIClient
+    from raggify_client import RestAPIClient
+
     from ..config.config_manager import ConfigManager
 
 __all__ = ["app"]
@@ -32,16 +33,11 @@ def _cfg() -> ConfigManager:
     return cfg
 
 
-warnings.filterwarnings(
-    "ignore",
-    message=(
-        "The 'validate_default' attribute with value True was provided "
-        "to the `Field\\(\\)` function.*"
-    ),
-    category=UserWarning,
-)
-app = typer.Typer(
-    help="raggify CLI: Interface to ingest/query knowledge into/from raggify server. "
+# Re-use the client app
+# Override help message and add server commands
+app = client_app
+app.info.help = (
+    "raggify CLI: Interface to ingest/query knowledge into/from raggify server. "
     f"User config is {USER_CONFIG_PATH}."
 )
 
@@ -52,7 +48,7 @@ def _create_rest_client() -> RestAPIClient:
     Returns:
         RestAPIClient: REST API client instance.
     """
-    from ..client.client import RestAPIClient
+    from raggify_client import RestAPIClient
 
     cfg = _cfg()
 
@@ -71,6 +67,7 @@ def _echo_json(data: dict[str, Any]) -> None:
 @app.command(help="Show version.")
 def version() -> None:
     """Version command."""
+    logger.debug("")
     console.print(f"{PROJECT_NAME} version {VERSION}")
 
 
@@ -95,14 +92,14 @@ def server(
     """
     from ..server.fastapi import app as fastapi
 
-    logger.debug("exec cli server command")
+    logger.debug(f"host = {host}, port = {port}, mcp = {mcp}")
     cfg = _cfg()
     host = host or cfg.general.host
     port = port or cfg.general.port
     mcp = mcp or cfg.general.mcp
-    logger.debug(f"up server @ host = {host}, port = {port}")
 
     if mcp:
+        logger.debug("mount MCP HTTP server")
         from ..server.mcp import app as _mcp
 
         _mcp.mount_http()
@@ -117,6 +114,7 @@ def server(
 
 @app.command(help=f"Show current config file.")
 def config() -> None:
+    logger.debug("")
     cfg = _cfg()
     _echo_json(cfg.get_dict())
 
@@ -150,28 +148,10 @@ def _execute_client_command(
     _echo_json(result)
 
 
-@app.command(name="stat", help="Get server status.")
-def health():
-    logger.debug("")
-    _execute_client_command(lambda client: client.health())
-
-
 @app.command(name="reload", help="Reload config file.")
 def reload():
     logger.debug("")
     _execute_client_command(lambda client: client.reload())
-
-
-@app.command(name="job", help="Access background jobs.")
-def job(
-    job_id: str = typer.Argument(default="", help="Job id to get status."),
-    rm: bool = typer.Option(
-        default=False,
-        help="With no id, all completed tasks will be removed from the job queue.",
-    ),
-):
-    logger.debug(f"id = {job_id}, rm = {rm}")
-    _execute_client_command(lambda client: client.job(job_id=job_id, rm=rm))
 
 
 @app.command(name="ip", help=f"Ingest from local Path.")
@@ -188,162 +168,6 @@ def ingest_path_list(
 ):
     logger.debug(f"list_path = {list_path}")
     _execute_client_command(lambda client: client.ingest_path_list(list_path))
-
-
-@app.command(name="iu", help="Ingest from Url.")
-def ingest_url(url: str = typer.Argument(help="Target url.")):
-    logger.debug(f"url = {url}")
-    _execute_client_command(lambda client: client.ingest_url(url))
-
-
-@app.command(name="iul", help="Ingest from Url List.")
-def ingest_url_list(
-    list_path: str = typer.Argument(
-        help="Target url-list path. The list can include comment(#) or blank line."
-    ),
-):
-    logger.debug(f"list_path = {list_path}")
-    _execute_client_command(lambda client: client.ingest_url_list(list_path))
-
-
-@app.command(
-    name="qtt",
-    help="Query Text -> Text documents.",
-)
-def query_text_text(
-    query: str = typer.Argument(help="Query string."),
-    topk: Optional[int] = typer.Option(
-        default=None, help="Show top-k results (defaults to config)."
-    ),
-    mode: Optional[Literal["vector_only", "bm25_only", "fusion"]] = typer.Option(
-        default=None, help="You can specify text retrieve mode."
-    ),
-):
-    topk = topk or _cfg().rerank.topk
-    logger.debug(f"query = {query}, topk = {topk}, mode = {mode}")
-    _execute_client_command(
-        lambda client: client.query_text_text(query=query, topk=topk, mode=mode)
-    )
-
-
-@app.command(
-    name="qti",
-    help="Query Text -> Image documents.",
-)
-def query_text_image(
-    query: str = typer.Argument(help="Query string."),
-    topk: Optional[int] = typer.Option(
-        default=None, help="Show top-k results (defaults to config)."
-    ),
-):
-    topk = topk or _cfg().rerank.topk
-    logger.debug(f"query = {query}, topk = {topk}")
-    _execute_client_command(lambda client: client.query_text_image(query, topk))
-
-
-@app.command(
-    name="qii",
-    help="Query Image -> Image documents.",
-)
-def query_image_image(
-    path: str = typer.Argument(help="Query image path."),
-    topk: Optional[int] = typer.Option(
-        default=None, help="Show top-k results (defaults to config)."
-    ),
-):
-    topk = topk or _cfg().rerank.topk
-    logger.debug(f"path = {path}, topk = {topk}")
-    _execute_client_command(lambda client: client.query_image_image(path, topk))
-
-
-@app.command(
-    name="qta",
-    help="Query Text -> Audio documents.",
-)
-def query_text_audio(
-    query: str = typer.Argument(help="Query string."),
-    topk: Optional[int] = typer.Option(
-        default=None, help="Show top-k results (defaults to config)."
-    ),
-):
-    topk = topk or _cfg().rerank.topk
-    logger.debug(f"query = {query}, topk = {topk}")
-    _execute_client_command(lambda client: client.query_text_audio(query, topk))
-
-
-@app.command(
-    name="qaa",
-    help="Query Audio -> Audio documents.",
-)
-def query_audio_audio(
-    path: str = typer.Argument(help="Query audio path."),
-    topk: Optional[int] = typer.Option(
-        default=None, help="Show top-k results (defaults to config)."
-    ),
-):
-    topk = topk or _cfg().rerank.topk
-    logger.debug(f"path = {path}, topk = {topk}")
-    _execute_client_command(lambda client: client.query_audio_audio(path, topk))
-
-
-@app.command(
-    name="qtv",
-    help="Query Text -> Video documents.",
-)
-def query_text_video(
-    query: str = typer.Argument(help="Query string."),
-    topk: Optional[int] = typer.Option(
-        default=None, help="Show top-k results (defaults to config)."
-    ),
-):
-    topk = topk or _cfg().rerank.topk
-    logger.debug(f"query = {query}, topk = {topk}")
-    _execute_client_command(lambda client: client.query_text_video(query, topk))
-
-
-@app.command(
-    name="qiv",
-    help="Query Image -> Video documents.",
-)
-def query_image_video(
-    path: str = typer.Argument(help="Query image path."),
-    topk: Optional[int] = typer.Option(
-        default=None, help="Show top-k results (defaults to config)."
-    ),
-):
-    topk = topk or _cfg().rerank.topk
-    logger.debug(f"path = {path}, topk = {topk}")
-    _execute_client_command(lambda client: client.query_image_video(path, topk))
-
-
-@app.command(
-    name="qav",
-    help="Query Audio -> Video documents.",
-)
-def query_audio_video(
-    path: str = typer.Argument(help="Query audio path."),
-    topk: Optional[int] = typer.Option(
-        default=None, help="Show top-k results (defaults to config)."
-    ),
-):
-    topk = topk or _cfg().rerank.topk
-    logger.debug(f"path = {path}, topk = {topk}")
-    _execute_client_command(lambda client: client.query_audio_video(path, topk))
-
-
-@app.command(
-    name="qmv",
-    help="Query Video -> Video documents.",
-)
-def query_video_video(
-    path: str = typer.Argument(help="Query video path."),
-    topk: Optional[int] = typer.Option(
-        default=None, help="Show top-k results (defaults to config)."
-    ),
-):
-    topk = topk or _cfg().rerank.topk
-    logger.debug(f"path = {path}, topk = {topk}")
-    _execute_client_command(lambda client: client.query_video_video(path, topk))
 
 
 if __name__ == "__main__":

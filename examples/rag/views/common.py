@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from raggify.client import RestAPIClient
+from raggify_client import RestAPIClient
 
 __all__ = ["emojify_robot", "save_uploaded_files"]
 
@@ -24,7 +24,7 @@ def save_uploaded_files(client: RestAPIClient, files: list[Any]) -> list[str]:
     """Persist uploaded files and return their paths on raggify.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
         files (list[Any]): Uploaded file objects from Streamlit.
 
     Returns:

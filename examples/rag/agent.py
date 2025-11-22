@@ -7,9 +7,8 @@ from typing import Any, Optional
 
 from agents import Agent, RunContextWrapper, Runner, function_tool
 from pydantic import BaseModel, ConfigDict
+from raggify_client import RestAPIClient
 from typing_extensions import TypedDict
-
-from raggify.client import RestAPIClient
 
 from .logger import logger
 

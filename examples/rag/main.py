@@ -9,8 +9,7 @@ if __package__ is None or __package__ == "":
     __package__ = "rag"
 
 import streamlit as st
-
-from raggify.client import RestAPIClient
+from raggify_client import RestAPIClient
 
 from .config import Config
 from .logger import logger
@@ -28,7 +27,7 @@ def main() -> None:
     st.set_page_config(page_title="RAG System", page_icon="📚", layout="wide")
     ensure_session_state()
 
-    client = RestAPIClient(Config.raggify_base_url)
+    client = RestAPIClient(host=Config.host, port=Config.port)
 
     view = st.session_state.get("view", View.MAIN)
     match view:

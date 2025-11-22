@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Literal, Optional
 
 import streamlit as st
+from raggify_client import RestAPIClient
 
-from raggify.client import RestAPIClient
 from raggify.config.retrieve_config import RetrieveMode
 from raggify.core import Exts
 
@@ -83,7 +83,7 @@ def _render_search_view_text_text(client: RestAPIClient) -> None:
     """Render the text-to-text search section.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
     """
     mode = _get_text_retrieve_mode()
     _render_search_section(
@@ -111,7 +111,7 @@ def _render_search_view_text_image(client: RestAPIClient) -> None:
     """Render the text-to-image search section.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
     """
     _render_search_section(
         title="📝→🖼️ Search images with text",
@@ -137,7 +137,7 @@ def _render_search_view_image_image(client: RestAPIClient) -> None:
     """Render the image-to-image search section.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
     """
     _render_search_section(
         title="🖼️→🖼️ Search images with an image",
@@ -165,7 +165,7 @@ def _render_search_view_text_audio(client: RestAPIClient) -> None:
     """Render the text-to-audio search section.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
     """
     _render_search_section(
         title="📝→🎤 Search audio with text",
@@ -191,7 +191,7 @@ def _render_search_view_audio_audio(client: RestAPIClient) -> None:
     """Render the audio-to-audio search section.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
     """
     _render_search_section(
         title="🎤→🎤 Search audio with audio",
@@ -219,7 +219,7 @@ def _render_search_view_text_video(client: RestAPIClient) -> None:
     """Render the text-to-video search section.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
     """
     _render_search_section(
         title="📝→🎬 Search videos with text",
@@ -245,7 +245,7 @@ def _render_search_view_image_video(client: RestAPIClient) -> None:
     """Render the image-to-video search section.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
     """
     _render_search_section(
         title="🖼️→🎬 Search videos with an image",
@@ -273,7 +273,7 @@ def _render_search_view_audio_video(client: RestAPIClient) -> None:
     """Render the audio-to-video search section.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
     """
     _render_search_section(
         title="🎤→🎬 Search videos with audio",
@@ -301,7 +301,7 @@ def _render_search_view_video_video(client: RestAPIClient) -> None:
     """Render the video-to-video search section.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
     """
     _render_search_section(
         title="🎬→🎬 Search videos with a video",
@@ -388,7 +388,7 @@ def run_text_text_search_callback(
     query: str,
     result_key: SearchResult,
     feedback_key: FeedBack,
-    mode: Optional[RetrieveMode] = None,
+    mode: Optional[Literal["vector_only", "bm25_only", "fusion"]] = None,
 ) -> None:
     """Call the text-to-text search API."""
     _run_text_search(

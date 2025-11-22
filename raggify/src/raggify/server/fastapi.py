@@ -123,14 +123,14 @@ def _nodes_to_response(nodes: list[NodeWithScore]) -> list[dict[str, Any]]:
     ]
 
 
-@app.get("/v1/health")
-async def health() -> dict[str, Any]:
-    """Return server health status.
+@app.get("/v1/status")
+async def status() -> dict[str, Any]:
+    """Return server status.
 
     Returns:
         dict[str, Any]: Result.
     """
-    logger.debug("exec /v1/health")
+    logger.debug("exec /v1/status")
 
     rt = _rt()
     async with _request_lock:

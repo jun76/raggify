@@ -4,8 +4,8 @@ from enum import StrEnum, auto
 from typing import Any, Optional
 
 import streamlit as st
+from raggify_client import RestAPIClient
 
-from raggify.client import RestAPIClient
 from raggify.core import Exts
 
 from ..agent import AgentExecutionError, RagAgentManager
@@ -30,7 +30,7 @@ def _save_reference_file(
     """Upload a reference file to raggify and return its saved path.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
         file_obj (Optional[Any]): Uploaded file object.
         session_key (RagSearchSessionKey): Session key used to store the path.
 
@@ -59,7 +59,7 @@ def render_ragsearch_view(client: RestAPIClient) -> None:
     """Render the RAG search view.
 
     Args:
-        client (RestAPIClient): raggify API client.
+        client (RestAPIClient): REST API client.
     """
     st.title(emojify_robot("🤖 RAG Search"))
     st.button(
