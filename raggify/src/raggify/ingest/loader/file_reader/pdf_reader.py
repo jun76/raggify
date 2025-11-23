@@ -45,8 +45,8 @@ class MultiPDFReader(BaseReader):
             return []
 
         try:
-            text_docs = self._load_pdf_text(pdf, path)
-            image_docs = self._load_pdf_image(pdf, path)
+            text_docs = self._load_pdf_texts(pdf, path)
+            image_docs = self._load_pdf_images(pdf, path)
         finally:
             pdf.close()
 
@@ -56,12 +56,12 @@ class MultiPDFReader(BaseReader):
 
         return text_docs + image_docs
 
-    def _load_pdf_text(
+    def _load_pdf_texts(
         self,
         pdf: FDoc,
         path: str,
     ) -> list[Document]:
-        """Generate documents from the text portion of a PDF.
+        """Generate documents from texts of a PDF.
 
         Args:
             pdf (FDoc): PDF instance.
@@ -94,12 +94,12 @@ class MultiPDFReader(BaseReader):
 
         return docs
 
-    def _load_pdf_image(
+    def _load_pdf_images(
         self,
         pdf: FDoc,
         path: str,
     ) -> list[Document]:
-        """Generate documents from images in a PDF.
+        """Generate documents from images of a PDF.
 
         Args:
             pdf (FDoc): PDF instance.

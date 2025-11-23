@@ -31,9 +31,10 @@ class DummyMediaReader(BaseReader):
             logger.warning(f"file not found: {path}")
             return []
 
-        if not Exts.endswith_exts(path, Exts.PASS_THROUGH_MEDIA):
+        ext = Exts.get_ext(path)
+        if ext not in Exts.PASS_THROUGH_MEDIA:
             logger.warning(
-                f"unsupported ext for {path}. {' '.join(Exts.PASS_THROUGH_MEDIA)} is allowed."
+                f"unsupported ext {ext}: {' '.join(Exts.PASS_THROUGH_MEDIA)} are allowed."
             )
             return []
 

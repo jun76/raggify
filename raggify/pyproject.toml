@@ -5,7 +5,7 @@ build-backend = "uv_build"
 
 [project]
 name = "raggify"
-version = "0.1.4"
+version = "0.1.6"
 description = "llama index based library for building multimodal RAG systems"
 authors = [
     { name = "jun76", email = "jun76.git@gmail.com" }
@@ -47,6 +47,7 @@ dependencies = [
     "llama-index-postprocessor-voyageai-rerank",
     "llama-index-readers-file",
     "llama-index-readers-web",
+    "llama-index-readers-wikipedia",
     "llama-index-retrievers-bm25",
     "llama-index-storage-docstore-postgres",
     "llama-index-storage-docstore-redis",
@@ -63,6 +64,7 @@ dependencies = [
     "pymupdf",
     "python-dotenv",
     "python-multipart",
+    "raggify-client",
     "requests",
     "sentence-transformers==2.7.0",
     "starlette",
@@ -71,6 +73,7 @@ dependencies = [
     "torchvision==0.24.0",
     "unstructured",
     "uvicorn[standard]",
+    "wikipedia"
 ]
 
 [project.optional-dependencies]

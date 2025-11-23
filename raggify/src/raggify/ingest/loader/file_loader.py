@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Callable, Optional
 from ...core.exts import Exts
 from ...logger import logger
 from ...runtime import get_runtime as _rt
+from .file_reader import DummyMediaReader, MultiPDFReader, VideoReader
 from .loader import Loader
-from .reader import DummyMediaReader, MultiPDFReader, VideoReader
 
 if TYPE_CHECKING:
     from llama_index.core.readers.base import BaseReader

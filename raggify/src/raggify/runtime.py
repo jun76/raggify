@@ -40,8 +40,6 @@ class Runtime:
         self._document_store: Optional[DocumentStoreManager] = None
         self._ingest_cache: Optional[IngestCacheManager] = None
         self._rerank_manager: Optional[RerankManager] = None
-        self._file_loader: Optional[FileLoader] = None
-        self._html_loader: Optional[HTMLLoader] = None
 
         self._pipeline_lock = threading.Lock()
 
@@ -59,8 +57,6 @@ class Runtime:
         self._document_store = None
         self._ingest_cache = None
         self._rerank_manager = None
-        self._file_loader = None
-        self._html_loader = None
 
     def build(self) -> None:
         """Create instances for each manager class."""
@@ -82,8 +78,6 @@ class Runtime:
         self.document_store
         self.ingest_cache
         self.rerank_manager
-        self.file_loader
-        self.html_loader
 
         configure_logging()
         logger.setLevel(self.cfg.general.log_level)
@@ -258,25 +252,17 @@ class Runtime:
 
     @property
     def file_loader(self) -> FileLoader:
-        if self._file_loader is None:
-            from .ingest.loader.file_loader import FileLoader
+        from .ingest.loader.file_loader import FileLoader
 
-            self._file_loader = FileLoader(self.cfg.ingest.pipe_persist_dir)
-
-        return self._file_loader
+        return FileLoader(self.cfg.ingest.pipe_persist_dir)
 
     @property
     def html_loader(self) -> HTMLLoader:
-        if self._html_loader is None:
-            from .ingest.loader.html_loader import HTMLLoader
+        from .ingest.loader.html_loader import HTMLLoader
 
-            self._html_loader = HTMLLoader(
-                file_loader=self.file_loader,
-                persist_dir=self.cfg.ingest.pipe_persist_dir,
-                cfg=self.cfg.ingest,
-            )
-
-        return self._html_loader
+        return HTMLLoader(
+            persist_dir=self.cfg.ingest.pipe_persist_dir, cfg=self.cfg.ingest
+        )
 
 
 def get_runtime() -> Runtime:
