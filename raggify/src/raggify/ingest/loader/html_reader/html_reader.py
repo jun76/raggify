@@ -218,6 +218,20 @@ class HTMLReader:
             )
             return None
 
+        # FIXME:
+        # Bedrock's MIME type check is strict, and if the MIME type you specified
+        # is incorrect, it returns the following error:
+        #
+        #  An error occurred (ValidationException) when calling the InvokeModel
+        #  operation: The detected file MIME type image/png does not match the
+        #  expected type image/webp. Reformat your input and try again.
+        #
+        # Therefore, if the target URL is misleading (e.g., the URL specifies
+        # .webp but the actual content is png), we must inspect the magic numbers
+        # within the binary. However, since other providers do not require MIME
+        # types in the first place and still succeed in embedding, we will treat
+        # the URL as valid as before (even if the actual content differs) and
+        # ignore this error.
         ext = Exts.get_ext(url)
         path = get_temp_file_path_from(source=url, suffix=ext)
         try:

@@ -223,7 +223,7 @@ async def _process_batches(
                 )
 
             # Roll back cache entries
-            # TODO:
+            # FIXME:
             # Since we must accurately reproduce the nodes passed to each transformation,
             # we cannot uniformly set nodes=batch. Considering the cost of managing
             # the node set passed to each transformation and the risk of unexpected

@@ -140,7 +140,7 @@ class EmbedManager:
             texts (list[str]): Texts to embed.
 
         Raises:
-            RuntimeError: If uninitialized.
+            RuntimeError: If failed to embed.
 
         Returns:
             list[Embedding]: Embedding vectors.
@@ -166,7 +166,7 @@ class EmbedManager:
             paths (list[ImageType]): Image paths or base64 payloads.
 
         Raises:
-            RuntimeError: If uninitialized or not an image embedder.
+            RuntimeError: If not an image embedder or failed to embed.
 
         Returns:
             list[Embedding]: Embedding vectors.
@@ -198,7 +198,7 @@ class EmbedManager:
             paths (list[AudioType]): Audio paths.
 
         Raises:
-            RuntimeError: If uninitialized or not an audio embedder.
+            RuntimeError: If not an audio embedder or failed to embed.
 
         Returns:
             list[Embedding]: Embedding vectors.
@@ -230,7 +230,7 @@ class EmbedManager:
             paths (list[VideoType]): Video paths.
 
         Raises:
-            RuntimeError: If uninitialized or not a video embedder.
+            RuntimeError: If not a video embedder or failed to embed.
 
         Returns:
             list[Embedding]: Embedding vectors.
