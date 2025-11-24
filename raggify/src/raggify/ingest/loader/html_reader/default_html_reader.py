@@ -27,7 +27,6 @@ class DefaultHTMLReader(HTMLReader):
         Returns:
             list[Document]: List of documents read from the URL.
         """
-
         text_docs, html = await self._aload_texts(url)
         logger.debug(f"loaded {len(text_docs)} text docs from {url}")
 
@@ -51,8 +50,6 @@ class DefaultHTMLReader(HTMLReader):
 
         from ....core.metadata import MetaKeys as MK
 
-        docs = []
-
         # Prefetch to avoid ingesting Not Found pages
         html = await self.afetch_text(url)
         if not html:
@@ -63,9 +60,8 @@ class DefaultHTMLReader(HTMLReader):
         text = self.sanitize_html_text(html)
         text = html2text.html2text(text)
         doc = Document(text=text, metadata={MK.URL: url})
-        docs.append(doc)
 
-        return docs, html
+        return [doc], html
 
     async def _aload_assets(self, url: str, html: str) -> list[Document]:
         """Generate documents from assets of an HTML page.

@@ -76,7 +76,7 @@ class HTMLLoader(Loader):
         self,
         url: str,
     ) -> list[Document]:
-        """Fetch content from a single site and create documents.
+        """Fetch content from a Wikipedia site and create documents.
 
         Args:
             url (str): Target URL.
