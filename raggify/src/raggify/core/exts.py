@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from urllib.parse import urlparse
 
+from raggify.config.general_config import GeneralConfig
+
 
 class Exts:
     # For individual reference
@@ -37,8 +39,8 @@ class Exts:
     # Extensions used to detect sitemaps
     SITEMAP: set[str] = {".xml"}
 
-    # Limit fetching from web pages to avoid unexpected or huge media files
-    _DEFAULT_FETCH_TARGET: set[str] = {  # Extensions with dedicated readers
+    # Limit ingestion to avoid unexpected or huge media files
+    _DEFAULT_INGEST_TARGET: set[str] = {
         ".hwp",
         PDF,
         ".docx",
@@ -51,23 +53,13 @@ class Exts:
         ".ipynb",
         ".xls",
         ".xlsx",
-    }
-    _ADDITIONAL_FETCH_TARGET: set[str] = {  # Additional extensions to fetch
         ".txt",
         ".text",
         ".md",
         ".json",
         ".html",
         ".tex",
-    }
-    FETCH_TARGET: set[str] = (
-        IMAGE
-        | AUDIO
-        | VIDEO
-        | SITEMAP
-        | _DEFAULT_FETCH_TARGET
-        | _ADDITIONAL_FETCH_TARGET
-    )
+    } | SITEMAP
 
     # Extensions to pass through without a dedicated reader so embedding models
     # handle them directly at upsert time
@@ -117,3 +109,23 @@ class Exts:
             return ext.replace(".", "")
 
         return ext
+
+    @classmethod
+    def get_ingest_target_exts(cls, cfg: GeneralConfig) -> set[str]:
+        """Get ingest target extensions based on the config.
+
+        Args:
+            cfg (GeneralConfig): General configuration.
+
+        Returns:
+            set[str]: Ingest target extensions.
+        """
+        exts = cls._DEFAULT_INGEST_TARGET.copy()
+        if cfg.image_embed_provider is not None:
+            exts |= cls.IMAGE
+        if cfg.audio_embed_provider is not None:
+            exts |= cls.AUDIO
+        if cfg.video_embed_provider is not None:
+            exts |= cls.VIDEO
+
+        return exts

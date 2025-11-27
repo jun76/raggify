@@ -20,16 +20,19 @@ class HTMLLoader(Loader):
         self,
         persist_dir: Optional[Path],
         cfg: IngestConfig,
+        ingest_target_exts: set[str],
     ):
         """Loader for HTML that generates nodes.
 
         Args:
             persist_dir (Optional[Path]): Persist directory.
             cfg (IngestConfig): Ingest configuration.
+            ingest_target_exts (set[str]): Allowed extensions for ingestion.
         """
         super().__init__(persist_dir)
 
         self._cfg = cfg
+        self._ingest_target_exts = ingest_target_exts
 
         # Do not include base_url in doc_id so identical URLs are treated
         # as the same document. Cache processed URLs in the same ingest run
@@ -87,7 +90,9 @@ class HTMLLoader(Loader):
         from .html_reader.wikipedia_reader import MultiWikipediaReader
 
         reader = MultiWikipediaReader(
-            cfg=self._cfg, asset_url_cache=self._asset_url_cache
+            cfg=self._cfg,
+            asset_url_cache=self._asset_url_cache,
+            ingest_target_exts=self._ingest_target_exts,
         )
 
         return await reader.aload_data(url)
@@ -106,7 +111,11 @@ class HTMLLoader(Loader):
         """
         from .html_reader.default_html_reader import DefaultHTMLReader
 
-        reader = DefaultHTMLReader(cfg=self._cfg, asset_url_cache=self._asset_url_cache)
+        reader = DefaultHTMLReader(
+            cfg=self._cfg,
+            asset_url_cache=self._asset_url_cache,
+            ingest_target_exts=self._ingest_target_exts,
+        )
 
         return await reader.aload_data(url)
 

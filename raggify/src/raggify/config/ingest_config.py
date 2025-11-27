@@ -25,7 +25,7 @@ class IngestConfig(DataClassDictMixin):
     batch_size: int = 100
     audio_chunk_seconds: Optional[int] = 25
     video_chunk_seconds: Optional[int] = 25
-    additional_exts: list[str] = field(default_factory=lambda: [".c", ".py", ".rst"])
+    additional_exts: set[str] = field(default_factory=lambda: {".c", ".py", ".rst"})
 
     # Web
     user_agent: str = PROJECT_NAME

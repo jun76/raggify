@@ -16,13 +16,16 @@ if TYPE_CHECKING:
 class MultiWikipediaReader(HTMLReader):
     """Multimodal Wikipedia reader."""
 
-    def __init__(self, cfg: IngestConfig, asset_url_cache: set[str]) -> None:
+    def __init__(
+        self, cfg: IngestConfig, asset_url_cache: set[str], ingest_target_exts: set[str]
+    ) -> None:
         """Initialize with parameters.
         Args:
             cfg (IngestConfig): Ingest configuration.
             asset_url_cache (set[str]): Cache of already processed asset URLs.
+            ingest_target_exts (set[str]): Allowed extensions for ingestion.
         """
-        super().__init__(cfg, asset_url_cache)
+        super().__init__(cfg, asset_url_cache, ingest_target_exts)
         self._load_asset = cfg.load_asset
 
         try:

@@ -19,13 +19,18 @@ if TYPE_CHECKING:
 class FileLoader(Loader):
     """Loader that reads local files and generates nodes."""
 
-    def __init__(self, persist_dir: Optional[Path]) -> None:
+    def __init__(
+        self, persist_dir: Optional[Path], ingest_target_exts: set[str]
+    ) -> None:
         """Constructor.
 
         Args:
             persist_dir (Optional[Path]): Persist directory.
+            ingest_target_exts (set[str]): Allowed extensions for ingestion.
         """
         super().__init__(persist_dir)
+
+        self._ingest_target_exts = ingest_target_exts
 
         # Dictionary of custom readers to pass to SimpleDirectoryReader
         self._readers: dict[str, BaseReader] = {Exts.PDF: MultiPDFReader()}
@@ -65,12 +70,9 @@ class FileLoader(Loader):
 
         try:
             path = Path(root).absolute()
-            allowed_exts = set(Exts.FETCH_TARGET) | set(
-                _rt().cfg.ingest.additional_exts
-            )
             if path.is_file():
                 ext = Exts.get_ext(root)
-                if ext not in allowed_exts:
+                if ext not in self._ingest_target_exts:
                     logger.warning(f"skip unsupported extension: {ext}")
                     return [], [], [], []
 
@@ -78,7 +80,7 @@ class FileLoader(Loader):
                 input_dir=root if path.is_dir() else None,
                 input_files=[root] if path.is_file() else None,
                 recursive=True,
-                required_exts=list(allowed_exts),
+                required_exts=list(self._ingest_target_exts),
                 file_extractor=self._readers,
                 raise_on_error=True,
             )

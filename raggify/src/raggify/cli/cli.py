@@ -25,10 +25,11 @@ def _cfg() -> ConfigManager:
     Returns:
         ConfigManager: Config manager.
     """
+    from ..logger import configure_logging
     from ..runtime import get_runtime
 
     cfg = get_runtime().cfg
-    logger.setLevel(cfg.general.log_level)
+    configure_logging(cfg.general.log_level)
 
     return cfg
 

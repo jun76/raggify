@@ -79,8 +79,7 @@ class Runtime:
         self.ingest_cache
         self.rerank_manager
 
-        configure_logging()
-        logger.setLevel(self.cfg.general.log_level)
+        configure_logging(self.cfg.general.log_level)
 
     def _use_local_workspace(self) -> bool:
         """Whether to persist cache or document store locally.
@@ -252,16 +251,25 @@ class Runtime:
 
     @property
     def file_loader(self) -> FileLoader:
+        from .core.exts import Exts
         from .ingest.loader.file_loader import FileLoader
 
-        return FileLoader(self.cfg.ingest.pipe_persist_dir)
+        return FileLoader(
+            persist_dir=self.cfg.ingest.pipe_persist_dir,
+            ingest_target_exts=Exts.get_ingest_target_exts(self.cfg.general)
+            | self.cfg.ingest.additional_exts,
+        )
 
     @property
     def html_loader(self) -> HTMLLoader:
+        from .core.exts import Exts
         from .ingest.loader.html_loader import HTMLLoader
 
         return HTMLLoader(
-            persist_dir=self.cfg.ingest.pipe_persist_dir, cfg=self.cfg.ingest
+            persist_dir=self.cfg.ingest.pipe_persist_dir,
+            cfg=self.cfg.ingest,
+            ingest_target_exts=Exts.get_ingest_target_exts(self.cfg.general)
+            | self.cfg.ingest.additional_exts,
         )
 
 

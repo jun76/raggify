@@ -79,8 +79,7 @@ async def lifespan(app: FastAPI):
     Args:
         app (FastAPI): Server instance.
     """
-    configure_logging()
-    logger.setLevel(_rt().cfg.general.log_level)
+    configure_logging(_rt().cfg.general.log_level)
 
     # Initialization
     _setup()

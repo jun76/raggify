@@ -8,7 +8,7 @@ import typer
 
 from .config_manager import ConfigManager
 from .const import PROJECT_BASE_NAME, PROJECT_NAME, USER_CONFIG_PATH, VERSION
-from .logger import console, logger
+from .logger import configure_logging, console, logger
 
 if TYPE_CHECKING:
     from .client import RestAPIClient
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 __all__ = ["app"]
 
 cfg = ConfigManager()
-logger.setLevel(cfg.general.log_level)
+configure_logging(cfg.general.log_level)
 
 app = typer.Typer(
     help="raggify-client CLI: Interface to ingest/query knowledge into/from raggify server. "

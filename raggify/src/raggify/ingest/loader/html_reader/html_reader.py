@@ -15,12 +15,15 @@ if TYPE_CHECKING:
 
 
 class HTMLReader:
-    def __init__(self, cfg: IngestConfig, asset_url_cache: set[str]):
+    def __init__(
+        self, cfg: IngestConfig, asset_url_cache: set[str], ingest_target_exts: set[str]
+    ) -> None:
         """Loader for HTML that generates nodes.
 
         Args:
             cfg (IngestConfig): Ingest configuration.
             asset_url_cache (set[str]): Cache of already processed asset URLs.
+            ingest_target_exts (set[str]): Allowed extensions for ingestion.
         """
         self._load_asset = cfg.load_asset
         self._req_per_sec = cfg.req_per_sec
@@ -28,6 +31,7 @@ class HTMLReader:
         self._user_agent = cfg.user_agent
         self._same_origin = cfg.same_origin
         self._asset_url_cache = asset_url_cache
+        self._ingest_target_exts = ingest_target_exts
 
     async def _arequest_get(self, url: str) -> requests.Response:
         """Async wrapper for HTTP GET.
@@ -260,7 +264,7 @@ class HTMLReader:
         from ....core.metadata import BasicMetaData
 
         temp = await self._adownload_direct_linked_file(
-            url=url, allowed_exts=Exts.FETCH_TARGET
+            url=url, allowed_exts=self._ingest_target_exts
         )
 
         if temp is None:

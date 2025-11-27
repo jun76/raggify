@@ -265,43 +265,52 @@ async def _aupsert_nodes(
     """
     import asyncio
 
+    rt = _rt()
     tasks = []
-    tasks.append(
-        _process_batches(
-            nodes=text_nodes,
-            modality=Modality.TEXT,
-            persist_dir=persist_dir,
-            batch_size=batch_size,
-            is_canceled=is_canceled,
+
+    if rt.cfg.general.text_embed_provider is not None:
+        tasks.append(
+            _process_batches(
+                nodes=text_nodes,
+                modality=Modality.TEXT,
+                persist_dir=persist_dir,
+                batch_size=batch_size,
+                is_canceled=is_canceled,
+            )
         )
-    )
-    tasks.append(
-        _process_batches(
-            nodes=image_nodes,
-            modality=Modality.IMAGE,
-            persist_dir=persist_dir,
-            batch_size=batch_size,
-            is_canceled=is_canceled,
+
+    if rt.cfg.general.image_embed_provider is not None:
+        tasks.append(
+            _process_batches(
+                nodes=image_nodes,
+                modality=Modality.IMAGE,
+                persist_dir=persist_dir,
+                batch_size=batch_size,
+                is_canceled=is_canceled,
+            )
         )
-    )
-    tasks.append(
-        _process_batches(
-            nodes=audio_nodes,
-            modality=Modality.AUDIO,
-            persist_dir=persist_dir,
-            batch_size=batch_size,
-            is_canceled=is_canceled,
+
+    if rt.cfg.general.audio_embed_provider is not None:
+        tasks.append(
+            _process_batches(
+                nodes=audio_nodes,
+                modality=Modality.AUDIO,
+                persist_dir=persist_dir,
+                batch_size=batch_size,
+                is_canceled=is_canceled,
+            )
         )
-    )
-    tasks.append(
-        _process_batches(
-            nodes=video_nodes,
-            modality=Modality.VIDEO,
-            persist_dir=persist_dir,
-            batch_size=batch_size,
-            is_canceled=is_canceled,
+
+    if rt.cfg.general.video_embed_provider is not None:
+        tasks.append(
+            _process_batches(
+                nodes=video_nodes,
+                modality=Modality.VIDEO,
+                persist_dir=persist_dir,
+                batch_size=batch_size,
+                is_canceled=is_canceled,
+            )
         )
-    )
 
     await asyncio.gather(*tasks)
 

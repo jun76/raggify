@@ -149,8 +149,9 @@ class _BaseMediaSplitter(TransformComponent):
         for index, chunk_path in enumerate(chunk_paths):
             meta = BasicMetaData()
             meta.file_path = chunk_path
+            meta.url = node.metadata.get(MK.URL, "")
             meta.temp_file_path = chunk_path
-            meta.base_source = node.metadata.get(MK.FILE_PATH, "")
+            meta.base_source = node.metadata.get(MK.BASE_SOURCE, "")
             meta.chunk_no = index
 
             nodes.append(

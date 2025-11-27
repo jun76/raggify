@@ -8,14 +8,17 @@ from .html_reader import HTMLReader
 
 
 class DefaultHTMLReader(HTMLReader):
-    def __init__(self, cfg: IngestConfig, asset_url_cache: set[str]) -> None:
+    def __init__(
+        self, cfg: IngestConfig, asset_url_cache: set[str], ingest_target_exts: set[str]
+    ) -> None:
         """Default HTML reader.
 
         Args:
             cfg (IngestConfig): Ingest configuration.
             asset_url_cache (set[str]): Cache of already processed asset URLs.
+            ingest_target_exts (set[str]): Allowed extensions for ingestion.
         """
-        super().__init__(cfg, asset_url_cache)
+        super().__init__(cfg, asset_url_cache, ingest_target_exts)
         self._load_asset = cfg.load_asset
 
     async def aload_data(self, url: str) -> list[Document]:
@@ -73,13 +76,11 @@ class DefaultHTMLReader(HTMLReader):
         Returns:
             list[Document]: Generated documents.
         """
-        from ....core.exts import Exts
-
         if html is None:
             html = await self.afetch_text(url)
 
         urls = self.gather_asset_links(
-            html=html, base_url=url, allowed_exts=Exts.FETCH_TARGET
+            html=html, base_url=url, allowed_exts=self._ingest_target_exts
         )
 
         docs = []

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+import traceback
+from typing import Literal
 
 from rich.console import Console
 
@@ -55,9 +57,40 @@ _LOG_FORMAT = (
 )
 
 
-def configure_logging() -> None:
-    logging.basicConfig(level=logging.INFO, format=_LOG_FORMAT, force=True)
+class ShortTracebackFormatter(logging.Formatter):
+    """Custom formatter to shorten tracebacks in log messages."""
+
+    def formatException(self, ei):
+        exc_type, exc_value, exc_tb = ei
+
+        if exc_type is None or exc_value is None:
+            return super().formatException(ei)
+
+        te = traceback.TracebackException(
+            exc_type,
+            exc_value,
+            exc_tb,
+            limit=2,
+            capture_locals=False,
+        )
+        return "".join(te.format())
 
 
 logger = logging.getLogger(PROJECT_NAME)
+
+
+def configure_logging(
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+) -> None:
+    """Configure logging so third-party output stays at INFO while client honors log_level."""
+    logger.handlers.clear()
+    logger.setLevel(log_level)
+    logger.propagate = False
+
+    app_handler = logging.StreamHandler()
+    app_handler.setLevel(log_level)
+    app_handler.setFormatter(ShortTracebackFormatter(_LOG_FORMAT))
+    logger.addHandler(app_handler)
+
+
 console = Console()
