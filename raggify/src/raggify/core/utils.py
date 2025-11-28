@@ -5,7 +5,7 @@ from llama_index.core.schema import BaseNode
 from .exts import Exts
 from .metadata import MetaKeys as MK
 
-__all__ = ["sanitize_str"]
+__all__ = ["sanitize_str", "get_temp_file_path_from", "has_media"]
 
 
 def sanitize_str(s: str, hash: bool = False) -> str:

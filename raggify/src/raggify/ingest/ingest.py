@@ -3,9 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional, Sequence
 
-from llama_index.core.async_utils import asyncio_run
 from llama_index.core.ingestion import IngestionPipeline
 
+from ..core.event import async_loop_runner
 from ..embed.embed_manager import Modality
 from ..logger import logger
 from ..runtime import get_runtime as _rt
@@ -366,7 +366,9 @@ def ingest_path(
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
-    asyncio_run(aingest_path(path, batch_size=batch_size, is_canceled=is_canceled))
+    async_loop_runner.run(
+        lambda: aingest_path(path, batch_size=batch_size, is_canceled=is_canceled)
+    )
 
 
 async def aingest_path(
@@ -412,7 +414,9 @@ def ingest_path_list(
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
-    asyncio_run(aingest_path_list(lst, batch_size=batch_size, is_canceled=is_canceled))
+    async_loop_runner.run(
+        lambda: aingest_path_list(lst, batch_size=batch_size, is_canceled=is_canceled)
+    )
 
 
 async def aingest_path_list(
@@ -464,7 +468,9 @@ def ingest_url(
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
-    asyncio_run(aingest_url(url=url, batch_size=batch_size, is_canceled=is_canceled))
+    async_loop_runner.run(
+        lambda: aingest_url(url=url, batch_size=batch_size, is_canceled=is_canceled)
+    )
 
 
 async def aingest_url(
@@ -513,7 +519,9 @@ def ingest_url_list(
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
-    asyncio_run(aingest_url_list(lst, batch_size=batch_size, is_canceled=is_canceled))
+    async_loop_runner.run(
+        lambda: aingest_url_list(lst, batch_size=batch_size, is_canceled=is_canceled)
+    )
 
 
 async def aingest_url_list(

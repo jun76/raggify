@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-from llama_index.core.async_utils import asyncio_run
 from llama_index.core.indices import VectorStoreIndex
 from llama_index.core.retrievers import BaseRetriever, QueryFusionRetriever
 from llama_index.core.retrievers.fusion_retriever import FUSION_MODES
@@ -10,6 +9,7 @@ from llama_index.core.schema import NodeWithScore
 from llama_index.retrievers.bm25 import BM25Retriever
 
 from ..config.retrieve_config import RetrieveMode
+from ..core.event import async_loop_runner
 from ..llama.core.indices.multi_modal.retriever import AudioRetriever, VideoRetriever
 from ..llama.core.schema import Modality
 from ..logger import logger
@@ -139,7 +139,9 @@ def query_text_text(
     Returns:
         list[NodeWithScore]: Retrieval results.
     """
-    return asyncio_run(aquery_text_text(query=query, topk=topk, mode=mode))
+    return async_loop_runner.run(
+        lambda: aquery_text_text(query=query, topk=topk, mode=mode)
+    )
 
 
 async def aquery_text_text(
@@ -211,7 +213,7 @@ def query_text_image(
     Returns:
         list[NodeWithScore]: Retrieval results.
     """
-    return asyncio_run(aquery_text_image(query=query, topk=topk))
+    return async_loop_runner.run(lambda: aquery_text_image(query=query, topk=topk))
 
 
 async def aquery_text_image(
@@ -282,7 +284,7 @@ def query_image_image(
     Returns:
         list[NodeWithScore]: Retrieval results.
     """
-    return asyncio_run(aquery_image_image(path=path, topk=topk))
+    return async_loop_runner.run(lambda: aquery_image_image(path=path, topk=topk))
 
 
 async def aquery_image_image(
@@ -342,7 +344,7 @@ def query_text_audio(
     Returns:
         list[NodeWithScore]: Retrieval results.
     """
-    return asyncio_run(aquery_text_audio(query=query, topk=topk))
+    return async_loop_runner.run(lambda: aquery_text_audio(query=query, topk=topk))
 
 
 async def aquery_text_audio(
@@ -404,7 +406,7 @@ def query_audio_audio(
     Returns:
         list[NodeWithScore]: Retrieval results.
     """
-    return asyncio_run(aquery_audio_audio(path=path, topk=topk))
+    return async_loop_runner.run(lambda: aquery_audio_audio(path=path, topk=topk))
 
 
 async def aquery_audio_audio(
@@ -456,7 +458,7 @@ def query_text_video(
     Returns:
         list[NodeWithScore]: Retrieval results.
     """
-    return asyncio_run(aquery_text_video(query=query, topk=topk))
+    return async_loop_runner.run(lambda: aquery_text_video(query=query, topk=topk))
 
 
 async def aquery_text_video(
@@ -521,7 +523,7 @@ def query_image_video(
     Returns:
         list[NodeWithScore]: Retrieval results.
     """
-    return asyncio_run(aquery_image_video(path=path, topk=topk))
+    return async_loop_runner.run(lambda: aquery_image_video(path=path, topk=topk))
 
 
 async def aquery_image_video(
@@ -581,7 +583,7 @@ def query_audio_video(
     Returns:
         list[NodeWithScore]: Retrieval results.
     """
-    return asyncio_run(aquery_audio_video(path=path, topk=topk))
+    return async_loop_runner.run(lambda: aquery_audio_video(path=path, topk=topk))
 
 
 async def aquery_audio_video(
@@ -638,7 +640,7 @@ def query_video_video(
     Returns:
         list[NodeWithScore]: Retrieval results.
     """
-    return asyncio_run(aquery_video_video(path=path, topk=topk))
+    return async_loop_runner.run(lambda: aquery_video_video(path=path, topk=topk))
 
 
 async def aquery_video_video(

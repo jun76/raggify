@@ -5,9 +5,9 @@ from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Awaitable, Callable, Optional, Type
 
-from llama_index.core.async_utils import asyncio_run
 from llama_index.core.schema import BaseNode, TransformComponent
 
+from ..core.event import async_loop_runner
 from ..logger import logger
 
 if TYPE_CHECKING:
@@ -365,7 +365,7 @@ class _BaseEmbedTransform(TransformComponent):
         Returns:
             list[BaseNode]: Nodes after embedding.
         """
-        return asyncio_run(self.acall(nodes=nodes, **kwargs))
+        return async_loop_runner.run(lambda: self.acall(nodes=nodes, **kwargs))
 
     async def acall(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
         """Interface called from the pipeline asynchronously.
