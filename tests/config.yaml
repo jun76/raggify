@@ -1,0 +1,18 @@
+general:
+  mcp: true
+  vector_store_provider: chroma
+  document_store_provider: local
+  ingest_cache_provider: local
+  text_embed_provider: openai
+  image_embed_provider: cohere
+  audio_embed_provider: bedrock
+  video_embed_provider: bedrock
+  use_modality_fallback: false
+  rerank_provider: cohere
+ingest:
+  audio_chunk_seconds: 2
+  video_chunk_seconds: 2
+rerank:
+  topk: 10
+retrieve:
+  bm25_topk: 10

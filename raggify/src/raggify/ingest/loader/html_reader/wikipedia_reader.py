@@ -28,13 +28,6 @@ class MultiWikipediaReader(HTMLReader):
         super().__init__(cfg, asset_url_cache, ingest_target_exts)
         self._load_asset = cfg.load_asset
 
-        try:
-            import wikipedia  # noqa
-        except ImportError:
-            raise ImportError(
-                "`wikipedia` package not found, please run `pip install wikipedia`"
-            )
-
     async def aload_data(self, url: str, **load_kwargs: Any) -> List[Document]:
         """
         Load data from Wikipedia.

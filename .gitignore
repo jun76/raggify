@@ -13,3 +13,5 @@ raggify_metas.db
 .zshrc
 docstore.json
 debug
+.coverage
+coverage.xml

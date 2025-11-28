@@ -51,9 +51,15 @@ class DefaultHTMLReader(HTMLReader):
         import html2text
 
         from ....core.metadata import MetaKeys as MK
+        from ..util import afetch_text
 
         # Prefetch to avoid ingesting Not Found pages
-        html = await self.afetch_text(url)
+        html = await afetch_text(
+            url=url,
+            user_agent=self._cfg.user_agent,
+            timeout_sec=self._cfg.timeout_sec,
+            req_per_sec=self._cfg.req_per_sec,
+        )
         if not html:
             logger.warning(f"failed to fetch html from {url}, skipped")
             return [], ""
@@ -75,8 +81,15 @@ class DefaultHTMLReader(HTMLReader):
         Returns:
             list[Document]: Generated documents.
         """
+        from ..util import afetch_text
+
         if html is None:
-            html = await self.afetch_text(url)
+            html = await afetch_text(
+                url=url,
+                user_agent=self._cfg.user_agent,
+                timeout_sec=self._cfg.timeout_sec,
+                req_per_sec=self._cfg.req_per_sec,
+            )
 
         urls = self.gather_asset_links(
             html=html, base_url=url, allowed_exts=self._ingest_target_exts

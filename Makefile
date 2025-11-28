@@ -10,7 +10,7 @@ venv:
 	uv pip install --python $(PY) --upgrade pip
 
 install: venv
-	$(PIP) install -e raggify[exam]
+	$(PIP) install -e raggify[exam,dev]
 	$(PIP) install -e raggify-client
 	$(PIP) install $(CLIP_PKG)
 	$(PIP) install $(WHISPER_PKG)
@@ -24,3 +24,6 @@ tools:
 	uv pip install --python $(TOOL_PY) $(WHISPER_PKG)
 
 all: install tools
+
+test: venv
+	$(PY) -m pytest --maxfail=1 --cov=raggify --cov=raggify_client --cov-report=term-missing --cov-report=xml

@@ -237,7 +237,7 @@ from raggify.ingest import ingest_url
 from raggify.logger import configure_logging
 from raggify.runtime import get_runtime
 
-configure_logging("DEBUG")
+configure_logging()
 
 rt = get_runtime()
 rt.cfg.general.vector_store_provider = VectorStoreProvider.PGVECTOR
@@ -876,6 +876,7 @@ Additionally, any extensions added via the `additional_exts` configuration param
 ## Home Pages
 
 - https://pypi.org/project/raggify/
+- https://pypi.org/project/raggify-client/
 - [マルチモーダルでローカルな RAG 基盤ライブラリを作ってみた](https://qiita.com/jun76/items/a82bf6962cd3f3ad79d9)
 - The predecessor of Raggify: [マルチモーダルでローカルな RAG 基盤サーバを作ってみた](https://qiita.com/jun76/items/f2e392f530e24a6a8903)
 

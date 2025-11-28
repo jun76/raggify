@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import asyncio
 from typing import TYPE_CHECKING, Optional
 from urllib.parse import urljoin, urlparse
-
-import requests
 
 from ....config.ingest_config import IngestConfig
 from ....core.exts import Exts
 from ....logger import logger
+from ..util import arequest_get
 
 if TYPE_CHECKING:
     from llama_index.core.schema import Document
@@ -28,60 +26,6 @@ class HTMLReader:
         self._cfg = cfg
         self._asset_url_cache = asset_url_cache
         self._ingest_target_exts = ingest_target_exts
-
-    async def _arequest_get(self, url: str) -> requests.Response:
-        """Async wrapper for HTTP GET.
-
-        Args:
-            url (str): Target URL.
-
-        Raises:
-            requests.HTTPError: On HTTP errors.
-            RuntimeError: When fetching fails.
-
-        Returns:
-            requests.Response: Response object.
-        """
-        headers = {"User-Agent": self._cfg.user_agent}
-        res: Optional[requests.Response] = None
-
-        try:
-            res = await asyncio.to_thread(
-                requests.get,
-                url,
-                timeout=self._cfg.timeout_sec,
-                headers=headers,
-            )
-            res.raise_for_status()
-        except requests.HTTPError as e:
-            status = res.status_code if res is not None else "unknown"
-            raise requests.HTTPError(f"HTTP {status}: {str(e)}") from e
-        except requests.RequestException as e:
-            raise RuntimeError("failed to fetch url") from e
-        finally:
-            await asyncio.sleep(1 / self._cfg.req_per_sec)
-
-        return res
-
-    async def afetch_text(
-        self,
-        url: str,
-    ) -> str:
-        """Fetch HTML and return the response text.
-
-        Args:
-            url (str): Target URL.
-
-        Returns:
-            str: Response body.
-        """
-        try:
-            res = await self._arequest_get(url)
-        except Exception as e:
-            logger.exception(e)
-            return ""
-
-        return res.text
 
     def sanitize_html_text(self, html: str) -> str:
         """Remove extra elements such as cache busters.
@@ -201,7 +145,12 @@ class HTMLReader:
             return None
 
         try:
-            res = await self._arequest_get(url)
+            res = await arequest_get(
+                url=url,
+                user_agent=self._cfg.user_agent,
+                timeout_sec=self._cfg.timeout_sec,
+                req_per_sec=self._cfg.req_per_sec,
+            )
         except Exception as e:
             logger.exception(e)
             return None
@@ -268,7 +217,6 @@ class HTMLReader:
             allowed_exts=self._ingest_target_exts,
             max_asset_bytes=max_asset_bytes,
         )
-
         if temp is None:
             return None
 

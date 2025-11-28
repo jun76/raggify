@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Callable, Optional
 from ...core.exts import Exts
 from ...logger import logger
 from ...runtime import get_runtime as _rt
-from .file_reader import DummyMediaReader, MultiPDFReader, VideoReader
+from .file_reader import AudioReader, DummyMediaReader, MultiPDFReader, VideoReader
 from .loader import Loader
 
 if TYPE_CHECKING:
@@ -45,9 +45,15 @@ class FileLoader(Loader):
 
             # TODO: Add readers for image/audio transcription if supported in the future
 
+        # Convert audio files to mp3 for ingestion
+        audio_reader = AudioReader()
+        for ext in Exts.AUDIO:
+            self._readers[ext] = audio_reader
+
+        # For other media types, use dummy reader to pass through
         dummy_reader = DummyMediaReader()
         for ext in Exts.PASS_THROUGH_MEDIA:
-            self._readers[ext] = dummy_reader
+            self._readers.setdefault(ext, dummy_reader)
 
     async def aload_from_path(
         self, root: str

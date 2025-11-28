@@ -80,7 +80,7 @@ logger = logging.getLogger(PROJECT_NAME)
 
 
 def configure_logging(
-    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "DEBUG",
 ) -> None:
     """Configure logging so third-party output stays at INFO while client honors log_level."""
     logger.handlers.clear()
