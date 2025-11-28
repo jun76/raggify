@@ -19,7 +19,6 @@ class DefaultHTMLReader(HTMLReader):
             ingest_target_exts (set[str]): Allowed extensions for ingestion.
         """
         super().__init__(cfg, asset_url_cache, ingest_target_exts)
-        self._load_asset = cfg.load_asset
 
     async def aload_data(self, url: str) -> list[Document]:
         """Load data from a URL.
@@ -34,7 +33,7 @@ class DefaultHTMLReader(HTMLReader):
         logger.debug(f"loaded {len(text_docs)} text docs from {url}")
 
         asset_docs = (
-            await self._aload_assets(url=url, html=html) if self._load_asset else []
+            await self._aload_assets(url=url, html=html) if self._cfg.load_asset else []
         )
         logger.debug(f"loaded {len(asset_docs)} asset docs from {url}")
 
@@ -89,7 +88,9 @@ class DefaultHTMLReader(HTMLReader):
                 # Skip fetching identical assets
                 continue
 
-            doc = await self.aload_direct_linked_file(url=url, base_url=url)
+            doc = await self.aload_direct_linked_file(
+                url=url, base_url=url, max_asset_bytes=self._cfg.max_asset_bytes
+            )
             if doc is None:
                 logger.warning(f"failed to fetch from {url}, skipped")
                 continue

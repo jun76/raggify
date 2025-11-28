@@ -33,3 +33,4 @@ class IngestConfig(DataClassDictMixin):
     req_per_sec: int = 2
     timeout_sec: int = 30
     same_origin: bool = True
+    max_asset_bytes: int = 100 * 1024 * 1024  # 100 MB

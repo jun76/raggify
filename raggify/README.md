@@ -728,6 +728,7 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 | `req_per_sec`         | Request rate limit for web ingestion.        | `2`                                 | Any integer.                                      |
 | `timeout_sec`         | Timeout for web ingestion (seconds).         | `30`                                | Any integer.                                      |
 | `same_origin`         | Restrict crawling to same origin.            | `true`                              | `true` / `false`.                                 |
+| `max_asset_bytes`     | Maximum size per fetched asset (bytes).      | `104857600` (100 MB)                | Any positive integer.                             |
 
 ### Rerank
 

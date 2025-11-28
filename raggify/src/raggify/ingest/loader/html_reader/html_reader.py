@@ -25,11 +25,7 @@ class HTMLReader:
             asset_url_cache (set[str]): Cache of already processed asset URLs.
             ingest_target_exts (set[str]): Allowed extensions for ingestion.
         """
-        self._load_asset = cfg.load_asset
-        self._req_per_sec = cfg.req_per_sec
-        self._timeout_sec = cfg.timeout_sec
-        self._user_agent = cfg.user_agent
-        self._same_origin = cfg.same_origin
+        self._cfg = cfg
         self._asset_url_cache = asset_url_cache
         self._ingest_target_exts = ingest_target_exts
 
@@ -46,14 +42,14 @@ class HTMLReader:
         Returns:
             requests.Response: Response object.
         """
-        headers = {"User-Agent": self._user_agent}
+        headers = {"User-Agent": self._cfg.user_agent}
         res: Optional[requests.Response] = None
 
         try:
             res = await asyncio.to_thread(
                 requests.get,
                 url,
-                timeout=self._timeout_sec,
+                timeout=self._cfg.timeout_sec,
                 headers=headers,
             )
             res.raise_for_status()
@@ -63,7 +59,7 @@ class HTMLReader:
         except requests.RequestException as e:
             raise RuntimeError("failed to fetch url") from e
         finally:
-            await asyncio.sleep(1 / self._req_per_sec)
+            await asyncio.sleep(1 / self._cfg.req_per_sec)
 
         return res
 
@@ -150,7 +146,7 @@ class HTMLReader:
                     return
 
                 pu = urlparse(absu)
-                if self._same_origin and (pu.scheme, pu.netloc) != (
+                if self._cfg.same_origin and (pu.scheme, pu.netloc) != (
                     base.scheme,
                     base.netloc,
                 ):
@@ -183,14 +179,14 @@ class HTMLReader:
         self,
         url: str,
         allowed_exts: set[str],
-        max_asset_bytes: int = 100 * 1024 * 1024,
+        max_asset_bytes: int,
     ) -> Optional[str]:
         """Download a direct-linked file and return the local temp file path.
 
         Args:
             url (str): Target URL.
             allowed_exts (set[str]): Allowed extensions (lowercase with dot).
-            max_asset_bytes (int, optional): Max size in bytes. Defaults to 100*1024*1024.
+            max_asset_bytes (int): Max size in bytes.
 
         Returns:
             Optional[str]: Local temporary file path.
@@ -248,13 +244,17 @@ class HTMLReader:
         return path
 
     async def aload_direct_linked_file(
-        self, url: str, base_url: Optional[str] = None
+        self,
+        url: str,
+        base_url: Optional[str] = None,
+        max_asset_bytes: int = 100 * 1024 * 1024,
     ) -> Optional[Document]:
         """Create a document from a direct-linked file.
 
         Args:
             url (str): Target URL.
             base_url (Optional[str], optional): Base source URL. Defaults to None.
+            max_asset_bytes (int, optional): Max size in bytes. Defaults to 100*1024*1024.
 
         Returns:
             Optional[Document]: Generated document.
@@ -264,7 +264,9 @@ class HTMLReader:
         from ....core.metadata import BasicMetaData
 
         temp = await self._adownload_direct_linked_file(
-            url=url, allowed_exts=self._ingest_target_exts
+            url=url,
+            allowed_exts=self._ingest_target_exts,
+            max_asset_bytes=max_asset_bytes,
         )
 
         if temp is None:
