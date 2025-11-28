@@ -20,8 +20,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install uv
-          pip install -e raggify-client
-          pip install -e raggify[dev]
+
+      - name: Setup project
+        run: make install
 
       - name: Run tests
         run: make test
