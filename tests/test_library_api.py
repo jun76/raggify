@@ -9,6 +9,9 @@ SAMPLE_TEXT = Path("tests/data/texts/sample.c").resolve()
 SAMPLE_IMAGE = SAMPLE_TEXT
 SAMPLE_AUDIO = SAMPLE_TEXT
 SAMPLE_VIDEO = SAMPLE_TEXT
+
+DUMMY_XML = "https://some.site.com/sitemap.xml"
+DUMMY_WIKI = "https://en.wikipedia.org/wiki/raggify"
 DUMMY_SITE = "https://some.site.com"
 
 
@@ -18,8 +21,10 @@ def test_ingest_sync_calls() -> None:
     try:
         mock.ingest_path(str(SAMPLE_TEXT))
         mock.ingest_path_list([str(SAMPLE_TEXT)])
+        mock.ingest_url(DUMMY_XML)
+        mock.ingest_url(DUMMY_WIKI)
         mock.ingest_url(DUMMY_SITE)
-        mock.ingest_url_list([DUMMY_SITE])
+        mock.ingest_url_list([DUMMY_XML, DUMMY_WIKI, DUMMY_SITE])
     finally:
         loop.close()
         asyncio.set_event_loop(None)

@@ -34,6 +34,7 @@ from raggify.retrieve.retrieve import query_text_image as _real_query_text_image
 from raggify.retrieve.retrieve import query_text_text as _real_query_text_text
 from raggify.retrieve.retrieve import query_text_video as _real_query_text_video
 from raggify.retrieve.retrieve import query_video_video as _real_query_video_video
+from tests.utils.mock_reader import patch_html_fetchers, patch_wikipedia_reader
 from tests.utils.node_factory import (
     DEFAULT_PATH,
     make_sample_document,
@@ -76,58 +77,6 @@ def _patch_file_reader() -> Iterator[None]:
         "llama_index.core.readers.file.base.SimpleDirectoryReader.aload_data",
         new=AsyncMock(return_value=[make_sample_document(DEFAULT_PATH)]),
     ):
-        yield
-
-
-@contextmanager
-def _patch_html_readers() -> Iterator[None]:
-    with ExitStack() as stack:
-
-        async def fake_afetch_text(
-            url: str, *args, **kwargs
-        ) -> str:  # noqa: ANN002, ANN003
-            # Sitemap
-            if url.endswith(".xml"):
-                return """
-<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="https://some.site.com/wp-sitemap.xsl" ?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://some.site.com/blog/aaa/</loc></url>
-  <url><loc>https://some.site.com/blog/bbb/</loc></url>
-  <url><loc>https://some.site.com/blog/ccc/</loc></url>
-</urlset>
-"""
-
-            # Wikipedia
-            if "wikipedia.org" in url:
-                return """
-<html><body><p>Sample Wikipedia content.</p></body></html>"""
-
-            # Default HTML
-            return """
-<html>Sample content.</html>
-"""
-
-        stack.enter_context(
-            patch(
-                "raggify.ingest.loader.util.afetch_text",
-                new=AsyncMock(side_effect=fake_afetch_text),
-            )
-        )
-
-        async def fake_adownload_direct_linked_file(
-            url: str,
-            allowed_exts: set[str],
-            max_asset_bytes: int,
-        ) -> str:
-            return "/tmp/tmp_raggify_50c1a7c31bfad5f4ffd48b243122df9d.jpg"
-
-        stack.enter_context(
-            patch(
-                "raggify.ingest.loader.html_reader.html_reader.HTMLReader._adownload_direct_linked_file",
-                new=AsyncMock(side_effect=fake_adownload_direct_linked_file),
-            )
-        )
         yield
 
 
@@ -244,7 +193,7 @@ def ingest_url(
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
-    with _patch_ingest_pipeline(), _patch_html_readers():
+    with _patch_ingest_pipeline(), patch_html_fetchers(), patch_wikipedia_reader():
         _real_ingest_url(url=url, batch_size=batch_size, is_canceled=is_canceled)
 
 
@@ -253,7 +202,7 @@ def ingest_url_list(
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
-    with _patch_ingest_pipeline(), _patch_html_readers():
+    with _patch_ingest_pipeline(), patch_html_fetchers(), patch_wikipedia_reader():
         _real_ingest_url_list(lst=lst, batch_size=batch_size, is_canceled=is_canceled)
 
 
@@ -359,7 +308,7 @@ async def aingest_url(
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
-    with _patch_ingest_pipeline(), _patch_html_readers():
+    with _patch_ingest_pipeline(), patch_html_fetchers(), patch_wikipedia_reader():
         await _real_aingest_url(url=url, batch_size=batch_size, is_canceled=is_canceled)
 
 
@@ -368,7 +317,7 @@ async def aingest_url_list(
     batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
-    with _patch_ingest_pipeline(), _patch_html_readers():
+    with _patch_ingest_pipeline(), patch_html_fetchers(), patch_wikipedia_reader():
         await _real_aingest_url_list(
             lst=lst,
             batch_size=batch_size,

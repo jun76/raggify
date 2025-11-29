@@ -39,6 +39,28 @@ class MultiWikipediaReader(HTMLReader):
         Returns:
             List[Document]: List of documents read from Wikipedia.
         """
+        wiki_page = self._fetch_wiki_page(url, **load_kwargs)
+
+        text_docs = await self._aload_texts(wiki_page)
+        logger.debug(f"loaded {len(text_docs)} text docs from {wiki_page.url}")
+
+        asset_docs = await self._aload_assets(wiki_page) if self._load_asset else []
+        logger.debug(f"loaded {len(asset_docs)} asset docs from {wiki_page.url}")
+
+        return text_docs + asset_docs
+
+    def _fetch_wiki_page(self, url: str, **load_kwargs: Any) -> WikipediaPage:
+        """Fetch a Wikipedia page based on the URL and additional loading arguments.
+
+        Args:
+            url (str): Wikipedia page URL.
+
+        Raises:
+            ValueError: If the language prefix is not supported.
+
+        Returns:
+            WikipediaPage: Wikipedia page object.
+        """
         import wikipedia
 
         lang_prefix = url.split(".wikipedia.org")[0].split("//")[-1]
@@ -52,15 +74,8 @@ class MultiWikipediaReader(HTMLReader):
                 )
 
         page = url.split("/wiki/")[-1]
-        wiki_page = wikipedia.page(page, **load_kwargs)
 
-        text_docs = await self._aload_texts(wiki_page)
-        logger.debug(f"loaded {len(text_docs)} text docs from {wiki_page.url}")
-
-        asset_docs = await self._aload_assets(wiki_page) if self._load_asset else []
-        logger.debug(f"loaded {len(asset_docs)} asset docs from {wiki_page.url}")
-
-        return text_docs + asset_docs
+        return wikipedia.page(page, **load_kwargs)
 
     async def _aload_texts(self, page: WikipediaPage) -> list[Document]:
         """Generate documents from texts of a Wikipedia page.
