@@ -1,9 +1,9 @@
 VENV := .venv
 
 ifeq ($(RUNNER_OS),Windows)
-    PY := $(VENV)/Scripts/python.exe
+	PY := $(VENV)/Scripts/python.exe
 else
-    PY := $(VENV)/bin/python
+	PY := $(VENV)/bin/python
 endif
 
 PIP := $(PY) -m pip
@@ -11,11 +11,9 @@ CLIP_PKG := "clip@git+https://github.com/openai/CLIP.git"
 WHISPER_PKG := "openai-whisper@git+https://github.com/openai/whisper.git"
 TOOL_PY := $(shell uv tool dir)/raggify/bin/python
 
-venv:
+install:
 	uv venv $(VENV)
 	uv pip install --python $(PY) --upgrade pip
-
-install: venv
 	$(PIP) install -e raggify[exam,dev]
 	$(PIP) install -e raggify-client
 	$(PIP) install $(CLIP_PKG)
@@ -31,7 +29,10 @@ tools:
 
 all: install tools
 
-test: venv
+.DEFAULT_GOAL := all
+
+test:
+	uv pip install --python $(PY) --upgrade pip
 	env \
 	  OPENAI_API_KEY=dummy \
 	  COHERE_API_KEY=dummy \

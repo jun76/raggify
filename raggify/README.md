@@ -310,7 +310,7 @@ curl -X POST http://localhost:8000/v1/ingest/path_list \
 # /ingest/url: Ingest a single URL.
 curl -X POST http://localhost:8000/v1/ingest/url \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://example.com"}'
+  -d '{"url": "https://some.site.com"}'
 
 # /ingest/url_list: Ingest URLs listed in a file.
 curl -X POST http://localhost:8000/v1/ingest/url_list \
