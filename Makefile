@@ -14,7 +14,11 @@ TOOL_PY := $(shell uv tool dir)/raggify/bin/python
 
 venv:
 	uv venv $(VENV)
-	uv pip install --python $(PY) --upgrade pip
+ifeq ($(OS),Windows)
+	uv pip install --python $(VENV)/Scripts/python.exe --upgrade pip
+else
+	uv pip install --python $(VENV)/bin/python --upgrade pip
+endif
 
 install: venv
 	$(PIP) install -e raggify[exam,dev]
