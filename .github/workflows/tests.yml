@@ -17,6 +17,13 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
+        env:
+          OPENAI_API_KEY: dummy
+          COHERE_API_KEY: dummy
+          VOYAGE_API_KEY: dummy
+          AWS_ACCESS_KEY_ID: dummy
+          AWS_SECRET_ACCESS_KEY: dummy
+          AWS_REGION: us-east-1
         run: |
           python -m pip install --upgrade pip
           pip install uv

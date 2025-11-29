@@ -26,4 +26,11 @@ tools:
 all: install tools
 
 test: venv
-	$(PY) -m pytest --maxfail=1 --cov=raggify --cov=raggify_client --cov-report=term-missing --cov-report=xml
+	env \
+	  OPENAI_API_KEY=dummy \
+	  COHERE_API_KEY=dummy \
+	  VOYAGE_API_KEY=dummy \
+	  AWS_ACCESS_KEY_ID=dummy \
+	  AWS_SECRET_ACCESS_KEY=dummy \
+	  AWS_REGION=us-east-1 \
+	  $(PY) -m pytest --maxfail=1 --cov=raggify --cov=raggify_client --cov-report=term-missing --cov-report=xml
