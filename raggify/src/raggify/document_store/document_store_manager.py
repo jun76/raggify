@@ -41,7 +41,7 @@ class DocumentStoreManager:
         return self._provider_name
 
     @property
-    def store(self) -> BaseDocumentStore:
+    def store(self) -> "BaseDocumentStore":
         """Document store.
 
         Returns:
@@ -50,7 +50,7 @@ class DocumentStoreManager:
         return self._store
 
     @store.setter
-    def store(self, value: BaseDocumentStore) -> None:
+    def store(self, value: "BaseDocumentStore") -> None:
         """Set the document store.
 
         Args:
@@ -75,9 +75,6 @@ class DocumentStoreManager:
         Returns:
             bool: True if the corpus exists.
         """
-        if self.store is None:
-            return False
-
         docs_attr = getattr(self.store, "docs", None)
 
         if docs_attr is None:
@@ -96,9 +93,6 @@ class DocumentStoreManager:
         Returns:
             list[str]: List of ref_doc_id values.
         """
-        if self.store is None:
-            return []
-
         infos = self.store.get_all_ref_doc_info()
         if infos is None:
             return []
@@ -112,9 +106,6 @@ class DocumentStoreManager:
             persist_dir (Optional[Path]): Persist directory.
         """
         from llama_index.core.storage.docstore.types import DEFAULT_PERSIST_FNAME
-
-        if self.store is None:
-            return
 
         try:
             for doc_id in list(self.store.docs.keys()):

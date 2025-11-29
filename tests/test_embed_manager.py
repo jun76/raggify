@@ -31,6 +31,11 @@ def patch_embedding_bases(monkeypatch):
     )
 
 
+def test_name():
+    manager = make_dummy_manager({Modality.TEXT: DummyTextEmbedding()})
+    assert manager.name == "dummy"
+
+
 def test_aembed_text_success():
     manager = make_dummy_manager({Modality.TEXT: DummyTextEmbedding()})
     result = asyncio.run(manager.aembed_text(["hello", "world"]))
