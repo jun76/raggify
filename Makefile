@@ -1,10 +1,9 @@
 VENV := .venv
-OS := $(shell uname 2>/dev/null || echo Windows)
 
-ifeq ($(OS),Windows)
-PY := $(VENV)/Scripts/python.exe
+ifeq ($(RUNNER_OS),Windows)
+    PY := $(VENV)/Scripts/python.exe
 else
-PY := $(VENV)/bin/python
+    PY := $(VENV)/bin/python
 endif
 
 PIP := $(PY) -m pip
@@ -14,11 +13,7 @@ TOOL_PY := $(shell uv tool dir)/raggify/bin/python
 
 venv:
 	uv venv $(VENV)
-ifeq ($(OS),Windows)
-	uv pip install --python $(VENV)/Scripts/python.exe --upgrade pip
-else
-	uv pip install --python $(VENV)/bin/python --upgrade pip
-endif
+	uv pip install --python $(PY) --upgrade pip
 
 install: venv
 	$(PIP) install -e raggify[exam,dev]
