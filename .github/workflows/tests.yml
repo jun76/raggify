@@ -39,7 +39,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-xml-${{ matrix.os }}
+          name: coverage-xml-${{ matrix.os }}-${{ matrix.python-version }}
           path: coverage.xml
 
       - name: Upload coverage reports to Codecov
