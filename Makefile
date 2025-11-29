@@ -1,5 +1,12 @@
 VENV := .venv
+OS := $(shell uname 2>/dev/null || echo Windows)
+
+ifeq ($(OS),Windows)
+PY := $(VENV)/Scripts/python.exe
+else
 PY := $(VENV)/bin/python
+endif
+
 PIP := $(PY) -m pip
 CLIP_PKG := "clip@git+https://github.com/openai/CLIP.git"
 WHISPER_PKG := "openai-whisper@git+https://github.com/openai/whisper.git"
