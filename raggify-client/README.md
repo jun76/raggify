@@ -1,5 +1,7 @@
 # Raggify Client
 
+[![Tests](https://github.com/jun76/raggify/actions/workflows/tests.yml/badge.svg)](https://github.com/jun76/raggify/actions/workflows/tests.yml)
+
 <img alt="Image" src="https://raw.githubusercontent.com/jun76/raggify/main/media/Raggify.png" />
 
 **Raggify Client** is a lightweight library that extracts only the REST API client portion from **Raggify**, a comprehensive library that includes server modules.

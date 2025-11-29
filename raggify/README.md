@@ -1,5 +1,7 @@
 # Raggify
 
+[![Tests](https://github.com/jun76/raggify/actions/workflows/tests.yml/badge.svg)](https://github.com/jun76/raggify/actions/workflows/tests.yml)
+
 <img alt="Image" src="https://raw.githubusercontent.com/jun76/raggify/main/media/Raggify.png" />
 
 **Raggify** is a llama-index based Python library for building multimodal RAG(Retrieval-Augmented Generation) systems that run locally or as a service. It now ships with an asynchronous ingest pipeline for files, web pages, and URL lists, normalizes metadata, persists cache fingerprints to avoid redundant upserts, and keeps a document store in sync for BM25 / Vector hybrid retrieval.
