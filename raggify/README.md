@@ -1,6 +1,6 @@
 # Raggify
 
-[![Tests](https://github.com/jun76/raggify/actions/workflows/tests.yml/badge.svg)](https://github.com/jun76/raggify/actions/workflows/tests.yml)
+[![Tests](https://github.com/jun76/raggify/actions/workflows/tests.yml/badge.svg)](https://github.com/jun76/raggify/actions/workflows/tests.yml) [![codecov](https://codecov.io/github/jun76/raggify/graph/badge.svg?token=TFE0CSETR8)](https://codecov.io/github/jun76/raggify)
 
 <img alt="Image" src="https://raw.githubusercontent.com/jun76/raggify/main/media/Raggify.png" />
 
