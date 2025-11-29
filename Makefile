@@ -13,7 +13,7 @@ WHISPER_PKG := "openai-whisper@git+https://github.com/openai/whisper.git"
 TOOL_PY := $(shell uv tool dir)/raggify/bin/python
 
 venv:
-	@test -x $(PY) || uv venv $(VENV)
+	uv venv $(VENV)
 	uv pip install --python $(PY) --upgrade pip
 
 install: venv
