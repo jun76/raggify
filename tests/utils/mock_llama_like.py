@@ -74,16 +74,22 @@ class DummyVectorStoreIndex:
         self.docstore = docstore or FakeDocStore()
 
 
-def setup_bedrock_mock(monkeypatch):
+def setup_bedrock_mock(
+    monkeypatch, *, mock_read: bool = True, mock_single: bool = True
+):
     calls: list[dict[str, Any]] = []
 
     def fake_init(self, model_name="nova", **kwargs):
         object.__setattr__(self, "model_name", model_name)
         object.__setattr__(self, "additional_kwargs", kwargs)
+        object.__setattr__(self, "embed_batch_size", kwargs.get("embed_batch_size", 8))
         object.__setattr__(
             self,
             "callback_manager",
-            SimpleNamespace(on_event_start=lambda *a, **k: "evt"),
+            SimpleNamespace(
+                on_event_start=lambda *a, **k: "evt",
+                on_event_end=lambda *a, **k: None,
+            ),
         )
 
     def fake_invoke(self, body):
@@ -98,14 +104,16 @@ def setup_bedrock_mock(monkeypatch):
         fake_init,
         raising=False,
     )
-    monkeypatch.setattr(
-        "raggify.llama_like.embeddings.bedrock.MultiModalBedrockEmbedding._invoke_single_embedding",
-        fake_invoke,
-    )
-    monkeypatch.setattr(
-        "raggify.llama_like.embeddings.bedrock.MultiModalBedrockEmbedding._read_media_payload",
-        fake_read,
-    )
+    if mock_single:
+        monkeypatch.setattr(
+            "raggify.llama_like.embeddings.bedrock.MultiModalBedrockEmbedding._invoke_single_embedding",
+            fake_invoke,
+        )
+    if mock_read:
+        monkeypatch.setattr(
+            "raggify.llama_like.embeddings.bedrock.MultiModalBedrockEmbedding._read_media_payload",
+            fake_read,
+        )
     return calls
 
 
