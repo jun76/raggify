@@ -4,6 +4,7 @@ import asyncio
 from pathlib import Path
 
 from raggify.config.retrieve_config import RetrieveMode
+from raggify.logger import configure_logging, logger
 from tests.utils import mock_library_api as mock
 
 SAMPLE_TEXT = Path("tests/data/texts/sample.c").resolve()
@@ -29,6 +30,11 @@ def test_ingest_sync_calls() -> None:
     finally:
         loop.close()
         asyncio.set_event_loop(None)
+
+
+def test_configure_logging() -> None:
+    configure_logging()
+    logger.debug("This is a debug message for testing.")
 
 
 def test_ingest_async_calls() -> None:

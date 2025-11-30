@@ -123,8 +123,11 @@ def setup_clap_mock(monkeypatch):
             return list(self)
 
     class FakeCLAPModule:
+        instances: list[FakeCLAPModule] = []
+
         def __init__(self, **kwargs):
             self.kwargs = kwargs
+            FakeCLAPModule.instances.append(self)
 
         def load_ckpt(self, model_id):
             self.model_id = model_id
@@ -135,6 +138,8 @@ def setup_clap_mock(monkeypatch):
         def get_audio_embedding_from_filelist(self, x):
             return [FakeVector([0.3, 0.4]) for _ in x]
 
-    fake_module = SimpleNamespace(CLAP_Module=FakeCLAPModule)
+    instances: list[FakeCLAPModule] = []
+    FakeCLAPModule.instances = instances
+    fake_module = SimpleNamespace(CLAP_Module=FakeCLAPModule, instances=instances)
     monkeypatch.setitem(sys.modules, "laion_clap", fake_module)
     return fake_module

@@ -19,7 +19,11 @@ from raggify.llama_like.core.indices.multi_modal.retriever import (
     VideoRetriever,
 )
 from raggify.llama_like.embeddings.bedrock import MultiModalBedrockEmbedding
-from raggify.llama_like.embeddings.clap import ClapEmbedding, ModelName
+from raggify.llama_like.embeddings.clap import (
+    AudioEncoderModel,
+    ClapEmbedding,
+    ModelName,
+)
 from raggify.llama_like.embeddings.multi_modal_base import AudioType, VideoType
 from tests.utils.mock_llama_like import (
     DummyEmbedModel,
@@ -354,6 +358,15 @@ def test_bedrock_invoke_single_embedding_uses_first(monkeypatch):
     assert embed._invoke_single_embedding({"foo": "bar"}) == [9, 9]
 
 
+def test_bedrock_aget_image_embedding(monkeypatch):
+    setup_bedrock_mock(monkeypatch, mock_read=False)
+    embed = MultiModalBedrockEmbedding(
+        model_name="amazon.nova-2-multimodal-embeddings-v1:0",
+    )
+    vec = asyncio.run(embed._aget_image_embedding("tests/data/images/sample.png"))
+    assert vec == [0.1, 0.2]
+
+
 def test_clap_text_methods(monkeypatch):
     setup_clap_mock(monkeypatch)
     embed = ClapEmbedding(model_name=ModelName.EFFECT_VARLEN, device="cpu")
@@ -429,3 +442,27 @@ def test_clap_async_audio_batch_with_progress(monkeypatch):
         )
     )
     assert len(result) == 2
+
+
+def test_clap_effect_short_initialization(monkeypatch):
+    fake_module = setup_clap_mock(monkeypatch)
+    ClapEmbedding(model_name=ModelName.EFFECT_SHORT, device="cpu")
+    inst = fake_module.instances[-1]
+    assert inst.kwargs["enable_fusion"] is False
+    assert inst.kwargs["amodel"] == AudioEncoderModel.HTSAT_TINY
+    assert inst.model_id == 1
+
+
+def test_clap_effect_varlen_initialization(monkeypatch):
+    fake_module = setup_clap_mock(monkeypatch)
+    ClapEmbedding(model_name=ModelName.EFFECT_VARLEN, device="cpu")
+    inst = fake_module.instances[-1]
+    assert inst.kwargs["enable_fusion"] is True
+    assert inst.kwargs["amodel"] == AudioEncoderModel.HTSAT_TINY
+    assert inst.model_id == 3
+
+
+def test_clap_unsupported_models(monkeypatch):
+    setup_clap_mock(monkeypatch)
+    with pytest.raises(NotImplementedError):
+        ClapEmbedding(model_name=ModelName.MUSIC, device="cpu")
