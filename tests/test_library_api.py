@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
+from raggify.config.retrieve_config import RetrieveMode
 from tests.utils import mock_library_api as mock
 
 SAMPLE_TEXT = Path("tests/data/texts/sample.c").resolve()
@@ -33,12 +34,16 @@ def test_ingest_sync_calls() -> None:
 def test_ingest_async_calls() -> None:
     asyncio.run(mock.aingest_path(str(SAMPLE_TEXT)))
     asyncio.run(mock.aingest_path_list([str(SAMPLE_TEXT)]))
+    asyncio.run(mock.aingest_url(DUMMY_XML))
+    asyncio.run(mock.aingest_url(DUMMY_WIKI))
     asyncio.run(mock.aingest_url(DUMMY_SITE))
-    asyncio.run(mock.aingest_url_list([DUMMY_SITE]))
+    asyncio.run(mock.aingest_url_list([DUMMY_XML, DUMMY_WIKI, DUMMY_SITE]))
 
 
 def test_query_sync_calls() -> None:
-    mock.query_text_text("hello")
+    mock.query_text_text(query="hello", mode=RetrieveMode.VECTOR_ONLY)
+    mock.query_text_text(query="hello", mode=RetrieveMode.BM25_ONLY)
+    mock.query_text_text(query="hello", mode=RetrieveMode.FUSION)
     mock.query_text_image("hello")
     mock.query_image_image(str(SAMPLE_IMAGE))
     mock.query_text_audio("hello")
@@ -50,7 +55,9 @@ def test_query_sync_calls() -> None:
 
 
 def test_query_async_calls() -> None:
-    asyncio.run(mock.aquery_text_text("hello"))
+    asyncio.run(mock.aquery_text_text(query="hello", mode=RetrieveMode.VECTOR_ONLY))
+    asyncio.run(mock.aquery_text_text(query="hello", mode=RetrieveMode.BM25_ONLY))
+    asyncio.run(mock.aquery_text_text(query="hello", mode=RetrieveMode.FUSION))
     asyncio.run(mock.aquery_text_image("hello"))
     asyncio.run(mock.aquery_image_image(str(SAMPLE_IMAGE)))
     asyncio.run(mock.aquery_text_audio("hello"))

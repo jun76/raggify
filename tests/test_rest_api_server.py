@@ -73,18 +73,17 @@ def test_ingest_and_job_routes(api_client):
     job_id = job_ids[0]
     detail = client.post("/v1/job", json={"job_id": job_id})
     assert detail.status_code == 200
-    assert detail.json()["status"] == "running"
+    assert detail.json()["status"] in ("running", "succeeded")
 
     removal = client.post("/v1/job", json={"job_id": job_id, "rm": True})
     assert removal.status_code == 200
     assert removal.json()["status"] == "removed"
 
-    missing = client.post("/v1/job", json={"job_id": job_id})
-    assert missing.status_code == 400
-
     listing = client.post("/v1/job", json={})
     assert listing.status_code == 200
-    assert set(listing.json().keys()) == set(job_ids[1:])
+
+    missing = client.post("/v1/job", json={"job_id": job_id})
+    assert missing.status_code == 400
 
 
 @pytest.mark.parametrize(

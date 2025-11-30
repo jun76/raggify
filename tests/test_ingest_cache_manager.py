@@ -16,7 +16,7 @@ from raggify.config.ingest_config import IngestConfig
 from raggify.embed.embed_manager import EmbedManager
 from raggify.ingest_cache.ingest_cache import create_ingest_cache_manager
 from raggify.ingest_cache.ingest_cache_manager import IngestCacheManager
-from raggify.llama.core.schema import Modality
+from raggify.llama_like.core.schema import Modality
 from tests.utils.mock_ingest_cache import (
     DummyIngestionCache,
     DummyPostgresKVStore,

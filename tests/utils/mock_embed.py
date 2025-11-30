@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from raggify.embed.embed_manager import EmbedContainer, EmbedManager
-from raggify.llama.core.schema import Modality
+from raggify.llama_like.core.schema import Modality
 
 
 class DummyTextEmbedding:

@@ -11,7 +11,7 @@ from .loader import Loader
 if TYPE_CHECKING:
     from llama_index.core.schema import Document, ImageNode, TextNode
 
-    from ...llama.core.schema import AudioNode, VideoNode
+    from ...llama_like.core.schema import AudioNode, VideoNode
 
 
 class HTMLLoader(Loader):

@@ -9,7 +9,7 @@ from ..config.config_manager import ConfigManager
 from ..config.embed_config import EmbedConfig
 from ..config.embed_config import EmbedModel as EM
 from ..config.embed_config import EmbedProvider
-from ..llama.core.schema import Modality
+from ..llama_like.core.schema import Modality
 
 if TYPE_CHECKING:
     from .embed_manager import EmbedContainer, EmbedManager
@@ -205,7 +205,7 @@ def _huggingface_image(cfg: ConfigManager) -> EmbedContainer:
 
 
 def _clap_audio(cfg: ConfigManager) -> EmbedContainer:
-    from ..llama.embeddings.clap import ClapEmbedding
+    from ..llama_like.embeddings.clap import ClapEmbedding
     from .embed_manager import EmbedContainer
 
     model = cfg.embed.clap_embed_model_audio
@@ -248,7 +248,7 @@ def _voyage_image(cfg: EmbedConfig) -> EmbedContainer:
 
 
 def _bedrock(model: dict[str, Any]) -> EmbedContainer:
-    from ..llama.embeddings.bedrock import MultiModalBedrockEmbedding
+    from ..llama_like.embeddings.bedrock import MultiModalBedrockEmbedding
     from .embed_manager import EmbedContainer
 
     if model[EM.NAME].startswith("amazon.titan-"):

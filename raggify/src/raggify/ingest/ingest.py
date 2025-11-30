@@ -18,7 +18,7 @@ if TYPE_CHECKING:
         TransformComponent,
     )
 
-    from ..llama.core.schema import AudioNode, VideoNode
+    from ..llama_like.core.schema import AudioNode, VideoNode
 
 
 __all__ = [

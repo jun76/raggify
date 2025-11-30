@@ -10,7 +10,7 @@ from ...core.exts import Exts
 from ...core.metadata import BasicMetaData
 from ...core.metadata import MetaKeys as MK
 from ...core.utils import has_media
-from ...llama.core.schema import AudioNode, VideoNode
+from ...llama_like.core.schema import AudioNode, VideoNode
 from ...logger import logger
 
 

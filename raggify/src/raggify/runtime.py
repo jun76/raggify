@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from .ingest.loader.file_loader import FileLoader
     from .ingest.loader.html_loader import HTMLLoader
     from .ingest_cache.ingest_cache_manager import IngestCacheManager
-    from .llama.core.schema import Modality
+    from .llama_like.core.schema import Modality
     from .rerank.rerank_manager import RerankManager
     from .vector_store.vector_store_manager import VectorStoreManager
 

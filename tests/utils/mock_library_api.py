@@ -119,7 +119,7 @@ def _patch_multimodal_image_image() -> Iterator[None]:
 @contextmanager
 def _patch_audio_text() -> Iterator[None]:
     with patch(
-        "raggify.llama.core.indices.multi_modal.retriever.AudioRetriever.atext_to_audio_retrieve",
+        "raggify.llama_like.core.indices.multi_modal.retriever.AudioRetriever.atext_to_audio_retrieve",
         new=AsyncMock(return_value=_EMPTY_NODES),
     ):
         yield
@@ -128,7 +128,7 @@ def _patch_audio_text() -> Iterator[None]:
 @contextmanager
 def _patch_audio_audio() -> Iterator[None]:
     with patch(
-        "raggify.llama.core.indices.multi_modal.retriever.AudioRetriever.aaudio_to_audio_retrieve",
+        "raggify.llama_like.core.indices.multi_modal.retriever.AudioRetriever.aaudio_to_audio_retrieve",
         new=AsyncMock(return_value=_EMPTY_NODES),
     ):
         yield
@@ -137,7 +137,7 @@ def _patch_audio_audio() -> Iterator[None]:
 @contextmanager
 def _patch_video_text() -> Iterator[None]:
     with patch(
-        "raggify.llama.core.indices.multi_modal.retriever.VideoRetriever.atext_to_video_retrieve",
+        "raggify.llama_like.core.indices.multi_modal.retriever.VideoRetriever.atext_to_video_retrieve",
         new=AsyncMock(return_value=_EMPTY_NODES),
     ):
         yield
@@ -146,7 +146,7 @@ def _patch_video_text() -> Iterator[None]:
 @contextmanager
 def _patch_video_image() -> Iterator[None]:
     with patch(
-        "raggify.llama.core.indices.multi_modal.retriever.VideoRetriever.aimage_to_video_retrieve",
+        "raggify.llama_like.core.indices.multi_modal.retriever.VideoRetriever.aimage_to_video_retrieve",
         new=AsyncMock(return_value=_EMPTY_NODES),
     ):
         yield
@@ -155,7 +155,7 @@ def _patch_video_image() -> Iterator[None]:
 @contextmanager
 def _patch_video_audio() -> Iterator[None]:
     with patch(
-        "raggify.llama.core.indices.multi_modal.retriever.VideoRetriever.aaudio_to_video_retrieve",
+        "raggify.llama_like.core.indices.multi_modal.retriever.VideoRetriever.aaudio_to_video_retrieve",
         new=AsyncMock(return_value=_EMPTY_NODES),
     ):
         yield
@@ -164,7 +164,7 @@ def _patch_video_audio() -> Iterator[None]:
 @contextmanager
 def _patch_video_video() -> Iterator[None]:
     with patch(
-        "raggify.llama.core.indices.multi_modal.retriever.VideoRetriever.avideo_to_video_retrieve",
+        "raggify.llama_like.core.indices.multi_modal.retriever.VideoRetriever.avideo_to_video_retrieve",
         new=AsyncMock(return_value=_EMPTY_NODES),
     ):
         yield

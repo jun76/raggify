@@ -7,7 +7,7 @@ from ..config.config_manager import ConfigManager
 from ..config.ingest_cache_config import IngestCacheConfig, IngestCacheProvider
 from ..core.const import PJNAME_ALIAS
 from ..core.utils import sanitize_str
-from ..llama.core.schema import Modality
+from ..llama_like.core.schema import Modality
 from ..logger import logger
 
 if TYPE_CHECKING:

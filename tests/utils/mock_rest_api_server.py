@@ -8,22 +8,19 @@ from types import ModuleType, SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from raggify.llama.core.schema import Modality
+from raggify.llama_like.core.schema import Modality
 
 from .node_factory import make_sample_nodes
 
 
 @dataclass
 class MockServerContext:
-    """Mock context container for FastAPI tests."""
-
     module: ModuleType
     runtime: SimpleNamespace
-    worker: "DummyWorker"
+    worker: Any
 
 
 def _build_runtime(upload_dir: Path) -> SimpleNamespace:
-    """Create a runtime stub."""
     general = SimpleNamespace(
         host="localhost",
         port=8000,
@@ -44,50 +41,10 @@ def _build_runtime(upload_dir: Path) -> SimpleNamespace:
     return runtime
 
 
-class DummyWorker:
-    """Minimal background worker substitute."""
-
-    def __init__(self) -> None:
-        self._jobs: dict[str, Any] = {}
-        self._counter = 0
-
-    async def start(self) -> None:
-        return None
-
-    async def shutdown(self) -> None:
-        return None
-
-    def submit(self, payload: Any):
-        self._counter += 1
-        job_id = f"job-{self._counter:04d}"
-        job = SimpleNamespace(
-            job_id=job_id,
-            payload=payload,
-            status="running",
-            created_at="2025-01-01",
-            last_update="2025-01-01",
-        )
-        self._jobs[job_id] = job
-        return job
-
-    def get_jobs(self) -> dict[str, Any]:
-        return self._jobs.copy()
-
-    def get_job(self, job_id: str) -> Any:
-        return self._jobs.get(job_id)
-
-    def remove_completed_jobs(self) -> None:
-        self._jobs.clear()
-
-    def remove_job(self, job_id: str) -> None:
-        self._jobs.pop(job_id, None)
-
-
 def _patch_queries(stack: ExitStack) -> None:
-    """Patch query handlers to return sample nodes."""
     module_path = "raggify.retrieve.retrieve"
 
-    async def _query_stub(**kwargs):  # type: ignore[unused-arg]
+    async def _query_stub(**kwargs):
         return make_sample_nodes()
 
     targets = [
@@ -111,17 +68,41 @@ def _patch_queries(stack: ExitStack) -> None:
 def patch_rest_api_server(
     *, module: ModuleType, upload_dir: Path
 ) -> Iterator[MockServerContext]:
-    """Patch FastAPI dependencies for tests."""
     runtime = _build_runtime(upload_dir)
-    worker = DummyWorker()
+
+    from raggify.server import background_worker as bg
+
+    bg._worker = None
+
+    ingest_patch_targets = [
+        "aingest_path",
+        "aingest_path_list",
+        "aingest_url",
+        "aingest_url_list",
+    ]
+    worker_holder: dict[str, Any] = {}
+
+    def worker_factory():
+        worker = bg.get_worker()
+        worker_holder["worker"] = worker
+        return worker
 
     with ExitStack() as stack:
-        stack.enter_context(patch.object(module, "_rt", MagicMock(return_value=runtime)))
-        stack.enter_context(patch.object(module, "_wk", MagicMock(return_value=worker)))
+        stack.enter_context(
+            patch.object(module, "_rt", MagicMock(return_value=runtime))
+        )
         stack.enter_context(patch.object(module, "console", MagicMock()))
         stack.enter_context(patch.object(module, "logger", MagicMock()))
-        stack.enter_context(
-            patch.object(module, "configure_logging", MagicMock())
-        )
+        stack.enter_context(patch.object(module, "configure_logging", MagicMock()))
         _patch_queries(stack)
-        yield MockServerContext(module=module, runtime=runtime, worker=worker)
+        for name in ingest_patch_targets:
+            stack.enter_context(
+                patch(
+                    f"raggify.ingest.ingest.{name}",
+                    AsyncMock(return_value=None),
+                )
+            )
+        stack.enter_context(patch.object(module, "_wk", worker_factory))
+        yield MockServerContext(
+            module=module, runtime=runtime, worker=worker_holder.get("worker")
+        )

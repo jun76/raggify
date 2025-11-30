@@ -10,8 +10,11 @@ from llama_index.retrievers.bm25 import BM25Retriever
 
 from ..config.retrieve_config import RetrieveMode
 from ..core.event import async_loop_runner
-from ..llama.core.indices.multi_modal.retriever import AudioRetriever, VideoRetriever
-from ..llama.core.schema import Modality
+from ..llama_like.core.indices.multi_modal.retriever import (
+    AudioRetriever,
+    VideoRetriever,
+)
+from ..llama_like.core.schema import Modality
 from ..logger import logger
 from ..runtime import get_runtime as _rt
 

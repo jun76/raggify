@@ -6,14 +6,14 @@ from typing import TYPE_CHECKING
 from llama_index.core.settings import Settings
 
 from ..core.utils import sanitize_str
-from ..llama.core.schema import Modality
+from ..llama_like.core.schema import Modality
 from ..logger import logger
 
 if TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import BaseEmbedding, Embedding
     from llama_index.core.schema import ImageType
 
-    from ..llama.embeddings.multi_modal_base import AudioType, VideoType
+    from ..llama_like.embeddings.multi_modal_base import AudioType, VideoType
 
 
 @dataclass(kw_only=True)
@@ -203,7 +203,7 @@ class EmbedManager:
         Returns:
             list[Embedding]: Embedding vectors.
         """
-        from ..llama.embeddings.multi_modal_base import AudioEmbedding
+        from ..llama_like.embeddings.multi_modal_base import AudioEmbedding
 
         if Modality.AUDIO not in self.modality:
             logger.warning("no audio embedding is specified")
@@ -235,7 +235,7 @@ class EmbedManager:
         Returns:
             list[Embedding]: Embedding vectors.
         """
-        from ..llama.embeddings.multi_modal_base import VideoEmbedding
+        from ..llama_like.embeddings.multi_modal_base import VideoEmbedding
 
         if Modality.VIDEO not in self.modality:
             logger.warning("no video embedding is specified")

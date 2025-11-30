@@ -9,7 +9,7 @@ from raggify.config.config_manager import ConfigManager
 from raggify.config.embed_config import EmbedConfig, EmbedProvider
 from raggify.config.general_config import GeneralConfig
 from raggify.embed.embed import create_embed_manager
-from raggify.llama.core.schema import Modality
+from raggify.llama_like.core.schema import Modality
 
 
 @pytest.fixture(autouse=True)
@@ -23,9 +23,9 @@ def mock_embedding_classes(monkeypatch):
         "llama_index.embeddings.cohere.base.CohereEmbedding",
         "llama_index.embeddings.clip.ClipEmbedding",
         "llama_index.embeddings.huggingface.HuggingFaceEmbedding",
-        "raggify.llama.embeddings.clap.ClapEmbedding",
+        "raggify.llama_like.embeddings.clap.ClapEmbedding",
         "llama_index.embeddings.voyageai.base.VoyageEmbedding",
-        "raggify.llama.embeddings.bedrock.MultiModalBedrockEmbedding",
+        "raggify.llama_like.embeddings.bedrock.MultiModalBedrockEmbedding",
     ]
 
     for path in targets:

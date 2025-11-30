@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from ..config.retrieve_config import RetrieveMode
 from ..core.const import PROJECT_NAME, VERSION
-from ..llama.core.schema import Modality
+from ..llama_like.core.schema import Modality
 from ..logger import configure_logging, console, logger
 from ..runtime import get_runtime as _rt
 from .background_worker import JobPayload

@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from llama_index.core.schema import ImageType, TextNode
 
     from ..embed.embed_manager import EmbedManager
-    from ..llama.embeddings.multi_modal_base import AudioType, VideoType
+    from ..llama_like.embeddings.multi_modal_base import AudioType, VideoType
 
 
 class AddChunkIndexTransform(TransformComponent):
@@ -175,7 +175,7 @@ class _BaseMediaSplitter(TransformComponent):
             list[BaseNode]: Split nodes or the original node on failure.
         """
         from ..core.metadata import MetaKeys as MK
-        from ..llama.core.schema import AudioNode, VideoNode
+        from ..llama_like.core.schema import AudioNode, VideoNode
 
         nodes = [node]
 
@@ -275,7 +275,7 @@ class AudioSplitter(_BaseMediaSplitter):
         super().__init__(chunk_seconds)
 
     def _matches(self, node: BaseNode) -> bool:
-        from ..llama.core.schema import AudioNode
+        from ..llama_like.core.schema import AudioNode
 
         return isinstance(node, AudioNode)
 
@@ -301,7 +301,7 @@ class VideoSplitter(_BaseMediaSplitter):
         super().__init__(chunk_seconds)
 
     def _matches(self, node: BaseNode) -> bool:
-        from ..llama.core.schema import VideoNode
+        from ..llama_like.core.schema import VideoNode
 
         return isinstance(node, VideoNode)
 

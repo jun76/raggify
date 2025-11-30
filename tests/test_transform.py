@@ -24,7 +24,7 @@ from raggify.ingest.transform import (
     make_text_embed_transform,
     make_video_embed_transform,
 )
-from raggify.llama.core.schema import AudioNode, Modality, VideoNode
+from raggify.llama_like.core.schema import AudioNode, Modality, VideoNode
 from tests.utils.mock_embed import (
     DummyAudioBase,
     DummyAudioEmbedding,
@@ -45,11 +45,11 @@ def patch_embedding_bases(monkeypatch):
         DummyMultiModalBase,
     )
     monkeypatch.setattr(
-        "raggify.llama.embeddings.multi_modal_base.AudioEmbedding",
+        "raggify.llama_like.embeddings.multi_modal_base.AudioEmbedding",
         DummyAudioBase,
     )
     monkeypatch.setattr(
-        "raggify.llama.embeddings.multi_modal_base.VideoEmbedding",
+        "raggify.llama_like.embeddings.multi_modal_base.VideoEmbedding",
         DummyVideoBase,
     )
 

@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from llama_index.core.readers.base import BaseReader
     from llama_index.core.schema import ImageNode, TextNode
 
-    from ...llama.core.schema import AudioNode, VideoNode
+    from ...llama_like.core.schema import AudioNode, VideoNode
 
 
 class FileLoader(Loader):

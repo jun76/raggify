@@ -7,7 +7,7 @@ from ..config.vector_store_config import VectorStoreConfig, VectorStoreProvider
 from ..core.const import PJNAME_ALIAS
 from ..core.utils import sanitize_str
 from ..document_store.document_store_manager import DocumentStoreManager
-from ..llama.core.schema import Modality
+from ..llama_like.core.schema import Modality
 
 if TYPE_CHECKING:
     from ..embed.embed_manager import EmbedManager
