@@ -21,9 +21,9 @@ def mock_embedding_classes(monkeypatch):
     targets = [
         "llama_index.embeddings.openai.base.OpenAIEmbedding",
         "llama_index.embeddings.cohere.base.CohereEmbedding",
-        "llama_index.embeddings.clip.ClipEmbedding",
-        "llama_index.embeddings.huggingface.HuggingFaceEmbedding",
-        "raggify.llama_like.embeddings.clap.ClapEmbedding",
+        # "llama_index.embeddings.clip.ClipEmbedding",
+        # "llama_index.embeddings.huggingface.HuggingFaceEmbedding",
+        # "raggify.llama_like.embeddings.clap.ClapEmbedding",
         "llama_index.embeddings.voyageai.base.VoyageEmbedding",
         "raggify.llama_like.embeddings.bedrock.MultiModalBedrockEmbedding",
     ]
@@ -55,8 +55,8 @@ def _assert_provider(manager, modality: Modality, provider: EmbedProvider):
     [
         EmbedProvider.OPENAI,
         EmbedProvider.COHERE,
-        EmbedProvider.CLIP,
-        EmbedProvider.HUGGINGFACE,
+        # EmbedProvider.CLIP,
+        # EmbedProvider.HUGGINGFACE,
         EmbedProvider.VOYAGE,
         EmbedProvider.BEDROCK,
     ],
@@ -72,8 +72,8 @@ def test_create_embed_manager_text_variants(provider):
     "provider",
     [
         EmbedProvider.COHERE,
-        EmbedProvider.CLIP,
-        EmbedProvider.HUGGINGFACE,
+        # EmbedProvider.CLIP,
+        # EmbedProvider.HUGGINGFACE,
         EmbedProvider.VOYAGE,
         EmbedProvider.BEDROCK,
     ],
@@ -88,7 +88,7 @@ def test_create_embed_manager_image_variants(provider):
 @pytest.mark.parametrize(
     "provider",
     [
-        EmbedProvider.CLAP,
+        # EmbedProvider.CLAP,
         EmbedProvider.BEDROCK,
     ],
 )

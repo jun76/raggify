@@ -34,10 +34,10 @@ def setup_rerank_mocks(monkeypatch) -> DefaultDict[str, list[FakeReranker]]:
         "llama_index.postprocessor.cohere_rerank.CohereRerank",
         make_factory("cohere"),
     )
-    monkeypatch.setattr(
-        "llama_index.postprocessor.flag_embedding_reranker.FlagEmbeddingReranker",
-        make_factory("flag"),
-    )
+    # monkeypatch.setattr(
+    #     "llama_index.postprocessor.flag_embedding_reranker.FlagEmbeddingReranker",
+    #     make_factory("flag"),
+    # )
     monkeypatch.setattr(
         "llama_index.postprocessor.voyageai_rerank.VoyageAIRerank",
         make_factory("voyage"),

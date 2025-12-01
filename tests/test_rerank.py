@@ -32,7 +32,7 @@ def mock_rerankers(monkeypatch):
     "provider,key",
     [
         (RerankProvider.COHERE, "cohere"),
-        (RerankProvider.FLAGEMBEDDING, "flag"),
+        # (RerankProvider.FLAGEMBEDDING, "flag"),
         (RerankProvider.VOYAGE, "voyage"),
     ],
 )

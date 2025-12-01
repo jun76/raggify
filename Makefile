@@ -14,7 +14,7 @@ TOOL_PY := $(shell uv tool dir)/raggify/bin/python
 install:
 	uv venv $(VENV)
 	uv pip install --python $(PY) --upgrade pip
-	$(PIP) install -e raggify[exam,dev]
+	$(PIP) install -e raggify[text,image,audio,video,rerank,postgres,redis,exam,dev]
 	$(PIP) install -e raggify-client
 
 	uv tool install --reinstall -e ./raggify
