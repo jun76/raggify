@@ -9,7 +9,7 @@ import uvicorn
 from raggify_client import app as client_app
 
 from ..core.const import DEFAULT_CONFIG_PATH, PROJECT_NAME, VERSION
-from ..logger import console, logger
+from ..logger import configure_logging, console, logger
 
 if TYPE_CHECKING:
     from raggify_client import RestAPIClient
@@ -27,6 +27,7 @@ _HELP_MSG = (
 # Override help message and add server commands
 app = client_app
 app.info.help = _HELP_MSG.format(config_path=DEFAULT_CONFIG_PATH)
+configure_logging()
 
 
 def _cfg() -> ConfigManager:
@@ -35,12 +36,11 @@ def _cfg() -> ConfigManager:
     Returns:
         ConfigManager: Config manager.
     """
-    from ..logger import configure_logging
     from ..runtime import get_runtime
 
     cfg = get_runtime().cfg
-    configure_logging(cfg.general.log_level)
     app.info.help = _HELP_MSG.format(config_path=cfg.config_path)
+    configure_logging(cfg.general.log_level)
 
     return cfg
 

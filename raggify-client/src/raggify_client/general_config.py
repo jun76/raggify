@@ -11,4 +11,4 @@ class GeneralConfig(DataClassDictMixin):
     host: str = "localhost"
     port: int = 8000
     topk: int = 20
-    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "DEBUG"
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"

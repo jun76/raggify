@@ -80,7 +80,7 @@ logger = logging.getLogger(PROJECT_NAME)
 
 
 def configure_logging(
-    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "DEBUG",
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO",
 ) -> None:
     """Configure logging so library logs stay at INFO while raggify honors log_level."""
     logger.handlers.clear()
