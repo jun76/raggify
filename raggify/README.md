@@ -768,6 +768,9 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 | `timeout_sec`         | Timeout for web ingestion (seconds).          | `30`                                | Any integer.                                      |
 | `same_origin`         | Restrict crawling to same origin.             | `true`                              | `true` / `false`.                                 |
 | `max_asset_bytes`     | Maximum size per fetched asset (bytes).       | `104857600` (100 MB)                | Any positive integer.                             |
+| `include_selectors`   | CSS selectors to prioritize when parsing HTML | `["article", "main", ...]`          | List of selectors applied in order.               |
+| `exclude_selectors`   | CSS selectors removed from parsed HTML.       | `["nav", "footer", ...]`            | List of selectors to drop.                        |
+| `strip_tags`          | HTML tags stripped entirely before parsing.   | `["script", "style", ...]`          | List of tag names.                                |
 
 ### Rerank
 

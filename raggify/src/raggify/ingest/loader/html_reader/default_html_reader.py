@@ -65,7 +65,7 @@ class DefaultHTMLReader(HTMLReader):
             return [], ""
 
         # Body text
-        text = self.sanitize_html_text(html)
+        text = self.cleanse_html_content(html)
         text = html2text.html2text(text)
         doc = Document(text=text, metadata={MK.URL: url})
 

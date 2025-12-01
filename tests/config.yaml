@@ -125,6 +125,37 @@ ingest:
   timeout_sec: 30
   same_origin: true
   max_asset_bytes: 104857600
+  include_selectors:
+    - article
+    - main
+    - body
+    - '[role="main"]'
+    - div#content
+    - div.content
+    - .entry-content
+    - .post
+  exclude_selectors:
+    - nav
+    - footer
+    - aside
+    - header
+    - .ads
+    - .advert
+    - .share
+    - .breadcrumb
+    - .toc
+    - .related
+    - .sidebar
+  strip_tags:
+    - script
+    - style
+    - noscript
+    - iframe
+    - form
+    - button
+    - input
+    - svg
+    - ins
 rerank:
   flagembedding_rerank_model: BAAI/bge-reranker-v2-m3
   cohere_rerank_model: rerank-multilingual-v3.0

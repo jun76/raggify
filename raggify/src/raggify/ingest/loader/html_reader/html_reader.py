@@ -27,8 +27,8 @@ class HTMLReader:
         self._asset_url_cache = asset_url_cache
         self._ingest_target_exts = ingest_target_exts
 
-    def sanitize_html_text(self, html: str) -> str:
-        """Remove extra elements such as cache busters.
+    def cleanse_html_content(self, html: str) -> str:
+        """Cleanse HTML content by applying include/exclude selectors.
 
         Args:
             html (str): Raw HTML text.
@@ -38,7 +38,50 @@ class HTMLReader:
         """
         import re
 
-        return re.sub(r"(\.(?:svg|png|jpe?g|webp))\?[^\s\"'<>]+", r"\1", html)
+        from bs4 import BeautifulSoup
+
+        soup = BeautifulSoup(html, "html.parser")
+
+        # drop unwanted tags
+        for tag_name in self._cfg.strip_tags:
+            for t in soup.find_all(tag_name):
+                t.decompose()
+
+        for selector in self._cfg.exclude_selectors:
+            for t in soup.select(selector):
+                t.decompose()
+
+        # include only selected tags
+        include_selectors = self._cfg.include_selectors
+        if include_selectors:
+            included_nodes: list = []
+            for selector in include_selectors:
+                included_nodes.extend(soup.select(selector))
+
+            seen = set()
+            unique_nodes = []
+            for node in included_nodes:
+                key = id(node)
+
+                if key in seen:
+                    continue
+
+                seen.add(key)
+                unique_nodes.append(node)
+
+            if unique_nodes:
+                # move only the "main content candidates" to a new soup
+                new_soup = BeautifulSoup("<html><body></body></html>", "html.parser")
+                body = new_soup.body or []
+                for node in unique_nodes:
+                    # extract from the original soup and move to new_soup
+                    body.append(node.extract())
+
+                soup = new_soup
+
+        logger.debug(str(soup))
+
+        return re.sub(r"(\.(?:svg|png|jpe?g|webp))\?[^\s\"'<>]+", r"\1", str(soup))
 
     def register_asset_url(self, url: str) -> bool:
         """Register an asset URL in the cache if it is new.
