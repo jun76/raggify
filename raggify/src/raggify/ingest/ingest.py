@@ -168,7 +168,7 @@ async def _process_batches(
     nodes: Sequence[BaseNode],
     modality: Modality,
     persist_dir: Optional[Path],
-    batch_size: int,
+    pipe_batch_size: int,
     is_canceled: Callable[[], bool],
 ) -> None:
     """Batch upserts to avoid long blocking when handling many nodes.
@@ -177,7 +177,7 @@ async def _process_batches(
         nodes (Sequence[BaseNode]): Nodes.
         modality (Modality): Target modality.
         persist_dir (Optional[Path]): Persist directory.
-        batch_size (int): Batch size.
+        pipe_batch_size (int): Number of nodes processed per pipeline batch.
         is_canceled (Callable[[], bool]): Cancellation flag for the job.
     """
     if not nodes or is_canceled():
@@ -196,15 +196,15 @@ async def _process_batches(
         case _:
             raise ValueError(f"unexpected modality: {modality}")
 
-    total_batches = (len(nodes) + batch_size - 1) // batch_size
+    total_batches = (len(nodes) + pipe_batch_size - 1) // pipe_batch_size
     trans_nodes = []
-    for idx in range(0, len(nodes), batch_size):
+    for idx in range(0, len(nodes), pipe_batch_size):
         if is_canceled():
             logger.info("Job is canceled, aborting batch processing")
             return
 
-        batch = nodes[idx : idx + batch_size]
-        prog = f"{idx // batch_size + 1}/{total_batches}"
+        batch = nodes[idx : idx + pipe_batch_size]
+        prog = f"{idx // pipe_batch_size + 1}/{total_batches}"
         logger.debug(
             f"{modality} upsert pipeline: processing batch {prog} "
             f"({len(batch)} nodes)"
@@ -249,7 +249,7 @@ async def _aupsert_nodes(
     audio_nodes: Sequence[AudioNode],
     video_nodes: Sequence[VideoNode],
     persist_dir: Optional[Path],
-    batch_size: int,
+    pipe_batch_size: int,
     is_canceled: Callable[[], bool],
 ) -> None:
     """Upsert nodes into stores.
@@ -260,7 +260,7 @@ async def _aupsert_nodes(
         audio_nodes (Sequence[AudioNode]): Audio nodes.
         video_nodes (Sequence[VideoNode]): Video nodes.
         persist_dir (Optional[Path]): Persist directory.
-        batch_size (int): Batch size.
+        pipe_batch_size (int): Number of nodes processed per pipeline batch.
         is_canceled (Callable[[], bool]): Cancellation flag for the job.
     """
     import asyncio
@@ -274,7 +274,7 @@ async def _aupsert_nodes(
                 nodes=text_nodes,
                 modality=Modality.TEXT,
                 persist_dir=persist_dir,
-                batch_size=batch_size,
+                pipe_batch_size=pipe_batch_size,
                 is_canceled=is_canceled,
             )
         )
@@ -285,7 +285,7 @@ async def _aupsert_nodes(
                 nodes=image_nodes,
                 modality=Modality.IMAGE,
                 persist_dir=persist_dir,
-                batch_size=batch_size,
+                pipe_batch_size=pipe_batch_size,
                 is_canceled=is_canceled,
             )
         )
@@ -296,7 +296,7 @@ async def _aupsert_nodes(
                 nodes=audio_nodes,
                 modality=Modality.AUDIO,
                 persist_dir=persist_dir,
-                batch_size=batch_size,
+                pipe_batch_size=pipe_batch_size,
                 is_canceled=is_canceled,
             )
         )
@@ -307,7 +307,7 @@ async def _aupsert_nodes(
                 nodes=video_nodes,
                 modality=Modality.VIDEO,
                 persist_dir=persist_dir,
-                batch_size=batch_size,
+                pipe_batch_size=pipe_batch_size,
                 is_canceled=is_canceled,
             )
         )
@@ -353,7 +353,7 @@ def _cleanup_temp_files() -> None:
 
 def ingest_path(
     path: str,
-    batch_size: Optional[int] = None,
+    pipe_batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     """Ingest, embed, and store content from a local path (directory or file).
@@ -362,18 +362,21 @@ def ingest_path(
 
     Args:
         path (str): Target path.
-        batch_size (Optional[int]): Batch size. Defaults to None.
+        pipe_batch_size (Optional[int]):
+            Number of nodes processed per pipeline batch. Defaults to None.
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
     async_loop_runner.run(
-        lambda: aingest_path(path, batch_size=batch_size, is_canceled=is_canceled)
+        lambda: aingest_path(
+            path, pipe_batch_size=pipe_batch_size, is_canceled=is_canceled
+        )
     )
 
 
 async def aingest_path(
     path: str,
-    batch_size: Optional[int] = None,
+    pipe_batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     """Asynchronously ingest, embed, and store content from a local path.
@@ -382,7 +385,8 @@ async def aingest_path(
 
     Args:
         path (str): Target path.
-        batch_size (Optional[int]): Batch size. Defaults to None.
+        pipe_batch_size (Optional[int]):
+            Number of nodes processed per pipeline batch. Defaults to None.
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
@@ -391,7 +395,7 @@ async def aingest_path(
     text_nodes, image_nodes, audio_nodes, video_nodes = (
         await file_loader.aload_from_path(path)
     )
-    batch_size = batch_size or rt.cfg.ingest.pipe_batch_size
+    pipe_batch_size = pipe_batch_size or rt.cfg.ingest.pipe_batch_size
 
     await _aupsert_nodes(
         text_nodes=text_nodes,
@@ -399,39 +403,43 @@ async def aingest_path(
         audio_nodes=audio_nodes,
         video_nodes=video_nodes,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
-        batch_size=batch_size,
+        pipe_batch_size=pipe_batch_size,
         is_canceled=is_canceled,
     )
 
 
 def ingest_path_list(
     lst: str | Sequence[str],
-    batch_size: Optional[int] = None,
+    pipe_batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     """Ingest, embed, and store content from multiple paths in a list.
 
     Args:
         lst (str | Sequence[str]): Text file path or in-memory sequence.
-        batch_size (Optional[int]): Batch size. Defaults to None.
+        pipe_batch_size (Optional[int]):
+            Number of nodes processed per pipeline batch. Defaults to None.
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
     async_loop_runner.run(
-        lambda: aingest_path_list(lst, batch_size=batch_size, is_canceled=is_canceled)
+        lambda: aingest_path_list(
+            lst, pipe_batch_size=pipe_batch_size, is_canceled=is_canceled
+        )
     )
 
 
 async def aingest_path_list(
     lst: str | Sequence[str],
-    batch_size: Optional[int] = None,
+    pipe_batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     """Asynchronously ingest, embed, and store content from multiple paths.
 
     Args:
         lst (str | Sequence[str]): Text file path or in-memory sequence.
-        batch_size (Optional[int]): Batch size. Defaults to None.
+        pipe_batch_size (Optional[int]):
+            Number of nodes processed per pipeline batch. Defaults to None.
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
@@ -443,7 +451,7 @@ async def aingest_path_list(
     text_nodes, image_nodes, audio_nodes, video_nodes = (
         await file_loader.aload_from_paths(paths=list(lst), is_canceled=is_canceled)
     )
-    batch_size = batch_size or rt.cfg.ingest.pipe_batch_size
+    pipe_batch_size = pipe_batch_size or rt.cfg.ingest.pipe_batch_size
 
     await _aupsert_nodes(
         text_nodes=text_nodes,
@@ -451,14 +459,14 @@ async def aingest_path_list(
         audio_nodes=audio_nodes,
         video_nodes=video_nodes,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
-        batch_size=batch_size,
+        pipe_batch_size=pipe_batch_size,
         is_canceled=is_canceled,
     )
 
 
 def ingest_url(
     url: str,
-    batch_size: Optional[int] = None,
+    pipe_batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     """Ingest, embed, and store content from a URL.
@@ -467,18 +475,21 @@ def ingest_url(
 
     Args:
         url (str): Target URL.
-        batch_size (Optional[int]): Batch size. Defaults to None.
+        pipe_batch_size (Optional[int]):
+            Number of nodes processed per pipeline batch. Defaults to None.
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
     async_loop_runner.run(
-        lambda: aingest_url(url=url, batch_size=batch_size, is_canceled=is_canceled)
+        lambda: aingest_url(
+            url=url, pipe_batch_size=pipe_batch_size, is_canceled=is_canceled
+        )
     )
 
 
 async def aingest_url(
     url: str,
-    batch_size: Optional[int] = None,
+    pipe_batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     """Asynchronously ingest, embed, and store content from a URL.
@@ -487,7 +498,8 @@ async def aingest_url(
 
     Args:
         url (str): Target URL.
-        batch_size (Optional[int]): Batch size. Defaults to None.
+        pipe_batch_size (Optional[int]):
+            Number of nodes processed per pipeline batch. Defaults to None.
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
@@ -496,7 +508,7 @@ async def aingest_url(
     text_nodes, image_nodes, audio_nodes, video_nodes = (
         await html_loader.aload_from_url(url=url, is_canceled=is_canceled)
     )
-    batch_size = batch_size or rt.cfg.ingest.pipe_batch_size
+    pipe_batch_size = pipe_batch_size or rt.cfg.ingest.pipe_batch_size
 
     await _aupsert_nodes(
         text_nodes=text_nodes,
@@ -504,39 +516,43 @@ async def aingest_url(
         audio_nodes=audio_nodes,
         video_nodes=video_nodes,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
-        batch_size=batch_size,
+        pipe_batch_size=pipe_batch_size,
         is_canceled=is_canceled,
     )
 
 
 def ingest_url_list(
     lst: str | Sequence[str],
-    batch_size: Optional[int] = None,
+    pipe_batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     """Ingest, embed, and store content from multiple URLs in a list.
 
     Args:
         lst (str | Sequence[str]): Text file path or in-memory URL list.
-        batch_size (Optional[int]): Batch size. Defaults to None.
+        pipe_batch_size (Optional[int]):
+            Number of nodes processed per pipeline batch. Defaults to None.
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
     async_loop_runner.run(
-        lambda: aingest_url_list(lst, batch_size=batch_size, is_canceled=is_canceled)
+        lambda: aingest_url_list(
+            lst, pipe_batch_size=pipe_batch_size, is_canceled=is_canceled
+        )
     )
 
 
 async def aingest_url_list(
     lst: str | Sequence[str],
-    batch_size: Optional[int] = None,
+    pipe_batch_size: Optional[int] = None,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     """Asynchronously ingest, embed, and store content from multiple URLs.
 
     Args:
         lst (str | Sequence[str]): Text file path or in-memory URL list.
-        batch_size (Optional[int]): Batch size. Defaults to None.
+        pipe_batch_size (Optional[int]):
+            Number of nodes processed per pipeline batch. Defaults to None.
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
@@ -548,7 +564,7 @@ async def aingest_url_list(
     text_nodes, image_nodes, audio_nodes, video_nodes = (
         await html_loader.aload_from_urls(urls=list(lst), is_canceled=is_canceled)
     )
-    batch_size = batch_size or rt.cfg.ingest.pipe_batch_size
+    pipe_batch_size = pipe_batch_size or rt.cfg.ingest.pipe_batch_size
 
     await _aupsert_nodes(
         text_nodes=text_nodes,
@@ -556,6 +572,6 @@ async def aingest_url_list(
         audio_nodes=audio_nodes,
         video_nodes=video_nodes,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
-        batch_size=batch_size,
+        pipe_batch_size=pipe_batch_size,
         is_canceled=is_canceled,
     )

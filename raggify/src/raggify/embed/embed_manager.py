@@ -34,7 +34,7 @@ class EmbedManager:
     def __init__(
         self,
         conts: dict[Modality, EmbedContainer],
-        batch_size: int,
+        embed_batch_size: int,
         batch_interval_sec: int,
     ) -> None:
         """Constructor.
@@ -42,11 +42,11 @@ class EmbedManager:
         Args:
             conts (dict[Modality, EmbedContainer]):
                 Mapping of modality to embedding container.
-            batch_size (int): Batch size for embedding operations.
+            embed_batch_size (int): Number of nodes processed per embed batch.
             batch_interval_sec (int): Interval between batches in seconds.
         """
         self._conts = conts
-        self._batch_size = batch_size
+        self._embed_batch_size = embed_batch_size
         self._batch_interval_sec = batch_interval_sec
 
         for modality, cont in conts.items():
@@ -169,8 +169,8 @@ class EmbedManager:
         logger.debug(f"now batch embedding {len(inputs)} {modality}s...")
 
         dims: list[Embedding] = []
-        for idx in range(0, len(inputs), self._batch_size):
-            batch = inputs[idx : idx + self._batch_size]
+        for idx in range(0, len(inputs), self._embed_batch_size):
+            batch = inputs[idx : idx + self._embed_batch_size]
             dims.extend(await batcher(batch))
 
             logger.debug(f"embed total {len(dims)} {modality}s so far...")
