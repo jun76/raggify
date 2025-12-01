@@ -82,7 +82,7 @@ raggify config | grep provider
 "rerank_provider": null,
 ```
 
-To use the following features, additional installation from the Git repository is required.
+To use the following features, additional installation is required.
 
 🖼️ local CLIP
 

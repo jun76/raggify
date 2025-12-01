@@ -16,7 +16,7 @@ general:
   device: cpu
   log_level: DEBUG
 vector_store:
-  chroma_persist_dir: /root/.local/share/raggify/chroma_db
+  chroma_persist_dir: ~/.local/share/raggify/chroma_db
   chroma_host: null
   chroma_port: null
   chroma_tenant: null
@@ -108,15 +108,15 @@ embed:
 ingest:
   chunk_size: 500
   chunk_overlap: 50
-  upload_dir: /root/.local/share/raggify/upload
-  pipe_persist_dir: /root/.local/share/raggify/default_kb
+  upload_dir: ~/.local/share/raggify/upload
+  pipe_persist_dir: ~/.local/share/raggify/default_kb
   batch_size: 100
   audio_chunk_seconds: 25
   video_chunk_seconds: 25
   additional_exts:
-  - .c
-  - .rst
-  - .py
+    - .c
+    - .rst
+    - .py
   user_agent: raggify
   load_asset: true
   req_per_sec: 2
