@@ -28,60 +28,107 @@ keywords = ["rag", "multimodal", "embedding", "cli", "fastapi", "streamlit", "ty
 dependencies = [
     "aiofiles",
     "chromadb",
-    "docx2txt",
     "fastapi",
     "fastapi-mcp",
-    "ffmpeg-python",
-    "FlagEmbedding",
-    "laion-clap==1.1.7",
+    "llama-index-embeddings-openai",
     "llama-index",
     "llama-index-core",
-    "llama-index-embeddings-bedrock",
-    "llama-index-embeddings-clip",
-    "llama-index-embeddings-cohere",
-    "llama-index-embeddings-huggingface",
-    "llama-index-embeddings-openai",
-    "llama-index-embeddings-voyageai",
-    "llama-index-postprocessor-cohere-rerank",
-    "llama-index-postprocessor-flag-embedding-reranker",
-    "llama-index-postprocessor-voyageai-rerank",
     "llama-index-readers-file",
     "llama-index-readers-web",
     "llama-index-readers-wikipedia",
     "llama-index-retrievers-bm25",
-    "llama-index-storage-docstore-postgres",
-    "llama-index-storage-docstore-redis",
-    "llama-index-storage-kvstore-postgres",
     "llama-index-vector-stores-chroma",
-    "llama-index-vector-stores-redis",
-    "llama-index-vector-stores-postgres",
     "mashumaro",
     "nbconvert",
-    "pillow",
-    "psycopg2-binary",
     "pydantic",
     "pydantic-settings",
-    "pymupdf",
     "python-dotenv",
     "python-multipart",
     "raggify-client",
     "requests",
-    "sentence-transformers==2.7.0",
-    "starlette",
-    "torch==2.9.0",
-    "torchaudio==2.9.0",
-    "torchvision==0.24.0",
-    "unstructured",
     "uvicorn[standard]",
-    "wikipedia"
+    "wikipedia",
 ]
 
 [project.optional-dependencies]
+text = [
+    "llama-index-embeddings-bedrock",
+    "llama-index-embeddings-cohere",
+    "llama-index-embeddings-voyageai",
+]
+image = [
+    "llama-index-embeddings-bedrock",
+    "llama-index-embeddings-cohere",
+    "llama-index-embeddings-voyageai",
+    "pymupdf",
+]
+audio = [
+    "ffmpeg-python",
+    "llama-index-embeddings-bedrock",
+]
+video = [
+    "ffmpeg-python",
+    "llama-index-embeddings-bedrock",
+]
+rerank = [
+    "llama-index-postprocessor-cohere-rerank",
+    "llama-index-postprocessor-voyageai-rerank",
+]
+localmodel = [
+    "FlagEmbedding",
+    "laion-clap==1.1.7",
+    "llama-index-embeddings-clip",
+    "llama-index-embeddings-huggingface",
+    "llama-index-postprocessor-flag-embedding-reranker",
+    "sentence-transformers==2.7.0",
+    "torch==2.9.0",
+    "torchaudio==2.9.0",
+    "torchvision==0.24.0",
+]
+postgres = [
+    "llama-index-storage-docstore-postgres",
+    "llama-index-storage-kvstore-postgres",
+    "llama-index-vector-stores-postgres",
+    "psycopg2-binary",
+]
+redis = [
+    "llama-index-storage-docstore-redis",
+    "llama-index-storage-kvstore-redis",
+    "llama-index-vector-stores-redis",
+]
 exam = [
     "openai-agents",
     "streamlit",
 ]
 dev = [
+    "pytest",
+    "pytest-cov",
+]
+all = [
+    "llama-index-embeddings-bedrock",
+    "llama-index-embeddings-cohere",
+    "llama-index-embeddings-voyageai",
+    "pymupdf",
+    "ffmpeg-python",
+    "llama-index-postprocessor-cohere-rerank",
+    "llama-index-postprocessor-voyageai-rerank",
+    "FlagEmbedding",
+    "laion-clap==1.1.7",
+    "llama-index-embeddings-clip",
+    "llama-index-embeddings-huggingface",
+    "llama-index-postprocessor-flag-embedding-reranker",
+    "sentence-transformers==2.7.0",
+    "torch==2.9.0",
+    "torchaudio==2.9.0",
+    "torchvision==0.24.0",
+    "llama-index-storage-docstore-postgres",
+    "llama-index-storage-kvstore-postgres",
+    "llama-index-vector-stores-postgres",
+    "psycopg2-binary",
+    "llama-index-storage-docstore-redis",
+    "llama-index-vector-stores-redis",
+    "openai-agents",
+    "streamlit",
     "pytest",
     "pytest-cov",
 ]

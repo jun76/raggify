@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
 from ..config.vector_store_config import VectorStoreConfig, VectorStoreProvider
-from ..core.const import PJNAME_ALIAS
+from ..core.const import PJNAME_ALIAS, PKG_NOT_FOUND_MSG
 from ..core.utils import sanitize_str
 from ..document_store.document_store_manager import DocumentStoreManager
 from ..llama_like.core.schema import Modality
@@ -128,7 +128,16 @@ def _generate_table_name(cfg: ConfigManager, space_key: str) -> str:
 def _pgvector(
     cfg: VectorStoreConfig, table_name: str, dim: int
 ) -> VectorStoreContainer:
-    from llama_index.vector_stores.postgres import PGVectorStore
+    try:
+        from llama_index.vector_stores.postgres import PGVectorStore  # type: ignore
+    except ImportError:
+        raise ImportError(
+            PKG_NOT_FOUND_MSG.format(
+                pkg="llama-index-vector-stores-postgres",
+                extra="postgres",
+                feature="PGVectorStore",
+            )
+        )
 
     from .vector_store_manager import VectorStoreContainer
 
@@ -177,8 +186,17 @@ def _chroma(cfg: VectorStoreConfig, table_name: str) -> VectorStoreContainer:
 
 
 def _redis(cfg: VectorStoreConfig, table_name: str, dim: int) -> VectorStoreContainer:
-    from llama_index.vector_stores.redis import RedisVectorStore
-    from redisvl.schema import IndexSchema
+    try:
+        from llama_index.vector_stores.redis import RedisVectorStore  # type: ignore
+        from redisvl.schema import IndexSchema  # type: ignore
+    except ImportError:
+        raise ImportError(
+            PKG_NOT_FOUND_MSG.format(
+                pkg="llama-index-vector-stores-redis",
+                extra="redis",
+                feature="RedisVectorStore",
+            )
+        )
 
     from .vector_store_manager import VectorStoreContainer
 

@@ -8,7 +8,7 @@ import typer
 import uvicorn
 from raggify_client import app as client_app
 
-from ..core.const import PROJECT_NAME, USER_CONFIG_PATH, VERSION
+from ..core.const import DEFAULT_CONFIG_PATH, PROJECT_NAME, VERSION
 from ..logger import console, logger
 
 if TYPE_CHECKING:
@@ -17,6 +17,16 @@ if TYPE_CHECKING:
     from ..config.config_manager import ConfigManager
 
 __all__ = ["app"]
+
+_HELP_MSG = (
+    "raggify CLI: Interface to ingest/query knowledge into/from raggify server. "
+    "User config is {config_path}."
+)
+
+# Re-use the client app
+# Override help message and add server commands
+app = client_app
+app.info.help = _HELP_MSG.format(config_path=DEFAULT_CONFIG_PATH)
 
 
 def _cfg() -> ConfigManager:
@@ -30,17 +40,9 @@ def _cfg() -> ConfigManager:
 
     cfg = get_runtime().cfg
     configure_logging(cfg.general.log_level)
+    app.info.help = _HELP_MSG.format(config_path=cfg.config_path)
 
     return cfg
-
-
-# Re-use the client app
-# Override help message and add server commands
-app = client_app
-app.info.help = (
-    "raggify CLI: Interface to ingest/query knowledge into/from raggify server. "
-    f"User config is {USER_CONFIG_PATH}."
-)
 
 
 def _create_rest_client() -> RestAPIClient:
@@ -119,7 +121,7 @@ def config() -> None:
     cfg = _cfg()
     _echo_json(cfg.get_dict())
 
-    if not os.path.exists(USER_CONFIG_PATH):
+    if not os.path.exists(cfg.config_path):
         cfg.write_yaml()
 
 

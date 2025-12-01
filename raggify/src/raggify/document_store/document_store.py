@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
 from ..config.document_store_config import DocumentStoreConfig, DocumentStoreProvider
-from ..core.const import PJNAME_ALIAS
+from ..core.const import PJNAME_ALIAS, PKG_NOT_FOUND_MSG
 from ..core.utils import sanitize_str
 from ..logger import logger
 
@@ -58,7 +58,18 @@ def _generate_table_name(cfg: ConfigManager) -> str:
 
 # Container factory helpers per provider
 def _redis(cfg: DocumentStoreConfig, table_name: str) -> DocumentStoreManager:
-    from llama_index.storage.docstore.redis import RedisDocumentStore
+    try:
+        from llama_index.storage.docstore.redis import (  # type: ignore
+            RedisDocumentStore,
+        )
+    except ImportError:
+        raise ImportError(
+            PKG_NOT_FOUND_MSG.format(
+                pkg="llama-index-storage-docstore-redis",
+                extra="redis",
+                feature="RedisDocumentStore",
+            )
+        )
 
     from .document_store_manager import DocumentStoreManager
 
@@ -74,7 +85,18 @@ def _redis(cfg: DocumentStoreConfig, table_name: str) -> DocumentStoreManager:
 
 
 def _postgres(cfg: DocumentStoreConfig, table_name: str) -> DocumentStoreManager:
-    from llama_index.storage.docstore.postgres import PostgresDocumentStore
+    try:
+        from llama_index.storage.docstore.postgres import (  # type: ignore
+            PostgresDocumentStore,
+        )
+    except ImportError:
+        raise ImportError(
+            PKG_NOT_FOUND_MSG.format(
+                pkg="llama-index-storage-docstore-postgres",
+                extra="postgres",
+                feature="PostgresDocumentStore",
+            )
+        )
 
     from .document_store_manager import DocumentStoreManager
 

@@ -16,20 +16,22 @@ install:
 	uv pip install --python $(PY) --upgrade pip
 	$(PIP) install -e raggify[exam,dev]
 	$(PIP) install -e raggify-client
-	$(PIP) install $(CLIP_PKG)
-	$(PIP) install $(WHISPER_PKG)
 
-tools:
 	uv tool install --reinstall -e ./raggify
 	uv tool install --reinstall -e ./raggify-client
+
+all: install
+	$(PIP) install -e raggify[all]
+	$(PIP) install $(CLIP_PKG)
+	$(PIP) install $(WHISPER_PKG)
+	
 	uv pip install $(CLIP_PKG)
 	uv pip install $(WHISPER_PKG)
 	uv pip install --python $(TOOL_PY) $(CLIP_PKG)
 	uv pip install --python $(TOOL_PY) $(WHISPER_PKG)
 
-all: install tools
 
-.DEFAULT_GOAL := all
+.DEFAULT_GOAL := install
 
 test:
 	uv pip install --python $(PY) --upgrade pip
@@ -40,4 +42,5 @@ test:
 	  AWS_ACCESS_KEY_ID=dummy \
 	  AWS_SECRET_ACCESS_KEY=dummy \
 	  AWS_REGION=us-east-1 \
+	  RG_CONFIG_PATH=tests/config.yaml \
 	  $(PY) -m pytest --maxfail=1 --cov=raggify --cov=raggify_client --cov-report=term-missing --cov-report=xml

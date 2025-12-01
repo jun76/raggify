@@ -8,6 +8,7 @@ from typing import Any, Iterable, Sequence
 from llama_index.core.readers.base import BaseReader
 from llama_index.core.schema import Document
 
+from ....core.const import PKG_NOT_FOUND_MSG
 from ....core.exts import Exts
 from ....core.metadata import BasicMetaData
 from ....core.utils import get_temp_file_path_from
@@ -36,6 +37,7 @@ class VideoReader(BaseReader):
             audio_suffix (str, optional): Audio file extension. Defaults to Exts.WAV.
 
         Raises:
+            ImportError: If ffmpeg is not installed.
             ValueError: If fps is zero or negative.
         """
         super().__init__()
@@ -51,10 +53,22 @@ class VideoReader(BaseReader):
         Args:
             src (str): Video file path.
 
+        Raises:
+            ImportError: If ffmpeg is not installed.
+
         Returns:
             list[Path]: Extracted frame paths.
         """
-        import ffmpeg
+        try:
+            import ffmpeg  # type: ignore
+        except ImportError:
+            raise ImportError(
+                PKG_NOT_FOUND_MSG.format(
+                    pkg="ffmpeg-python (additionally, ffmpeg itself must be installed separately)",
+                    extra="ffmpeg",
+                    feature="ffmpeg",
+                )
+            )
 
         base_path = Path(get_temp_file_path_from(source=src, suffix=self._image_suffix))
         temp_dir = base_path.parent / f"{base_path.stem}_frames"
@@ -87,10 +101,22 @@ class VideoReader(BaseReader):
         Args:
             src (str): Video file path.
 
+        Raises:
+            ImportError: If ffmpeg is not installed.
+
         Returns:
             Path | None: Extracted audio file path.
         """
-        import ffmpeg
+        try:
+            import ffmpeg  # type: ignore
+        except ImportError:
+            raise ImportError(
+                PKG_NOT_FOUND_MSG.format(
+                    pkg="ffmpeg-python (additionally, ffmpeg itself must be installed separately)",
+                    extra="ffmpeg",
+                    feature="ffmpeg",
+                )
+            )
 
         temp_path = Path(get_temp_file_path_from(source=src, suffix=self._audio_suffix))
         temp_path.parent.mkdir(parents=True, exist_ok=True)

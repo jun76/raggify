@@ -51,6 +51,13 @@ class EmbedConfig(DataClassDictMixin):
             EmbedModel.DIM.value: 512,
         }
     )
+    clap_embed_model_text: dict[str, Any] = field(
+        default_factory=lambda: {
+            EmbedModel.NAME.value: "effect_varlen",
+            EmbedModel.ALIAS.value: "efvl",
+            EmbedModel.DIM.value: 512,
+        }
+    )
     huggingface_embed_model_text: dict[str, Any] = field(
         default_factory=lambda: {
             EmbedModel.NAME.value: "intfloat/multilingual-e5-base",

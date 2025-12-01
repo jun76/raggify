@@ -9,6 +9,7 @@ from ..config.config_manager import ConfigManager
 from ..config.embed_config import EmbedConfig
 from ..config.embed_config import EmbedModel as EM
 from ..config.embed_config import EmbedProvider
+from ..core.const import PKG_NOT_FOUND_MSG
 from ..llama_like.core.schema import Modality
 
 if TYPE_CHECKING:
@@ -41,6 +42,8 @@ def create_embed_manager(cfg: ConfigManager) -> EmbedManager:
                     cont = _cohere_text(cfg.embed)
                 case EmbedProvider.CLIP:
                     cont = _clip_text(cfg)
+                case EmbedProvider.CLAP:
+                    cont = _clap_text(cfg)
                 case EmbedProvider.HUGGINGFACE:
                     cont = _huggingface_text(cfg)
                 case EmbedProvider.VOYAGE:
@@ -127,8 +130,17 @@ def _openai_text(cfg: ConfigManager) -> EmbedContainer:
     )
 
 
-def _cohere(model: dict[str, Any]) -> EmbedContainer:
-    from llama_index.embeddings.cohere.base import CohereEmbedding
+def _cohere(model: dict[str, Any], extra: str) -> EmbedContainer:
+    try:
+        from llama_index.embeddings.cohere.base import CohereEmbedding  # type: ignore
+    except ImportError:
+        raise ImportError(
+            PKG_NOT_FOUND_MSG.format(
+                pkg="llama-index-embeddings-cohere",
+                extra=extra,
+                feature="CohereEmbedding",
+            )
+        )
 
     from .embed_manager import EmbedContainer
 
@@ -144,15 +156,24 @@ def _cohere(model: dict[str, Any]) -> EmbedContainer:
 
 
 def _cohere_text(cfg: EmbedConfig) -> EmbedContainer:
-    return _cohere(cfg.cohere_embed_model_text)
+    return _cohere(model=cfg.cohere_embed_model_text, extra="text")
 
 
 def _cohere_image(cfg: EmbedConfig) -> EmbedContainer:
-    return _cohere(cfg.cohere_embed_model_image)
+    return _cohere(model=cfg.cohere_embed_model_image, extra="image")
 
 
-def _clip(model: dict[str, Any], device: str) -> EmbedContainer:
-    from llama_index.embeddings.clip import ClipEmbedding
+def _clip(model: dict[str, Any], extra: str, device: str) -> EmbedContainer:
+    try:
+        from llama_index.embeddings.clip import ClipEmbedding  # type: ignore
+    except ImportError:
+        raise ImportError(
+            PKG_NOT_FOUND_MSG.format(
+                pkg="llama-index-embeddings-clip",
+                extra=extra,
+                feature="ClipEmbedding",
+            )
+        )
 
     from .embed_manager import EmbedContainer
 
@@ -168,15 +189,57 @@ def _clip(model: dict[str, Any], device: str) -> EmbedContainer:
 
 
 def _clip_text(cfg: ConfigManager) -> EmbedContainer:
-    return _clip(model=cfg.embed.clip_embed_model_text, device=cfg.general.device)
+    return _clip(
+        model=cfg.embed.clip_embed_model_text,
+        extra="localmodel",
+        device=cfg.general.device,
+    )
 
 
 def _clip_image(cfg: ConfigManager) -> EmbedContainer:
-    return _clip(model=cfg.embed.clip_embed_model_image, device=cfg.general.device)
+    return _clip(
+        model=cfg.embed.clip_embed_model_image,
+        extra="localmodel",
+        device=cfg.general.device,
+    )
 
 
-def _huggingface(model: dict[str, Any], device: str) -> EmbedContainer:
-    from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+def _clap(model: dict[str, Any], device: str) -> EmbedContainer:
+    from ..llama_like.embeddings.clap import ClapEmbedding
+    from .embed_manager import EmbedContainer
+
+    return EmbedContainer(
+        provider_name=EmbedProvider.CLAP,
+        embed=ClapEmbedding(
+            model_name=model[EM.NAME],
+            device=device,
+        ),
+        dim=model[EM.DIM],
+        alias=model[EM.ALIAS],
+    )
+
+
+def _clap_text(cfg: ConfigManager) -> EmbedContainer:
+    return _clap(model=cfg.embed.clap_embed_model_text, device=cfg.general.device)
+
+
+def _clap_audio(cfg: ConfigManager) -> EmbedContainer:
+    return _clap(model=cfg.embed.clap_embed_model_audio, device=cfg.general.device)
+
+
+def _huggingface(model: dict[str, Any], extra: str, device: str) -> EmbedContainer:
+    try:
+        from llama_index.embeddings.huggingface import (  # type: ignore
+            HuggingFaceEmbedding,
+        )
+    except ImportError:
+        raise ImportError(
+            PKG_NOT_FOUND_MSG.format(
+                pkg="llama-index-embeddings-huggingface",
+                extra=extra,
+                feature="HuggingFaceEmbedding",
+            )
+        )
 
     from .embed_manager import EmbedContainer
 
@@ -194,35 +257,31 @@ def _huggingface(model: dict[str, Any], device: str) -> EmbedContainer:
 
 def _huggingface_text(cfg: ConfigManager) -> EmbedContainer:
     return _huggingface(
-        model=cfg.embed.huggingface_embed_model_text, device=cfg.general.device
+        model=cfg.embed.huggingface_embed_model_text,
+        extra="localmodel",
+        device=cfg.general.device,
     )
 
 
 def _huggingface_image(cfg: ConfigManager) -> EmbedContainer:
     return _huggingface(
-        model=cfg.embed.huggingface_embed_model_image, device=cfg.general.device
+        model=cfg.embed.huggingface_embed_model_image,
+        extra="localmodel",
+        device=cfg.general.device,
     )
 
 
-def _clap_audio(cfg: ConfigManager) -> EmbedContainer:
-    from ..llama_like.embeddings.clap import ClapEmbedding
-    from .embed_manager import EmbedContainer
-
-    model = cfg.embed.clap_embed_model_audio
-
-    return EmbedContainer(
-        provider_name=EmbedProvider.CLAP,
-        embed=ClapEmbedding(
-            model_name=model[EM.NAME],
-            device=cfg.general.device,
-        ),
-        dim=model[EM.DIM],
-        alias=model[EM.ALIAS],
-    )
-
-
-def _voyage(model: dict[str, Any]) -> EmbedContainer:
-    from llama_index.embeddings.voyageai.base import VoyageEmbedding
+def _voyage(model: dict[str, Any], extra: str) -> EmbedContainer:
+    try:
+        from llama_index.embeddings.voyageai.base import VoyageEmbedding  # type: ignore
+    except ImportError:
+        raise ImportError(
+            PKG_NOT_FOUND_MSG.format(
+                pkg="llama-index-embeddings-voyageai",
+                extra=extra,
+                feature="VoyageEmbedding",
+            )
+        )
 
     from .embed_manager import EmbedContainer
 
@@ -240,11 +299,11 @@ def _voyage(model: dict[str, Any]) -> EmbedContainer:
 
 
 def _voyage_text(cfg: EmbedConfig) -> EmbedContainer:
-    return _voyage(cfg.voyage_embed_model_text)
+    return _voyage(model=cfg.voyage_embed_model_text, extra="text")
 
 
 def _voyage_image(cfg: EmbedConfig) -> EmbedContainer:
-    return _voyage(cfg.voyage_embed_model_image)
+    return _voyage(model=cfg.voyage_embed_model_image, extra="image")
 
 
 def _bedrock(model: dict[str, Any]) -> EmbedContainer:

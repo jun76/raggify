@@ -32,23 +32,31 @@ class FileLoader(Loader):
 
         self._ingest_target_exts = ingest_target_exts
 
-        # Dictionary of custom readers to pass to SimpleDirectoryReader
-        self._readers: dict[str, BaseReader] = {Exts.PDF: MultiPDFReader()}
+        cfg = _rt().cfg.general
+        if cfg.image_embed_provider is not None:
+            # Dictionary of custom readers to pass to SimpleDirectoryReader
+            self._readers: dict[str, BaseReader] = {Exts.PDF: MultiPDFReader()}
+
+            if cfg.use_modality_fallback:
+                # add readers for image transcription if supported in the future
+                pass
+
+        if cfg.audio_embed_provider is not None:
+            # Convert audio files to mp3 for ingestion
+            audio_reader = AudioReader()
+            for ext in Exts.AUDIO:
+                self._readers[ext] = audio_reader
+
+            if cfg.use_modality_fallback:
+                # add readers for audio transcription if supported in the future
+                pass
 
         # For cases like video -> image + audio decomposition, use a reader
-        cfg = _rt().cfg.general
-        if cfg.use_modality_fallback:
-            if cfg.video_embed_provider is None:
+        if cfg.video_embed_provider is None:
+            if cfg.use_modality_fallback:
                 video_reader = VideoReader()
                 for ext in Exts.VIDEO:
                     self._readers[ext] = video_reader
-
-            # TODO: Add readers for image/audio transcription if supported in the future
-
-        # Convert audio files to mp3 for ingestion
-        audio_reader = AudioReader()
-        for ext in Exts.AUDIO:
-            self._readers[ext] = audio_reader
 
         # For other media types, use dummy reader to pass through
         dummy_reader = DummyMediaReader()

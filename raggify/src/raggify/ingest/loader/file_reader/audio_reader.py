@@ -38,7 +38,29 @@ class AudioReader(BaseReader):
         self._suffix = suffix
 
     def _convert(self, src: str) -> Path | None:
-        import ffmpeg
+        """Execute audio conversion.
+
+        Args:
+            src (str): Source audio file path.
+
+        Raises:
+            ImportError: If ffmpeg is not installed.
+
+        Returns:
+            Path | None: Converted audio file path, or None on failure.
+        """
+        try:
+            import ffmpeg  # type: ignore
+        except ImportError:
+            from ....core.const import PKG_NOT_FOUND_MSG
+
+            raise ImportError(
+                PKG_NOT_FOUND_MSG.format(
+                    pkg="ffmpeg-python (additionally, ffmpeg itself must be installed separately)",
+                    extra="audio",
+                    feature="AudioReader",
+                )
+            )
 
         temp_path = Path(get_temp_file_path_from(source=src, suffix=self._suffix))
         temp_path.parent.mkdir(parents=True, exist_ok=True)
@@ -70,8 +92,6 @@ class AudioReader(BaseReader):
         Returns:
             Iterable[Document]: Documents referencing converted files.
         """
-        from ....core.metadata import MetaKeys as MK
-
         abs_path = os.path.abspath(path)
         if not os.path.exists(abs_path):
             logger.warning(f"file not found: {abs_path}")

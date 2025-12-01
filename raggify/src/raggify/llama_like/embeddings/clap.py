@@ -55,8 +55,23 @@ class ClapEmbedding(AudioEmbedding):
         Args:
             model_name (str, optional): Model name (custom enum here). Defaults to "general".
             device (str, optional): Embedding device. Defaults to "cuda".
+            embed_batch_size (int, optional): Embed batch size. Defaults to 8.
+
+        Raises:
+            ImportError: If laion-clap is not installed.
         """
-        import laion_clap
+        try:
+            import laion_clap  # type: ignore
+        except ImportError:
+            from ...core.const import PKG_NOT_FOUND_MSG
+
+            raise ImportError(
+                PKG_NOT_FOUND_MSG.format(
+                    pkg="laion-clap",
+                    extra="localmodel",
+                    feature="ClapEmbedding",
+                )
+            )
 
         super().__init__(
             model_name=f"clap/{model_name}",

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Awaitable, Callable, Optional, Type
 
 from llama_index.core.schema import BaseNode, TransformComponent
 
+from ..core.const import PKG_NOT_FOUND_MSG
 from ..core.event import async_loop_runner
 from ..logger import logger
 
@@ -206,10 +207,22 @@ class _BaseMediaSplitter(TransformComponent):
         Args:
             path (str): Media file path.
 
+        Raises:
+            ImportError: If ffmpeg is not installed.
+
         Returns:
             Optional[float]: Duration in seconds, or None on failure.
         """
-        import ffmpeg
+        try:
+            import ffmpeg  # type: ignore
+        except ImportError:
+            raise ImportError(
+                PKG_NOT_FOUND_MSG.format(
+                    pkg="ffmpeg-python (additionally, ffmpeg itself must be installed separately)",
+                    extra="ffmpeg",
+                    feature="ffmpeg",
+                )
+            )
 
         try:
             probe = ffmpeg.probe(path)
@@ -224,10 +237,22 @@ class _BaseMediaSplitter(TransformComponent):
         Args:
             path (str): Original media path.
 
+        Raises:
+            ImportError: If ffmpeg is not installed.
+
         Returns:
             list[str]: Paths to chunk files.
         """
-        import ffmpeg
+        try:
+            import ffmpeg  # type: ignore
+        except ImportError:
+            raise ImportError(
+                PKG_NOT_FOUND_MSG.format(
+                    pkg="ffmpeg-python (additionally, ffmpeg itself must be installed separately)",
+                    extra="ffmpeg",
+                    feature="ffmpeg",
+                )
+            )
 
         from ..core.utils import get_temp_file_path_from
 

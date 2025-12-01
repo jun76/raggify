@@ -30,11 +30,24 @@ To install minimal, run:
 pip install raggify
 ```
 
-If you also use examples, run:
+You can also install with optional-dependencies:
 
 ```bash
-pip install 'raggify[exam]'
+pip install 'raggify[all]'
 ```
+
+is equal to
+
+```bash
+pip install 'raggify[text,image,audio,video,rerank,localmodel,postgres,redis,exam,dev]'
+```
+
+- text, image, audio, video: to use embedding features
+- rerank: to use reranking features
+- localmodel: to use local embedding features (GPU usage recommended)
+- postgres, redis: to use docstore, ingest cache, and vector store servers
+- exam: to use examples/rag
+- dev: to run tests
 
 Then, put your required API-KEYs and credentials in .env file.
 
@@ -48,6 +61,8 @@ AWS_SECRET_ACCESS_KEY="your-key"
 AWS_REGION="us-east-1" # (default)
 # AWS_PROFILE="your-profile" # (optional)
 # AWS_SESSION_TOKEN = "your-token" # (optional)
+# RG_CONFIG_PATH="/path/to/config.yaml" # (optional)
+# RG_CLIENT_CONFIG_PATH="/path/to/client_config.yaml" # (optional)
 ```
 
 Default providers (configured at /etc/raggify/config.yaml) are:
@@ -61,10 +76,10 @@ raggify config | grep provider
 "document_store_provider": "local",
 "ingest_cache_provider": "local",
 "text_embed_provider": "openai",
-"image_embed_provider": "cohere",
-"audio_embed_provider": "bedrock",
-"video_embed_provider": "bedrock",
-"rerank_provider": "cohere",
+"image_embed_provider": null,
+"audio_embed_provider": null,
+"video_embed_provider": null,
+"rerank_provider": null,
 ```
 
 To use the following features, additional installation from the Git repository is required.
@@ -79,6 +94,15 @@ pip install clip@git+https://github.com/openai/CLIP.git
 
 ```bash
 pip install openai-whisper@git+https://github.com/openai/whisper.git
+```
+
+🎤🎬 ffmpeg
+
+Example of Ubuntu
+
+```bash
+sudo apt-get update
+sudo apt-get install ffmpeg
 ```
 
 # 📚 Use As Library
@@ -133,9 +157,10 @@ nodes = query_text_image("what is the main character in Batman")
 
 ### To use local CLIP
 
-need to install clip
+Need to install:
 
 ```bash
+pip install 'raggify[image,localmodel]'
 pip install clip@git+https://github.com/openai/CLIP.git
 ```
 
@@ -168,9 +193,10 @@ nodes = query_text_audio("phone call")
 
 ### To use local CLAP
 
-need to install openai-whisper
+Need to install:
 
 ```bash
+pip install 'raggify[audio,localmodel]'
 pip install openai-whisper@git+https://github.com/openai/whisper.git
 ```
 
@@ -198,6 +224,12 @@ nodes = query_image_video(query_path)
 ```
 
 ### To use video features
+
+Need to install:
+
+```bash
+pip install 'raggify[video]'
+```
 
 Currently, **bedrock** is the only provider that allows direct video embedding.
 
@@ -679,6 +711,9 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 | `clip_embed_model_text.name`          | CLIP text embed model.                      | `ViT-B/32`                                 | Fixed model name.                                                                                  |
 | `clip_embed_model_text.alias`         | Alias for CLIP text embed model.            | `vi32`                                     | Any string.                                                                                        |
 | `clip_embed_model_text.dim`           | Dimension of CLIP text embeddings.          | `512`                                      | Fixed value.                                                                                       |
+| `clap_embed_model_text.name`          | CLAP text embed model.                      | `effect_varlen`                            | `effect_short`, `effect_varlen`, ~~`music`, `speech`, `general`~~ (last 3 pending implementation). |
+| `clap_embed_model_text.alias`         | Alias for CLAP text embed model.            | `efvl`                                     | Any string.                                                                                        |
+| `clap_embed_model_text.dim`           | Dimension of CLAP text embeddings.          | `512`                                      | Fixed value.                                                                                       |
 | `huggingface_embed_model_text.name`   | Hugging Face text embed model.              | `intfloat/multilingual-e5-base`            | Fixed model name.                                                                                  |
 | `huggingface_embed_model_text.alias`  | Alias for Hugging Face text embed model.    | `imeb`                                     | Any string.                                                                                        |
 | `huggingface_embed_model_text.dim`    | Dimension of Hugging Face text embeddings.  | `768`                                      | Fixed value.                                                                                       |

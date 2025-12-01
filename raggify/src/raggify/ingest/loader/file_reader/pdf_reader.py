@@ -6,11 +6,21 @@ from typing import TYPE_CHECKING, Any, Iterable
 from llama_index.core.readers.base import BaseReader
 from llama_index.core.schema import Document
 
+from ....core.const import PKG_NOT_FOUND_MSG
 from ....core.exts import Exts
 from ....logger import logger
 
+_PYMUPDF_NOT_FOUND_MSG = PKG_NOT_FOUND_MSG.format(
+    pkg="pymupdf",
+    extra="image",
+    feature="MultiPDFReader",
+)
+
 if TYPE_CHECKING:
-    from fitz import Document as FDoc
+    try:
+        from fitz import Document as FDoc  # type: ignore
+    except ImportError:
+        raise ImportError(_PYMUPDF_NOT_FOUND_MSG)
 
 __all__ = ["MultiPDFReader"]
 
@@ -24,10 +34,16 @@ class MultiPDFReader(BaseReader):
         Args:
             path (str): File path.
 
+        Raises:
+            ImportError: If pymupdf is not installed.
+
         Returns:
             Iterable[Document]: Text and image documents.
         """
-        import pymupdf as fitz
+        try:
+            import pymupdf as fitz  # type: ignore
+        except ImportError:
+            raise ImportError(_PYMUPDF_NOT_FOUND_MSG)
 
         path = os.path.abspath(path)
         if not os.path.exists(path):
@@ -105,10 +121,16 @@ class MultiPDFReader(BaseReader):
             pdf (FDoc): PDF instance.
             path (str): File path.
 
+        Raises:
+            ImportError: If pymupdf is not installed.
+
         Returns:
             list[Document]: Generated documents.
         """
-        import pymupdf as fitz
+        try:
+            import pymupdf as fitz  # type: ignore
+        except ImportError:
+            raise ImportError(_PYMUPDF_NOT_FOUND_MSG)
 
         from ....core.metadata import BasicMetaData
         from ....core.utils import get_temp_file_path_from

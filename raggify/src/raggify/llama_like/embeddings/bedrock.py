@@ -9,7 +9,18 @@ from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional
 
-from llama_index.embeddings.bedrock import BedrockEmbedding
+try:
+    from llama_index.embeddings.bedrock import BedrockEmbedding  # type: ignore
+except ImportError:
+    from ...core.const import PKG_NOT_FOUND_MSG
+
+    raise ImportError(
+        PKG_NOT_FOUND_MSG.format(
+            pkg="bedrock",
+            extra="video",
+            feature="BedrockEmbedding",
+        )
+    )
 
 from raggify.core.exts import Exts
 

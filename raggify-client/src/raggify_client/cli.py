@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Protocol
 import typer
 
 from .config_manager import ConfigManager
-from .const import PROJECT_BASE_NAME, PROJECT_NAME, USER_CONFIG_PATH, VERSION
+from .const import PROJECT_BASE_NAME, PROJECT_NAME, VERSION
 from .logger import configure_logging, console, logger
 
 if TYPE_CHECKING:
@@ -20,6 +20,7 @@ configure_logging(cfg.general.log_level)
 
 app = typer.Typer(
     help="raggify-client CLI: Interface to ingest/query knowledge into/from raggify server. "
+    f"User config is {cfg.config_path}."
 )
 
 
@@ -64,7 +65,7 @@ def config() -> None:
     logger.debug("")
     _echo_json(cfg.get_dict())
 
-    if not os.path.exists(USER_CONFIG_PATH):
+    if not os.path.exists(cfg.config_path):
         cfg.write_yaml()
 
 
