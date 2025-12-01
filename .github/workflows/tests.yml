@@ -30,7 +30,7 @@ jobs:
           pip install uv
 
       - name: Setup project
-        run: make all
+        run: make install
 
       - name: Run tests
         run: make test
