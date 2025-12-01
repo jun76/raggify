@@ -382,13 +382,16 @@ async def aingest_path(
 
     Args:
         path (str): Target path.
+        batch_size (Optional[int]): Batch size. Defaults to None.
+        is_canceled (Callable[[], bool], optional):
+            Cancellation flag. Defaults to lambda:False.
     """
     rt = _rt()
     file_loader = rt.file_loader
     text_nodes, image_nodes, audio_nodes, video_nodes = (
         await file_loader.aload_from_path(path)
     )
-    batch_size = batch_size or rt.cfg.ingest.batch_size
+    batch_size = batch_size or rt.cfg.ingest.pipe_batch_size
 
     await _aupsert_nodes(
         text_nodes=text_nodes,
@@ -440,7 +443,7 @@ async def aingest_path_list(
     text_nodes, image_nodes, audio_nodes, video_nodes = (
         await file_loader.aload_from_paths(paths=list(lst), is_canceled=is_canceled)
     )
-    batch_size = batch_size or rt.cfg.ingest.batch_size
+    batch_size = batch_size or rt.cfg.ingest.pipe_batch_size
 
     await _aupsert_nodes(
         text_nodes=text_nodes,
@@ -493,7 +496,7 @@ async def aingest_url(
     text_nodes, image_nodes, audio_nodes, video_nodes = (
         await html_loader.aload_from_url(url=url, is_canceled=is_canceled)
     )
-    batch_size = batch_size or rt.cfg.ingest.batch_size
+    batch_size = batch_size or rt.cfg.ingest.pipe_batch_size
 
     await _aupsert_nodes(
         text_nodes=text_nodes,
@@ -545,7 +548,7 @@ async def aingest_url_list(
     text_nodes, image_nodes, audio_nodes, video_nodes = (
         await html_loader.aload_from_urls(urls=list(lst), is_canceled=is_canceled)
     )
-    batch_size = batch_size or rt.cfg.ingest.batch_size
+    batch_size = batch_size or rt.cfg.ingest.pipe_batch_size
 
     await _aupsert_nodes(
         text_nodes=text_nodes,

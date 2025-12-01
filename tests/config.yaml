@@ -45,9 +45,11 @@ ingest_cache:
   postgres_user: raggify
   postgres_password: null
 embed:
+  embed_batch_size: 1000
+  batch_interval_sec: 1
   openai_embed_model_text:
-    name: text-embedding-3-small
-    alias: te3s
+    name: text-embedding-3-large
+    alias: te3l
     dim: 1536
   cohere_embed_model_text:
     name: embed-v4.0
@@ -110,7 +112,7 @@ ingest:
   chunk_overlap: 50
   upload_dir: ./.local/share/raggify/upload
   pipe_persist_dir: ./.local/share/raggify/default_kb
-  batch_size: 100
+  pipe_batch_size: 10
   audio_chunk_seconds: 25
   video_chunk_seconds: 25
   additional_exts:

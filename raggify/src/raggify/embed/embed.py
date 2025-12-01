@@ -107,7 +107,11 @@ def create_embed_manager(cfg: ConfigManager) -> EmbedManager:
     if not conts:
         raise RuntimeError("no embedding providers are specified")
 
-    return EmbedManager(conts)
+    return EmbedManager(
+        conts=conts,
+        batch_size=cfg.embed.embed_batch_size,
+        batch_interval_sec=cfg.embed.batch_interval_sec,
+    )
 
 
 # Container generation helpers per provider

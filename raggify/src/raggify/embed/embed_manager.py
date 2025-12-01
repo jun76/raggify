@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Awaitable, Callable
 
 from llama_index.core.settings import Settings
 
@@ -30,14 +31,23 @@ class EmbedContainer:
 class EmbedManager:
     """Manager class for embeddings."""
 
-    def __init__(self, conts: dict[Modality, EmbedContainer]) -> None:
+    def __init__(
+        self,
+        conts: dict[Modality, EmbedContainer],
+        batch_size: int,
+        batch_interval_sec: int,
+    ) -> None:
         """Constructor.
 
         Args:
             conts (dict[Modality, EmbedContainer]):
                 Mapping of modality to embedding container.
+            batch_size (int): Batch size for embedding operations.
+            batch_interval_sec (int): Interval between batches in seconds.
         """
         self._conts = conts
+        self._batch_size = batch_size
+        self._batch_interval_sec = batch_interval_sec
 
         for modality, cont in conts.items():
             cont.space_key = self._generate_space_key(
@@ -133,6 +143,43 @@ class EmbedManager:
 
         return cont
 
+    async def aembed_batch(
+        self,
+        modality: Modality,
+        inputs: list[Any],
+        batcher: Callable[[list[Any]], Awaitable[list[Embedding]]],
+    ) -> list[Embedding]:
+        """Embed inputs in batches using provided callable.
+
+        Args:
+            modality (Modality): Target modality.
+            inputs (list[Any]): Items to embed.
+            batcher (Callable[[list[Any]], Awaitable[list[Embedding]]]):
+                Async callable to embed each chunk.
+
+        Raises:
+            RuntimeError: If failed to embed.
+
+        Returns:
+            list[Embedding]: Embedding vectors.
+        """
+        if not inputs:
+            return []
+
+        logger.debug(f"now batch embedding {len(inputs)} {modality}s...")
+
+        dims: list[Embedding] = []
+        for idx in range(0, len(inputs), self._batch_size):
+            batch = inputs[idx : idx + self._batch_size]
+            dims.extend(await batcher(batch))
+
+            logger.debug(f"embed total {len(dims)} {modality}s so far...")
+            time.sleep(self._batch_interval_sec)
+
+        logger.debug(f"done. dim = {len(dims[0])}, embed {len(dims)} {modality}s")
+
+        return dims
+
     async def aembed_text(self, texts: list[str]) -> list[Embedding]:
         """Get embedding vectors for text asynchronously.
 
@@ -151,13 +198,14 @@ class EmbedManager:
 
         embed = self.get_container(Modality.TEXT).embed
 
-        logger.debug(f"now batch embedding {len(texts)} texts...")
-        dims = await embed.aget_text_embedding_batch(texts=texts, show_progress=True)
+        async def _batch_call(batch: list[str]) -> list[Embedding]:
+            return await embed.aget_text_embedding_batch(
+                texts=batch, show_progress=True
+            )
 
-        if dims:
-            logger.debug(f"dim = {len(dims[0])}, embed {len(dims)} texts")
-
-        return dims
+        return await self.aembed_batch(
+            modality=Modality.TEXT, inputs=texts, batcher=_batch_call
+        )
 
     async def aembed_image(self, paths: list[ImageType]) -> list[Embedding]:
         """Get embedding vectors for images asynchronously.
@@ -181,15 +229,14 @@ class EmbedManager:
         if not isinstance(embed, MultiModalEmbedding):
             raise RuntimeError("multimodal embed model is required")
 
-        logger.debug(f"now batch embedding {len(paths)} images...")
-        dims = await embed.aget_image_embedding_batch(
-            img_file_paths=paths, show_progress=True
+        async def _batch_call(batch: list[ImageType]) -> list[Embedding]:
+            return await embed.aget_image_embedding_batch(
+                img_file_paths=batch, show_progress=True
+            )
+
+        return await self.aembed_batch(
+            modality=Modality.IMAGE, inputs=paths, batcher=_batch_call
         )
-
-        if dims:
-            logger.debug(f"dim = {len(dims[0])}, embed {len(dims)} images")
-
-        return dims
 
     async def aembed_audio(self, paths: list[AudioType]) -> list[Embedding]:
         """Get embedding vectors for audio asynchronously.
@@ -213,15 +260,14 @@ class EmbedManager:
         if not isinstance(embed, AudioEmbedding):
             raise RuntimeError("audio embed model is required")
 
-        logger.debug(f"now batch embedding {len(paths)} audios...")
-        dims = await embed.aget_audio_embedding_batch(
-            audio_file_paths=paths, show_progress=True
+        async def _batch_call(batch: list[AudioType]) -> list[Embedding]:
+            return await embed.aget_audio_embedding_batch(
+                audio_file_paths=batch, show_progress=True
+            )
+
+        return await self.aembed_batch(
+            modality=Modality.AUDIO, inputs=paths, batcher=_batch_call
         )
-
-        if dims:
-            logger.debug(f"dim = {len(dims[0])}, embed {len(dims)} audios")
-
-        return dims
 
     async def aembed_video(self, paths: list[VideoType]) -> list[Embedding]:
         """Get embedding vectors for video asynchronously.
@@ -245,15 +291,14 @@ class EmbedManager:
         if not isinstance(embed, VideoEmbedding):
             raise RuntimeError("video embed model is required")
 
-        logger.debug(f"now batch embedding {len(paths)} videos...")
-        dims = await embed.aget_video_embedding_batch(
-            video_file_paths=paths, show_progress=True
+        async def _batch_call(batch: list[VideoType]) -> list[Embedding]:
+            return await embed.aget_video_embedding_batch(
+                video_file_paths=batch, show_progress=True
+            )
+
+        return await self.aembed_batch(
+            modality=Modality.VIDEO, inputs=paths, batcher=_batch_call
         )
-
-        if dims:
-            logger.debug(f"dim = {len(dims[0])}, embed {len(dims)} videos")
-
-        return dims
 
     def _generate_space_key(self, provider: str, model: str, modality: Modality) -> str:
         """Generate a space key string.

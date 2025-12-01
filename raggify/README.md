@@ -702,6 +702,8 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 
 | Parameter                             | Description                                 | Default                                    | Allowed values / examples                                                                          |
 | ------------------------------------- | ------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `embed_batch_size`                    | Max chunk size per embedding request.       | `1000`                                     | Any positive integer.                                                                              |
+| `batch_interval_sec`                  | Delay between embedding batches (seconds).  | `1`                                        | Any non-negative integer.                                                                          |
 | `openai_embed_model_text.name`        | OpenAI text embed model.                    | `text-embedding-3-small`                   | Fixed model name.                                                                                  |
 | `openai_embed_model_text.alias`       | Alias for OpenAI text embed model.          | `te3s`                                     | Any string.                                                                                        |
 | `openai_embed_model_text.dim`         | Dimension of OpenAI text embeddings.        | `1536`                                     | Fixed value.                                                                                       |
@@ -756,7 +758,7 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 | `chunk_overlap`       | Overlap between adjacent chunks.             | `50`                                | Any integer.                                      |
 | `upload_dir`          | Directory for uploaded files.                | `~/.local/share/raggify/upload`     | Any filesystem path.                              |
 | `pipe_persist_dir`    | Pipeline persistence root per KB.            | `~/.local/share/raggify/default_kb` | Any filesystem path.                              |
-| `batch_size`          | Number of nodes processed per async batch.   | `100`                               | Any positive integer.                             |
+| `pipe_batch_size`     | Number of nodes processed per async batch.   | `10`                                | Any positive integer.                             |
 | `audio_chunk_seconds` | Chunk length for audio splitting (seconds).  | `25`                                | Positive integer, or `null` to disable splitting. |
 | `video_chunk_seconds` | Chunk length for video splitting (seconds).  | `25`                                | Positive integer, or `null` to disable splitting. |
 | `additional_exts`     | Extra whitelist extensions for local ingest. | `[".c", ".py", ".rst"]`             | List of dot-prefixed extensions.                  |

@@ -38,7 +38,9 @@ class DummyVideoEmbedding(DummyVideoBase):
     pass
 
 
-def make_dummy_manager(mapping: dict[Modality, Any]) -> EmbedManager:
+def make_dummy_manager(
+    mapping: dict[Modality, Any], batch_size: int = 10, batch_interval_sec: int = 0
+) -> EmbedManager:
     args = {
         modality: EmbedContainer(
             provider_name="dummy",
@@ -48,4 +50,4 @@ def make_dummy_manager(mapping: dict[Modality, Any]) -> EmbedManager:
         )
         for modality, embed in mapping.items()
     }
-    return EmbedManager(args)
+    return EmbedManager(args, batch_size=batch_size, batch_interval_sec=batch_interval_sec)

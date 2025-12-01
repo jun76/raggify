@@ -29,11 +29,14 @@ class EmbedModel(StrEnum):
 class EmbedConfig(DataClassDictMixin):
     """Config dataclass for embedding settings."""
 
+    embed_batch_size: int = 1000
+    batch_interval_sec: int = 1
+
     # Text
     openai_embed_model_text: dict[str, Any] = field(
         default_factory=lambda: {
-            EmbedModel.NAME.value: "text-embedding-3-small",
-            EmbedModel.ALIAS.value: "te3s",
+            EmbedModel.NAME.value: "text-embedding-3-large",
+            EmbedModel.ALIAS.value: "te3l",
             EmbedModel.DIM.value: 1536,
         }
     )
