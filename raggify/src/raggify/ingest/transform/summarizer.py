@@ -77,10 +77,13 @@ class LLMSummarizer(TransformComponent):
         llm = OpenAI(model=self._model, temperature=0)
         prompt = """
 Please extract only the main text useful for semantic search from the following text.
-Remove figure captions, short texts under 20 characters, advertisements,
-site navigation elements, copyright notices, etc.
-If nothing remains after removal, that is acceptable.
-In that case, please return an empty string.
+Remove figure captions, fragmented and brief text, advertisements, copyright notices, 
+typical text such as headers and footers etc.
+
+Since the extracted text will be shortened later, 
+there is no need to summarize its content semantically here.
+
+If no useful text is available, please return an empty string (no need for unnecessary comments).
 
 Original text:
 {text}
@@ -106,8 +109,9 @@ Only useful main text:
 
         llm = OpenAIMultiModal(model=self._model, temperature=0)
         prompt = """
-Please provide a concise description of the content of the following image for semantic search purposes.
-If the image is not describable, please return an empty string.
+Please provide a concise description of the content of the following image for 
+semantic search purposes. If the image is not describable, please return 
+just an empty string (no need for unnecessary comments).
 """
         resp = llm.complete(prompt=prompt, image_documents=[node])
         caption = resp.text.strip()

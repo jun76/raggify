@@ -38,6 +38,34 @@ def patch_video_extract(
     monkeypatch.setattr(VideoReader, "_extract_audio", _fake_audio)
 
 
+def patch_html_temp_file(monkeypatch, path: Path) -> None:
+    """Patch get_temp_file_path_from used by HTMLReader."""
+    from raggify.core import utils as core_utils
+
+    def _fake_temp(source: str, suffix: str) -> str:
+        return str(path)
+
+    monkeypatch.setattr(core_utils, "get_temp_file_path_from", _fake_temp)
+
+
+def patch_html_asset_download(monkeypatch, content: bytes, content_type: str = "image/png") -> None:
+    """Patch arequest_get for HTMLReader asset downloads."""
+
+    payload = content
+
+    async def _fake_get(*args, **kwargs):
+        class _Resp:
+            headers = {"Content-Type": content_type}
+            content = payload
+
+        return _Resp()
+
+    monkeypatch.setattr(
+        "raggify.ingest.loader.html_reader.html_reader.arequest_get",
+        AsyncMock(side_effect=_fake_get),
+    )
+
+
 @contextmanager
 def patch_html_fetchers() -> Iterator[None]:
     """Patch HTML fetchers (sitemap/default/Wikipedia HTML) and asset download."""

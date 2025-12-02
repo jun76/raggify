@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional, Sequence
 
@@ -80,16 +81,35 @@ def _build_text_pipeline(
     )
 
     rt = _rt()
-    transformations: list[TransformComponent] = [
-        LLMSummarizer() if use_llm else DefaultSummarizer(),
-        SentenceSplitter(
-            chunk_size=rt.cfg.ingest.chunk_size,
-            chunk_overlap=rt.cfg.ingest.chunk_overlap,
-            include_metadata=True,
-        ),
-        AddChunkIndexTransform(),
-        make_text_embed_transform(rt.embed_manager),
-    ]
+    if use_llm:
+        large_chunk_size = 10000
+        transformations: list[TransformComponent] = [
+            # Split before LLM summarization to avoid token limit issues
+            SentenceSplitter(
+                chunk_size=large_chunk_size,
+                chunk_overlap=rt.cfg.ingest.chunk_overlap,
+                include_metadata=True,
+            ),
+            LLMSummarizer(),
+            SentenceSplitter(
+                chunk_size=rt.cfg.ingest.chunk_size,
+                chunk_overlap=rt.cfg.ingest.chunk_overlap,
+                include_metadata=True,
+            ),
+            AddChunkIndexTransform(),
+            make_text_embed_transform(rt.embed_manager),
+        ]
+    else:
+        transformations: list[TransformComponent] = [
+            DefaultSummarizer(),
+            SentenceSplitter(
+                chunk_size=rt.cfg.ingest.chunk_size,
+                chunk_overlap=rt.cfg.ingest.chunk_overlap,
+                include_metadata=True,
+            ),
+            AddChunkIndexTransform(),
+            make_text_embed_transform(rt.embed_manager),
+        ]
 
     return rt.build_pipeline(
         modality=Modality.TEXT,
@@ -203,6 +223,7 @@ async def _process_batches(
     persist_dir: Optional[Path],
     pipe_batch_size: int,
     is_canceled: Callable[[], bool],
+    retry_count: int = 5,
 ) -> None:
     """Batch upserts to avoid long blocking when handling many nodes.
 
@@ -212,6 +233,7 @@ async def _process_batches(
         persist_dir (Optional[Path]): Persist directory.
         pipe_batch_size (int): Number of nodes processed per pipeline batch.
         is_canceled (Callable[[], bool]): Cancellation flag for the job.
+        retry_count (int): Number of retry attempts for processing a batch.
     """
     if not nodes or is_canceled():
         return
@@ -250,35 +272,42 @@ async def _process_batches(
             f"{modality} upsert pipeline: processing batch {prog} "
             f"({len(batch)} nodes)"
         )
-        try:
-            trans_nodes.extend(await pipe.arun(nodes=batch))
-        except Exception as e:
-            for node in batch:
-                if node.ref_doc_id is None:
-                    continue
 
-                # Roll back to prevent the next transform from being skipped
-                # due to docstore duplicate detection.
-                rt.document_store.store.delete_ref_doc(
-                    ref_doc_id=node.ref_doc_id, raise_error=False
-                )
+        delay = 1
+        for i in range(retry_count):
+            try:
+                trans_nodes.extend(await pipe.arun(nodes=batch))
+                break
+            except Exception as e:
+                for node in batch:
+                    if node.ref_doc_id is None:
+                        continue
 
-            # Roll back cache entries
-            # FIXME:
-            # Since we must accurately reproduce the nodes passed to each transformation,
-            # we cannot uniformly set nodes=batch. Considering the cost of managing
-            # the node set passed to each transformation and the risk of unexpected
-            # deletion omissions, we currently delete all.
+                    # Roll back to prevent the next transform from being skipped
+                    # due to docstore duplicate detection.
+                    rt.document_store.store.delete_ref_doc(
+                        ref_doc_id=node.ref_doc_id, raise_error=False
+                    )
 
-            # rt.ingest_cache.delete(
-            #     modality=modality,
-            #     nodes=batch,
-            #     transformations=pipe.transformations,
-            #     persist_dir=persist_dir,
-            # )
-            rt.ingest_cache.delete_all(persist_dir)
+                # Roll back cache entries
+                # FIXME:
+                # Since we must accurately reproduce the nodes passed to each transformation,
+                # we cannot uniformly set nodes=batch. Considering the cost of managing
+                # the node set passed to each transformation and the risk of unexpected
+                # deletion omissions, we currently delete all.
 
-            logger.error(f"failed to process batch {prog}, rolled back: {e}")
+                # rt.ingest_cache.delete(
+                #     modality=modality,
+                #     nodes=batch,
+                #     transformations=pipe.transformations,
+                #     persist_dir=persist_dir,
+                # )
+                rt.ingest_cache.delete_all(persist_dir)
+
+                logger.error(f"failed to process batch {prog}, rolled back: {e}")
+                time.sleep(delay)
+                delay *= 2
+                logger.debug(f"retry count: {i + 1} / {retry_count}")
 
     rt.persist_pipeline(pipe=pipe, modality=modality, persist_dir=persist_dir)
     logger.debug(f"{len(nodes)} nodes --pipeline--> {len(trans_nodes)} nodes")
