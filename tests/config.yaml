@@ -119,6 +119,7 @@ ingest:
     - .c
     - .rst
     - .py
+  use_llm_summarizer: false
   user_agent: raggify
   load_asset: true
   req_per_sec: 2

@@ -29,6 +29,22 @@ class DefaultHTMLReader(HTMLReader):
         Returns:
             list[Document]: List of documents read from the URL.
         """
+        from ....core.exts import Exts
+
+        if Exts.endswith_exts(url, self._ingest_target_exts):
+            if not self.register_asset_url(url):
+                return []
+
+            # Direct linked file
+            doc = await self.aload_direct_linked_file(
+                url=url, base_url=url, max_asset_bytes=self._cfg.max_asset_bytes
+            )
+            if doc is None:
+                logger.warning(f"failed to fetch from {url}")
+                return []
+
+            return [doc]
+
         text_docs, html = await self._aload_texts(url)
         logger.debug(f"loaded {len(text_docs)} text docs from {url}")
 

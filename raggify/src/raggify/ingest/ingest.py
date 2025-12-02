@@ -58,21 +58,30 @@ def _read_list(path: str) -> list[str]:
     return lst
 
 
-def _build_text_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
+def _build_text_pipeline(
+    persist_dir: Optional[Path], use_llm: bool
+) -> IngestionPipeline:
     """Build an ingestion pipeline for text.
 
     Args:
         persist_dir (Optional[Path]): Persist directory.
+        use_llm (bool): Whether to use LLM summarizer.
 
     Returns:
         IngestionPipeline: Pipeline instance.
     """
     from llama_index.core.node_parser import SentenceSplitter
 
-    from .transform import AddChunkIndexTransform, make_text_embed_transform
+    from .transform import (
+        AddChunkIndexTransform,
+        DefaultSummarizer,
+        LLMSummarizer,
+        make_text_embed_transform,
+    )
 
     rt = _rt()
     transformations: list[TransformComponent] = [
+        LLMSummarizer() if use_llm else DefaultSummarizer(),
         SentenceSplitter(
             chunk_size=rt.cfg.ingest.chunk_size,
             chunk_overlap=rt.cfg.ingest.chunk_overlap,
@@ -89,19 +98,23 @@ def _build_text_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
     )
 
 
-def _build_image_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
+def _build_image_pipeline(
+    persist_dir: Optional[Path], use_llm: bool
+) -> IngestionPipeline:
     """Build an ingestion pipeline for images.
 
     Args:
         persist_dir (Optional[Path]): Persist directory.
+        use_llm (bool): Whether to use LLM summarizer.
 
     Returns:
         IngestionPipeline: Pipeline instance.
     """
-    from .transform import make_image_embed_transform
+    from .transform import DefaultSummarizer, LLMSummarizer, make_image_embed_transform
 
     rt = _rt()
     transformations: list[TransformComponent] = [
+        LLMSummarizer() if use_llm else DefaultSummarizer(),
         make_image_embed_transform(rt.embed_manager),
     ]
 
@@ -112,19 +125,29 @@ def _build_image_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
     )
 
 
-def _build_audio_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
+def _build_audio_pipeline(
+    persist_dir: Optional[Path], use_llm: bool
+) -> IngestionPipeline:
     """Build an ingestion pipeline for audio.
 
     Args:
         persist_dir (Optional[Path]): Persist directory.
+        use_llm (bool): Whether to use LLM summarizer.
 
     Returns:
         IngestionPipeline: Pipeline instance.
     """
-    from .transform import AudioSplitter, make_audio_embed_transform
+    from .transform import (
+        AudioSplitter,
+        DefaultSummarizer,
+        LLMSummarizer,
+        make_audio_embed_transform,
+    )
 
     rt = _rt()
-    transformations: list[TransformComponent] = []
+    transformations: list[TransformComponent] = [
+        LLMSummarizer() if use_llm else DefaultSummarizer()
+    ]
     if rt.cfg.ingest.audio_chunk_seconds:
         transformations.append(
             AudioSplitter(chunk_seconds=rt.cfg.ingest.audio_chunk_seconds)
@@ -138,19 +161,29 @@ def _build_audio_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
     )
 
 
-def _build_video_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
+def _build_video_pipeline(
+    persist_dir: Optional[Path], use_llm: bool
+) -> IngestionPipeline:
     """Build an ingestion pipeline for video.
 
     Args:
         persist_dir (Optional[Path]): Persist directory.
+        use_llm (bool): Whether to use LLM summarizer.
 
     Returns:
         IngestionPipeline: Pipeline instance.
     """
-    from .transform import VideoSplitter, make_video_embed_transform
+    from .transform import (
+        DefaultSummarizer,
+        LLMSummarizer,
+        VideoSplitter,
+        make_video_embed_transform,
+    )
 
     rt = _rt()
-    transformations: list[TransformComponent] = []
+    transformations: list[TransformComponent] = [
+        LLMSummarizer() if use_llm else DefaultSummarizer()
+    ]
     if rt.cfg.ingest.video_chunk_seconds:
         transformations.append(
             VideoSplitter(chunk_seconds=rt.cfg.ingest.video_chunk_seconds)
@@ -186,13 +219,21 @@ async def _process_batches(
     rt = _rt()
     match modality:
         case Modality.TEXT:
-            pipe = _build_text_pipeline(persist_dir)
+            pipe = _build_text_pipeline(
+                persist_dir=persist_dir, use_llm=rt.cfg.ingest.use_llm_summarizer
+            )
         case Modality.IMAGE:
-            pipe = _build_image_pipeline(persist_dir)
+            pipe = _build_image_pipeline(
+                persist_dir=persist_dir, use_llm=rt.cfg.ingest.use_llm_summarizer
+            )
         case Modality.AUDIO:
-            pipe = _build_audio_pipeline(persist_dir)
+            pipe = _build_audio_pipeline(
+                persist_dir=persist_dir, use_llm=rt.cfg.ingest.use_llm_summarizer
+            )
         case Modality.VIDEO:
-            pipe = _build_video_pipeline(persist_dir)
+            pipe = _build_video_pipeline(
+                persist_dir=persist_dir, use_llm=rt.cfg.ingest.use_llm_summarizer
+            )
         case _:
             raise ValueError(f"unexpected modality: {modality}")
 

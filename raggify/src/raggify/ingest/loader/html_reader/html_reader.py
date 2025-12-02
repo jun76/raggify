@@ -42,7 +42,7 @@ class HTMLReader:
 
         soup = BeautifulSoup(html, "html.parser")
 
-        # drop unwanted tags
+        # Drop unwanted tags
         for tag_name in self._cfg.strip_tags:
             for t in soup.find_all(tag_name):
                 t.decompose()
@@ -51,7 +51,7 @@ class HTMLReader:
             for t in soup.select(selector):
                 t.decompose()
 
-        # include only selected tags
+        # Include only selected tags
         include_selectors = self._cfg.include_selectors
         if include_selectors:
             included_nodes: list = []
@@ -70,18 +70,21 @@ class HTMLReader:
                 unique_nodes.append(node)
 
             if unique_nodes:
-                # move only the "main content candidates" to a new soup
+                # Move only the "main content candidates" to a new soup
                 new_soup = BeautifulSoup("<html><body></body></html>", "html.parser")
                 body = new_soup.body or []
                 for node in unique_nodes:
-                    # extract from the original soup and move to new_soup
+                    # Extract from the original soup and move to new_soup
                     body.append(node.extract())
 
                 soup = new_soup
 
-        logger.debug(str(soup))
+        # Remove excessive blank lines
+        cleansed = [ln.strip() for ln in str(soup).splitlines()]
+        cleansed = [ln for ln in cleansed if ln]
+        cleansed = "\n".join(cleansed)
 
-        return re.sub(r"(\.(?:svg|png|jpe?g|webp))\?[^\s\"'<>]+", r"\1", str(soup))
+        return re.sub(r"(\.(?:svg|png|jpe?g|webp))\?[^\s\"'<>]+", r"\1", cleansed)
 
     def register_asset_url(self, url: str) -> bool:
         """Register an asset URL in the cache if it is new.

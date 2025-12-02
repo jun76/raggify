@@ -112,10 +112,12 @@ def test_audio_splitter_splits_and_rebuilds(monkeypatch, tmp_path):
         return chunk_paths
 
     monkeypatch.setattr(
-        "raggify.ingest.transform._BaseMediaSplitter._probe_duration", fake_probe
+        "raggify.ingest.transform.splitter._BaseMediaSplitter._probe_duration",
+        fake_probe,
     )
     monkeypatch.setattr(
-        "raggify.ingest.transform._BaseMediaSplitter._create_segments", fake_create
+        "raggify.ingest.transform.splitter._BaseMediaSplitter._create_segments",
+        fake_create,
     )
 
     node = _make_media_node(AudioNode, local, ref_doc_id="audio-doc")
@@ -145,10 +147,12 @@ def test_video_splitter_splits(monkeypatch, tmp_path):
         return files
 
     monkeypatch.setattr(
-        "raggify.ingest.transform._BaseMediaSplitter._probe_duration", fake_probe
+        "raggify.ingest.transform.splitter._BaseMediaSplitter._probe_duration",
+        fake_probe,
     )
     monkeypatch.setattr(
-        "raggify.ingest.transform._BaseMediaSplitter._create_segments", fake_create
+        "raggify.ingest.transform.splitter._BaseMediaSplitter._create_segments",
+        fake_create,
     )
 
     node = _make_media_node(VideoNode, local, ref_doc_id="video-doc")
