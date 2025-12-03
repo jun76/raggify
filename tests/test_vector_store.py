@@ -25,6 +25,10 @@ from tests.utils.mock_vector_store import (
     FakeVectorStore,
 )
 
+from .config import configure_test_env
+
+configure_test_env()
+
 
 def _make_cfg(provider: VectorStoreProvider, persist_dir) -> ConfigManager:
     general = GeneralConfig(

@@ -15,6 +15,10 @@ from raggify.rerank.rerank_manager import RerankContainer, RerankManager
 from tests.utils.mock_rerank import FakeReranker, setup_rerank_mocks
 from tests.utils.node_factory import make_sample_nodes
 
+from .config import configure_test_env
+
+configure_test_env()
+
 
 def _make_cfg(provider: RerankProvider | None) -> ConfigManager:
     general = GeneralConfig(rerank_provider=provider)

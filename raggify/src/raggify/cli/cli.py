@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import warnings
 from typing import TYPE_CHECKING, Any, Optional, Protocol
 
 import typer
@@ -28,6 +29,16 @@ _HELP_MSG = (
 app = client_app
 app.info.help = _HELP_MSG.format(config_path=DEFAULT_CONFIG_PATH)
 configure_logging()
+
+
+warnings.filterwarnings(
+    "ignore",
+    message=(
+        "The 'validate_default' attribute with value True was provided "
+        "to the `Field\\(\\)` function.*"
+    ),
+    category=UserWarning,
+)
 
 
 def _cfg() -> ConfigManager:

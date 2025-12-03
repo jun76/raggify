@@ -35,70 +35,13 @@ def create_embed_manager(cfg: ConfigManager) -> EmbedManager:
     try:
         conts: dict[Modality, EmbedContainer] = {}
         if cfg.general.text_embed_provider:
-            match cfg.general.text_embed_provider:
-                case EmbedProvider.OPENAI:
-                    cont = _openai_text(cfg)
-                case EmbedProvider.COHERE:
-                    cont = _cohere_text(cfg.embed)
-                case EmbedProvider.CLIP:
-                    cont = _clip_text(cfg)
-                case EmbedProvider.CLAP:
-                    cont = _clap_text(cfg)
-                case EmbedProvider.HUGGINGFACE:
-                    cont = _huggingface_text(cfg)
-                case EmbedProvider.VOYAGE:
-                    cont = _voyage_text(cfg.embed)
-                case EmbedProvider.BEDROCK:
-                    cont = _bedrock_text(cfg.embed)
-                case _:
-                    raise ValueError(
-                        "unsupported text embed provider: "
-                        f"{cfg.general.text_embed_provider}"
-                    )
-            conts[Modality.TEXT] = cont
-
+            conts[Modality.TEXT] = _create_text_embed(cfg)
         if cfg.general.image_embed_provider:
-            match cfg.general.image_embed_provider:
-                case EmbedProvider.COHERE:
-                    cont = _cohere_image(cfg.embed)
-                case EmbedProvider.CLIP:
-                    cont = _clip_image(cfg)
-                case EmbedProvider.HUGGINGFACE:
-                    cont = _huggingface_image(cfg)
-                case EmbedProvider.VOYAGE:
-                    cont = _voyage_image(cfg.embed)
-                case EmbedProvider.BEDROCK:
-                    cont = _bedrock_image(cfg.embed)
-                case _:
-                    raise ValueError(
-                        "unsupported image embed provider: "
-                        f"{cfg.general.image_embed_provider}"
-                    )
-            conts[Modality.IMAGE] = cont
-
+            conts[Modality.IMAGE] = _create_image_embed(cfg)
         if cfg.general.audio_embed_provider:
-            match cfg.general.audio_embed_provider:
-                case EmbedProvider.CLAP:
-                    cont = _clap_audio(cfg)
-                case EmbedProvider.BEDROCK:
-                    cont = _bedrock_audio(cfg.embed)
-                case _:
-                    raise ValueError(
-                        "unsupported audio embed provider: "
-                        f"{cfg.general.audio_embed_provider}"
-                    )
-            conts[Modality.AUDIO] = cont
-
+            conts[Modality.AUDIO] = _create_audio_embed(cfg)
         if cfg.general.video_embed_provider:
-            match cfg.general.video_embed_provider:
-                case EmbedProvider.BEDROCK:
-                    cont = _bedrock_video(cfg.embed)
-                case _:
-                    raise ValueError(
-                        "unsupported video embed provider: "
-                        f"{cfg.general.video_embed_provider}"
-                    )
-            conts[Modality.VIDEO] = cont
+            conts[Modality.VIDEO] = _create_video_embed(cfg)
     except (ValidationError, ValueError) as e:
         raise RuntimeError("invalid settings") from e
     except Exception as e:
@@ -112,6 +55,116 @@ def create_embed_manager(cfg: ConfigManager) -> EmbedManager:
         embed_batch_size=cfg.embed.embed_batch_size,
         batch_interval_sec=cfg.embed.batch_interval_sec,
     )
+
+
+def _create_text_embed(cfg: ConfigManager) -> EmbedContainer:
+    """Create text embed container.
+
+    Args:
+        cfg (ConfigManager): Config manager.
+
+    Raises:
+        ValueError: If text embed provider is not specified or unsupported.
+
+    Returns:
+        EmbedContainer: Text embed container.
+    """
+    provider = cfg.general.text_embed_provider
+    if provider is None:
+        raise ValueError("text embed provider is not specified")
+    match provider:
+        case EmbedProvider.OPENAI:
+            return _openai_text(cfg)
+        case EmbedProvider.COHERE:
+            return _cohere_text(cfg.embed)
+        case EmbedProvider.CLIP:
+            return _clip_text(cfg)
+        case EmbedProvider.CLAP:
+            return _clap_text(cfg)
+        case EmbedProvider.HUGGINGFACE:
+            return _huggingface_text(cfg)
+        case EmbedProvider.VOYAGE:
+            return _voyage_text(cfg.embed)
+        case EmbedProvider.BEDROCK:
+            return _bedrock_text(cfg.embed)
+        case _:
+            raise ValueError(f"unsupported text embed provider: {provider}")
+
+
+def _create_image_embed(cfg: ConfigManager) -> EmbedContainer:
+    """Create image embed container.
+
+    Args:
+        cfg (ConfigManager): Config manager.
+
+    Raises:
+        ValueError: If image embed provider is not specified or unsupported.
+
+    Returns:
+        EmbedContainer: Image embed container.
+    """
+    provider = cfg.general.image_embed_provider
+    if provider is None:
+        raise ValueError("image embed provider is not specified")
+    match provider:
+        case EmbedProvider.COHERE:
+            return _cohere_image(cfg.embed)
+        case EmbedProvider.CLIP:
+            return _clip_image(cfg)
+        case EmbedProvider.HUGGINGFACE:
+            return _huggingface_image(cfg)
+        case EmbedProvider.VOYAGE:
+            return _voyage_image(cfg.embed)
+        case EmbedProvider.BEDROCK:
+            return _bedrock_image(cfg.embed)
+        case _:
+            raise ValueError(f"unsupported image embed provider: {provider}")
+
+
+def _create_audio_embed(cfg: ConfigManager) -> EmbedContainer:
+    """Create audio embed container.
+
+    Args:
+        cfg (ConfigManager): Config manager.
+
+    Raises:
+        ValueError: If audio embed provider is not specified or unsupported.
+
+    Returns:
+        EmbedContainer: Audio embed container.
+    """
+    provider = cfg.general.audio_embed_provider
+    if provider is None:
+        raise ValueError("audio embed provider is not specified")
+    match provider:
+        case EmbedProvider.CLAP:
+            return _clap_audio(cfg)
+        case EmbedProvider.BEDROCK:
+            return _bedrock_audio(cfg.embed)
+        case _:
+            raise ValueError(f"unsupported audio embed provider: {provider}")
+
+
+def _create_video_embed(cfg: ConfigManager) -> EmbedContainer:
+    """Create video embed container.
+
+    Args:
+        cfg (ConfigManager): Config manager.
+
+    Raises:
+        ValueError: If video embed provider is not specified or unsupported.
+
+    Returns:
+        EmbedContainer: Video embed container.
+    """
+    provider = cfg.general.video_embed_provider
+    if provider is None:
+        raise ValueError("video embed provider is not specified")
+    match provider:
+        case EmbedProvider.BEDROCK:
+            return _bedrock_video(cfg.embed)
+        case _:
+            raise ValueError(f"unsupported video embed provider: {provider}")
 
 
 # Container generation helpers per provider

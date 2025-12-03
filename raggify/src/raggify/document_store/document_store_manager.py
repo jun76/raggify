@@ -41,7 +41,7 @@ class DocumentStoreManager:
         return self._provider_name
 
     @property
-    def store(self) -> "BaseDocumentStore":
+    def store(self) -> BaseDocumentStore:
         """Document store.
 
         Returns:
@@ -50,7 +50,7 @@ class DocumentStoreManager:
         return self._store
 
     @store.setter
-    def store(self, value: "BaseDocumentStore") -> None:
+    def store(self, value: BaseDocumentStore) -> None:
         """Set the document store.
 
         Args:

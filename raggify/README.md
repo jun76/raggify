@@ -22,7 +22,7 @@ Raggify can be used in three ways: as a library, a CLI, and a server. Common to 
 
 Raggify is a tool for building multimodal RAG systems, but it does not directly support LLMs or agents. Instead, it focuses solely on the upstream processes of document ingestion and retrieval.
 
-ℹ️ While we do not support LLM as a RAG agent, we are implementing LLM-based text summarization and media captioning starting from version 0.2.2, aimed at optimizing input to the embedding model and improving re-ranking accuracy.
+⚠️ While we do not support LLM as a RAG agent, we are implementing LLM-based text summarization and media captioning starting from version 0.2.2, aimed at optimizing input to the embedding model and improving re-ranking accuracy.
 
 # 🚀 How to Install
 
@@ -81,6 +81,10 @@ raggify config | grep provider
 "image_embed_provider": null,
 "audio_embed_provider": null,
 "video_embed_provider": null,
+"text_summarizer_provider": "openai"
+"image_summarizer_provider": null
+"audio_summarizer_provider": null
+"video_summarizer_provider": null
 "rerank_provider": null,
 ```
 
@@ -754,26 +758,25 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 
 ### Ingest
 
-| Parameter             | Description                                     | Default                             | Allowed values / examples                         |
-| --------------------- | ----------------------------------------------- | ----------------------------------- | ------------------------------------------------- |
-| `chunk_size`          | Chunk size for text splitting.                  | `500`                               | Any integer (e.g., `500`, `1024`).                |
-| `chunk_overlap`       | Overlap between adjacent chunks.                | `50`                                | Any integer.                                      |
-| `upload_dir`          | Directory for uploaded files.                   | `~/.local/share/raggify/upload`     | Any filesystem path.                              |
-| `pipe_persist_dir`    | Pipeline persistence root per KB.               | `~/.local/share/raggify/default_kb` | Any filesystem path.                              |
-| `pipe_batch_size`     | Number of nodes processed per pipeline batch.   | `10`                                | Any positive integer.                             |
-| `use_llm_summarizer`  | Enable LLM-based summarization before chunking. | `false`                             | `true` / `false`.                                 |
-| `audio_chunk_seconds` | Chunk length for audio splitting (seconds).     | `25`                                | Positive integer, or `null` to disable splitting. |
-| `video_chunk_seconds` | Chunk length for video splitting (seconds).     | `25`                                | Positive integer, or `null` to disable splitting. |
-| `additional_exts`     | Extra whitelist extensions for local ingest.    | `[".c", ".py", ".rst"]`             | List of dot-prefixed extensions.                  |
-| `user_agent`          | User-Agent header for web ingestion.            | `raggify`                           | Any string.                                       |
-| `load_asset`          | Download linked assets during web ingestion.    | `true`                              | `true` / `false`.                                 |
-| `req_per_sec`         | Request rate limit for web ingestion.           | `2`                                 | Any integer.                                      |
-| `timeout_sec`         | Timeout for web ingestion (seconds).            | `30`                                | Any integer.                                      |
-| `same_origin`         | Restrict crawling to same origin.               | `true`                              | `true` / `false`.                                 |
-| `max_asset_bytes`     | Maximum size per fetched asset (bytes).         | `104857600` (100 MB)                | Any positive integer.                             |
-| `include_selectors`   | CSS selectors to prioritize when parsing HTML   | `["article", "main", ...]`          | List of selectors applied in order.               |
-| `exclude_selectors`   | CSS selectors removed from parsed HTML.         | `["nav", "footer", ...]`            | List of selectors to drop.                        |
-| `strip_tags`          | HTML tags stripped entirely before parsing.     | `["script", "style", ...]`          | List of tag names.                                |
+| Parameter             | Description                                   | Default                             | Allowed values / examples                         |
+| --------------------- | --------------------------------------------- | ----------------------------------- | ------------------------------------------------- |
+| `chunk_size`          | Chunk size for text splitting.                | `500`                               | Any integer (e.g., `500`, `1024`).                |
+| `chunk_overlap`       | Overlap between adjacent chunks.              | `50`                                | Any integer.                                      |
+| `upload_dir`          | Directory for uploaded files.                 | `~/.local/share/raggify/upload`     | Any filesystem path.                              |
+| `pipe_persist_dir`    | Pipeline persistence root per KB.             | `~/.local/share/raggify/default_kb` | Any filesystem path.                              |
+| `pipe_batch_size`     | Number of nodes processed per pipeline batch. | `10`                                | Any positive integer.                             |
+| `audio_chunk_seconds` | Chunk length for audio splitting (seconds).   | `25`                                | Positive integer, or `null` to disable splitting. |
+| `video_chunk_seconds` | Chunk length for video splitting (seconds).   | `25`                                | Positive integer, or `null` to disable splitting. |
+| `additional_exts`     | Extra whitelist extensions for local ingest.  | `[".c", ".py", ".rst"]`             | List of dot-prefixed extensions.                  |
+| `user_agent`          | User-Agent header for web ingestion.          | `raggify`                           | Any string.                                       |
+| `load_asset`          | Download linked assets during web ingestion.  | `true`                              | `true` / `false`.                                 |
+| `req_per_sec`         | Request rate limit for web ingestion.         | `2`                                 | Any integer.                                      |
+| `timeout_sec`         | Timeout for web ingestion (seconds).          | `30`                                | Any integer.                                      |
+| `same_origin`         | Restrict crawling to same origin.             | `true`                              | `true` / `false`.                                 |
+| `max_asset_bytes`     | Maximum size per fetched asset (bytes).       | `104857600` (100 MB)                | Any positive integer.                             |
+| `include_selectors`   | CSS selectors to prioritize when parsing HTML | `["article", "main", ...]`          | List of selectors applied in order.               |
+| `exclude_selectors`   | CSS selectors removed from parsed HTML.       | `["nav", "footer", ...]`            | List of selectors to drop.                        |
+| `strip_tags`          | HTML tags stripped entirely before parsing.   | `["script", "style", ...]`          | List of tag names.                                |
 
 ### Rerank
 
@@ -793,6 +796,15 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 | `fusion_lambda_vector` | Weight for vector retriever in QueryFusion. | `0.5`    | Float 0–1.                            |
 | `fusion_lambda_bm25`   | Weight for BM25 retriever in QueryFusion.   | `0.5`    | Float 0–1.                            |
 
+### LLM (for input data formatting)
+
+| Parameter                            | Description                                         | Default                     | Allowed values / examples               |
+| ------------------------------------ | --------------------------------------------------- | --------------------------- | --------------------------------------- |
+| `openai_text_summarizer_model`       | OpenAI model used for text summarization.           | `gpt-4o-mini`               | Any deployed OpenAI text model.         |
+| `huggingface_text_summarizer_model`  | Hugging Face (local) model for text summarization.  | `Qwen/Qwen2-VL-2B-Instruct` | Any supported causal LLM checkpoint.    |
+| `openai_image_summarizer_model`      | OpenAI multimodal model for image captioning.       | `gpt-4o-mini`               | Any OpenAI multimodal-capable model.    |
+| `huggingface_image_summarizer_model` | Hugging Face multimodal model for image captioning. | `Qwen/Qwen2-VL-2B-Instruct` | Any supported VLM when running locally. |
+
 ## Setting samples
 
 ### Full Local
@@ -805,6 +817,8 @@ text_embed_provider: huggingface
 image_embed_provider: clip
 audio_embed_provider: clap
 video_embed_provider: null
+text_summarizer_provider: huggingface
+image_summarizer_provider: huggingface
 rerank_provider: flagembedding
 use_modality_fallback: true
 device: cuda
@@ -825,6 +839,8 @@ text_embed_provider: openai
 image_embed_provider: voyage
 audio_embed_provider: clap
 video_embed_provider: bedrock
+text_summarizer_provider: openai
+image_summarizer_provider: huggingface
 rerank_provider: cohere
 device: cuda
 ```

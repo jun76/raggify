@@ -11,6 +11,10 @@ from raggify.config.general_config import GeneralConfig
 from raggify.embed.embed import create_embed_manager
 from raggify.llama_like.core.schema import Modality
 
+from .config import configure_test_env
+
+configure_test_env()
+
 
 @pytest.fixture(autouse=True)
 def mock_embedding_classes(monkeypatch):

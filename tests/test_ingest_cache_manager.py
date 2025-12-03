@@ -25,6 +25,10 @@ from tests.utils.mock_ingest_cache import (
     FakeKVStore,
 )
 
+from .config import configure_test_env
+
+configure_test_env()
+
 
 class DummyTransform(TransformComponent):
     label: str

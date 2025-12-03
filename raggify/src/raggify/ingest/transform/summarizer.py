@@ -6,6 +6,7 @@ from llama_index.core.schema import BaseNode, TransformComponent
 
 from ...core.event import async_loop_runner
 from ...logger import logger
+from ...runtime import get_runtime as _rt
 
 if TYPE_CHECKING:
     from llama_index.core.schema import ImageNode, TextNode
@@ -44,14 +45,6 @@ class DefaultSummarizer(TransformComponent):
 class LLMSummarizer(TransformComponent):
     """Transform to summarize multimodal nodes using an LLM."""
 
-    def __init__(self, model: str = "gpt-4o-mini") -> None:
-        """Constructor.
-
-        Args:
-            model (str): LLM model name. Defaults to "gpt-4o-mini".
-        """
-        self._model = model
-
     def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
         """Synchronous interface.
 
@@ -72,9 +65,7 @@ class LLMSummarizer(TransformComponent):
         Returns:
             BaseNode: Node after summarization.
         """
-        from llama_index.llms.openai import OpenAI
-
-        llm = OpenAI(model=self._model, temperature=0)
+        llm = _rt().llm_manager.text_summarizer
         prompt = """
 Please extract only the main text useful for semantic search from the following text.
 Remove figure captions, fragmented and brief text, advertisements, copyright notices, 
@@ -90,8 +81,15 @@ Original text:
 
 Only useful main text:
 """
-        resp = llm.complete(prompt.format(text=node.text))
-        node.text = resp.text.strip()
+        try:
+            resp = llm.complete(
+                prompt=prompt.format(text=node.text), image_documents=[]
+            )
+            node.text = resp.text.strip()
+        except Exception as e:
+            logger.error(f"failed to summarize text node: {e}")
+            return node
+
         logger.debug(f"summary: {node.text[:50]}...")
 
         return node
@@ -105,18 +103,20 @@ Only useful main text:
         Returns:
             BaseNode: Node after summarization.
         """
-        from llama_index.multi_modal_llms.openai import OpenAIMultiModal
-
-        llm = OpenAIMultiModal(model=self._model, temperature=0)
+        llm = _rt().llm_manager.image_summarizer
         prompt = """
 Please provide a concise description of the content of the following image for 
 semantic search purposes. If the image is not describable, please return 
 just an empty string (no need for unnecessary comments).
 """
-        resp = llm.complete(prompt=prompt, image_documents=[node])
-        caption = resp.text.strip()
-        if caption:
-            node.text = caption
+        try:
+            resp = llm.complete(prompt=prompt, image_documents=[node])
+            caption = resp.text.strip()
+            if caption:
+                node.text = caption
+        except Exception as e:
+            logger.error(f"failed to summarize image node: {e}")
+            return node
 
         logger.debug(f"caption: {caption}")
 

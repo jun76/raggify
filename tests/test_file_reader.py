@@ -8,6 +8,10 @@ from raggify.ingest.loader.file_reader.pdf_reader import MultiPDFReader
 from raggify.ingest.loader.file_reader.video_reader import VideoReader
 from tests.utils.mock_reader import patch_audio_convert, patch_video_extract
 
+from .config import configure_test_env
+
+configure_test_env()
+
 
 def test_audio_reader_converts_audio(monkeypatch, tmp_path):
     output = tmp_path / "converted.mp3"

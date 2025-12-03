@@ -101,6 +101,7 @@ class Loader:
                 image_nodes.append(
                     ImageNode(
                         text=doc.text,
+                        image_path=doc.metadata.get(MK.FILE_PATH),  # for summarizer use
                         id_=doc.id_,
                         doc_id=doc.doc_id,
                         ref_doc_id=doc.doc_id,

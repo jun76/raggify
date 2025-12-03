@@ -43,15 +43,7 @@ all: venv
 	uv pip install --python $(TOOL_PY) $(WHISPER_PKG)
 
 test:
-	env \
-	  OPENAI_API_KEY=dummy \
-	  COHERE_API_KEY=dummy \
-	  VOYAGE_API_KEY=dummy \
-	  AWS_ACCESS_KEY_ID=dummy \
-	  AWS_SECRET_ACCESS_KEY=dummy \
-	  AWS_REGION=us-east-1 \
-	  RG_CONFIG_PATH=tests/config.yaml \
-	  $(PY) -m pytest --maxfail=1 --cov=raggify --cov=raggify_client --cov-report=term-missing --cov-report=xml
+	$(PY) -m pytest --maxfail=1 --cov=raggify --cov=raggify_client --cov-report=term-missing --cov-report=xml
 
 clean:
 	rm -rf $(VENV)

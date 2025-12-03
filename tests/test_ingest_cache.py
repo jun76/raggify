@@ -19,6 +19,10 @@ from tests.utils.mock_ingest_cache import (
     DummyRedisKVStore,
 )
 
+from .config import configure_test_env
+
+configure_test_env()
+
 
 @pytest.fixture(autouse=True)
 def patch_ingest_cache(monkeypatch):

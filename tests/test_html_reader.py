@@ -6,6 +6,10 @@ from raggify.config.ingest_config import IngestConfig
 from raggify.ingest.loader.html_reader.html_reader import HTMLReader
 from tests.utils.mock_reader import patch_html_asset_download, patch_html_temp_file
 
+from .config import configure_test_env
+
+configure_test_env()
+
 
 def _make_reader(**cfg_overrides):
     cfg = IngestConfig()

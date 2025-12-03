@@ -13,6 +13,10 @@ from tests.utils.mock_document_store import (
     MissingDocsAttrStore,
 )
 
+from .config import configure_test_env
+
+configure_test_env()
+
 
 def _make_manager(store) -> DocumentStoreManager:
     return DocumentStoreManager(

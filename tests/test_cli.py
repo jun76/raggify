@@ -1,19 +1,13 @@
 from __future__ import annotations
 
 import importlib
-import warnings
-
-import pytest
-from pydantic.warnings import PydanticDeprecatedSince211
 
 from tests.utils.mock_client_cli import patch_client_cli, runner_client_cli
 from tests.utils.mock_server_cli import patch_server_cli, runner_server
 
-# Suppressing the __get_pydantic_core_schema__ warning in Pydantic v2.11 and later
-warnings.filterwarnings("ignore", category=PydanticDeprecatedSince211)
-pytestmark = pytest.mark.filterwarnings(
-    "ignore::pydantic.warnings.PydanticDeprecatedSince211"
-)
+from .config import configure_test_env, pytestmark
+
+configure_test_env()
 
 
 def _run_commands(runner, app, commands):

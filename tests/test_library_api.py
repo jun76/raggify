@@ -7,6 +7,10 @@ from raggify.config.retrieve_config import RetrieveMode
 from raggify.logger import configure_logging, logger
 from tests.utils import mock_library_api as mock
 
+from .config import configure_test_env
+
+configure_test_env()
+
 SAMPLE_TEXT = Path("tests/data/texts/sample.c").resolve()
 SAMPLE_IMAGE = SAMPLE_TEXT
 SAMPLE_AUDIO = SAMPLE_TEXT

@@ -37,6 +37,10 @@ from tests.utils.mock_embed import (
 )
 from tests.utils.node_factory import make_sample_text_node
 
+from .config import configure_test_env
+
+configure_test_env()
+
 
 @pytest.fixture(autouse=True)
 def patch_embedding_bases(monkeypatch):

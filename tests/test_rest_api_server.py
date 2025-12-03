@@ -8,6 +8,10 @@ from fastapi.testclient import TestClient
 
 from tests.utils.mock_rest_api_server import patch_rest_api_server
 
+from .config import configure_test_env
+
+configure_test_env()
+
 
 def _load_fastapi_module():
     module = importlib.import_module("raggify.server.fastapi")

@@ -16,6 +16,10 @@ from tests.utils.mock_embed import (
     make_dummy_manager,
 )
 
+from .config import configure_test_env
+
+configure_test_env()
+
 
 @pytest.fixture(autouse=True)
 def patch_embedding_bases(monkeypatch):

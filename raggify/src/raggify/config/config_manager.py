@@ -17,6 +17,7 @@ from .embed_config import EmbedConfig
 from .general_config import GeneralConfig
 from .ingest_cache_config import IngestCacheConfig
 from .ingest_config import IngestConfig
+from .llm_config import LLMConfig
 from .rerank_config import RerankConfig
 from .retrieve_config import RetrieveConfig
 from .vector_store_config import VectorStoreConfig
@@ -46,6 +47,7 @@ class AppConfig(DataClassDictMixin):
     ingest: IngestConfig = field(default_factory=IngestConfig)
     rerank: RerankConfig = field(default_factory=RerankConfig)
     retrieve: RetrieveConfig = field(default_factory=RetrieveConfig)
+    llm: LLMConfig = field(default_factory=LLMConfig)
 
     class Config(BaseConfig):
         serialization_strategy = {Path: PathSerializationStrategy()}
@@ -129,6 +131,10 @@ class ConfigManager:
     @property
     def retrieve(self) -> RetrieveConfig:
         return self._config.retrieve
+
+    @property
+    def llm(self) -> LLMConfig:
+        return self._config.llm
 
     @property
     def config_path(self) -> str:

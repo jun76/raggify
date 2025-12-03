@@ -32,6 +32,10 @@ from tests.utils.mock_llama_like import (
     setup_clap_mock,
 )
 
+from .config import configure_test_env
+
+configure_test_env()
+
 
 def test_audio_encoders_from_embed_model():
     embed = DummyEmbedModel(

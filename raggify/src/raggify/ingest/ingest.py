@@ -59,14 +59,11 @@ def _read_list(path: str) -> list[str]:
     return lst
 
 
-def _build_text_pipeline(
-    persist_dir: Optional[Path], use_llm: bool
-) -> IngestionPipeline:
+def _build_text_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
     """Build an ingestion pipeline for text.
 
     Args:
         persist_dir (Optional[Path]): Persist directory.
-        use_llm (bool): Whether to use LLM summarizer.
 
     Returns:
         IngestionPipeline: Pipeline instance.
@@ -81,7 +78,7 @@ def _build_text_pipeline(
     )
 
     rt = _rt()
-    if use_llm:
+    if rt.cfg.general.text_summarizer_provider is not None:
         large_chunk_size = 10000
         transformations: list[TransformComponent] = [
             # Split before LLM summarization to avoid token limit issues
@@ -91,25 +88,21 @@ def _build_text_pipeline(
                 include_metadata=True,
             ),
             LLMSummarizer(),
-            SentenceSplitter(
-                chunk_size=rt.cfg.ingest.chunk_size,
-                chunk_overlap=rt.cfg.ingest.chunk_overlap,
-                include_metadata=True,
-            ),
-            AddChunkIndexTransform(),
-            make_text_embed_transform(rt.embed_manager),
         ]
     else:
         transformations: list[TransformComponent] = [
             DefaultSummarizer(),
-            SentenceSplitter(
-                chunk_size=rt.cfg.ingest.chunk_size,
-                chunk_overlap=rt.cfg.ingest.chunk_overlap,
-                include_metadata=True,
-            ),
-            AddChunkIndexTransform(),
-            make_text_embed_transform(rt.embed_manager),
         ]
+
+    transformations.append(
+        SentenceSplitter(
+            chunk_size=rt.cfg.ingest.chunk_size,
+            chunk_overlap=rt.cfg.ingest.chunk_overlap,
+            include_metadata=True,
+        )
+    )
+    transformations.append(AddChunkIndexTransform())
+    transformations.append(make_text_embed_transform(rt.embed_manager))
 
     return rt.build_pipeline(
         modality=Modality.TEXT,
@@ -118,14 +111,11 @@ def _build_text_pipeline(
     )
 
 
-def _build_image_pipeline(
-    persist_dir: Optional[Path], use_llm: bool
-) -> IngestionPipeline:
+def _build_image_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
     """Build an ingestion pipeline for images.
 
     Args:
         persist_dir (Optional[Path]): Persist directory.
-        use_llm (bool): Whether to use LLM summarizer.
 
     Returns:
         IngestionPipeline: Pipeline instance.
@@ -134,7 +124,11 @@ def _build_image_pipeline(
 
     rt = _rt()
     transformations: list[TransformComponent] = [
-        LLMSummarizer() if use_llm else DefaultSummarizer(),
+        (
+            LLMSummarizer()
+            if rt.cfg.general.image_summarizer_provider is not None
+            else DefaultSummarizer()
+        ),
         make_image_embed_transform(rt.embed_manager),
     ]
 
@@ -145,14 +139,11 @@ def _build_image_pipeline(
     )
 
 
-def _build_audio_pipeline(
-    persist_dir: Optional[Path], use_llm: bool
-) -> IngestionPipeline:
+def _build_audio_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
     """Build an ingestion pipeline for audio.
 
     Args:
         persist_dir (Optional[Path]): Persist directory.
-        use_llm (bool): Whether to use LLM summarizer.
 
     Returns:
         IngestionPipeline: Pipeline instance.
@@ -166,7 +157,11 @@ def _build_audio_pipeline(
 
     rt = _rt()
     transformations: list[TransformComponent] = [
-        LLMSummarizer() if use_llm else DefaultSummarizer()
+        (
+            LLMSummarizer()
+            if rt.cfg.general.audio_summarizer_provider is not None
+            else DefaultSummarizer()
+        )
     ]
     if rt.cfg.ingest.audio_chunk_seconds:
         transformations.append(
@@ -181,14 +176,11 @@ def _build_audio_pipeline(
     )
 
 
-def _build_video_pipeline(
-    persist_dir: Optional[Path], use_llm: bool
-) -> IngestionPipeline:
+def _build_video_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
     """Build an ingestion pipeline for video.
 
     Args:
         persist_dir (Optional[Path]): Persist directory.
-        use_llm (bool): Whether to use LLM summarizer.
 
     Returns:
         IngestionPipeline: Pipeline instance.
@@ -202,7 +194,11 @@ def _build_video_pipeline(
 
     rt = _rt()
     transformations: list[TransformComponent] = [
-        LLMSummarizer() if use_llm else DefaultSummarizer()
+        (
+            LLMSummarizer()
+            if rt.cfg.general.video_summarizer_provider is not None
+            else DefaultSummarizer()
+        )
     ]
     if rt.cfg.ingest.video_chunk_seconds:
         transformations.append(
@@ -241,41 +237,33 @@ async def _process_batches(
     rt = _rt()
     match modality:
         case Modality.TEXT:
-            pipe = _build_text_pipeline(
-                persist_dir=persist_dir, use_llm=rt.cfg.ingest.use_llm_summarizer
-            )
+            pipe = _build_text_pipeline(persist_dir)
         case Modality.IMAGE:
-            pipe = _build_image_pipeline(
-                persist_dir=persist_dir, use_llm=rt.cfg.ingest.use_llm_summarizer
-            )
+            pipe = _build_image_pipeline(persist_dir)
         case Modality.AUDIO:
-            pipe = _build_audio_pipeline(
-                persist_dir=persist_dir, use_llm=rt.cfg.ingest.use_llm_summarizer
-            )
+            pipe = _build_audio_pipeline(persist_dir)
         case Modality.VIDEO:
-            pipe = _build_video_pipeline(
-                persist_dir=persist_dir, use_llm=rt.cfg.ingest.use_llm_summarizer
-            )
+            pipe = _build_video_pipeline(persist_dir)
         case _:
             raise ValueError(f"unexpected modality: {modality}")
 
     total_batches = (len(nodes) + pipe_batch_size - 1) // pipe_batch_size
     trans_nodes = []
     for idx in range(0, len(nodes), pipe_batch_size):
-        if is_canceled():
-            logger.info("Job is canceled, aborting batch processing")
-            return
-
-        batch = nodes[idx : idx + pipe_batch_size]
-        prog = f"{idx // pipe_batch_size + 1}/{total_batches}"
-        logger.debug(
-            f"{modality} upsert pipeline: processing batch {prog} "
-            f"({len(batch)} nodes)"
-        )
-
         delay = 1
         for i in range(retry_count):
             try:
+                if is_canceled():
+                    logger.info("Job is canceled, aborting batch processing")
+                    return
+
+                batch = nodes[idx : idx + pipe_batch_size]
+                prog = f"{idx // pipe_batch_size + 1}/{total_batches}"
+                logger.debug(
+                    f"{modality} upsert pipeline: processing batch {prog} "
+                    f"({len(batch)} nodes)"
+                )
+
                 trans_nodes.extend(await pipe.arun(nodes=batch))
                 break
             except Exception as e:
@@ -289,13 +277,9 @@ async def _process_batches(
                         ref_doc_id=node.ref_doc_id, raise_error=False
                     )
 
-                # Roll back cache entries
-                # FIXME:
-                # Since we must accurately reproduce the nodes passed to each transformation,
-                # we cannot uniformly set nodes=batch. Considering the cost of managing
-                # the node set passed to each transformation and the risk of unexpected
-                # deletion omissions, we currently delete all.
+                # FIXME: issue #4 Excessive rollbacks in ingest._process_batches
 
+                # Roll back cache entries
                 # rt.ingest_cache.delete(
                 #     modality=modality,
                 #     nodes=batch,

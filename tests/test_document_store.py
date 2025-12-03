@@ -19,6 +19,10 @@ from tests.utils.mock_document_store import (
     DummySimpleDocumentStore,
 )
 
+from .config import configure_test_env
+
+configure_test_env()
+
 
 @pytest.fixture(autouse=True)
 def patch_document_store_classes(monkeypatch):

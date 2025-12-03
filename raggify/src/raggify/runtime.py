@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from .ingest.loader.html_loader import HTMLLoader
     from .ingest_cache.ingest_cache_manager import IngestCacheManager
     from .llama_like.core.schema import Modality
+    from .llm.llm_manager import LLMManager
     from .rerank.rerank_manager import RerankManager
     from .vector_store.vector_store_manager import VectorStoreManager
 
@@ -57,6 +58,7 @@ class Runtime:
         self._document_store = None
         self._ingest_cache = None
         self._rerank_manager = None
+        self._llm_manager = None
 
     def build(self) -> None:
         """Create instances for each manager class."""
@@ -78,6 +80,7 @@ class Runtime:
         self.document_store
         self.ingest_cache
         self.rerank_manager
+        self.llm_manager
 
         configure_logging(self.cfg.general.log_level)
 
@@ -248,6 +251,15 @@ class Runtime:
             self._rerank_manager = create_rerank_manager(self.cfg)
 
         return self._rerank_manager
+
+    @property
+    def llm_manager(self) -> LLMManager:
+        if self._llm_manager is None:
+            from .llm.llm import create_llm_manager
+
+            self._llm_manager = create_llm_manager(self.cfg)
+
+        return self._llm_manager
 
     @property
     def file_loader(self) -> FileLoader:

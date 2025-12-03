@@ -9,6 +9,7 @@ from ..core.const import DEFAULT_KNOWLEDGEBASE_NAME
 from .document_store_config import DocumentStoreProvider
 from .embed_config import EmbedProvider
 from .ingest_cache_config import IngestCacheProvider
+from .llm_config import LLMProvider
 from .rerank_config import RerankProvider
 from .vector_store_config import VectorStoreProvider
 
@@ -27,6 +28,10 @@ class GeneralConfig(DataClassDictMixin):
     audio_embed_provider: Optional[EmbedProvider] = None
     video_embed_provider: Optional[EmbedProvider] = None
     use_modality_fallback: bool = False
+    text_summarizer_provider: Optional[LLMProvider] = LLMProvider.OPENAI
+    image_summarizer_provider: Optional[LLMProvider] = None
+    audio_summarizer_provider: Optional[LLMProvider] = None
+    video_summarizer_provider: Optional[LLMProvider] = None
     rerank_provider: Optional[RerankProvider] = None
     openai_base_url: Optional[str] = None
     device: Literal["cpu", "cuda", "mps"] = "cpu"
