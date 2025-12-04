@@ -1,67 +1,29 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Callable
 
-from ...core.exts import Exts
+from ...ingest.loader.parser import DefaultParser
 from ...logger import logger
-from ...runtime import get_runtime as _rt
-from .file_reader import AudioReader, DummyMediaReader, MultiPDFReader, VideoReader
 from .loader import Loader
 
 if TYPE_CHECKING:
-    from llama_index.core.readers.base import BaseReader
     from llama_index.core.schema import ImageNode, TextNode
 
+    from ...config.general_config import GeneralConfig
     from ...llama_like.core.schema import AudioNode, VideoNode
 
 
 class FileLoader(Loader):
     """Loader that reads local files and generates nodes."""
 
-    def __init__(
-        self, persist_dir: Optional[Path], ingest_target_exts: set[str]
-    ) -> None:
+    def __init__(self, cfg: GeneralConfig, ingest_target_exts: set[str]) -> None:
         """Constructor.
 
         Args:
-            persist_dir (Optional[Path]): Persist directory.
+            cfg (GeneralConfig): General configuration.
             ingest_target_exts (set[str]): Allowed extensions for ingestion.
         """
-        super().__init__(persist_dir)
-
-        self._ingest_target_exts = ingest_target_exts
-
-        cfg = _rt().cfg.general
-        if cfg.image_embed_provider is not None:
-            # Dictionary of custom readers to pass to SimpleDirectoryReader
-            self._readers: dict[str, BaseReader] = {Exts.PDF: MultiPDFReader()}
-
-            if cfg.use_modality_fallback:
-                # add readers for image transcription if supported in the future
-                pass
-
-        if cfg.audio_embed_provider is not None:
-            # Convert audio files to mp3 for ingestion
-            audio_reader = AudioReader()
-            for ext in Exts.AUDIO:
-                self._readers[ext] = audio_reader
-
-            if cfg.use_modality_fallback:
-                # add readers for audio transcription if supported in the future
-                pass
-
-        # For cases like video -> image + audio decomposition, use a reader
-        if cfg.video_embed_provider is None:
-            if cfg.use_modality_fallback:
-                video_reader = VideoReader()
-                for ext in Exts.VIDEO:
-                    self._readers[ext] = video_reader
-
-        # For other media types, use dummy reader to pass through
-        dummy_reader = DummyMediaReader()
-        for ext in Exts.PASS_THROUGH_MEDIA:
-            self._readers.setdefault(ext, dummy_reader)
+        self._parser = DefaultParser(cfg=cfg, ingest_target_exts=ingest_target_exts)
 
     async def aload_from_path(
         self, root: str
@@ -80,30 +42,7 @@ class FileLoader(Loader):
             tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
                 Text, image, audio, and video nodes.
         """
-        from llama_index.core.readers.file.base import SimpleDirectoryReader
-
-        try:
-            path = Path(root).absolute()
-            if path.is_file():
-                ext = Exts.get_ext(root)
-                if ext not in self._ingest_target_exts:
-                    logger.warning(f"skip unsupported extension: {ext}")
-                    return [], [], [], []
-
-            reader = SimpleDirectoryReader(
-                input_dir=root if path.is_dir() else None,
-                input_files=[root] if path.is_file() else None,
-                recursive=True,
-                required_exts=list(self._ingest_target_exts),
-                file_extractor=self._readers,
-                raise_on_error=True,
-            )
-
-            docs = await reader.aload_data(show_progress=True)
-        except Exception as e:
-            logger.exception(e)
-            raise ValueError("failed to load from path") from e
-
+        docs = await self._parser.aparse(root)
         return await self._asplit_docs_modality(docs)
 
     async def aload_from_paths(

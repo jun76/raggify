@@ -68,18 +68,16 @@ class LLMSummarizer(TransformComponent):
         llm = _rt().llm_manager.text_summarizer
         prompt = """
 Please extract only the main text useful for semantic search from the following text.
-Remove figure captions, fragmented and brief text, advertisements, copyright notices, 
-typical text such as headers and footers etc.
+Remove advertisements, copyright notices, 
+clearly unnecessary text such as headers and footers etc.
 
 Since the extracted text will be shortened later, 
-there is no need to summarize its content semantically here.
+DO NOT SUMMARIZE its content SEMANTICALLY here.
 
-If no useful text is available, please return an empty string (no need for unnecessary comments).
+If no useful text is available, please return ONLY an empty string (no need for unnecessary comments).
 
 Original text:
 {text}
-
-Only useful main text:
 """
         try:
             resp = llm.complete(

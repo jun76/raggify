@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 
+from raggify.config.general_config import GeneralConfig
 from raggify.config.ingest_config import IngestConfig
 from raggify.ingest.loader.html_reader.html_reader import HTMLReader
 from tests.utils.mock_reader import patch_html_asset_download, patch_html_temp_file
@@ -12,11 +13,16 @@ configure_test_env()
 
 
 def _make_reader(**cfg_overrides):
-    cfg = IngestConfig()
+    ingest_cfg = IngestConfig()
     for key, value in cfg_overrides.items():
-        setattr(cfg, key, value)
+        setattr(ingest_cfg, key, value)
+
+    general_cfg = GeneralConfig()
     return HTMLReader(
-        cfg=cfg, asset_url_cache=set(), ingest_target_exts={".png", ".mp3"}
+        icfg=ingest_cfg,
+        gcfg=general_cfg,
+        asset_url_cache=set(),
+        ingest_target_exts={".png", ".mp3"},
     )
 
 

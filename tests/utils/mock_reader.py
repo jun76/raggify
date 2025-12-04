@@ -70,6 +70,7 @@ def patch_html_asset_download(monkeypatch, content: bytes, content_type: str = "
 def patch_html_fetchers() -> Iterator[None]:
     """Patch HTML fetchers (sitemap/default/Wikipedia HTML) and asset download."""
     with ExitStack() as stack:
+        from llama_index.core.schema import Document
 
         async def fake_afetch_text(url: str, *args, **kwargs) -> str:
             if url.endswith(".xml"):
@@ -98,12 +99,43 @@ def patch_html_fetchers() -> Iterator[None]:
             allowed_exts: set[str],
             max_asset_bytes: int,
         ) -> Optional[str]:
-            return "/tmp/tmp_raggify_mock_asset.jpg"
+            tmp_path = Path("/tmp/tmp_raggify_mock_asset.png")
+            try:
+                import base64
+
+                tmp_path.parent.mkdir(parents=True, exist_ok=True)
+                png_bytes = base64.b64decode(
+                    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="
+                )
+                tmp_path.write_bytes(png_bytes)
+            except OSError:
+                return None
+            return str(tmp_path)
 
         stack.enter_context(
             patch(
                 "raggify.ingest.loader.html_reader.html_reader.HTMLReader._adownload_direct_linked_file",
                 new=AsyncMock(side_effect=fake_adownload_direct_linked_file),
+            )
+        )
+
+        async def fake_aload_direct_linked_file(
+            url: str,
+            base_url: Optional[str] = None,
+            max_asset_bytes: int = 100 * 1024 * 1024,
+        ) -> Document:
+            meta = {
+                "url": url,
+                "base_source": base_url or "",
+                "file_path": "/tmp/tmp_raggify_mock_asset.png",
+                "temp_file_path": "/tmp/tmp_raggify_mock_asset.png",
+            }
+            return Document(text="", metadata=meta)
+
+        stack.enter_context(
+            patch(
+                "raggify.ingest.loader.html_reader.html_reader.HTMLReader.aload_direct_linked_file",
+                new=AsyncMock(side_effect=fake_aload_direct_linked_file),
             )
         )
         yield

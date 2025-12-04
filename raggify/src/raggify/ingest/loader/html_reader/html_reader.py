@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 from urllib.parse import urljoin, urlparse
 
+from ....config.general_config import GeneralConfig
 from ....config.ingest_config import IngestConfig
 from ....core.exts import Exts
 from ....logger import logger
@@ -14,16 +15,22 @@ if TYPE_CHECKING:
 
 class HTMLReader:
     def __init__(
-        self, cfg: IngestConfig, asset_url_cache: set[str], ingest_target_exts: set[str]
+        self,
+        icfg: IngestConfig,
+        gcfg: GeneralConfig,
+        asset_url_cache: set[str],
+        ingest_target_exts: set[str],
     ) -> None:
         """Loader for HTML that generates nodes.
 
         Args:
-            cfg (IngestConfig): Ingest configuration.
+            icfg (IngestConfig): Ingest configuration.
+            gcfg (GeneralConfig): General configuration.
             asset_url_cache (set[str]): Cache of already processed asset URLs.
             ingest_target_exts (set[str]): Allowed extensions for ingestion.
         """
-        self._cfg = cfg
+        self._icfg = icfg
+        self._gcfg = gcfg
         self._asset_url_cache = asset_url_cache
         self._ingest_target_exts = ingest_target_exts
 
@@ -43,16 +50,16 @@ class HTMLReader:
         soup = BeautifulSoup(html, "html.parser")
 
         # Drop unwanted tags
-        for tag_name in self._cfg.strip_tags:
+        for tag_name in self._icfg.strip_tags:
             for t in soup.find_all(tag_name):
                 t.decompose()
 
-        for selector in self._cfg.exclude_selectors:
+        for selector in self._icfg.exclude_selectors:
             for t in soup.select(selector):
                 t.decompose()
 
         # Include only selected tags
-        include_selectors = self._cfg.include_selectors
+        include_selectors = self._icfg.include_selectors
         if include_selectors:
             included_nodes: list = []
             for selector in include_selectors:
@@ -136,7 +143,7 @@ class HTMLReader:
                     return
 
                 pu = urlparse(absu)
-                if self._cfg.same_origin and (pu.scheme, pu.netloc) != (
+                if self._icfg.same_origin and (pu.scheme, pu.netloc) != (
                     base.scheme,
                     base.netloc,
                 ):
@@ -193,9 +200,9 @@ class HTMLReader:
         try:
             res = await arequest_get(
                 url=url,
-                user_agent=self._cfg.user_agent,
-                timeout_sec=self._cfg.timeout_sec,
-                req_per_sec=self._cfg.req_per_sec,
+                user_agent=self._icfg.user_agent,
+                timeout_sec=self._icfg.timeout_sec,
+                req_per_sec=self._icfg.req_per_sec,
             )
         except Exception as e:
             logger.exception(e)
@@ -231,7 +238,7 @@ class HTMLReader:
         url: str,
         base_url: Optional[str] = None,
         max_asset_bytes: int = 100 * 1024 * 1024,
-    ) -> Optional[Document]:
+    ) -> list[Document]:
         """Create a document from a direct-linked file.
 
         Args:
@@ -240,11 +247,10 @@ class HTMLReader:
             max_asset_bytes (int, optional): Max size in bytes. Defaults to 100*1024*1024.
 
         Returns:
-            Optional[Document]: Generated document.
+            list[Document]: Generated documents.
         """
-        from llama_index.core.schema import Document
-
         from ....core.metadata import BasicMetaData
+        from ..parser import DefaultParser
 
         temp = await self._adownload_direct_linked_file(
             url=url,
@@ -252,12 +258,18 @@ class HTMLReader:
             max_asset_bytes=max_asset_bytes,
         )
         if temp is None:
-            return None
+            return []
 
-        meta = BasicMetaData()
-        meta.file_path = temp  # For MultiModalVectorStoreIndex
-        meta.url = url
-        meta.base_source = base_url or ""
-        meta.temp_file_path = temp  # For cleanup
+        parser = DefaultParser(self._gcfg, self._ingest_target_exts)
+        docs = await parser.aparse(temp)
 
-        return Document(text=url, metadata=meta.to_dict())
+        parsed_docs = []
+        for doc in docs:
+            meta = BasicMetaData().from_dict(doc.metadata)
+            meta.url = url
+            meta.base_source = base_url or ""
+            meta.temp_file_path = temp  # For cleanup
+            doc.metadata = meta.to_dict()
+            parsed_docs.append(doc)
+
+        return parsed_docs

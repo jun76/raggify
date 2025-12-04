@@ -74,12 +74,19 @@ def _get_bm25_retriever(rt: Runtime) -> Optional[BaseRetriever]:
         logger.warning("docstore is empty; BM25 retrieval skipped")
         return None
 
+    corpus_size = docstore.get_bm25_corpus_size()
+    if corpus_size == 0:
+        logger.warning("docstore corpus has no entries; BM25 retrieval skipped")
+        return None
+
+    bm25_topk = min(rt.cfg.retrieve.bm25_topk, corpus_size)
+
     try:
         logger.debug("bm25 only")
 
         return BM25Retriever.from_defaults(
             docstore=docstore.store,
-            similarity_top_k=rt.cfg.retrieve.bm25_topk,
+            similarity_top_k=bm25_topk,
         )
     except Exception as e:
         logger.warning(f"failed to get BM25 retriever: {e}")
@@ -105,11 +112,18 @@ def _get_fusion_retriever(rt: Runtime, index: VectorStoreIndex) -> BaseRetriever
         logger.warning("docstore is empty; falling back to vector-only retrieval")
         return index.as_retriever(similarity_top_k=topk)
 
+    corpus_size = docstore.get_bm25_corpus_size()
+    if corpus_size == 0:
+        logger.warning("docstore is empty; falling back to vector-only retrieval")
+        return index.as_retriever(similarity_top_k=topk)
+
+    bm25_topk = min(rt.cfg.retrieve.bm25_topk, corpus_size)
+
     vector_retriever = index.as_retriever(similarity_top_k=topk)
 
     bm25_retriever = BM25Retriever.from_defaults(
         docstore=docstore.store,
-        similarity_top_k=rt.cfg.retrieve.bm25_topk,
+        similarity_top_k=bm25_topk,
     )
 
     logger.debug("fusion")

@@ -87,6 +87,21 @@ class DocumentStoreManager:
             # treat presence as True.
             return True
 
+    def get_bm25_corpus_size(self) -> int:
+        """Return the number of documents stored for BM25 retrieval.
+
+        Returns:
+            int: Document count (0 if unavailable).
+        """
+        docs_attr = getattr(self.store, "docs", None)
+        if docs_attr is None:
+            return 0
+
+        try:
+            return len(docs_attr)
+        except Exception:
+            return sum(1 for _ in docs_attr)
+
     def get_ref_doc_ids(self) -> list[str]:
         """Get all ref_doc_info keys stored in the docstore.
 

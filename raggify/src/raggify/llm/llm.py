@@ -94,13 +94,13 @@ def _create_image_summarizer(cfg: ConfigManager) -> LLMContainer:
 
 # Container generation helpers per provider
 def _openai_text_summarizer(cfg: ConfigManager) -> LLMContainer:
-    from llama_index.llms.openai import OpenAI
+    from llama_index.multi_modal_llms.openai import OpenAIMultiModal
 
     from .llm_manager import LLMContainer
 
     return LLMContainer(
         provider_name=LLMProvider.OPENAI,
-        llm=OpenAI(
+        llm=OpenAIMultiModal(
             model=cfg.llm.openai_text_summarizer_model,
             api_base=cfg.general.openai_base_url,
             temperature=0,

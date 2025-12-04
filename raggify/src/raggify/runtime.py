@@ -15,8 +15,6 @@ if TYPE_CHECKING:
 
     from .document_store.document_store_manager import DocumentStoreManager
     from .embed.embed_manager import EmbedManager
-    from .ingest.loader.file_loader import FileLoader
-    from .ingest.loader.html_loader import HTMLLoader
     from .ingest_cache.ingest_cache_manager import IngestCacheManager
     from .llama_like.core.schema import Modality
     from .llm.llm_manager import LLMManager
@@ -195,6 +193,28 @@ class Runtime:
             self.ingest_cache.delete_all(persist_dir)
             self.document_store.delete_all(persist_dir)
 
+    @property
+    def ingest_target_exts(self) -> set[str]:
+        """Get ingest target extensions based on the config.
+
+        Returns:
+            set[str]: Ingest target extensions.
+        """
+        from .core.exts import Exts
+
+        additional_exts = self.cfg.ingest.additional_exts
+        exts = Exts.DEFAULT_INGEST_TARGET.copy() | additional_exts
+
+        cfg = self.cfg.general
+        if cfg.image_embed_provider is not None:
+            exts |= Exts.IMAGE
+        if cfg.audio_embed_provider is not None:
+            exts |= Exts.AUDIO
+        if cfg.video_embed_provider is not None:
+            exts |= Exts.VIDEO
+
+        return exts
+
     # Singleton getters follow.
     @property
     def cfg(self) -> ConfigManager:
@@ -260,29 +280,6 @@ class Runtime:
             self._llm_manager = create_llm_manager(self.cfg)
 
         return self._llm_manager
-
-    @property
-    def file_loader(self) -> FileLoader:
-        from .core.exts import Exts
-        from .ingest.loader.file_loader import FileLoader
-
-        return FileLoader(
-            persist_dir=self.cfg.ingest.pipe_persist_dir,
-            ingest_target_exts=Exts.get_ingest_target_exts(self.cfg.general)
-            | self.cfg.ingest.additional_exts,
-        )
-
-    @property
-    def html_loader(self) -> HTMLLoader:
-        from .core.exts import Exts
-        from .ingest.loader.html_loader import HTMLLoader
-
-        return HTMLLoader(
-            persist_dir=self.cfg.ingest.pipe_persist_dir,
-            cfg=self.cfg.ingest,
-            ingest_target_exts=Exts.get_ingest_target_exts(self.cfg.general)
-            | self.cfg.ingest.additional_exts,
-        )
 
 
 def get_runtime() -> Runtime:

@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from pathlib import Path
-from typing import Optional
 
 from llama_index.core.schema import Document, ImageNode, MediaResource, TextNode
 
@@ -16,14 +14,6 @@ from ...logger import logger
 
 class Loader:
     """Base loader class."""
-
-    def __init__(self, persist_dir: Optional[Path]) -> None:
-        """Constructor.
-
-        Args:
-            persist_dir (Optional[Path]): Persist directory.
-        """
-        self._persist_dir = persist_dir
 
     def _finalize_docs(self, docs: list[Document]) -> None:
         """Adjust metadata and finalize documents.

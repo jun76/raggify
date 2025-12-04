@@ -444,18 +444,18 @@ async def aingest_path(
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
+    from .loader.file_loader import FileLoader
+
     rt = _rt()
-    file_loader = rt.file_loader
-    text_nodes, image_nodes, audio_nodes, video_nodes = (
-        await file_loader.aload_from_path(path)
-    )
+    loader = FileLoader(cfg=rt.cfg.general, ingest_target_exts=rt.ingest_target_exts)
+    texts, images, audios, videos = await loader.aload_from_path(path)
     pipe_batch_size = pipe_batch_size or rt.cfg.ingest.pipe_batch_size
 
     await _aupsert_nodes(
-        text_nodes=text_nodes,
-        image_nodes=image_nodes,
-        audio_nodes=audio_nodes,
-        video_nodes=video_nodes,
+        text_nodes=texts,
+        image_nodes=images,
+        audio_nodes=audios,
+        video_nodes=videos,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
         pipe_batch_size=pipe_batch_size,
         is_canceled=is_canceled,
@@ -497,21 +497,23 @@ async def aingest_path_list(
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
+    from .loader.file_loader import FileLoader
+
     if isinstance(lst, str):
         lst = _read_list(lst)
 
     rt = _rt()
-    file_loader = rt.file_loader
-    text_nodes, image_nodes, audio_nodes, video_nodes = (
-        await file_loader.aload_from_paths(paths=list(lst), is_canceled=is_canceled)
+    loader = FileLoader(cfg=rt.cfg.general, ingest_target_exts=rt.ingest_target_exts)
+    texts, images, audios, videos = await loader.aload_from_paths(
+        paths=list(lst), is_canceled=is_canceled
     )
     pipe_batch_size = pipe_batch_size or rt.cfg.ingest.pipe_batch_size
 
     await _aupsert_nodes(
-        text_nodes=text_nodes,
-        image_nodes=image_nodes,
-        audio_nodes=audio_nodes,
-        video_nodes=video_nodes,
+        text_nodes=texts,
+        image_nodes=images,
+        audio_nodes=audios,
+        video_nodes=videos,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
         pipe_batch_size=pipe_batch_size,
         is_canceled=is_canceled,
@@ -557,18 +559,24 @@ async def aingest_url(
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
+    from .loader.html_loader import HTMLLoader
+
     rt = _rt()
-    html_loader = rt.html_loader
-    text_nodes, image_nodes, audio_nodes, video_nodes = (
-        await html_loader.aload_from_url(url=url, is_canceled=is_canceled)
+    loader = HTMLLoader(
+        icfg=rt.cfg.ingest,
+        gcfg=rt.cfg.general,
+        ingest_target_exts=rt.ingest_target_exts,
+    )
+    texts, images, audios, videos = await loader.aload_from_url(
+        url=url, is_canceled=is_canceled
     )
     pipe_batch_size = pipe_batch_size or rt.cfg.ingest.pipe_batch_size
 
     await _aupsert_nodes(
-        text_nodes=text_nodes,
-        image_nodes=image_nodes,
-        audio_nodes=audio_nodes,
-        video_nodes=video_nodes,
+        text_nodes=texts,
+        image_nodes=images,
+        audio_nodes=audios,
+        video_nodes=videos,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
         pipe_batch_size=pipe_batch_size,
         is_canceled=is_canceled,
@@ -610,21 +618,27 @@ async def aingest_url_list(
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
+    from .loader.html_loader import HTMLLoader
+
     if isinstance(lst, str):
         lst = _read_list(lst)
 
     rt = _rt()
-    html_loader = rt.html_loader
-    text_nodes, image_nodes, audio_nodes, video_nodes = (
-        await html_loader.aload_from_urls(urls=list(lst), is_canceled=is_canceled)
+    loader = HTMLLoader(
+        icfg=rt.cfg.ingest,
+        gcfg=rt.cfg.general,
+        ingest_target_exts=rt.ingest_target_exts,
+    )
+    texts, images, audios, videos = await loader.aload_from_urls(
+        urls=list(lst), is_canceled=is_canceled
     )
     pipe_batch_size = pipe_batch_size or rt.cfg.ingest.pipe_batch_size
 
     await _aupsert_nodes(
-        text_nodes=text_nodes,
-        image_nodes=image_nodes,
-        audio_nodes=audio_nodes,
-        video_nodes=video_nodes,
+        text_nodes=texts,
+        image_nodes=images,
+        audio_nodes=audios,
+        video_nodes=videos,
         persist_dir=rt.cfg.ingest.pipe_persist_dir,
         pipe_batch_size=pipe_batch_size,
         is_canceled=is_canceled,

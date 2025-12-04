@@ -55,6 +55,19 @@ def test_has_bm25_corpus_len_error():
     assert manager.has_bm25_corpus() is True
 
 
+def test_bm25_corpus_size_counts_docs():
+    store = FakeDocStore()
+    store.docs = {"a": None, "b": None}
+    manager = _make_manager(store)
+
+    assert manager.get_bm25_corpus_size() == 2
+
+
+def test_bm25_corpus_size_handles_len_error():
+    manager = _make_manager(LenErrorDocStore())
+    assert manager.get_bm25_corpus_size() == 1
+
+
 def test_get_ref_doc_ids_none_info():
     store = FakeDocStore()
     store.ref_info = None

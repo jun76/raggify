@@ -40,7 +40,7 @@ class Exts:
     SITEMAP: set[str] = {".xml"}
 
     # Limit ingestion to avoid unexpected or huge media files
-    _DEFAULT_INGEST_TARGET: set[str] = {
+    DEFAULT_INGEST_TARGET: set[str] = {
         ".hwp",
         PDF,
         ".docx",
@@ -109,23 +109,3 @@ class Exts:
             return ext.replace(".", "")
 
         return ext
-
-    @classmethod
-    def get_ingest_target_exts(cls, cfg: GeneralConfig) -> set[str]:
-        """Get ingest target extensions based on the config.
-
-        Args:
-            cfg (GeneralConfig): General configuration.
-
-        Returns:
-            set[str]: Ingest target extensions.
-        """
-        exts = cls._DEFAULT_INGEST_TARGET.copy()
-        if cfg.image_embed_provider is not None:
-            exts |= cls.IMAGE
-        if cfg.audio_embed_provider is not None:
-            exts |= cls.AUDIO
-        if cfg.video_embed_provider is not None:
-            exts |= cls.VIDEO
-
-        return exts

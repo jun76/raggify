@@ -10,6 +10,7 @@ from .html_reader import HTMLReader
 if TYPE_CHECKING:
     from wikipedia import WikipediaPage
 
+    from ....config.general_config import GeneralConfig
     from ....config.ingest_config import IngestConfig
 
 
@@ -17,16 +18,26 @@ class MultiWikipediaReader(HTMLReader):
     """Multimodal Wikipedia reader."""
 
     def __init__(
-        self, cfg: IngestConfig, asset_url_cache: set[str], ingest_target_exts: set[str]
+        self,
+        icfg: IngestConfig,
+        gcfg: GeneralConfig,
+        asset_url_cache: set[str],
+        ingest_target_exts: set[str],
     ) -> None:
         """Initialize with parameters.
         Args:
-            cfg (IngestConfig): Ingest configuration.
+            icfg (IngestConfig): Ingest configuration.
+            gcfg (GeneralConfig): General configuration.
             asset_url_cache (set[str]): Cache of already processed asset URLs.
             ingest_target_exts (set[str]): Allowed extensions for ingestion.
         """
-        super().__init__(cfg, asset_url_cache, ingest_target_exts)
-        self._load_asset = cfg.load_asset
+        super().__init__(
+            icfg=icfg,
+            gcfg=gcfg,
+            asset_url_cache=asset_url_cache,
+            ingest_target_exts=ingest_target_exts,
+        )
+        self._load_asset = icfg.load_asset
 
     async def aload_data(self, url: str, **load_kwargs: Any) -> List[Document]:
         """
