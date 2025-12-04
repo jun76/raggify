@@ -140,14 +140,10 @@ def config() -> None:
 
 
 class ClientCommand(Protocol):
-    def __call__(
-        self, client: RestAPIClient, *args: Any, **kwargs: Any
-    ) -> dict[str, Any]: ...
+    def __call__(self, client: RestAPIClient, *args, **kwargs) -> dict[str, Any]: ...
 
 
-def _execute_client_command(
-    command_func: ClientCommand, *args: Any, **kwargs: Any
-) -> None:
+def _execute_client_command(command_func: ClientCommand, *args, **kwargs) -> None:
     try:
         client = _create_rest_client()
         result = command_func(client, *args, **kwargs)

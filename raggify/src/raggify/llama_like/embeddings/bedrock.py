@@ -75,7 +75,7 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
         aws_secret_access_key: Optional[str] = None,
         aws_session_token: Optional[str] = None,
         region_name: Optional[str] = None,
-        **kwargs: Any,
+        **kwargs,
     ) -> None:
         """Constructor.
 
@@ -86,7 +86,6 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
             aws_secret_access_key (Optional[str], optional): AWS secret key. Defaults to None.
             aws_session_token (Optional[str], optional): AWS session token. Defaults to None.
             region_name (Optional[str], optional): AWS region name. Defaults to None.
-            kwargs (Any): Additional args for BedrockEmbedding initialization.
         """
         super().__init__(
             model_name=model_name,

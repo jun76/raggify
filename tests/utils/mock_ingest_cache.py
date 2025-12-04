@@ -21,7 +21,7 @@ class DummyPostgresKVStore:
         self.params = params
 
     @classmethod
-    def from_params(cls, **kwargs: Any) -> DummyPostgresKVStore:
+    def from_params(cls, **kwargs) -> DummyPostgresKVStore:
         return cls(kwargs)
 
     def delete(self, key: str, collection: str) -> None:

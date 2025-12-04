@@ -24,7 +24,7 @@ class DummyPGVectorStore(FakeVectorStore):
         self.params = params
 
     @classmethod
-    def from_params(cls, **kwargs: Any) -> "DummyPGVectorStore":
+    def from_params(cls, **kwargs) -> "DummyPGVectorStore":
         return cls(kwargs)
 
 
@@ -71,17 +71,17 @@ class DummyIndexSchema:
 
 
 class DummyVectorStoreIndex:
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self, **kwargs) -> None:
         self.kwargs = kwargs
 
     @classmethod
-    def from_vector_store(cls, **kwargs: Any) -> DummyVectorStoreIndex:
+    def from_vector_store(cls, **kwargs) -> DummyVectorStoreIndex:
         return cls(**kwargs)
 
 
 class DummyMultiModalVectorStoreIndex(DummyVectorStoreIndex):
     @classmethod
-    def from_vector_store(cls, **kwargs: Any) -> DummyMultiModalVectorStoreIndex:
+    def from_vector_store(cls, **kwargs) -> DummyMultiModalVectorStoreIndex:
         return cls(**kwargs)
 
 

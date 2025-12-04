@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
 from ..core.event import async_loop_runner
@@ -182,12 +182,11 @@ class DefaultParser(DirectoryParser):
 class LlamaParser(DirectoryParser):
     """Llama Cloud parser that uses Llama Cloud API to parse files."""
 
-    def __init__(self, cfg: ConfigManager, **kwargs: Any) -> None:
+    def __init__(self, cfg: ConfigManager, *args, **kwargs) -> None:
         """Constructor.
 
         Args:
             cfg (ConfigManager): Configuration manager.
-            **kwargs: Additional keyword arguments for Llama Cloud parser.
         """
         from llama_cloud_services import LlamaParse
 
@@ -298,7 +297,7 @@ class LlamaParser(DirectoryParser):
 
         exts = self._ingest_target_exts & llama_supported_exts
         try:
-            parser = LlamaParse(**kwargs)
+            parser = LlamaParse(*args, **kwargs)
         except Exception as e:
             raise ValueError("failed to initialize LlamaParse") from e
 
@@ -306,12 +305,11 @@ class LlamaParser(DirectoryParser):
             self._readers.setdefault(ext, parser)
 
 
-def create_parser(cfg: ConfigManager, **kwargs: Any) -> DirectoryParser:
+def create_parser(cfg: ConfigManager, *args, **kwargs) -> DirectoryParser:
     """Factory method to create a parser instance based on configuration.
 
     Args:
         cfg (ConfigManager): Configuration manager.
-        **kwargs: Additional keyword arguments for Llama Cloud parser.
 
     Returns:
         Parser: An instance of a parser.
@@ -322,6 +320,6 @@ def create_parser(cfg: ConfigManager, **kwargs: Any) -> DirectoryParser:
         case ParserProvider.LOCAL:
             return DefaultParser(cfg)
         case ParserProvider.LLAMA_CLOUD:
-            return LlamaParser(cfg=cfg, **kwargs)
+            return LlamaParser(cfg=cfg, *args, **kwargs)
         case _:
             raise ValueError("unsupported parser provider")

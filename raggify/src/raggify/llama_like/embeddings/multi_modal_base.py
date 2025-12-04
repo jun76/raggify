@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Union
 
 from llama_index.core.embeddings import BaseEmbedding, MultiModalEmbedding
 
@@ -20,7 +20,7 @@ class AudioEmbedding(BaseEmbedding):
     as an intermediate abstraction for audio embeddings.
     """
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """Constructor."""
         super().__init__(*args, **kwargs)
 
@@ -47,7 +47,7 @@ class VideoEmbedding(AudioEmbedding, MultiModalEmbedding):
     as an intermediate abstraction for video embeddings.
     """
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """Constructor."""
         super().__init__(*args, **kwargs)
 

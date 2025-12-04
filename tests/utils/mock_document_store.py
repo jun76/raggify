@@ -21,7 +21,7 @@ class DummyPostgresDocumentStore:
         self.params = params
 
     @classmethod
-    def from_params(cls, **kwargs: Any) -> DummyPostgresDocumentStore:
+    def from_params(cls, **kwargs) -> DummyPostgresDocumentStore:
         return cls(kwargs)
 
 

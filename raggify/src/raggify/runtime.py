@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 
     from .document_store.document_store_manager import DocumentStoreManager
     from .embed.embed_manager import EmbedManager
+    from .ingest.loader.file_loader import FileLoader
+    from .ingest.loader.html_loader import HTMLLoader
     from .ingest.parser import BaseParser
     from .ingest_cache.ingest_cache_manager import IngestCacheManager
     from .llama_like.core.schema import Modality
@@ -42,6 +44,8 @@ class Runtime:
         self._rerank_manager: Optional[RerankManager] = None
         self._llm_manager: Optional[LLMManager] = None
         self._parser: Optional[BaseParser] = None
+        self._file_loader: Optional[FileLoader] = None
+        self._html_loader: Optional[HTMLLoader] = None
 
         self._pipeline_lock = threading.Lock()
 
@@ -61,6 +65,8 @@ class Runtime:
         self._rerank_manager = None
         self._llm_manager = None
         self._parser = None
+        self._file_loader = None
+        self._html_loader = None
 
     def build(self) -> None:
         """Create instances for each manager class."""
@@ -84,6 +90,8 @@ class Runtime:
         self.rerank_manager
         self.llm_manager
         self.parser
+        self.file_loader
+        self.html_loader
 
         configure_logging(self.cfg.general.log_level)
 
@@ -272,6 +280,24 @@ class Runtime:
             self._parser = create_parser(self.cfg)
 
         return self._parser
+
+    @property
+    def file_loader(self) -> FileLoader:
+        if self._file_loader is None:
+            from .ingest.loader.file_loader import FileLoader
+
+            self._file_loader = FileLoader(self.parser)
+
+        return self._file_loader
+
+    @property
+    def html_loader(self) -> HTMLLoader:
+        if self._html_loader is None:
+            from .ingest.loader.html_loader import HTMLLoader
+
+            self._html_loader = HTMLLoader(cfg=self.cfg.ingest, parser=self.parser)
+
+        return self._html_loader
 
 
 def get_runtime() -> Runtime:

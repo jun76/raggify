@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from enum import StrEnum, auto
-from typing import Any
 
 from llama_index.core.schema import TextNode
 
@@ -18,7 +17,7 @@ class Modality(StrEnum):
 class AudioNode(TextNode):
     """Node implementation for audio modality."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """Constructor."""
         super().__init__(*args, **kwargs)
 
@@ -26,6 +25,6 @@ class AudioNode(TextNode):
 class VideoNode(TextNode):
     """Node implementation for video modality."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """Constructor."""
         super().__init__(*args, **kwargs)

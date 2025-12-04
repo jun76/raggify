@@ -24,6 +24,7 @@ def configure_test_env() -> None:
     os.environ.setdefault("AWS_ACCESS_KEY_ID", "dummy")
     os.environ.setdefault("AWS_SECRET_ACCESS_KEY", "dummy")
     os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")
+    os.environ.setdefault("LLAMA_CLOUD_API_KEY", "dummy")
     os.environ.setdefault("RG_CONFIG_PATH", "tests/config.yaml")
 
 

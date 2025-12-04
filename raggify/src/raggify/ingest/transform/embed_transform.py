@@ -55,9 +55,6 @@ class _BaseEmbedTransform(TransformComponent):
     def to_dict(self, **kwargs) -> dict:
         """Return a dict for caching that includes name label.
 
-        Args:
-            **kwargs: Unused additional options.
-
         Returns:
             dict: Serializable payload for hashing.
         """

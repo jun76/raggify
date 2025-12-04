@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, List
 
 from llama_index.core.schema import Document
 
@@ -32,18 +32,17 @@ class MultiWikipediaReader(HTMLReader):
         super().__init__(cfg=cfg, asset_url_cache=asset_url_cache, parser=parser)
         self._load_asset = cfg.load_asset
 
-    async def aload_data(self, url: str, **load_kwargs: Any) -> List[Document]:
+    async def aload_data(self, url: str) -> List[Document]:
         """
         Load data from Wikipedia.
 
         Args:
             url (str): Wikipedia page URL.
-            **load_kwargs: Additional arguments for wikipedia.page().
 
         Returns:
             List[Document]: List of documents read from Wikipedia.
         """
-        wiki_page = self._fetch_wiki_page(url, **load_kwargs)
+        wiki_page = self._fetch_wiki_page(url)
 
         text_docs = await self._aload_texts(wiki_page)
         logger.debug(f"loaded {len(text_docs)} text docs from {wiki_page.url}")
@@ -53,12 +52,11 @@ class MultiWikipediaReader(HTMLReader):
 
         return text_docs + asset_docs
 
-    def _fetch_wiki_page(self, url: str, **kwargs: Any) -> WikipediaPage:
+    def _fetch_wiki_page(self, url: str) -> WikipediaPage:
         """Fetch a Wikipedia page based on the URL and additional loading arguments.
 
         Args:
             url (str): Wikipedia page URL.
-            **kwargs: Additional arguments for wikipedia.page().
 
         Raises:
             ValueError: If the language prefix is not supported.
@@ -80,7 +78,7 @@ class MultiWikipediaReader(HTMLReader):
 
         page = url.split("/wiki/")[-1]
 
-        return wikipedia.page(page, **kwargs)
+        return wikipedia.page(page)
 
     async def _aload_texts(self, page: WikipediaPage) -> list[Document]:
         """Generate documents from texts of a Wikipedia page.

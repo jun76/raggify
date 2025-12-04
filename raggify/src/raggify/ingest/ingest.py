@@ -444,11 +444,8 @@ async def aingest_path(
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
-    from .loader.file_loader import FileLoader
-
     rt = _rt()
-    loader = FileLoader(rt.parser)
-    texts, images, audios, videos = await loader.aload_from_path(path)
+    texts, images, audios, videos = await rt.file_loader.aload_from_path(path)
     pipe_batch_size = pipe_batch_size or rt.cfg.ingest.pipe_batch_size
 
     await _aupsert_nodes(
@@ -497,18 +494,14 @@ async def aingest_path_list(
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
-    from .loader.file_loader import FileLoader
-
     if isinstance(lst, str):
         lst = _read_list(lst)
 
     rt = _rt()
-    loader = FileLoader(rt.parser)
-    texts, images, audios, videos = await loader.aload_from_paths(
+    texts, images, audios, videos = await rt.file_loader.aload_from_paths(
         paths=list(lst), is_canceled=is_canceled
     )
     pipe_batch_size = pipe_batch_size or rt.cfg.ingest.pipe_batch_size
-
     await _aupsert_nodes(
         text_nodes=texts,
         image_nodes=images,
@@ -559,11 +552,8 @@ async def aingest_url(
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
-    from .loader.html_loader import HTMLLoader
-
     rt = _rt()
-    loader = HTMLLoader(cfg=rt.cfg.ingest, parser=rt.parser)
-    texts, images, audios, videos = await loader.aload_from_url(
+    texts, images, audios, videos = await rt.html_loader.aload_from_url(
         url=url, is_canceled=is_canceled
     )
     pipe_batch_size = pipe_batch_size or rt.cfg.ingest.pipe_batch_size
@@ -614,14 +604,11 @@ async def aingest_url_list(
         is_canceled (Callable[[], bool], optional):
             Cancellation flag. Defaults to lambda:False.
     """
-    from .loader.html_loader import HTMLLoader
-
     if isinstance(lst, str):
         lst = _read_list(lst)
 
     rt = _rt()
-    loader = HTMLLoader(cfg=rt.cfg.ingest, parser=rt.parser)
-    texts, images, audios, videos = await loader.aload_from_urls(
+    texts, images, audios, videos = await rt.html_loader.aload_from_urls(
         urls=list(lst), is_canceled=is_canceled
     )
     pipe_batch_size = pipe_batch_size or rt.cfg.ingest.pipe_batch_size

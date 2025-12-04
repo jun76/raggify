@@ -75,9 +75,6 @@ class _BaseMediaSplitter(TransformComponent):
     def to_dict(self, **kwargs) -> dict:
         """Return a dict for caching that includes split seconds.
 
-        Args:
-            **kwargs: Unused additional options.
-
         Returns:
             dict: Serializable payload for hashing.
         """
