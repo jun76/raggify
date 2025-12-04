@@ -8,6 +8,7 @@ from .ingest import (
     ingest_url,
     ingest_url_list,
 )
+from .parser import DefaultParser, LlamaParser, create_parser
 
 __all__ = [
     "aingest_path",
@@ -18,4 +19,7 @@ __all__ = [
     "ingest_path_list",
     "ingest_url",
     "ingest_url_list",
+    "create_parser",
+    "DefaultParser",
+    "LlamaParser",
 ]

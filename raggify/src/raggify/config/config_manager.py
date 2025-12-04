@@ -140,6 +140,28 @@ class ConfigManager:
     def config_path(self) -> str:
         return self._config_path
 
+    @property
+    def ingest_target_exts(self) -> set[str]:
+        """Get ingest target extensions based on the config.
+
+        Returns:
+            set[str]: Ingest target extensions.
+        """
+        from ..core.exts import Exts
+
+        additional_exts = self.ingest.additional_exts
+        exts = Exts.DEFAULT_INGEST_TARGET.copy() | additional_exts
+
+        cfg = self.general
+        if cfg.image_embed_provider is not None:
+            exts |= Exts.IMAGE
+        if cfg.audio_embed_provider is not None:
+            exts |= Exts.AUDIO
+        if cfg.video_embed_provider is not None:
+            exts |= Exts.VIDEO
+
+        return exts
+
     def get_dict(self) -> dict[str, object]:
         """Get the current configuration as a dictionary.
 

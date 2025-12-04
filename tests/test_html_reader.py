@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import asyncio
 
-from raggify.config.general_config import GeneralConfig
+from llama_index.core.schema import Document
+
 from raggify.config.ingest_config import IngestConfig
+from raggify.ingest.loader.html_reader.default_html_reader import DefaultHTMLReader
 from raggify.ingest.loader.html_reader.html_reader import HTMLReader
 from tests.utils.mock_reader import patch_html_asset_download, patch_html_temp_file
+from tests.utils.mock_parser import DummyParser
 
 from .config import configure_test_env
 
@@ -17,12 +20,10 @@ def _make_reader(**cfg_overrides):
     for key, value in cfg_overrides.items():
         setattr(ingest_cfg, key, value)
 
-    general_cfg = GeneralConfig()
     return HTMLReader(
-        icfg=ingest_cfg,
-        gcfg=general_cfg,
+        cfg=ingest_cfg,
         asset_url_cache=set(),
-        ingest_target_exts={".png", ".mp3"},
+        parser=DummyParser(),
     )
 
 
@@ -109,6 +110,48 @@ def test_adownload_direct_linked_file_rejects_invalid(tmp_path, monkeypatch):
         )
     )
     assert res is None
+
+
+def test_default_html_reader_aload_assets_keeps_all(monkeypatch):
+    ingest_cfg = IngestConfig()
+    reader = DefaultHTMLReader(
+        cfg=ingest_cfg,
+        asset_url_cache=set(),
+        parser=DummyParser(),
+    )
+
+    def fake_gather(self, html, base_url, allowed_exts, limit=20):
+        return [
+            "https://example.com/assets/img01.png",
+            "https://example.com/assets/img02.png",
+        ]
+
+    async def fake_aload(self, url, base_url=None, max_asset_bytes=0):
+        return [Document(text=url, metadata={})]
+
+    monkeypatch.setattr(
+        DefaultHTMLReader,
+        "gather_asset_links",
+        fake_gather,
+    )
+    monkeypatch.setattr(
+        DefaultHTMLReader,
+        "aload_direct_linked_file",
+        fake_aload,
+    )
+
+    docs = asyncio.run(
+        reader._aload_assets(
+            url="https://example.com/post",
+            html="<html></html>",
+        )
+    )
+
+    texts = [doc.text for doc in docs]
+    assert texts == [
+        "https://example.com/assets/img01.png",
+        "https://example.com/assets/img02.png",
+    ]
 
     patch_html_asset_download(monkeypatch, b"<html></html>", content_type="text/html")
 

@@ -3,7 +3,11 @@ from __future__ import annotations
 import importlib
 
 from tests.utils.mock_client_cli import patch_client_cli, runner_client_cli
-from tests.utils.mock_server_cli import patch_server_cli, runner_server
+from tests.utils.mock_server_cli import (
+    patch_server_cli,
+    patch_server_config_command,
+    runner_server,
+)
 
 from .config import configure_test_env, pytestmark
 
@@ -72,3 +76,11 @@ def test_client_cli():
     client_app, client_module = _load_client_cli()
     with patch_client_cli(module=client_module):
         _run_commands(runner_client_cli, client_app, client_commands)
+
+
+def test_server_config_command_uses_runtime():
+    server_app = _load_server_cli()
+
+    with patch_server_config_command():
+        result = runner_server.invoke(server_app, ["config"])
+        assert result.exit_code == 0

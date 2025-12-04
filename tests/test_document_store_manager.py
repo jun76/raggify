@@ -40,19 +40,19 @@ def test_name_and_store_setter():
 
 def test_has_bm25_corpus_missing_docs_attr():
     manager = _make_manager(MissingDocsAttrStore())
-    assert manager.has_bm25_corpus() is False
+    assert manager.get_bm25_corpus_size() == 0
 
 
 def test_has_bm25_corpus_with_docs():
     store = FakeDocStore()
     store.docs = {"doc1": None}
     manager = _make_manager(store)
-    assert manager.has_bm25_corpus() is True
+    assert manager.get_bm25_corpus_size() > 0
 
 
 def test_has_bm25_corpus_len_error():
     manager = _make_manager(LenErrorDocStore())
-    assert manager.has_bm25_corpus() is True
+    assert manager.get_bm25_corpus_size() > 0
 
 
 def test_bm25_corpus_size_counts_docs():

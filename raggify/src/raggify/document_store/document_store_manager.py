@@ -67,26 +67,6 @@ class DocumentStoreManager:
         """
         return self._table_name
 
-    def has_bm25_corpus(self) -> bool:
-        """Return whether a BM25 text corpus exists.
-
-        The default `pipe.arun(store_doc_text=True)` should populate it.
-
-        Returns:
-            bool: True if the corpus exists.
-        """
-        docs_attr = getattr(self.store, "docs", None)
-
-        if docs_attr is None:
-            return False
-
-        try:
-            return len(docs_attr) > 0
-        except Exception:
-            # Some docstore implementations may not implement __len__;
-            # treat presence as True.
-            return True
-
     def get_bm25_corpus_size(self) -> int:
         """Return the number of documents stored for BM25 retrieval.
 

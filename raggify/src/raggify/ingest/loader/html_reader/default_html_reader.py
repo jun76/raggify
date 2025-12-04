@@ -2,33 +2,30 @@ from __future__ import annotations
 
 from llama_index.core.schema import Document
 
-from ....config.general_config import GeneralConfig
 from ....config.ingest_config import IngestConfig
 from ....logger import logger
+from ...parser import BaseParser
 from .html_reader import HTMLReader
 
 
 class DefaultHTMLReader(HTMLReader):
     def __init__(
         self,
-        icfg: IngestConfig,
-        gcfg: GeneralConfig,
+        cfg: IngestConfig,
         asset_url_cache: set[str],
-        ingest_target_exts: set[str],
+        parser: BaseParser,
     ) -> None:
         """Default HTML reader.
 
         Args:
-            icfg (IngestConfig): Ingest configuration.
-            gcfg (GeneralConfig): General configuration.
+            cfg (IngestConfig): Ingest configuration.
             asset_url_cache (set[str]): Cache of already processed asset URLs.
-            ingest_target_exts (set[str]): Allowed extensions for ingestion.
+            parser (Parser): Parser instance.
         """
         super().__init__(
-            icfg=icfg,
-            gcfg=gcfg,
+            cfg=cfg,
             asset_url_cache=asset_url_cache,
-            ingest_target_exts=ingest_target_exts,
+            parser=parser,
         )
 
     async def aload_data(self, url: str) -> list[Document]:
@@ -42,13 +39,13 @@ class DefaultHTMLReader(HTMLReader):
         """
         from ....core.exts import Exts
 
-        if Exts.endswith_exts(url, self._ingest_target_exts):
+        if Exts.endswith_exts(url, self._parser.ingest_target_exts):
             if not self.register_asset_url(url):
                 return []
 
             # Direct linked file
             docs = await self.aload_direct_linked_file(
-                url=url, base_url=url, max_asset_bytes=self._icfg.max_asset_bytes
+                url=url, base_url=url, max_asset_bytes=self._cfg.max_asset_bytes
             )
             if docs is None:
                 logger.warning(f"failed to fetch from {url}")
@@ -60,9 +57,7 @@ class DefaultHTMLReader(HTMLReader):
         logger.debug(f"loaded {len(text_docs)} text docs from {url}")
 
         asset_docs = (
-            await self._aload_assets(url=url, html=html)
-            if self._icfg.load_asset
-            else []
+            await self._aload_assets(url=url, html=html) if self._cfg.load_asset else []
         )
         logger.debug(f"loaded {len(asset_docs)} asset docs from {url}")
 
@@ -85,9 +80,9 @@ class DefaultHTMLReader(HTMLReader):
         # Prefetch to avoid ingesting Not Found pages
         html = await afetch_text(
             url=url,
-            user_agent=self._icfg.user_agent,
-            timeout_sec=self._icfg.timeout_sec,
-            req_per_sec=self._icfg.req_per_sec,
+            user_agent=self._cfg.user_agent,
+            timeout_sec=self._cfg.timeout_sec,
+            req_per_sec=self._cfg.req_per_sec,
         )
         if not html:
             logger.warning(f"failed to fetch html from {url}, skipped")
@@ -121,22 +116,24 @@ class DefaultHTMLReader(HTMLReader):
             )
 
         urls = self.gather_asset_links(
-            html=html, base_url=url, allowed_exts=self._ingest_target_exts
+            html=html, base_url=url, allowed_exts=self._parser.ingest_target_exts
         )
 
         docs = []
-        for url in urls:
-            if not self.register_asset_url(url):
+        for asset_url in urls:
+            if not self.register_asset_url(asset_url):
                 # Skip fetching identical assets
                 continue
 
-            docs = await self.aload_direct_linked_file(
-                url=url, base_url=url, max_asset_bytes=self._icfg.max_asset_bytes
+            asset_docs = await self.aload_direct_linked_file(
+                url=asset_url,
+                base_url=asset_url,
+                max_asset_bytes=self._cfg.max_asset_bytes,
             )
-            if docs is None:
-                logger.warning(f"failed to fetch from {url}, skipped")
+            if not asset_docs:
+                logger.warning(f"failed to fetch from {asset_url}, skipped")
                 continue
 
-            docs.extend(docs)
+            docs.extend(asset_docs)
 
         return docs

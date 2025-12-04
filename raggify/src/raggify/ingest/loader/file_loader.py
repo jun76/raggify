@@ -2,28 +2,26 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable
 
-from ...ingest.loader.parser import DefaultParser
 from ...logger import logger
+from ..parser import BaseParser
 from .loader import Loader
 
 if TYPE_CHECKING:
     from llama_index.core.schema import ImageNode, TextNode
 
-    from ...config.general_config import GeneralConfig
     from ...llama_like.core.schema import AudioNode, VideoNode
 
 
 class FileLoader(Loader):
     """Loader that reads local files and generates nodes."""
 
-    def __init__(self, cfg: GeneralConfig, ingest_target_exts: set[str]) -> None:
+    def __init__(self, parser: BaseParser) -> None:
         """Constructor.
 
         Args:
-            cfg (GeneralConfig): General configuration.
-            ingest_target_exts (set[str]): Allowed extensions for ingestion.
+            parser (Parser): Parser instance.
         """
-        self._parser = DefaultParser(cfg=cfg, ingest_target_exts=ingest_target_exts)
+        self._parser = parser
 
     async def aload_from_path(
         self, root: str

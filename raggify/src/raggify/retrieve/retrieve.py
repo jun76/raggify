@@ -70,10 +70,6 @@ def _get_bm25_retriever(rt: Runtime) -> Optional[BaseRetriever]:
         Optional[BaseRetriever]: Retriever.
     """
     docstore = rt.document_store
-    if not docstore.has_bm25_corpus():
-        logger.warning("docstore is empty; BM25 retrieval skipped")
-        return None
-
     corpus_size = docstore.get_bm25_corpus_size()
     if corpus_size == 0:
         logger.warning("docstore corpus has no entries; BM25 retrieval skipped")
@@ -107,10 +103,6 @@ def _get_fusion_retriever(rt: Runtime, index: VectorStoreIndex) -> BaseRetriever
     """
     docstore = rt.document_store
     topk = rt.cfg.rerank.topk
-
-    if not docstore.has_bm25_corpus():
-        logger.warning("docstore is empty; falling back to vector-only retrieval")
-        return index.as_retriever(similarity_top_k=topk)
 
     corpus_size = docstore.get_bm25_corpus_size()
     if corpus_size == 0:

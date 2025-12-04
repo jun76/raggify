@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import StrEnum, auto
 from pathlib import Path
 from typing import Optional
 
@@ -11,6 +12,11 @@ from ..core.const import (
     DEFAULT_WORKSPACE_PATH,
     PROJECT_NAME,
 )
+
+
+class ParserProvider(StrEnum):
+    LOCAL = auto()
+    LLAMA_CLOUD = auto()
 
 
 @dataclass(kw_only=True)

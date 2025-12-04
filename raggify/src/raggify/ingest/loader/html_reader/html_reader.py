@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 from urllib.parse import urljoin, urlparse
 
-from ....config.general_config import GeneralConfig
 from ....config.ingest_config import IngestConfig
 from ....core.exts import Exts
 from ....logger import logger
+from ...parser import BaseParser
 from ..util import arequest_get
 
 if TYPE_CHECKING:
@@ -15,24 +15,18 @@ if TYPE_CHECKING:
 
 class HTMLReader:
     def __init__(
-        self,
-        icfg: IngestConfig,
-        gcfg: GeneralConfig,
-        asset_url_cache: set[str],
-        ingest_target_exts: set[str],
+        self, cfg: IngestConfig, asset_url_cache: set[str], parser: BaseParser
     ) -> None:
         """Loader for HTML that generates nodes.
 
         Args:
-            icfg (IngestConfig): Ingest configuration.
-            gcfg (GeneralConfig): General configuration.
+            cfg (IngestConfig): Ingest configuration.
             asset_url_cache (set[str]): Cache of already processed asset URLs.
-            ingest_target_exts (set[str]): Allowed extensions for ingestion.
+            parser (Parser): Parser instance.
         """
-        self._icfg = icfg
-        self._gcfg = gcfg
+        self._cfg = cfg
         self._asset_url_cache = asset_url_cache
-        self._ingest_target_exts = ingest_target_exts
+        self._parser = parser
 
     def cleanse_html_content(self, html: str) -> str:
         """Cleanse HTML content by applying include/exclude selectors.
@@ -50,16 +44,16 @@ class HTMLReader:
         soup = BeautifulSoup(html, "html.parser")
 
         # Drop unwanted tags
-        for tag_name in self._icfg.strip_tags:
+        for tag_name in self._cfg.strip_tags:
             for t in soup.find_all(tag_name):
                 t.decompose()
 
-        for selector in self._icfg.exclude_selectors:
+        for selector in self._cfg.exclude_selectors:
             for t in soup.select(selector):
                 t.decompose()
 
         # Include only selected tags
-        include_selectors = self._icfg.include_selectors
+        include_selectors = self._cfg.include_selectors
         if include_selectors:
             included_nodes: list = []
             for selector in include_selectors:
@@ -143,7 +137,7 @@ class HTMLReader:
                     return
 
                 pu = urlparse(absu)
-                if self._icfg.same_origin and (pu.scheme, pu.netloc) != (
+                if self._cfg.same_origin and (pu.scheme, pu.netloc) != (
                     base.scheme,
                     base.netloc,
                 ):
@@ -200,9 +194,9 @@ class HTMLReader:
         try:
             res = await arequest_get(
                 url=url,
-                user_agent=self._icfg.user_agent,
-                timeout_sec=self._icfg.timeout_sec,
-                req_per_sec=self._icfg.req_per_sec,
+                user_agent=self._cfg.user_agent,
+                timeout_sec=self._cfg.timeout_sec,
+                req_per_sec=self._cfg.req_per_sec,
             )
         except Exception as e:
             logger.exception(e)
@@ -250,18 +244,17 @@ class HTMLReader:
             list[Document]: Generated documents.
         """
         from ....core.metadata import BasicMetaData
-        from ..parser import DefaultParser
 
         temp = await self._adownload_direct_linked_file(
             url=url,
-            allowed_exts=self._ingest_target_exts,
+            allowed_exts=self._parser.ingest_target_exts,
             max_asset_bytes=max_asset_bytes,
         )
         if temp is None:
             return []
 
-        parser = DefaultParser(self._gcfg, self._ingest_target_exts)
-        docs = await parser.aparse(temp)
+        docs = await self._parser.aparse(temp)
+        logger.debug(f"Parsed {len(docs)} docs from downloaded asset: {url}")
 
         parsed_docs = []
         for doc in docs:

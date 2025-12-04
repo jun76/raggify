@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
     from .document_store.document_store_manager import DocumentStoreManager
     from .embed.embed_manager import EmbedManager
+    from .ingest.parser import BaseParser
     from .ingest_cache.ingest_cache_manager import IngestCacheManager
     from .llama_like.core.schema import Modality
     from .llm.llm_manager import LLMManager
@@ -39,6 +40,8 @@ class Runtime:
         self._document_store: Optional[DocumentStoreManager] = None
         self._ingest_cache: Optional[IngestCacheManager] = None
         self._rerank_manager: Optional[RerankManager] = None
+        self._llm_manager: Optional[LLMManager] = None
+        self._parser: Optional[BaseParser] = None
 
         self._pipeline_lock = threading.Lock()
 
@@ -57,6 +60,7 @@ class Runtime:
         self._ingest_cache = None
         self._rerank_manager = None
         self._llm_manager = None
+        self._parser = None
 
     def build(self) -> None:
         """Create instances for each manager class."""
@@ -79,6 +83,7 @@ class Runtime:
         self.ingest_cache
         self.rerank_manager
         self.llm_manager
+        self.parser
 
         configure_logging(self.cfg.general.log_level)
 
@@ -193,28 +198,6 @@ class Runtime:
             self.ingest_cache.delete_all(persist_dir)
             self.document_store.delete_all(persist_dir)
 
-    @property
-    def ingest_target_exts(self) -> set[str]:
-        """Get ingest target extensions based on the config.
-
-        Returns:
-            set[str]: Ingest target extensions.
-        """
-        from .core.exts import Exts
-
-        additional_exts = self.cfg.ingest.additional_exts
-        exts = Exts.DEFAULT_INGEST_TARGET.copy() | additional_exts
-
-        cfg = self.cfg.general
-        if cfg.image_embed_provider is not None:
-            exts |= Exts.IMAGE
-        if cfg.audio_embed_provider is not None:
-            exts |= Exts.AUDIO
-        if cfg.video_embed_provider is not None:
-            exts |= Exts.VIDEO
-
-        return exts
-
     # Singleton getters follow.
     @property
     def cfg(self) -> ConfigManager:
@@ -280,6 +263,15 @@ class Runtime:
             self._llm_manager = create_llm_manager(self.cfg)
 
         return self._llm_manager
+
+    @property
+    def parser(self) -> BaseParser:
+        if self._parser is None:
+            from .ingest.parser import create_parser
+
+            self._parser = create_parser(self.cfg)
+
+        return self._parser
 
 
 def get_runtime() -> Runtime:

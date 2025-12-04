@@ -655,8 +655,9 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 | `image_embed_provider`    | Provider for image embeddings.                     | `cohere`     | `cohere`, `clip`(⚠️), `huggingface`, `voyage`, `bedrock`, or `null`.           |
 | `audio_embed_provider`    | Provider for audio embeddings.                     | `bedrock`    | `clap`(⚠️), `bedrock`, or `null`.                                              |
 | `video_embed_provider`    | Provider for video embeddings.                     | `bedrock`    | `bedrock` or `null`.                                                           |
-| `use_modality_fallback`   | Decompose unsupported media into lower modalities. | `false`      | `true` / `false`.                                                              |
 | `rerank_provider`         | Provider for reranking.                            | `cohere`     | `flagembedding`, `cohere`, `voyage`, or `null`.                                |
+| `parser_provider`         | Parser backend for document ingestion.             | `local`      | `local`, `llama_cloud`.                                                        |
+| `use_modality_fallback`   | Decompose unsupported media into lower modalities. | `false`      | `true` / `false`.                                                              |
 | `openai_base_url`         | Custom OpenAI-compatible endpoint.                 | `null`       | Any URL string or `null`.                                                      |
 | `device`                  | Target device for embedding models.                | `cpu`        | `cpu`, `cuda`, `mps`.                                                          |
 | `log_level`               | Logging verbosity.                                 | `DEBUG`      | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.                               |

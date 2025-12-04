@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable
 
-from ...config.general_config import GeneralConfig
 from ...config.ingest_config import IngestConfig
 from ...core.exts import Exts
+from ...ingest.parser import BaseParser
 from ...logger import logger
 from .loader import Loader
 
@@ -17,20 +17,17 @@ if TYPE_CHECKING:
 class HTMLLoader(Loader):
     def __init__(
         self,
-        icfg: IngestConfig,
-        gcfg: GeneralConfig,
-        ingest_target_exts: set[str],
+        cfg: IngestConfig,
+        parser: BaseParser,
     ):
         """Loader for HTML that generates nodes.
 
         Args:
-            icfg (IngestConfig): Ingest configuration.
-            gcfg (GeneralConfig): General configuration.
-            ingest_target_exts (set[str]): Allowed extensions for ingestion.
+            cfg (IngestConfig): Ingest configuration.
+            parser (Parser): Parser instance.
         """
-        self._icfg = icfg
-        self._gcfg = gcfg
-        self._ingest_target_exts = ingest_target_exts
+        self._cfg = cfg
+        self._parser = parser
 
         # Do not include base_url in doc_id so identical URLs are treated
         # as the same document. Cache processed URLs in the same ingest run
@@ -78,9 +75,9 @@ class HTMLLoader(Loader):
         try:
             raw_sitemap = await afetch_text(
                 url=url,
-                user_agent=self._icfg.user_agent,
-                timeout_sec=self._icfg.timeout_sec,
-                req_per_sec=self._icfg.req_per_sec,
+                user_agent=self._cfg.user_agent,
+                timeout_sec=self._cfg.timeout_sec,
+                req_per_sec=self._cfg.req_per_sec,
             )
             urls = self._parse_sitemap(raw_sitemap)
         except Exception as e:
@@ -113,10 +110,9 @@ class HTMLLoader(Loader):
         from .html_reader.wikipedia_reader import MultiWikipediaReader
 
         reader = MultiWikipediaReader(
-            icfg=self._icfg,
-            gcfg=self._gcfg,
+            cfg=self._cfg,
             asset_url_cache=self._asset_url_cache,
-            ingest_target_exts=self._ingest_target_exts,
+            parser=self._parser,
         )
 
         return await reader.aload_data(url)
@@ -136,10 +132,9 @@ class HTMLLoader(Loader):
         from .html_reader.default_html_reader import DefaultHTMLReader
 
         reader = DefaultHTMLReader(
-            icfg=self._icfg,
-            gcfg=self._gcfg,
+            cfg=self._cfg,
             asset_url_cache=self._asset_url_cache,
-            ingest_target_exts=self._ingest_target_exts,
+            parser=self._parser,
         )
 
         return await reader.aload_data(url)

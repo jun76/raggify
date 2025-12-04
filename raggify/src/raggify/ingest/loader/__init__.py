@@ -1,5 +1,13 @@
-from .file_loader import FileLoader
-from .html_loader import HTMLLoader
-from .parser import DefaultParser
+__all__ = ["FileLoader", "HTMLLoader"]
 
-__all__ = ["FileLoader", "HTMLLoader", "DefaultParser"]
+
+def __getattr__(name: str):
+    if name == "FileLoader":
+        from .file_loader import FileLoader
+
+        return FileLoader
+    if name == "HTMLLoader":
+        from .html_loader import HTMLLoader
+
+        return HTMLLoader
+    raise AttributeError(f"module {__name__} has no attribute {name}")

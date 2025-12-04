@@ -4,13 +4,13 @@ from typing import TYPE_CHECKING, Any, List
 
 from llama_index.core.schema import Document
 
+from ....ingest.parser import BaseParser
 from ....logger import logger
 from .html_reader import HTMLReader
 
 if TYPE_CHECKING:
     from wikipedia import WikipediaPage
 
-    from ....config.general_config import GeneralConfig
     from ....config.ingest_config import IngestConfig
 
 
@@ -19,25 +19,18 @@ class MultiWikipediaReader(HTMLReader):
 
     def __init__(
         self,
-        icfg: IngestConfig,
-        gcfg: GeneralConfig,
+        cfg: IngestConfig,
         asset_url_cache: set[str],
-        ingest_target_exts: set[str],
+        parser: BaseParser,
     ) -> None:
         """Initialize with parameters.
         Args:
-            icfg (IngestConfig): Ingest configuration.
-            gcfg (GeneralConfig): General configuration.
+            cfg (IngestConfig): Ingest configuration.
             asset_url_cache (set[str]): Cache of already processed asset URLs.
-            ingest_target_exts (set[str]): Allowed extensions for ingestion.
+            parser (BaseParser): Parser instance.
         """
-        super().__init__(
-            icfg=icfg,
-            gcfg=gcfg,
-            asset_url_cache=asset_url_cache,
-            ingest_target_exts=ingest_target_exts,
-        )
-        self._load_asset = icfg.load_asset
+        super().__init__(cfg=cfg, asset_url_cache=asset_url_cache, parser=parser)
+        self._load_asset = cfg.load_asset
 
     async def aload_data(self, url: str, **load_kwargs: Any) -> List[Document]:
         """
@@ -60,11 +53,12 @@ class MultiWikipediaReader(HTMLReader):
 
         return text_docs + asset_docs
 
-    def _fetch_wiki_page(self, url: str, **load_kwargs: Any) -> WikipediaPage:
+    def _fetch_wiki_page(self, url: str, **kwargs: Any) -> WikipediaPage:
         """Fetch a Wikipedia page based on the URL and additional loading arguments.
 
         Args:
             url (str): Wikipedia page URL.
+            **kwargs: Additional arguments for wikipedia.page().
 
         Raises:
             ValueError: If the language prefix is not supported.
@@ -86,7 +80,7 @@ class MultiWikipediaReader(HTMLReader):
 
         page = url.split("/wiki/")[-1]
 
-        return wikipedia.page(page, **load_kwargs)
+        return wikipedia.page(page, **kwargs)
 
     async def _aload_texts(self, page: WikipediaPage) -> list[Document]:
         """Generate documents from texts of a Wikipedia page.

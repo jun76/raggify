@@ -5,8 +5,8 @@ from pathlib import Path
 from raggify.config.embed_config import EmbedProvider
 from raggify.config.general_config import GeneralConfig
 from raggify.core.exts import Exts
-from raggify.ingest.loader import DefaultParser
 from raggify.ingest.loader.file_reader import AudioReader, VideoReader
+from raggify.ingest.parser import DefaultParser
 
 from .config import configure_test_env
 
@@ -16,7 +16,17 @@ SAMPLE_TEXT = Path("tests/data/texts/sample.txt").resolve()
 
 
 def _make_parser(cfg: GeneralConfig, exts: set[str]) -> DefaultParser:
-    return DefaultParser(cfg=cfg, ingest_target_exts=exts)
+    class _Cfg:
+        def __init__(self, general, exts):
+            self.general = general
+            self._exts = exts
+
+        @property
+        def ingest_target_exts(self) -> set[str]:
+            return self._exts
+
+    dummy_cfg = _Cfg(cfg, exts)
+    return DefaultParser(cfg=dummy_cfg)  # type: ignore[arg-type]
 
 
 def test_parse_text_file_returns_document() -> None:
