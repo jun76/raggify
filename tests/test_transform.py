@@ -5,7 +5,11 @@ import shutil
 from pathlib import Path
 
 import pytest
+from typing import cast
+
 from llama_index.core.schema import (
+    BaseNode,
+    Document,
     ImageNode,
     NodeRelationship,
     ObjectType,
@@ -18,6 +22,8 @@ from raggify.core.metadata import MetaKeys as MK
 from raggify.ingest.transform import (
     AddChunkIndexTransform,
     AudioSplitter,
+    DefaultSummarizer,
+    LLMSummarizer,
     VideoSplitter,
     make_audio_embed_transform,
     make_image_embed_transform,
@@ -26,14 +32,16 @@ from raggify.ingest.transform import (
 )
 from raggify.llama_like.core.schema import AudioNode, Modality, VideoNode
 from tests.utils.mock_embed import (
-    DummyAudioBase,
     DummyAudioEmbedding,
     DummyImageEmbedding,
-    DummyMultiModalBase,
     DummyTextEmbedding,
-    DummyVideoBase,
     DummyVideoEmbedding,
     make_dummy_manager,
+)
+from tests.utils.mock_transform import (
+    DummyLLM,
+    apply_patch_embedding_bases,
+    make_dummy_runtime,
 )
 from tests.utils.node_factory import make_sample_text_node
 
@@ -44,18 +52,7 @@ configure_test_env()
 
 @pytest.fixture(autouse=True)
 def patch_embedding_bases(monkeypatch):
-    monkeypatch.setattr(
-        "llama_index.core.embeddings.multi_modal_base.MultiModalEmbedding",
-        DummyMultiModalBase,
-    )
-    monkeypatch.setattr(
-        "raggify.llama_like.embeddings.multi_modal_base.AudioEmbedding",
-        DummyAudioBase,
-    )
-    monkeypatch.setattr(
-        "raggify.llama_like.embeddings.multi_modal_base.VideoEmbedding",
-        DummyVideoBase,
-    )
+    apply_patch_embedding_bases(monkeypatch)
 
 
 def _assign_doc_id(node: TextNode, doc_id: str, node_type: ObjectType) -> None:
@@ -224,3 +221,96 @@ def test_make_video_embed_transform():
     nodes = asyncio.run(transform.acall([video]))
 
     assert nodes[0].embedding == [0.3, 0.3]
+
+
+def test_default_summarizer_returns_nodes():
+    summarizer = DefaultSummarizer()
+    node = make_sample_text_node()
+    nodes: list[BaseNode] = [node]
+
+    assert summarizer(nodes) is nodes
+    assert asyncio.run(summarizer.acall(nodes)) is nodes
+
+
+def test_llm_summarizer_summarizes_text(monkeypatch):
+    node = make_sample_text_node()
+    node.text = "Original"
+    text_llm = DummyLLM(" trimmed text ")
+    runtime = make_dummy_runtime(text_llm=text_llm)
+    monkeypatch.setattr(
+        "raggify.ingest.transform.summarizer._rt",
+        lambda: runtime,
+    )
+
+    summarizer = LLMSummarizer()
+    result = asyncio.run(summarizer.acall([node]))
+    text_node = cast(TextNode, result[0])
+
+    assert text_node.text == "trimmed text"
+    assert text_llm.calls
+
+
+def test_llm_summarizer_handles_text_error(monkeypatch):
+    node = make_sample_text_node()
+    node.text = "error text"
+    text_llm = DummyLLM(error=RuntimeError("boom"))
+    runtime = make_dummy_runtime(text_llm=text_llm)
+    monkeypatch.setattr(
+        "raggify.ingest.transform.summarizer._rt",
+        lambda: runtime,
+    )
+
+    summarizer = LLMSummarizer()
+    result = asyncio.run(summarizer.acall([node]))
+    text_node = cast(TextNode, result[0])
+
+    assert text_node.text == "error text"
+
+
+def test_llm_summarizer_summarizes_image(monkeypatch):
+    image_node = ImageNode(
+        id_="img",
+        metadata={"file_path": "tests/data/images/sample.png"},
+    )
+    image_llm = DummyLLM(" caption ")
+    runtime = make_dummy_runtime(image_llm=image_llm)
+    monkeypatch.setattr(
+        "raggify.ingest.transform.summarizer._rt",
+        lambda: runtime,
+    )
+
+    summarizer = LLMSummarizer()
+    result = asyncio.run(summarizer.acall([image_node]))
+    img_node = cast(ImageNode, result[0])
+
+    assert img_node.text == "caption"
+    assert image_llm.calls
+
+
+def test_llm_summarizer_audio_and_video_noop(monkeypatch):
+    audio = AudioNode(id_="audio", metadata={})
+    video = VideoNode(id_="video", metadata={})
+    runtime = make_dummy_runtime()
+    monkeypatch.setattr(
+        "raggify.ingest.transform.summarizer._rt",
+        lambda: runtime,
+    )
+
+    summarizer = LLMSummarizer()
+    result = asyncio.run(summarizer.acall([audio, video]))
+
+    assert result[0] is audio
+    assert result[1] is video
+
+
+def test_llm_summarizer_rejects_unknown_node(monkeypatch):
+    runtime = make_dummy_runtime()
+    monkeypatch.setattr(
+        "raggify.ingest.transform.summarizer._rt",
+        lambda: runtime,
+    )
+    summarizer = LLMSummarizer()
+    doc = Document(text="doc", id_="doc")
+
+    with pytest.raises(ValueError):
+        asyncio.run(summarizer.acall([doc]))

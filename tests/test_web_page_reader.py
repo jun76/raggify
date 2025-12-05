@@ -6,6 +6,7 @@ from typing import Type, cast
 from llama_index.core.schema import Document
 
 from raggify.config.ingest_config import IngestConfig
+from raggify.core.metadata import MetaKeys as MK
 from raggify.ingest.loader.web_page_reader.base_web_page_reader import BaseWebPageReader
 from raggify.ingest.loader.web_page_reader.default_web_page_reader import (
     DefaultWebPageReader,
@@ -120,6 +121,34 @@ def test_adownload_direct_linked_file_rejects_invalid(tmp_path, monkeypatch):
         )
     )
     assert res is None
+
+
+def test_aload_direct_linked_file_updates_metadata(tmp_path, monkeypatch):
+    reader = _make_reader()
+
+    temp_path = tmp_path / "asset.bin"
+    patch_html_asset_download(monkeypatch, b"payload")
+    patch_html_temp_file(monkeypatch, temp_path)
+
+    async def fake_aparse(root: str):
+        assert root == str(temp_path)
+        return [Document(text="img", metadata={})]
+
+    monkeypatch.setattr(reader._parser, "aparse", fake_aparse)
+
+    docs = asyncio.run(
+        reader.aload_direct_linked_file(
+            url="https://example.com/img.png",
+            base_url="https://example.com/post",
+            max_asset_bytes=1024,
+        )
+    )
+
+    assert len(docs) == 1
+    doc = docs[0]
+    assert doc.metadata[MK.URL] == "https://example.com/img.png"
+    assert doc.metadata[MK.BASE_SOURCE] == "https://example.com/post"
+    assert doc.metadata[MK.TEMP_FILE_PATH] == str(temp_path)
 
 
 def test_default_web_page_reader_aload_assets_keeps_all(monkeypatch):
