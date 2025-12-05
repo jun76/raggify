@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -23,50 +22,8 @@ if TYPE_CHECKING:
 __all__ = ["DefaultParser"]
 
 
-class BaseParser(ABC):
-    """Abstract base parser interface."""
-
-    @property
-    @abstractmethod
-    def ingest_target_exts(self) -> set[str]:
-        """Get allowed extensions for ingestion.
-
-        Returns:
-            set[str]: Allowed extensions.
-        """
-        ...
-
-    @abstractmethod
-    async def aparse(
-        self,
-        root: str,
-    ) -> list[Document]:
-        """Parse data asynchronously from the input path.
-        Args:
-            root (str): Target path.
-
-        Returns:
-            list[Document]: List of documents parsed from the input path(s).
-        """
-        ...
-
-    @abstractmethod
-    def parse(
-        self,
-        root: str,
-    ) -> list[Document]:
-        """Parse data from the input path.
-        Args:
-            root (str): Target path.
-
-        Returns:
-            list[Document]: List of documents parsed from the input path(s).
-        """
-        ...
-
-
-class DirectoryParser(BaseParser):
-    """Parser that reads local files and generates documents."""
+class BaseParser:
+    """Base parser that reads local files and generates documents."""
 
     def __init__(self, cfg: ConfigManager) -> None:
         """Constructor.
@@ -154,7 +111,7 @@ class DirectoryParser(BaseParser):
         return async_loop_runner.run(lambda: self.aparse(root))
 
 
-class DefaultParser(DirectoryParser):
+class DefaultParser(BaseParser):
     """Default parser that reads local files and generates documents."""
 
     def __init__(self, cfg: ConfigManager) -> None:
@@ -163,6 +120,8 @@ class DefaultParser(DirectoryParser):
         Args:
             cfg (ConfigManager): Configuration manager.
         """
+        from .loader.file_reader.html_file_reader import HTMLFileReader
+
         super().__init__(cfg)
 
         if cfg.general.image_embed_provider is not None:
@@ -173,13 +132,16 @@ class DefaultParser(DirectoryParser):
                 # add readers for image transcription if supported in the future
                 pass
 
+        # HTML content is loaded via a temporary .html file
+        self._readers[Exts.HTML] = HTMLFileReader()
+
         # For other media types, use dummy reader to pass through
         dummy_reader = DummyMediaReader()
         for ext in Exts.PASS_THROUGH_MEDIA:
             self._readers.setdefault(ext, dummy_reader)
 
 
-class LlamaParser(DirectoryParser):
+class LlamaParser(BaseParser):
     """Llama Cloud parser that uses Llama Cloud API to parse files."""
 
     def __init__(self, cfg: ConfigManager, *args, **kwargs) -> None:
@@ -305,7 +267,7 @@ class LlamaParser(DirectoryParser):
             self._readers.setdefault(ext, parser)
 
 
-def create_parser(cfg: ConfigManager, *args, **kwargs) -> DirectoryParser:
+def create_parser(cfg: ConfigManager, *args, **kwargs) -> BaseParser:
     """Factory method to create a parser instance based on configuration.
 
     Args:

@@ -3,14 +3,14 @@ from __future__ import annotations
 import os
 from urllib.parse import urlparse
 
-from raggify.config.general_config import GeneralConfig
-
 
 class Exts:
     # For individual reference
     PNG: str = ".png"
     WAV: str = ".wav"
     PDF: str = ".pdf"
+    HTML: str = ".html"
+    SVG: str = ".svg"
 
     # Follow the extensions supported by reader
     # (llama_index.core.readers.file.base._try_loading_included_file_formats).
@@ -57,7 +57,7 @@ class Exts:
         ".text",
         ".md",
         ".json",
-        ".html",
+        HTML,
         ".tex",
     } | SITEMAP
 

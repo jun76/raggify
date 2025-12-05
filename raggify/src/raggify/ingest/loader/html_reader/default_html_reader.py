@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import urljoin, urlparse
+
 from llama_index.core.schema import Document
 
 from ....config.ingest_config import IngestConfig
@@ -9,13 +11,15 @@ from .html_reader import HTMLReader
 
 
 class DefaultHTMLReader(HTMLReader):
+    """Reader for HTML that generates documents."""
+
     def __init__(
         self,
         cfg: IngestConfig,
         asset_url_cache: set[str],
         parser: BaseParser,
     ) -> None:
-        """Default HTML reader.
+        """Constructor.
 
         Args:
             cfg (IngestConfig): Ingest configuration.
@@ -39,11 +43,11 @@ class DefaultHTMLReader(HTMLReader):
         """
         from ....core.exts import Exts
 
+        # Direct linked file
         if Exts.endswith_exts(url, self._parser.ingest_target_exts):
             if not self.register_asset_url(url):
                 return []
 
-            # Direct linked file
             docs = await self.aload_direct_linked_file(
                 url=url, base_url=url, max_asset_bytes=self._cfg.max_asset_bytes
             )
@@ -72,28 +76,7 @@ class DefaultHTMLReader(HTMLReader):
         Returns:
             tuple[list[Document], str]: Generated documents and the raw HTML.
         """
-        import html2text
-
-        from ....core.metadata import MetaKeys as MK
-        from ..util import afetch_text
-
-        # Prefetch to avoid ingesting Not Found pages
-        html = await afetch_text(
-            url=url,
-            user_agent=self._cfg.user_agent,
-            timeout_sec=self._cfg.timeout_sec,
-            req_per_sec=self._cfg.req_per_sec,
-        )
-        if not html:
-            logger.warning(f"failed to fetch html from {url}, skipped")
-            return [], ""
-
-        # Body text
-        text = self.cleanse_html_content(html)
-        text = html2text.html2text(text)
-        doc = Document(text=text, metadata={MK.URL: url})
-
-        return [doc], html
+        return await self.aload_html_text(url)
 
     async def _aload_assets(self, url: str, html: str) -> list[Document]:
         """Generate documents from assets of an HTML page.
@@ -105,35 +88,77 @@ class DefaultHTMLReader(HTMLReader):
         Returns:
             list[Document]: Generated documents.
         """
-        from ..util import afetch_text
-
-        if html is None:
-            html = await afetch_text(
-                url=url,
-                user_agent=self._cfg.user_agent,
-                timeout_sec=self._cfg.timeout_sec,
-                req_per_sec=self._cfg.req_per_sec,
-            )
-
-        urls = self.gather_asset_links(
+        urls = self._gather_asset_links(
             html=html, base_url=url, allowed_exts=self._parser.ingest_target_exts
         )
 
-        docs = []
-        for asset_url in urls:
-            if not self.register_asset_url(asset_url):
-                # Skip fetching identical assets
-                continue
+        return await self.aload_direct_linked_files(
+            urls=urls,
+            base_url=url,
+            max_asset_bytes=self._cfg.max_asset_bytes,
+        )
 
-            asset_docs = await self.aload_direct_linked_file(
-                url=asset_url,
-                base_url=asset_url,
-                max_asset_bytes=self._cfg.max_asset_bytes,
-            )
-            if not asset_docs:
-                logger.warning(f"failed to fetch from {asset_url}, skipped")
-                continue
+    def _gather_asset_links(
+        self,
+        html: str,
+        base_url: str,
+        allowed_exts: set[str],
+        limit: int = 20,
+    ) -> list[str]:
+        """Collect asset URLs from HTML.
 
-            docs.extend(asset_docs)
+        Args:
+            html (str): HTML string.
+            base_url (str): Base URL for resolving relatives.
+            allowed_exts (set[str]): Allowed extensions (lowercase with dot).
+            limit (int, optional): Max results. Defaults to 20.
 
-        return docs
+        Returns:
+            list[str]: Absolute URLs collected.
+        """
+        from bs4 import BeautifulSoup
+
+        from ....core.exts import Exts
+
+        seen = set()
+        out = []
+        base = urlparse(base_url)
+
+        def add(u: str) -> None:
+            if not u:
+                return
+
+            try:
+                absu = urljoin(base_url, u)
+                if absu in seen:
+                    return
+
+                pu = urlparse(absu)
+                if self._cfg.same_origin and (pu.scheme, pu.netloc) != (
+                    base.scheme,
+                    base.netloc,
+                ):
+                    return
+
+                path = pu.path.lower()
+                if Exts.endswith_exts(path, allowed_exts):
+                    seen.add(absu)
+                    out.append(absu)
+            except Exception:
+                return
+
+        soup = BeautifulSoup(html, "html.parser")
+
+        for img in soup.find_all("img"):
+            add(img.get("src"))  # type: ignore
+
+        for a in soup.find_all("a"):
+            add(a.get("href"))  # type: ignore
+
+        for src in soup.find_all("source"):
+            ss = src.get("srcset")  # type: ignore
+            if ss:
+                cand = ss.split(",")[0].strip().split(" ")[0]  # type: ignore
+                add(cand)
+
+        return out[: max(0, limit)]

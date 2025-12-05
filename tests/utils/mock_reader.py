@@ -123,14 +123,14 @@ def patch_html_fetchers() -> Iterator[None]:
             url: str,
             base_url: Optional[str] = None,
             max_asset_bytes: int = 100 * 1024 * 1024,
-        ) -> Document:
+        ) -> list[Document]:
             meta = {
                 "url": url,
                 "base_source": base_url or "",
                 "file_path": "/tmp/tmp_raggify_mock_asset.png",
                 "temp_file_path": "/tmp/tmp_raggify_mock_asset.png",
             }
-            return Document(text="", metadata=meta)
+            return [Document(text="", metadata=meta)]
 
         stack.enter_context(
             patch(

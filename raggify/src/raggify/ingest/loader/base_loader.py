@@ -12,7 +12,7 @@ from ...llama_like.core.schema import AudioNode, VideoNode
 from ...logger import logger
 
 
-class Loader:
+class BaseLoader:
     """Base loader class."""
 
     def _finalize_docs(self, docs: list[Document]) -> None:

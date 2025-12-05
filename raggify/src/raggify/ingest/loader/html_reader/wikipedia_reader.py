@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from llama_index.core.schema import Document
 
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class MultiWikipediaReader(HTMLReader):
-    """Multimodal Wikipedia reader."""
+    """Reader for Wikipedia that generates documents."""
 
     def __init__(
         self,
@@ -23,7 +23,8 @@ class MultiWikipediaReader(HTMLReader):
         asset_url_cache: set[str],
         parser: BaseParser,
     ) -> None:
-        """Initialize with parameters.
+        """Constructor.
+
         Args:
             cfg (IngestConfig): Ingest configuration.
             asset_url_cache (set[str]): Cache of already processed asset URLs.
@@ -32,15 +33,14 @@ class MultiWikipediaReader(HTMLReader):
         super().__init__(cfg=cfg, asset_url_cache=asset_url_cache, parser=parser)
         self._load_asset = cfg.load_asset
 
-    async def aload_data(self, url: str) -> List[Document]:
-        """
-        Load data from Wikipedia.
+    async def aload_data(self, url: str) -> list[Document]:
+        """Load data from Wikipedia.
 
         Args:
             url (str): Wikipedia page URL.
 
         Returns:
-            List[Document]: List of documents read from Wikipedia.
+            list[Document]: list of documents read from Wikipedia.
         """
         wiki_page = self._fetch_wiki_page(url)
 
@@ -53,7 +53,7 @@ class MultiWikipediaReader(HTMLReader):
         return text_docs + asset_docs
 
     def _fetch_wiki_page(self, url: str) -> WikipediaPage:
-        """Fetch a Wikipedia page based on the URL and additional loading arguments.
+        """Fetch a Wikipedia page based on the URL.
 
         Args:
             url (str): Wikipedia page URL.
@@ -105,17 +105,8 @@ class MultiWikipediaReader(HTMLReader):
         Returns:
             list[Document]: Generated documents.
         """
-        docs = []
-        for url in page.images:
-            if not self.register_asset_url(url):
-                # Skip fetching identical assets
-                continue
-
-            doc = await self.aload_direct_linked_file(url=url, base_url=page.url)
-            if doc is None:
-                logger.warning(f"failed to fetch from {url}, skipped")
-                continue
-
-            docs.append(doc)
-
-        return docs
+        return await self.aload_direct_linked_files(
+            urls=page.images,
+            base_url=page.url,
+            max_asset_bytes=self._cfg.max_asset_bytes,
+        )

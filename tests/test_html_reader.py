@@ -7,20 +7,27 @@ from llama_index.core.schema import Document
 from raggify.config.ingest_config import IngestConfig
 from raggify.ingest.loader.html_reader.default_html_reader import DefaultHTMLReader
 from raggify.ingest.loader.html_reader.html_reader import HTMLReader
-from tests.utils.mock_reader import patch_html_asset_download, patch_html_temp_file
+from typing import Type, cast
+
 from tests.utils.mock_parser import DummyParser
+from tests.utils.mock_reader import patch_html_asset_download, patch_html_temp_file
 
 from .config import configure_test_env
 
 configure_test_env()
 
 
-def _make_reader(**cfg_overrides):
+class _DummyHTMLReader(HTMLReader):
+    async def aload_data(self, url: str) -> list[Document]:
+        return []
+
+
+def _make_reader(cls: Type[HTMLReader] = _DummyHTMLReader, **cfg_overrides) -> HTMLReader:
     ingest_cfg = IngestConfig()
     for key, value in cfg_overrides.items():
         setattr(ingest_cfg, key, value)
 
-    return HTMLReader(
+    return cls(
         cfg=ingest_cfg,
         asset_url_cache=set(),
         parser=DummyParser(),
@@ -42,7 +49,7 @@ def test_cleanse_html_content_strips_and_includes():
     </body>
 </html>
 """
-    cleansed = reader.cleanse_html_content(html)
+    cleansed = reader._cleanse_html_text(html)
     assert "Keep me" in cleansed
     assert "nav" not in cleansed
     assert "ads" not in cleansed
@@ -50,7 +57,7 @@ def test_cleanse_html_content_strips_and_includes():
 
 
 def test_gather_asset_links_filters_and_normalizes():
-    reader = _make_reader()
+    reader = cast(DefaultHTMLReader, _make_reader(cls=DefaultHTMLReader))
     html = """
 <html>
     <body>
@@ -61,7 +68,7 @@ def test_gather_asset_links_filters_and_normalizes():
     </body>
 </html>
 """
-    links = reader.gather_asset_links(
+    links = reader._gather_asset_links(
         html=html,
         base_url="https://example.com/blog/post",
         allowed_exts={".png", ".mp3"},
@@ -113,12 +120,7 @@ def test_adownload_direct_linked_file_rejects_invalid(tmp_path, monkeypatch):
 
 
 def test_default_html_reader_aload_assets_keeps_all(monkeypatch):
-    ingest_cfg = IngestConfig()
-    reader = DefaultHTMLReader(
-        cfg=ingest_cfg,
-        asset_url_cache=set(),
-        parser=DummyParser(),
-    )
+    reader = cast(DefaultHTMLReader, _make_reader(cls=DefaultHTMLReader))
 
     def fake_gather(self, html, base_url, allowed_exts, limit=20):
         return [
@@ -129,11 +131,7 @@ def test_default_html_reader_aload_assets_keeps_all(monkeypatch):
     async def fake_aload(self, url, base_url=None, max_asset_bytes=0):
         return [Document(text=url, metadata={})]
 
-    monkeypatch.setattr(
-        DefaultHTMLReader,
-        "gather_asset_links",
-        fake_gather,
-    )
+    monkeypatch.setattr(DefaultHTMLReader, "_gather_asset_links", fake_gather)
     monkeypatch.setattr(
         DefaultHTMLReader,
         "aload_direct_linked_file",

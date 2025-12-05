@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Callable
 
 from ...logger import logger
 from ..parser import BaseParser
-from .loader import Loader
+from .base_loader import BaseLoader
 
 if TYPE_CHECKING:
     from llama_index.core.schema import ImageNode, TextNode
@@ -12,8 +12,8 @@ if TYPE_CHECKING:
     from ...llama_like.core.schema import AudioNode, VideoNode
 
 
-class FileLoader(Loader):
-    """Loader that reads local files and generates nodes."""
+class FileLoader(BaseLoader):
+    """Loader for local files that generates nodes."""
 
     def __init__(self, parser: BaseParser) -> None:
         """Constructor.

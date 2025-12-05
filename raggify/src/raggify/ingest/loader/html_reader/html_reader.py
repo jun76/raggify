@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Optional
-from urllib.parse import urljoin, urlparse
 
 from ....config.ingest_config import IngestConfig
 from ....core.exts import Exts
@@ -13,11 +13,13 @@ if TYPE_CHECKING:
     from llama_index.core.schema import Document
 
 
-class HTMLReader:
+class HTMLReader(ABC):
+    """Reader abstract base for HTML that generates documents with parser."""
+
     def __init__(
         self, cfg: IngestConfig, asset_url_cache: set[str], parser: BaseParser
     ) -> None:
-        """Loader for HTML that generates nodes.
+        """Constructor.
 
         Args:
             cfg (IngestConfig): Ingest configuration.
@@ -28,17 +30,27 @@ class HTMLReader:
         self._asset_url_cache = asset_url_cache
         self._parser = parser
 
-    def cleanse_html_content(self, html: str) -> str:
+    @abstractmethod
+    async def aload_data(self, url: str) -> list[Document]:
+        """Load data from a URL.
+
+        Args:
+            url (str): Target URL.
+
+        Returns:
+            list[Document]: List of documents read from the URL.
+        """
+        ...
+
+    def _cleanse_html_text(self, html: str) -> str:
         """Cleanse HTML content by applying include/exclude selectors.
 
         Args:
             html (str): Raw HTML text.
 
         Returns:
-            str: Sanitized text.
+            str: Cleansed text.
         """
-        import re
-
         from bs4 import BeautifulSoup
 
         soup = BeautifulSoup(html, "html.parser")
@@ -85,86 +97,7 @@ class HTMLReader:
         cleansed = [ln for ln in cleansed if ln]
         cleansed = "\n".join(cleansed)
 
-        return re.sub(r"(\.(?:svg|png|jpe?g|webp))\?[^\s\"'<>]+", r"\1", cleansed)
-
-    def register_asset_url(self, url: str) -> bool:
-        """Register an asset URL in the cache if it is new.
-
-        Args:
-            url (str): Asset URL.
-
-        Returns:
-            bool: True if added this time.
-        """
-        if url in self._asset_url_cache:
-            return False
-
-        self._asset_url_cache.add(url)
-
-        return True
-
-    def gather_asset_links(
-        self,
-        html: str,
-        base_url: str,
-        allowed_exts: set[str],
-        limit: int = 20,
-    ) -> list[str]:
-        """Collect asset URLs from HTML.
-
-        Args:
-            html (str): HTML string.
-            base_url (str): Base URL for resolving relatives.
-            allowed_exts (set[str]): Allowed extensions (lowercase with dot).
-            limit (int, optional): Max results. Defaults to 20.
-
-        Returns:
-            list[str]: Absolute URLs collected.
-        """
-        from bs4 import BeautifulSoup
-
-        seen = set()
-        out = []
-        base = urlparse(base_url)
-
-        def add(u: str) -> None:
-            if not u:
-                return
-
-            try:
-                absu = urljoin(base_url, u)
-                if absu in seen:
-                    return
-
-                pu = urlparse(absu)
-                if self._cfg.same_origin and (pu.scheme, pu.netloc) != (
-                    base.scheme,
-                    base.netloc,
-                ):
-                    return
-
-                path = pu.path.lower()
-                if Exts.endswith_exts(path, allowed_exts):
-                    seen.add(absu)
-                    out.append(absu)
-            except Exception:
-                return
-
-        soup = BeautifulSoup(html, "html.parser")
-
-        for img in soup.find_all("img"):
-            add(img.get("src"))  # type: ignore
-
-        for a in soup.find_all("a"):
-            add(a.get("href"))  # type: ignore
-
-        for src in soup.find_all("source"):
-            ss = src.get("srcset")  # type: ignore
-            if ss:
-                cand = ss.split(",")[0].strip().split(" ")[0]  # type: ignore
-                add(cand)
-
-        return out[: max(0, limit)]
+        return cleansed
 
     async def _adownload_direct_linked_file(
         self,
@@ -222,10 +155,26 @@ class HTMLReader:
             with open(path, "wb") as f:
                 f.write(body)
         except OSError as e:
-            logger.exception(e)
+            logger.warning(f"failed to save asset to temp file: {e}")
             return None
 
         return path
+
+    def register_asset_url(self, url: str) -> bool:
+        """Register an asset URL in the cache if it is new.
+
+        Args:
+            url (str): Asset URL.
+
+        Returns:
+            bool: True if added this time.
+        """
+        if url in self._asset_url_cache:
+            return False
+
+        self._asset_url_cache.add(url)
+
+        return True
 
     async def aload_direct_linked_file(
         self,
@@ -243,7 +192,7 @@ class HTMLReader:
         Returns:
             list[Document]: Generated documents.
         """
-        from ....core.metadata import BasicMetaData
+        from ....core.metadata import MetaKeys as MK
 
         temp = await self._adownload_direct_linked_file(
             url=url,
@@ -256,13 +205,87 @@ class HTMLReader:
         docs = await self._parser.aparse(temp)
         logger.debug(f"Parsed {len(docs)} docs from downloaded asset: {url}")
 
-        parsed_docs = []
         for doc in docs:
-            meta = BasicMetaData().from_dict(doc.metadata)
-            meta.url = url
-            meta.base_source = base_url or ""
-            meta.temp_file_path = temp  # For cleanup
-            doc.metadata = meta.to_dict()
-            parsed_docs.append(doc)
+            meta = doc.metadata
+            meta[MK.URL] = url
+            meta[MK.BASE_SOURCE] = base_url or ""
+            meta[MK.TEMP_FILE_PATH] = temp  # For cleanup
 
-        return parsed_docs
+        return docs
+
+    async def aload_direct_linked_files(
+        self,
+        urls: list[str],
+        base_url: Optional[str] = None,
+        max_asset_bytes: int = 100 * 1024 * 1024,
+    ) -> list[Document]:
+        """Create documents from multiple direct-linked files.
+
+        Args:
+            urls (list[str]): Target URLs.
+            base_url (Optional[str], optional): Base source URL. Defaults to None.
+            max_asset_bytes (int, optional): Max size in bytes. Defaults to 100*1024*1024.
+
+        Returns:
+            list[Document]: Generated documents.
+        """
+        docs = []
+        for asset_url in urls:
+            if not self.register_asset_url(asset_url):
+                # Skip fetching identical assets
+                continue
+
+            asset_docs = await self.aload_direct_linked_file(
+                url=asset_url,
+                base_url=base_url,
+                max_asset_bytes=max_asset_bytes,
+            )
+            if not asset_docs:
+                logger.warning(f"failed to fetch from {asset_url}, skipped")
+                continue
+
+            docs.extend(asset_docs)
+
+        return docs
+
+    async def aload_html_text(self, url: str) -> tuple[list[Document], str]:
+        """Generate documents from texts of an HTML page.
+
+        Args:
+            url (str): Target URL.
+
+        Returns:
+            tuple[list[Document], str]: Generated documents and the raw HTML.
+        """
+        from ....core.exts import Exts
+        from ....core.metadata import MetaKeys as MK
+        from ....core.utils import get_temp_file_path_from
+        from ..util import afetch_text
+
+        # Prefetch to avoid ingesting Not Found pages
+        html = await afetch_text(
+            url=url,
+            user_agent=self._cfg.user_agent,
+            timeout_sec=self._cfg.timeout_sec,
+            req_per_sec=self._cfg.req_per_sec,
+        )
+        if not html:
+            logger.warning(f"failed to fetch html from {url}, skipped")
+            return [], ""
+
+        html = self._cleanse_html_text(html)
+        path = get_temp_file_path_from(source=url, suffix=Exts.HTML)
+        try:
+            with open(path, "w") as f:
+                f.write(html)
+        except OSError as e:
+            logger.warning(f"failed to save html to temp file: {e}")
+            return [], ""
+
+        docs = await self._parser.aparse(path)
+        logger.debug(f"parsed {len(docs)} docs from html page: {url}")
+
+        for doc in docs:
+            doc.metadata[MK.URL] = url
+
+        return docs, html

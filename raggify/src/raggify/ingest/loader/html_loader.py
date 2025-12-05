@@ -6,7 +6,7 @@ from ...config.ingest_config import IngestConfig
 from ...core.exts import Exts
 from ...ingest.parser import BaseParser
 from ...logger import logger
-from .loader import Loader
+from .base_loader import BaseLoader
 
 if TYPE_CHECKING:
     from llama_index.core.schema import Document, ImageNode, TextNode
@@ -14,13 +14,15 @@ if TYPE_CHECKING:
     from ...llama_like.core.schema import AudioNode, VideoNode
 
 
-class HTMLLoader(Loader):
+class HTMLLoader(BaseLoader):
+    """Loader for HTML that generates nodes."""
+
     def __init__(
         self,
         cfg: IngestConfig,
         parser: BaseParser,
     ):
-        """Loader for HTML that generates nodes.
+        """Constructor.
 
         Args:
             cfg (IngestConfig): Ingest configuration.
@@ -36,7 +38,7 @@ class HTMLLoader(Loader):
 
         self.xml_schema_sitemap = "http://www.sitemaps.org/schemas/sitemap/0.9"
 
-    def _parse_sitemap(self, raw_sitemap: str) -> list:
+    def _parse_sitemap(self, raw_sitemap: str) -> list[str]:
         """Ported from SitemapReader in llama-index
 
         Args:
@@ -167,6 +169,8 @@ class HTMLLoader(Loader):
             logger.error("invalid URL. expected http(s)://*")
             return [], [], [], []
 
+        url = self._remove_query_params(url)
+
         if Exts.endswith_exts(url, Exts.SITEMAP):
             docs = await self._aload_from_sitemap(url=url, is_canceled=is_canceled)
         elif "wikipedia.org" in url:
@@ -177,6 +181,32 @@ class HTMLLoader(Loader):
         logger.debug(f"loaded {len(docs)} docs from {url}")
 
         return await self._asplit_docs_modality(docs)
+
+    def _remove_query_params(self, uri: str) -> str:
+        """Remove query parameters from a file path or URL.
+
+        Args:
+            uri (str): File path or URL string.
+
+        Returns:
+            str: URI without query parameters.
+        """
+        from urllib.parse import urlparse, urlunparse
+
+        remove_exts: set[str] = Exts.IMAGE | {Exts.SVG}
+
+        if not remove_exts:
+            return uri
+
+        ext = Exts.get_ext(uri)
+        if ext not in remove_exts:
+            return uri
+
+        parsed = urlparse(uri)
+        if not parsed.query:
+            return uri
+
+        return urlunparse(parsed._replace(query=""))
 
     async def aload_from_urls(
         self,
