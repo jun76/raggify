@@ -39,7 +39,7 @@ def patch_video_extract(
 
 
 def patch_html_temp_file(monkeypatch, path: Path) -> None:
-    """Patch get_temp_file_path_from used by WebPageReader."""
+    """Patch get_temp_file_path_from used by BaseWebPageReader."""
     from raggify.core import utils as core_utils
 
     def _fake_temp(source: str, suffix: str) -> str:
@@ -51,7 +51,7 @@ def patch_html_temp_file(monkeypatch, path: Path) -> None:
 def patch_html_asset_download(
     monkeypatch, content: bytes, content_type: str = "image/png"
 ) -> None:
-    """Patch arequest_get for WebPageReader asset downloads."""
+    """Patch arequest_get for BaseWebPageReader asset downloads."""
 
     payload = content
 
@@ -63,7 +63,7 @@ def patch_html_asset_download(
         return _Resp()
 
     monkeypatch.setattr(
-        "raggify.ingest.loader.web_page_reader.web_page_reader.arequest_get",
+        "raggify.ingest.loader.web_page_reader.base_web_page_reader.arequest_get",
         AsyncMock(side_effect=_fake_get),
     )
 
@@ -116,7 +116,7 @@ def patch_html_fetchers() -> Iterator[None]:
 
         stack.enter_context(
             patch(
-                "raggify.ingest.loader.web_page_reader.web_page_reader.WebPageReader._adownload_direct_linked_file",
+                "raggify.ingest.loader.web_page_reader.base_web_page_reader.BaseWebPageReader._adownload_direct_linked_file",
                 new=AsyncMock(side_effect=fake_adownload_direct_linked_file),
             )
         )
@@ -136,7 +136,7 @@ def patch_html_fetchers() -> Iterator[None]:
 
         stack.enter_context(
             patch(
-                "raggify.ingest.loader.web_page_reader.web_page_reader.WebPageReader.aload_direct_linked_file",
+                "raggify.ingest.loader.web_page_reader.base_web_page_reader.BaseWebPageReader.aload_direct_linked_file",
                 new=AsyncMock(side_effect=fake_aload_direct_linked_file),
             )
         )

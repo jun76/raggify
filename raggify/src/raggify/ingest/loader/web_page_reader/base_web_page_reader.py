@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from llama_index.core.schema import Document
 
 
-class WebPageReader(ABC):
+class BaseWebPageReader(ABC):
     """Reader abstract base for web pages that generates documents with parser."""
 
     def __init__(
@@ -148,7 +148,7 @@ class WebPageReader(ABC):
             return None
 
         # FIXME: issue #5 Handling MIME Types When Asset URL Extensions and
-        # Actual Entities Mismatch in WebPageReader._adownload_direct_linked_file
+        # Actual Entities Mismatch in HTMLReader._adownload_direct_linked_file
         ext = Exts.get_ext(url)
         path = get_temp_file_path_from(source=url, suffix=ext)
         try:

@@ -6,10 +6,10 @@ from typing import Type, cast
 from llama_index.core.schema import Document
 
 from raggify.config.ingest_config import IngestConfig
+from raggify.ingest.loader.web_page_reader.base_web_page_reader import BaseWebPageReader
 from raggify.ingest.loader.web_page_reader.default_web_page_reader import (
     DefaultWebPageReader,
 )
-from raggify.ingest.loader.web_page_reader.web_page_reader import WebPageReader
 from tests.utils.mock_parser import DummyParser
 from tests.utils.mock_reader import patch_html_asset_download, patch_html_temp_file
 
@@ -18,14 +18,14 @@ from .config import configure_test_env
 configure_test_env()
 
 
-class _DummyWebPageReader(WebPageReader):
+class _DummyWebPageReader(BaseWebPageReader):
     async def aload_data(self, url: str) -> list[Document]:
         return []
 
 
 def _make_reader(
-    cls: Type[WebPageReader] = _DummyWebPageReader, **cfg_overrides
-) -> WebPageReader:
+    cls: Type[BaseWebPageReader] = _DummyWebPageReader, **cfg_overrides
+) -> BaseWebPageReader:
     ingest_cfg = IngestConfig()
     for key, value in cfg_overrides.items():
         setattr(ingest_cfg, key, value)

@@ -6,7 +6,7 @@ from llama_index.core.schema import Document
 
 from ....ingest.parser import BaseParser
 from ....logger import logger
-from .web_page_reader import WebPageReader
+from .base_web_page_reader import BaseWebPageReader
 
 if TYPE_CHECKING:
     from wikipedia import WikipediaPage
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from ....config.ingest_config import IngestConfig
 
 
-class MultiWikipediaReader(WebPageReader):
+class MultiWikipediaReader(BaseWebPageReader):
     """Reader for Wikipedia that generates documents."""
 
     def __init__(

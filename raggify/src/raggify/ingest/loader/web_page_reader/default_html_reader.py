@@ -10,8 +10,8 @@ from ...parser import BaseParser
 from .base_web_page_reader import BaseWebPageReader
 
 
-class DefaultWebPageReader(BaseWebPageReader):
-    """Reader for web pages that generates documents."""
+class DefaultHTMLReader(BaseWebPageReader):
+    """Reader for HTML that generates documents."""
 
     def __init__(
         self,
@@ -68,7 +68,7 @@ class DefaultWebPageReader(BaseWebPageReader):
         return text_docs + asset_docs
 
     async def _aload_texts(self, url: str) -> tuple[list[Document], str]:
-        """Generate documents from texts of a web page.
+        """Generate documents from texts of an HTML page.
 
         Args:
             url (str): Target URL.
@@ -79,7 +79,7 @@ class DefaultWebPageReader(BaseWebPageReader):
         return await self.aload_html_text(url)
 
     async def _aload_assets(self, url: str, html: str) -> list[Document]:
-        """Generate documents from assets of a web page.
+        """Generate documents from assets of an HTML page.
 
         Args:
             url (str): Target URL.
