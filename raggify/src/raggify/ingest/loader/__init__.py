@@ -1,4 +1,4 @@
-__all__ = ["FileLoader", "HTMLLoader"]
+__all__ = ["FileLoader", "WebPageLoader"]  # type: ignore
 
 
 def __getattr__(name: str):
@@ -6,8 +6,8 @@ def __getattr__(name: str):
         from .file_loader import FileLoader
 
         return FileLoader
-    if name == "HTMLLoader":
-        from .html_loader import HTMLLoader
+    if name == "WebPageLoader":
+        from .web_page_loader import WebPageLoader
 
-        return HTMLLoader
+        return WebPageLoader
     raise AttributeError(f"module {__name__} has no attribute {name}")

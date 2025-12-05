@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, Callable
 
 from ...config.ingest_config import IngestConfig
 from ...core.exts import Exts
-from ...ingest.parser import BaseParser
 from ...logger import logger
+from ..parser import BaseParser
 from .base_loader import BaseLoader
 
 if TYPE_CHECKING:
@@ -14,8 +14,8 @@ if TYPE_CHECKING:
     from ...llama_like.core.schema import AudioNode, VideoNode
 
 
-class HTMLLoader(BaseLoader):
-    """Loader for HTML that generates nodes."""
+class WebPageLoader(BaseLoader):
+    """Loader for web pages that generates nodes."""
 
     def __init__(
         self,
@@ -109,7 +109,7 @@ class HTMLLoader(BaseLoader):
         Returns:
             list[Document]: Generated documents.
         """
-        from .html_reader.wikipedia_reader import MultiWikipediaReader
+        from .web_page_reader.wikipedia_reader import MultiWikipediaReader
 
         reader = MultiWikipediaReader(
             cfg=self._cfg,
@@ -131,9 +131,9 @@ class HTMLLoader(BaseLoader):
         Returns:
             list[Document]: Generated documents.
         """
-        from .html_reader.default_html_reader import DefaultHTMLReader
+        from .web_page_reader.default_web_page_reader import DefaultWebPageReader
 
-        reader = DefaultHTMLReader(
+        reader = DefaultWebPageReader(
             cfg=self._cfg,
             asset_url_cache=self._asset_url_cache,
             parser=self._parser,

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from .document_store.document_store_manager import DocumentStoreManager
     from .embed.embed_manager import EmbedManager
     from .ingest.loader.file_loader import FileLoader
-    from .ingest.loader.html_loader import HTMLLoader
+    from .ingest.loader.web_page_loader import WebPageLoader
     from .ingest.parser import BaseParser
     from .ingest_cache.ingest_cache_manager import IngestCacheManager
     from .llama_like.core.schema import Modality
@@ -45,7 +45,7 @@ class Runtime:
         self._llm_manager: Optional[LLMManager] = None
         self._parser: Optional[BaseParser] = None
         self._file_loader: Optional[FileLoader] = None
-        self._html_loader: Optional[HTMLLoader] = None
+        self._web_page_loader: Optional[WebPageLoader] = None
 
         self._pipeline_lock = threading.Lock()
 
@@ -66,7 +66,7 @@ class Runtime:
         self._llm_manager = None
         self._parser = None
         self._file_loader = None
-        self._html_loader = None
+        self._web_page_loader = None
 
     def build(self) -> None:
         """Create instances for each manager class."""
@@ -91,7 +91,7 @@ class Runtime:
         self.llm_manager
         self.parser
         self.file_loader
-        self.html_loader
+        self.web_page_loader
 
         configure_logging(self.cfg.general.log_level)
 
@@ -291,13 +291,15 @@ class Runtime:
         return self._file_loader
 
     @property
-    def html_loader(self) -> HTMLLoader:
-        if self._html_loader is None:
-            from .ingest.loader.html_loader import HTMLLoader
+    def web_page_loader(self) -> WebPageLoader:
+        if self._web_page_loader is None:
+            from .ingest.loader.web_page_loader import WebPageLoader
 
-            self._html_loader = HTMLLoader(cfg=self.cfg.ingest, parser=self.parser)
+            self._web_page_loader = WebPageLoader(
+                cfg=self.cfg.ingest, parser=self.parser
+            )
 
-        return self._html_loader
+        return self._web_page_loader
 
 
 def get_runtime() -> Runtime:

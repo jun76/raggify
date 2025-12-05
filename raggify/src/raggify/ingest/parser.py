@@ -120,7 +120,7 @@ class DefaultParser(BaseParser):
         Args:
             cfg (ConfigManager): Configuration manager.
         """
-        from .loader.file_reader.html_file_reader import HTMLFileReader
+        from .loader.file_reader.html_reader import HTMLReader
 
         super().__init__(cfg)
 
@@ -133,7 +133,7 @@ class DefaultParser(BaseParser):
                 pass
 
         # HTML content is loaded via a temporary .html file
-        self._readers[Exts.HTML] = HTMLFileReader()
+        self._readers[Exts.HTML] = HTMLReader()
 
         # For other media types, use dummy reader to pass through
         dummy_reader = DummyMediaReader()

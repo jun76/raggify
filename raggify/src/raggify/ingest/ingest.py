@@ -553,7 +553,7 @@ async def aingest_url(
             Cancellation flag. Defaults to lambda:False.
     """
     rt = _rt()
-    texts, images, audios, videos = await rt.html_loader.aload_from_url(
+    texts, images, audios, videos = await rt.web_page_loader.aload_from_url(
         url=url, is_canceled=is_canceled
     )
     pipe_batch_size = pipe_batch_size or rt.cfg.ingest.pipe_batch_size
@@ -608,7 +608,7 @@ async def aingest_url_list(
         lst = _read_list(lst)
 
     rt = _rt()
-    texts, images, audios, videos = await rt.html_loader.aload_from_urls(
+    texts, images, audios, videos = await rt.web_page_loader.aload_from_urls(
         urls=list(lst), is_canceled=is_canceled
     )
     pipe_batch_size = pipe_batch_size or rt.cfg.ingest.pipe_batch_size

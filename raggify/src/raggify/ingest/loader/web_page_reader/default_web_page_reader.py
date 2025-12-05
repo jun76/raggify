@@ -7,11 +7,11 @@ from llama_index.core.schema import Document
 from ....config.ingest_config import IngestConfig
 from ....logger import logger
 from ...parser import BaseParser
-from .html_reader import HTMLReader
+from .web_page_reader import WebPageReader
 
 
-class DefaultHTMLReader(HTMLReader):
-    """Reader for HTML that generates documents."""
+class DefaultWebPageReader(WebPageReader):
+    """Reader for web pages that generates documents."""
 
     def __init__(
         self,
@@ -68,7 +68,7 @@ class DefaultHTMLReader(HTMLReader):
         return text_docs + asset_docs
 
     async def _aload_texts(self, url: str) -> tuple[list[Document], str]:
-        """Generate documents from texts of an HTML page.
+        """Generate documents from texts of a web page.
 
         Args:
             url (str): Target URL.
@@ -79,7 +79,7 @@ class DefaultHTMLReader(HTMLReader):
         return await self.aload_html_text(url)
 
     async def _aload_assets(self, url: str, html: str) -> list[Document]:
-        """Generate documents from assets of an HTML page.
+        """Generate documents from assets of a web page.
 
         Args:
             url (str): Target URL.

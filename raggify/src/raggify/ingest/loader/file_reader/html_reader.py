@@ -7,10 +7,10 @@ from llama_index.core.schema import Document
 
 from ....logger import logger
 
-__all__ = ["HTMLFileReader"]
+__all__ = ["HTMLReader"]
 
 
-class HTMLFileReader(BaseReader):
+class HTMLReader(BaseReader):
     """HTML file reader that extracts text content from HTML files.
 
     Note:

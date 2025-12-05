@@ -39,7 +39,7 @@ def patch_video_extract(
 
 
 def patch_html_temp_file(monkeypatch, path: Path) -> None:
-    """Patch get_temp_file_path_from used by HTMLReader."""
+    """Patch get_temp_file_path_from used by WebPageReader."""
     from raggify.core import utils as core_utils
 
     def _fake_temp(source: str, suffix: str) -> str:
@@ -48,8 +48,10 @@ def patch_html_temp_file(monkeypatch, path: Path) -> None:
     monkeypatch.setattr(core_utils, "get_temp_file_path_from", _fake_temp)
 
 
-def patch_html_asset_download(monkeypatch, content: bytes, content_type: str = "image/png") -> None:
-    """Patch arequest_get for HTMLReader asset downloads."""
+def patch_html_asset_download(
+    monkeypatch, content: bytes, content_type: str = "image/png"
+) -> None:
+    """Patch arequest_get for WebPageReader asset downloads."""
 
     payload = content
 
@@ -61,7 +63,7 @@ def patch_html_asset_download(monkeypatch, content: bytes, content_type: str = "
         return _Resp()
 
     monkeypatch.setattr(
-        "raggify.ingest.loader.html_reader.html_reader.arequest_get",
+        "raggify.ingest.loader.web_page_reader.web_page_reader.arequest_get",
         AsyncMock(side_effect=_fake_get),
     )
 
@@ -114,7 +116,7 @@ def patch_html_fetchers() -> Iterator[None]:
 
         stack.enter_context(
             patch(
-                "raggify.ingest.loader.html_reader.html_reader.HTMLReader._adownload_direct_linked_file",
+                "raggify.ingest.loader.web_page_reader.web_page_reader.WebPageReader._adownload_direct_linked_file",
                 new=AsyncMock(side_effect=fake_adownload_direct_linked_file),
             )
         )
@@ -134,7 +136,7 @@ def patch_html_fetchers() -> Iterator[None]:
 
         stack.enter_context(
             patch(
-                "raggify.ingest.loader.html_reader.html_reader.HTMLReader.aload_direct_linked_file",
+                "raggify.ingest.loader.web_page_reader.web_page_reader.WebPageReader.aload_direct_linked_file",
                 new=AsyncMock(side_effect=fake_aload_direct_linked_file),
             )
         )
@@ -156,7 +158,9 @@ def patch_wikipedia_reader(
     images: Optional[list[str]] = None,
 ) -> Iterator[None]:
     """Patch MultiWikipediaReader to return dummy Wikipedia data."""
-    from raggify.ingest.loader.html_reader.wikipedia_reader import MultiWikipediaReader
+    from raggify.ingest.loader.web_page_reader.wikipedia_reader import (
+        MultiWikipediaReader,
+    )
 
     imgs = images or ["https://some.site.com/sample.png"]
 

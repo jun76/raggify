@@ -13,8 +13,8 @@ if TYPE_CHECKING:
     from llama_index.core.schema import Document
 
 
-class HTMLReader(ABC):
-    """Reader abstract base for HTML that generates documents with parser."""
+class WebPageReader(ABC):
+    """Reader abstract base for web pages that generates documents with parser."""
 
     def __init__(
         self, cfg: IngestConfig, asset_url_cache: set[str], parser: BaseParser
@@ -148,7 +148,7 @@ class HTMLReader(ABC):
             return None
 
         # FIXME: issue #5 Handling MIME Types When Asset URL Extensions and
-        # Actual Entities Mismatch in HTMLReader._adownload_direct_linked_file
+        # Actual Entities Mismatch in WebPageReader._adownload_direct_linked_file
         ext = Exts.get_ext(url)
         path = get_temp_file_path_from(source=url, suffix=ext)
         try:
@@ -203,7 +203,7 @@ class HTMLReader(ABC):
             return []
 
         docs = await self._parser.aparse(temp)
-        logger.debug(f"Parsed {len(docs)} docs from downloaded asset: {url}")
+        logger.debug(f"parsed {len(docs)} docs from downloaded asset: {url}")
 
         for doc in docs:
             meta = doc.metadata
