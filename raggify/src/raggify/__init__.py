@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from .logger import configure_logging, console, logger
-from .runtime import get_runtime
+import warnings
 
-__all__ = ["logger", "configure_logging", "console", "get_runtime"]
+from pydantic.warnings import UnsupportedFieldAttributeWarning
+
+warnings.filterwarnings("ignore", category=UnsupportedFieldAttributeWarning)
