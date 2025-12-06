@@ -11,7 +11,7 @@ general:
   audio_embed_provider: bedrock
   video_embed_provider: bedrock
   text_summarize_transform_provider: openai
-  image_summarize_transform_provider: null
+  image_summarize_transform_provider: openai
   audio_summarize_transform_provider: null
   video_summarize_transform_provider: null
   rerank_provider: null

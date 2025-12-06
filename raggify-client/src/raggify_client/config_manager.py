@@ -16,6 +16,8 @@ from .general_config import GeneralConfig
 
 logger = logging.getLogger(__name__)
 
+__all__ = ["ConfigManager"]
+
 
 class _PathSerializationStrategy(SerializationStrategy):
     """Strategy class for Path <-> str conversion via mashumaro."""

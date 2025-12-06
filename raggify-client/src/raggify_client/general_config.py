@@ -5,6 +5,8 @@ from typing import Literal
 
 from mashumaro import DataClassDictMixin
 
+__all__ = ["GeneralConfig"]
+
 
 @dataclass(kw_only=True)
 class GeneralConfig(DataClassDictMixin):
