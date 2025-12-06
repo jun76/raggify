@@ -9,8 +9,10 @@ from .multi_modal_base import AudioEmbedding, AudioType
 if TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import Embedding
 
+__all__ = ["ClapEmbedding", "ClapModels"]
 
-class ModelName(StrEnum):
+
+class ClapModels(StrEnum):
     EFFECT_SHORT = auto()
     EFFECT_VARLEN = auto()
     MUSIC = auto()
@@ -18,12 +20,12 @@ class ModelName(StrEnum):
     GENERAL = auto()
 
 
-class AudioEncoderModel(StrEnum):
+class _AudioEncoderModel(StrEnum):
     HTSAT_TINY = "HTSAT-tiny"
     HTSAT_BASE = "HTSAT-base"
 
 
-class TextEncoderModel(StrEnum):
+class _TextEncoderModel(StrEnum):
     ROBERTA = auto()
 
 
@@ -46,7 +48,7 @@ class ClapEmbedding(AudioEmbedding):
 
     def __init__(
         self,
-        model_name: str = ModelName.EFFECT_VARLEN,
+        model_name: str = ClapModels.EFFECT_VARLEN,
         device: str = "cuda",
         embed_batch_size: int = 8,
     ) -> None:
@@ -79,17 +81,17 @@ class ClapEmbedding(AudioEmbedding):
         )
 
         enable_fusion = False
-        tmodel = TextEncoderModel.ROBERTA
+        tmodel = _TextEncoderModel.ROBERTA
         match model_name:
-            case ModelName.EFFECT_SHORT:
-                amodel = AudioEncoderModel.HTSAT_TINY
+            case ClapModels.EFFECT_SHORT:
+                amodel = _AudioEncoderModel.HTSAT_TINY
                 model_id = 1
-            case ModelName.EFFECT_VARLEN:
+            case ClapModels.EFFECT_VARLEN:
                 enable_fusion = True
-                amodel = AudioEncoderModel.HTSAT_TINY
+                amodel = _AudioEncoderModel.HTSAT_TINY
                 model_id = 3
-            case ModelName.MUSIC | ModelName.SPEECH | ModelName.GENERAL:
-                amodel = AudioEncoderModel.HTSAT_BASE
+            case ClapModels.MUSIC | ClapModels.SPEECH | ClapModels.GENERAL:
+                amodel = _AudioEncoderModel.HTSAT_BASE
                 raise NotImplementedError("loading local .pt is not implemented")
             case _:
                 raise RuntimeError(f"unexpected model name: {model_name}")

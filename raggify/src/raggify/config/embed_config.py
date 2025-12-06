@@ -6,7 +6,7 @@ from typing import Any
 
 from mashumaro import DataClassDictMixin
 
-__all__ = ["EmbedProvider", "EmbedModel"]
+__all__ = ["EmbedProvider", "EmbedModel", "EmbedConfig"]
 
 
 class EmbedProvider(StrEnum):

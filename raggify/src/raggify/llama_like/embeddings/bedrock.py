@@ -33,8 +33,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+__all__ = ["BedrockEmbedding", "MultiModalBedrockEmbedding", "BedrockModels"]
 
-class Models(StrEnum):
+
+class BedrockModels(StrEnum):
     # Official models
     TITAN_EMBEDDING = "amazon.titan-embed-text-v1"
     TITAN_EMBEDDING_V2_0 = "amazon.titan-embed-text-v2:0"
@@ -69,7 +71,7 @@ class MultiModalBedrockEmbedding(VideoEmbedding, BedrockEmbedding):
 
     def __init__(
         self,
-        model_name: str = Models.NOVA_2_MULTIMODAL_V1,
+        model_name: str = BedrockModels.NOVA_2_MULTIMODAL_V1,
         profile_name: Optional[str] = None,
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,

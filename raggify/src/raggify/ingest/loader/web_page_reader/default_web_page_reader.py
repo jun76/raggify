@@ -9,6 +9,8 @@ from ....logger import logger
 from ...parser import BaseParser
 from .base_web_page_reader import BaseWebPageReader
 
+__all__ = ["DefaultWebPageReader"]
+
 
 class DefaultWebPageReader(BaseWebPageReader):
     """Reader for web pages that generates documents."""

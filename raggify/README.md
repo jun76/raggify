@@ -81,10 +81,10 @@ raggify config | grep provider
 "image_embed_provider": null,
 "audio_embed_provider": null,
 "video_embed_provider": null,
-"text_summarizer_provider": "openai"
-"image_summarizer_provider": null
-"audio_summarizer_provider": null
-"video_summarizer_provider": null
+"text_summarize_transform_provider": "openai"
+"image_summarize_transform_provider": null
+"audio_summarize_transform_provider": null
+"video_summarize_transform_provider": null
 "rerank_provider": null,
 ```
 
@@ -282,7 +282,7 @@ configure_logging()
 rt = get_runtime()
 rt.cfg.general.vector_store_provider = VectorStoreProvider.PGVECTOR
 rt.cfg.general.audio_embed_provider = EmbedProvider.CLAP
-rt.cfg.ingest.chunk_size = 300
+rt.cfg.ingest.text_chunk_size = 300
 rt.cfg.ingest.same_origin = False
 rt.rebuild()
 
@@ -761,8 +761,8 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 
 | Parameter             | Description                                   | Default                             | Allowed values / examples                         |
 | --------------------- | --------------------------------------------- | ----------------------------------- | ------------------------------------------------- |
-| `chunk_size`          | Chunk size for text splitting.                | `500`                               | Any integer (e.g., `500`, `1024`).                |
-| `chunk_overlap`       | Overlap between adjacent chunks.              | `50`                                | Any integer.                                      |
+| `text_chunk_size`     | Chunk size for text splitting.                | `500`                               | Any integer (e.g., `500`, `1024`).                |
+| `text_chunk_overlap`  | Overlap between adjacent chunks.              | `50`                                | Any integer.                                      |
 | `upload_dir`          | Directory for uploaded files.                 | `~/.local/share/raggify/upload`     | Any filesystem path.                              |
 | `pipe_persist_dir`    | Pipeline persistence root per KB.             | `~/.local/share/raggify/default_kb` | Any filesystem path.                              |
 | `pipe_batch_size`     | Number of nodes processed per pipeline batch. | `10`                                | Any positive integer.                             |
@@ -799,12 +799,12 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 
 ### LLM (for input data formatting)
 
-| Parameter                            | Description                                         | Default                     | Allowed values / examples               |
-| ------------------------------------ | --------------------------------------------------- | --------------------------- | --------------------------------------- |
-| `openai_text_summarizer_model`       | OpenAI model used for text summarization.           | `gpt-4o-mini`               | Any deployed OpenAI text model.         |
-| `huggingface_text_summarizer_model`  | Hugging Face (local) model for text summarization.  | `Qwen/Qwen2-VL-2B-Instruct` | Any supported causal LLM checkpoint.    |
-| `openai_image_summarizer_model`      | OpenAI multimodal model for image captioning.       | `gpt-4o-mini`               | Any OpenAI multimodal-capable model.    |
-| `huggingface_image_summarizer_model` | Hugging Face multimodal model for image captioning. | `Qwen/Qwen2-VL-2B-Instruct` | Any supported VLM when running locally. |
+| Parameter                                     | Description                                         | Default                     | Allowed values / examples               |
+| --------------------------------------------- | --------------------------------------------------- | --------------------------- | --------------------------------------- |
+| `openai_text_summarize_transform_model`       | OpenAI model used for text summarization.           | `gpt-4o-mini`               | Any deployed OpenAI text model.         |
+| `huggingface_text_summarize_transform_model`  | Hugging Face (local) model for text summarization.  | `Qwen/Qwen2-VL-2B-Instruct` | Any supported causal LLM checkpoint.    |
+| `openai_image_summarize_transform_model`      | OpenAI multimodal model for image captioning.       | `gpt-4o-mini`               | Any OpenAI multimodal-capable model.    |
+| `huggingface_image_summarize_transform_model` | Hugging Face multimodal model for image captioning. | `Qwen/Qwen2-VL-2B-Instruct` | Any supported VLM when running locally. |
 
 ## Setting samples
 
@@ -818,8 +818,8 @@ text_embed_provider: huggingface
 image_embed_provider: clip
 audio_embed_provider: clap
 video_embed_provider: null
-text_summarizer_provider: huggingface
-image_summarizer_provider: huggingface
+text_summarize_transform_provider: huggingface
+image_summarize_transform_provider: huggingface
 rerank_provider: flagembedding
 use_modality_fallback: true
 device: cuda
@@ -840,8 +840,8 @@ text_embed_provider: openai
 image_embed_provider: voyage
 audio_embed_provider: clap
 video_embed_provider: bedrock
-text_summarizer_provider: openai
-image_summarizer_provider: huggingface
+text_summarize_transform_provider: openai
+image_summarize_transform_provider: huggingface
 rerank_provider: cohere
 device: cuda
 ```

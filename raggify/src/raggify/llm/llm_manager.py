@@ -16,6 +16,9 @@ class LLMUsage(StrEnum):
     VIDEO_SUMMARIZER = auto()
 
 
+__all__ = ["LLMContainer", "LLMManager"]
+
+
 @dataclass(kw_only=True)
 class LLMContainer:
     """Container for LLM-related parameters per modality."""
@@ -61,50 +64,50 @@ class LLMManager:
         return set(self._conts.keys())
 
     @property
-    def text_summarizer(self) -> LLM | MultiModalLLM:
-        """Get the text summarizer LLM.
+    def text_summarize_transform(self) -> LLM | MultiModalLLM:
+        """Get the text summarize transform LLM.
 
         Raises:
             RuntimeError: If uninitialized.
 
         Returns:
-            LLM: Text summarizer LLM.
+            LLM: Text summarize transform LLM.
         """
         return self.get_container(LLMUsage.TEXT_SUMMARIZER).llm
 
     @property
-    def image_summarizer(self) -> LLM | MultiModalLLM:
-        """Get the image summarizer LLM.
+    def image_summarize_transform(self) -> LLM | MultiModalLLM:
+        """Get the image summarize transform LLM.
 
         Raises:
             RuntimeError: If uninitialized.
 
         Returns:
-            LLM: Image summarizer LLM.
+            LLM: Image summarize transform LLM.
         """
         return self.get_container(LLMUsage.IMAGE_SUMMARIZER).llm
 
     @property
-    def audio_summarizer(self) -> LLM | MultiModalLLM:
-        """Get the audio summarizer LLM.
+    def audio_summarize_transform(self) -> LLM | MultiModalLLM:
+        """Get the audio summarize transform LLM.
 
         Raises:
             RuntimeError: If uninitialized.
 
         Returns:
-            LLM: Audio summarizer LLM.
+            LLM: Audio summarize transform LLM.
         """
         return self.get_container(LLMUsage.AUDIO_SUMMARIZER).llm
 
     @property
-    def video_summarizer(self) -> LLM | MultiModalLLM:
-        """Get the video summarizer LLM.
+    def video_summarize_transform(self) -> LLM | MultiModalLLM:
+        """Get the video summarize transform LLM.
 
         Raises:
             RuntimeError: If uninitialized.
 
         Returns:
-            LLM: Video summarizer LLM.
+            LLM: Video summarize transform LLM.
         """
         return self.get_container(LLMUsage.VIDEO_SUMMARIZER).llm
 

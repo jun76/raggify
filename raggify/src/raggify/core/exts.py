@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from urllib.parse import urlparse
 
+__all__ = ["Exts"]
+
 
 class Exts:
     # For individual reference

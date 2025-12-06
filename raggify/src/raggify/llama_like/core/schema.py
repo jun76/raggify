@@ -4,6 +4,8 @@ from enum import StrEnum, auto
 
 from llama_index.core.schema import TextNode
 
+__all__ = ["Modality", "AudioNode", "VideoNode"]
+
 
 # Modalities
 # ! Changing the string will change the space key and require reingest !

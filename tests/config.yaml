@@ -10,10 +10,10 @@ general:
   image_embed_provider: cohere
   audio_embed_provider: bedrock
   video_embed_provider: bedrock
-  text_summarizer_provider: openai
-  image_summarizer_provider: null
-  audio_summarizer_provider: null
-  video_summarizer_provider: null
+  text_summarize_transform_provider: openai
+  image_summarize_transform_provider: null
+  audio_summarize_transform_provider: null
+  video_summarize_transform_provider: null
   rerank_provider: null
   parser_provider: local
   use_modality_fallback: false
@@ -113,8 +113,8 @@ embed:
     alias: n2v1
     dim: 1024
 ingest:
-  chunk_size: 500
-  chunk_overlap: 50
+  text_chunk_size: 500
+  text_chunk_overlap: 50
   upload_dir: ./.local/share/raggify/upload
   pipe_persist_dir: ./.local/share/raggify/default_kb
   pipe_batch_size: 10
@@ -172,7 +172,7 @@ retrieve:
   fusion_lambda_vector: 0.5
   fusion_lambda_bm25: 0.5
 llm:
-  openai_text_summarizer_model: gpt-4o-mini
-  huggingface_text_summarizer_model: Qwen/Qwen2-VL-2B-Instruct
-  openai_image_summarizer_model: gpt-4o-mini
-  huggingface_image_summarizer_model: Qwen/Qwen2-VL-2B-Instruct
+  openai_text_summarize_transform_model: gpt-4o-mini
+  huggingface_text_summarize_transform_model: Qwen/Qwen2-VL-2B-Instruct
+  openai_image_summarize_transform_model: gpt-4o-mini
+  huggingface_image_summarize_transform_model: Qwen/Qwen2-VL-2B-Instruct

@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional
 
 from ..logger import logger
 
-__all__ = ["get_worker"]
+__all__ = ["BackgroundWorker", "Job", "JobPayload", "JobStatus", "get_worker"]
 
 _worker: BackgroundWorker | None = None
 _lock = threading.Lock()

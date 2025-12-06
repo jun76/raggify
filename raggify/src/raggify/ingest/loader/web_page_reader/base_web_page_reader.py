@@ -12,6 +12,8 @@ from ..util import arequest_get
 if TYPE_CHECKING:
     from llama_index.core.schema import Document
 
+__all__ = ["BaseWebPageReader"]
+
 
 class BaseWebPageReader(ABC):
     """Reader abstract base for web pages that generates documents with parser."""

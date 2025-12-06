@@ -5,7 +5,7 @@ from enum import StrEnum, auto
 
 from mashumaro import DataClassDictMixin
 
-__all__ = ["RetrieveMode"]
+__all__ = ["RetrieveMode", "RetrieveConfig"]
 
 
 class RetrieveMode(StrEnum):

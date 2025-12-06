@@ -68,41 +68,29 @@ def _build_text_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
     Returns:
         IngestionPipeline: Pipeline instance.
     """
-    from llama_index.core.node_parser import SentenceSplitter
-
     from .transform import (
         AddChunkIndexTransform,
-        DefaultSummarizer,
-        LLMSummarizer,
-        make_text_embed_transform,
+        DefaultSummarizeTransform,
+        EmbedTransform,
+        LLMSummarizeTransform,
+        SplitTransform,
     )
 
     rt = _rt()
-    if rt.cfg.general.text_summarizer_provider is not None:
-        large_chunk_size = 10000
+    if rt.cfg.general.text_summarize_transform_provider is not None:
         transformations: list[TransformComponent] = [
             # Split before LLM summarization to avoid token limit issues
-            SentenceSplitter(
-                chunk_size=large_chunk_size,
-                chunk_overlap=rt.cfg.ingest.chunk_overlap,
-                include_metadata=True,
-            ),
-            LLMSummarizer(),
+            SplitTransform(cfg=rt.cfg.ingest, text_chunk_size=10000),
+            LLMSummarizeTransform(rt.llm_manager),
         ]
     else:
         transformations: list[TransformComponent] = [
-            DefaultSummarizer(),
+            DefaultSummarizeTransform(),
         ]
 
-    transformations.append(
-        SentenceSplitter(
-            chunk_size=rt.cfg.ingest.chunk_size,
-            chunk_overlap=rt.cfg.ingest.chunk_overlap,
-            include_metadata=True,
-        )
-    )
+    transformations.append(SplitTransform(rt.cfg.ingest))
     transformations.append(AddChunkIndexTransform())
-    transformations.append(make_text_embed_transform(rt.embed_manager))
+    transformations.append(EmbedTransform(rt.embed_manager))
 
     return rt.build_pipeline(
         modality=Modality.TEXT,
@@ -120,16 +108,20 @@ def _build_image_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
     Returns:
         IngestionPipeline: Pipeline instance.
     """
-    from .transform import DefaultSummarizer, LLMSummarizer, make_image_embed_transform
+    from .transform import (
+        DefaultSummarizeTransform,
+        EmbedTransform,
+        LLMSummarizeTransform,
+    )
 
     rt = _rt()
     transformations: list[TransformComponent] = [
         (
-            LLMSummarizer()
-            if rt.cfg.general.image_summarizer_provider is not None
-            else DefaultSummarizer()
+            LLMSummarizeTransform(rt.llm_manager)
+            if rt.cfg.general.image_summarize_transform_provider is not None
+            else DefaultSummarizeTransform()
         ),
-        make_image_embed_transform(rt.embed_manager),
+        EmbedTransform(rt.embed_manager),
     ]
 
     return rt.build_pipeline(
@@ -149,26 +141,22 @@ def _build_audio_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
         IngestionPipeline: Pipeline instance.
     """
     from .transform import (
-        AudioSplitter,
-        DefaultSummarizer,
-        LLMSummarizer,
-        make_audio_embed_transform,
+        DefaultSummarizeTransform,
+        EmbedTransform,
+        LLMSummarizeTransform,
+        SplitTransform,
     )
 
     rt = _rt()
     transformations: list[TransformComponent] = [
         (
-            LLMSummarizer()
-            if rt.cfg.general.audio_summarizer_provider is not None
-            else DefaultSummarizer()
-        )
+            LLMSummarizeTransform(rt.llm_manager)
+            if rt.cfg.general.audio_summarize_transform_provider is not None
+            else DefaultSummarizeTransform()
+        ),
+        SplitTransform(rt.cfg.ingest),
     ]
-    if rt.cfg.ingest.audio_chunk_seconds:
-        transformations.append(
-            AudioSplitter(chunk_seconds=rt.cfg.ingest.audio_chunk_seconds)
-        )
-    transformations.append(make_audio_embed_transform(rt.embed_manager))
-
+    transformations.append(EmbedTransform(rt.embed_manager))
     return rt.build_pipeline(
         modality=Modality.AUDIO,
         transformations=transformations,
@@ -186,25 +174,22 @@ def _build_video_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
         IngestionPipeline: Pipeline instance.
     """
     from .transform import (
-        DefaultSummarizer,
-        LLMSummarizer,
-        VideoSplitter,
-        make_video_embed_transform,
+        DefaultSummarizeTransform,
+        EmbedTransform,
+        LLMSummarizeTransform,
+        SplitTransform,
     )
 
     rt = _rt()
     transformations: list[TransformComponent] = [
         (
-            LLMSummarizer()
-            if rt.cfg.general.video_summarizer_provider is not None
-            else DefaultSummarizer()
-        )
+            LLMSummarizeTransform(rt.llm_manager)
+            if rt.cfg.general.video_summarize_transform_provider is not None
+            else DefaultSummarizeTransform()
+        ),
+        SplitTransform(rt.cfg.ingest),
     ]
-    if rt.cfg.ingest.video_chunk_seconds:
-        transformations.append(
-            VideoSplitter(chunk_seconds=rt.cfg.ingest.video_chunk_seconds)
-        )
-    transformations.append(make_video_embed_transform(rt.embed_manager))
+    transformations.append(EmbedTransform(rt.embed_manager))
 
     return rt.build_pipeline(
         modality=Modality.VIDEO,

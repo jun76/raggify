@@ -5,7 +5,7 @@ from enum import StrEnum, auto
 
 from mashumaro import DataClassDictMixin
 
-__all__ = ["RerankProvider"]
+__all__ = ["RerankProvider", "RerankConfig"]
 
 
 class RerankProvider(StrEnum):

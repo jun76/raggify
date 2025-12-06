@@ -8,6 +8,8 @@ from ..logger import logger
 if TYPE_CHECKING:
     from llama_index.core.storage.docstore import BaseDocumentStore
 
+__all__ = ["DocumentStoreManager"]
+
 
 class DocumentStoreManager:
     """Manager class for the document store."""

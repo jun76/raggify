@@ -9,6 +9,8 @@ from llama_index.core.embeddings import BaseEmbedding, MultiModalEmbedding
 if TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import Embedding
 
+__all__ = ["AudioEmbedding", "VideoEmbedding", "AudioType", "VideoType"]
+
 AudioType = Union[str, BytesIO]
 VideoType = Union[str, BytesIO]
 

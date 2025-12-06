@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
     from ....config.ingest_config import IngestConfig
 
+__all__ = ["MultiWikipediaReader"]
+
 
 class MultiWikipediaReader(BaseWebPageReader):
     """Reader for Wikipedia that generates documents."""

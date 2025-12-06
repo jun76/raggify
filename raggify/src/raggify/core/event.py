@@ -6,6 +6,8 @@ from typing import Any, Callable, Coroutine, Optional, TypeVar
 
 T = TypeVar("T")
 
+__all__ = ["async_loop_runner"]
+
 
 class AsyncLoopRunner:
     """共有イベントループ上でコルーチンを同期実行するヘルパ。"""

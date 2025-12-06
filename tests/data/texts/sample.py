@@ -9,7 +9,7 @@ configure_logging("DEBUG")
 rt = get_runtime()
 rt.cfg.general.vector_store_provider = VectorStoreProvider.PGVECTOR
 rt.cfg.general.audio_embed_provider = EmbedProvider.CLAP
-rt.cfg.ingest.chunk_size = 300
+rt.cfg.ingest.text_chunk_size = 300
 rt.cfg.ingest.same_origin = False
 rt.rebuild()
 

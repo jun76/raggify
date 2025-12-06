@@ -17,7 +17,7 @@ from .general_config import GeneralConfig
 logger = logging.getLogger(__name__)
 
 
-class PathSerializationStrategy(SerializationStrategy):
+class _PathSerializationStrategy(SerializationStrategy):
     """Strategy class for Path <-> str conversion via mashumaro."""
 
     def serialize(self, value: Path) -> str:
@@ -28,13 +28,13 @@ class PathSerializationStrategy(SerializationStrategy):
 
 
 @dataclass(kw_only=True)
-class AppConfig(DataClassDictMixin):
+class _AppConfig(DataClassDictMixin):
     """Root config dataclass to keep all sections together."""
 
     general: GeneralConfig = field(default_factory=GeneralConfig)
 
     class Config(BaseConfig):
-        serialization_strategy = {Path: PathSerializationStrategy()}
+        serialization_strategy = {Path: _PathSerializationStrategy()}
 
 
 class ConfigManager:
@@ -42,7 +42,7 @@ class ConfigManager:
 
     def __init__(self) -> None:
         load_dotenv()
-        self._config = AppConfig()
+        self._config = _AppConfig()
 
         self._config_path = (
             os.getenv("RG_CLIENT_CONFIG_PATH") or DEFAULT_CLIENT_CONFIG_PATH
@@ -53,7 +53,7 @@ class ConfigManager:
             self.read_yaml()
 
     def read_yaml(self) -> None:
-        """Read YAML config and map it into AppConfig.
+        """Read YAML config and map it into _AppConfig.
 
         Raises:
             RuntimeError: If reading fails.
@@ -65,10 +65,10 @@ class ConfigManager:
             raise RuntimeError("failed to read config file") from e
 
         try:
-            self._config = AppConfig.from_dict(data)
+            self._config = _AppConfig.from_dict(data)
         except Exception as e:
             logger.warning(f"failed to load config, using defaults: {e}")
-            self._config = AppConfig()
+            self._config = _AppConfig()
 
     def write_yaml(self) -> None:
         """Write the current configuration as YAML."""

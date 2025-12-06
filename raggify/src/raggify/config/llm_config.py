@@ -16,15 +16,15 @@ class LLMConfig:
     """Config dataclass for LLM settings."""
 
     # Text
-    openai_text_summarizer_model: str = "gpt-4o-mini"
-    huggingface_text_summarizer_model: str = "Qwen/Qwen2-VL-2B-Instruct"
+    openai_text_summarize_transform_model: str = "gpt-4o-mini"
+    huggingface_text_summarize_transform_model: str = "Qwen/Qwen2-VL-2B-Instruct"
 
     # Image
-    openai_image_summarizer_model: str = "gpt-4o-mini"
-    huggingface_image_summarizer_model: str = "Qwen/Qwen2-VL-2B-Instruct"
+    openai_image_summarize_transform_model: str = "gpt-4o-mini"
+    huggingface_image_summarize_transform_model: str = "Qwen/Qwen2-VL-2B-Instruct"
 
     # Audio
-    # TODO: Add audio summarizer model configs
+    # TODO: Add audio summarize transform model configs
 
     # Video
-    # TODO: Add video summarizer model configs
+    # TODO: Add video summarize transform model configs

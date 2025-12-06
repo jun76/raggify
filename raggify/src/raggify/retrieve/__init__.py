@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .retrieve import (
     aquery_audio_audio,
     aquery_audio_video,

@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 
     from ..llama_like.embeddings.multi_modal_base import AudioType, VideoType
 
+__all__ = ["EmbedManager", "EmbedContainer"]
+
 
 @dataclass(kw_only=True)
 class EmbedContainer:

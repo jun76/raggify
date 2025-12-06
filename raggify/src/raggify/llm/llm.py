@@ -29,10 +29,10 @@ def create_llm_manager(cfg: ConfigManager) -> LLMManager:
 
     try:
         conts: dict[LLMUsage, LLMContainer] = {}
-        if cfg.general.text_summarizer_provider:
-            conts[LLMUsage.TEXT_SUMMARIZER] = _create_text_summarizer(cfg)
-        if cfg.general.image_summarizer_provider:
-            conts[LLMUsage.IMAGE_SUMMARIZER] = _create_image_summarizer(cfg)
+        if cfg.general.text_summarize_transform_provider:
+            conts[LLMUsage.TEXT_SUMMARIZER] = _create_text_summarize_transform(cfg)
+        if cfg.general.image_summarize_transform_provider:
+            conts[LLMUsage.IMAGE_SUMMARIZER] = _create_image_summarize_transform(cfg)
     except (ValueError, ImportError) as e:
         raise RuntimeError("invalid LLM settings") from e
     except Exception as e:
@@ -44,56 +44,60 @@ def create_llm_manager(cfg: ConfigManager) -> LLMManager:
     return LLMManager(conts)
 
 
-def _create_text_summarizer(cfg: ConfigManager) -> LLMContainer:
-    """Create text summarizer container.
+def _create_text_summarize_transform(cfg: ConfigManager) -> LLMContainer:
+    """Create text summarize transform container.
 
     Args:
         cfg (ConfigManager): Config manager.
 
     Raises:
-        ValueError: If text summarizer provider is not specified or unsupported.
+        ValueError: If text summarize transform provider is not specified or unsupported.
 
     Returns:
-        LLMContainer: Text summarizer container.
+        LLMContainer: Text summarize transform container.
     """
-    provider = cfg.general.text_summarizer_provider
+    provider = cfg.general.text_summarize_transform_provider
     if provider is None:
-        raise ValueError("text summarizer provider is not specified")
+        raise ValueError("text summarize transform provider is not specified")
     match provider:
         case LLMProvider.OPENAI:
-            return _openai_text_summarizer(cfg)
+            return _openai_text_summarize_transform(cfg)
         case LLMProvider.HUGGINGFACE:
-            return _huggingface_text_summarizer(cfg)
+            return _huggingface_text_summarize_transform(cfg)
         case _:
-            raise ValueError(f"unsupported text summarizer provider: {provider}")
+            raise ValueError(
+                f"unsupported text summarize transform provider: {provider}"
+            )
 
 
-def _create_image_summarizer(cfg: ConfigManager) -> LLMContainer:
-    """Create image summarizer container.
+def _create_image_summarize_transform(cfg: ConfigManager) -> LLMContainer:
+    """Create image summarize transform container.
 
     Args:
         cfg (ConfigManager): Config manager.
 
     Raises:
-        ValueError: If image summarizer provider is not specified or unsupported.
+        ValueError: If image summarize transform provider is not specified or unsupported.
 
     Returns:
-        LLMContainer: Image summarizer container.
+        LLMContainer: Image summarize transform container.
     """
-    provider = cfg.general.image_summarizer_provider
+    provider = cfg.general.image_summarize_transform_provider
     if provider is None:
-        raise ValueError("image summarizer provider is not specified")
+        raise ValueError("image summarize transform provider is not specified")
     match provider:
         case LLMProvider.OPENAI:
-            return _openai_image_summarizer(cfg)
+            return _openai_image_summarize_transform(cfg)
         case LLMProvider.HUGGINGFACE:
-            return _huggingface_image_summarizer(cfg)
+            return _huggingface_image_summarize_transform(cfg)
         case _:
-            raise ValueError(f"unsupported image summarizer provider: {provider}")
+            raise ValueError(
+                f"unsupported image summarize transform provider: {provider}"
+            )
 
 
 # Container generation helpers per provider
-def _openai_text_summarizer(cfg: ConfigManager) -> LLMContainer:
+def _openai_text_summarize_transform(cfg: ConfigManager) -> LLMContainer:
     from llama_index.multi_modal_llms.openai import OpenAIMultiModal
 
     from .llm_manager import LLMContainer
@@ -101,14 +105,14 @@ def _openai_text_summarizer(cfg: ConfigManager) -> LLMContainer:
     return LLMContainer(
         provider_name=LLMProvider.OPENAI,
         llm=OpenAIMultiModal(
-            model=cfg.llm.openai_text_summarizer_model,
+            model=cfg.llm.openai_text_summarize_transform_model,
             api_base=cfg.general.openai_base_url,
             temperature=0,
         ),
     )
 
 
-def _huggingface_text_summarizer(cfg: ConfigManager) -> LLMContainer:
+def _huggingface_text_summarize_transform(cfg: ConfigManager) -> LLMContainer:
     try:
         # FIXME: issue #6 HuggingFaceMultiModal version mismatch
         from llama_index.multi_modal_llms.huggingface import (
@@ -128,14 +132,14 @@ def _huggingface_text_summarizer(cfg: ConfigManager) -> LLMContainer:
     return LLMContainer(
         provider_name=LLMProvider.HUGGINGFACE,
         llm=HuggingFaceMultiModal.from_model_name(
-            model_name=cfg.llm.huggingface_text_summarizer_model,
+            model_name=cfg.llm.huggingface_text_summarize_transform_model,
             device=cfg.general.device,
             temperature=0,
         ),
     )
 
 
-def _openai_image_summarizer(cfg: ConfigManager) -> LLMContainer:
+def _openai_image_summarize_transform(cfg: ConfigManager) -> LLMContainer:
     from llama_index.multi_modal_llms.openai import OpenAIMultiModal
 
     from .llm_manager import LLMContainer
@@ -143,14 +147,14 @@ def _openai_image_summarizer(cfg: ConfigManager) -> LLMContainer:
     return LLMContainer(
         provider_name=LLMProvider.OPENAI,
         llm=OpenAIMultiModal(
-            model=cfg.llm.openai_image_summarizer_model,
+            model=cfg.llm.openai_image_summarize_transform_model,
             api_base=cfg.general.openai_base_url,
             temperature=0,
         ),
     )
 
 
-def _huggingface_image_summarizer(cfg: ConfigManager) -> LLMContainer:
+def _huggingface_image_summarize_transform(cfg: ConfigManager) -> LLMContainer:
     try:
         from llama_index.multi_modal_llms.huggingface import (
             HuggingFaceMultiModal,  # type: ignore
@@ -169,7 +173,7 @@ def _huggingface_image_summarizer(cfg: ConfigManager) -> LLMContainer:
     return LLMContainer(
         provider_name=LLMProvider.HUGGINGFACE,
         llm=HuggingFaceMultiModal.from_model_name(
-            model_name=cfg.llm.huggingface_image_summarizer_model,
+            model_name=cfg.llm.huggingface_image_summarize_transform_model,
             device=cfg.general.device,
             temperature=0,
         ),

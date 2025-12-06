@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from llama_index.core.schema import Document
 
 
-__all__ = ["DefaultParser"]
+__all__ = ["BaseParser", "DefaultParser", "LlamaParser", "create_parser"]
 
 
 class BaseParser:

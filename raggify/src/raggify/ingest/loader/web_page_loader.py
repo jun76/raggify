@@ -5,13 +5,15 @@ from typing import TYPE_CHECKING, Callable
 from ...config.ingest_config import IngestConfig
 from ...core.exts import Exts
 from ...logger import logger
-from ..parser import BaseParser
 from .base_loader import BaseLoader
 
 if TYPE_CHECKING:
     from llama_index.core.schema import Document, ImageNode, TextNode
 
     from ...llama_like.core.schema import AudioNode, VideoNode
+    from ..parser import BaseParser
+
+__all__ = ["WebPageLoader"]
 
 
 class WebPageLoader(BaseLoader):

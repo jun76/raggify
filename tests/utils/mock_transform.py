@@ -3,11 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from tests.utils.mock_embed import (
-    DummyAudioBase,
-    DummyMultiModalBase,
-    DummyVideoBase,
-)
+from tests.utils.mock_embed import DummyAudioBase, DummyMultiModalBase, DummyVideoBase
 
 
 def apply_patch_embedding_bases(monkeypatch: Any) -> None:
@@ -35,7 +31,9 @@ class DummyLLMResponse:
 class DummyLLM:
     """Simple LLM stub that records inputs."""
 
-    def __init__(self, response_text: str = "summary", *, error: Exception | None = None):
+    def __init__(
+        self, response_text: str = "summary", *, error: Exception | None = None
+    ):
         self.response_text = response_text
         self.error = error
         self.calls: list[dict[str, Any]] = []
@@ -46,18 +44,25 @@ class DummyLLM:
             raise self.error
         return DummyLLMResponse(self.response_text)
 
+    async def acomplete(self, *, prompt: str, image_documents: Optional[list] = None):
+        return self.complete(prompt=prompt, image_documents=image_documents)
+
 
 class DummyLLMManager:
     def __init__(
         self,
         *,
-        text_summarizer: Optional[DummyLLM] = None,
-        image_summarizer: Optional[DummyLLM] = None,
+        text_summarize_transform: Optional[DummyLLM] = None,
+        image_summarize_transform: Optional[DummyLLM] = None,
     ) -> None:
-        self.text_summarizer = text_summarizer or DummyLLM("text-summary")
-        self.image_summarizer = image_summarizer or DummyLLM("image-summary")
-        self.audio_summarizer = None
-        self.video_summarizer = None
+        self.text_summarize_transform = text_summarize_transform or DummyLLM(
+            "text-summary"
+        )
+        self.image_summarize_transform = image_summarize_transform or DummyLLM(
+            "image-summary"
+        )
+        self.audio_summarize_transform = None
+        self.video_summarize_transform = None
 
 
 class DummyRuntime:
@@ -70,5 +75,7 @@ def make_dummy_runtime(
     text_llm: Optional[DummyLLM] = None,
     image_llm: Optional[DummyLLM] = None,
 ) -> DummyRuntime:
-    manager = DummyLLMManager(text_summarizer=text_llm, image_summarizer=image_llm)
+    manager = DummyLLMManager(
+        text_summarize_transform=text_llm, image_summarize_transform=image_llm
+    )
     return DummyRuntime(manager)

@@ -13,6 +13,8 @@ from ..core.const import (
     PROJECT_NAME,
 )
 
+__all__ = ["ParserProvider", "IngestConfig"]
+
 
 class ParserProvider(StrEnum):
     LOCAL = auto()
@@ -24,8 +26,8 @@ class IngestConfig(DataClassDictMixin):
     """Config dataclass for document ingestion settings."""
 
     # General
-    chunk_size: int = 500
-    chunk_overlap: int = 50
+    text_chunk_size: int = 500
+    text_chunk_overlap: int = 50
     upload_dir: Path = DEFAULT_WORKSPACE_PATH / "upload"
     pipe_persist_dir: Path = DEFAULT_WORKSPACE_PATH / DEFAULT_KNOWLEDGEBASE_NAME
     pipe_batch_size: int = 10

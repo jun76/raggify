@@ -11,6 +11,8 @@ from ...core.utils import has_media
 from ...llama_like.core.schema import AudioNode, VideoNode
 from ...logger import logger
 
+__all__ = ["BaseLoader"]
+
 
 class BaseLoader:
     """Base loader class."""
@@ -91,7 +93,9 @@ class BaseLoader:
                 image_nodes.append(
                     ImageNode(
                         text=doc.text,
-                        image_path=doc.metadata.get(MK.FILE_PATH),  # for summarizer use
+                        image_path=doc.metadata.get(
+                            MK.FILE_PATH
+                        ),  # for summarize transform use
                         id_=doc.id_,
                         doc_id=doc.doc_id,
                         ref_doc_id=doc.doc_id,

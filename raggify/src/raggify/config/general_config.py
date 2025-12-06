@@ -14,6 +14,8 @@ from .llm_config import LLMProvider
 from .rerank_config import RerankProvider
 from .vector_store_config import VectorStoreProvider
 
+__all__ = ["GeneralConfig"]
+
 
 @dataclass(kw_only=True)
 class GeneralConfig(DataClassDictMixin):
@@ -28,10 +30,10 @@ class GeneralConfig(DataClassDictMixin):
     image_embed_provider: Optional[EmbedProvider] = None
     audio_embed_provider: Optional[EmbedProvider] = None
     video_embed_provider: Optional[EmbedProvider] = None
-    text_summarizer_provider: Optional[LLMProvider] = LLMProvider.OPENAI
-    image_summarizer_provider: Optional[LLMProvider] = None
-    audio_summarizer_provider: Optional[LLMProvider] = None
-    video_summarizer_provider: Optional[LLMProvider] = None
+    text_summarize_transform_provider: Optional[LLMProvider] = LLMProvider.OPENAI
+    image_summarize_transform_provider: Optional[LLMProvider] = None
+    audio_summarize_transform_provider: Optional[LLMProvider] = None
+    video_summarize_transform_provider: Optional[LLMProvider] = None
     rerank_provider: Optional[RerankProvider] = None
     parser_provider: Optional[ParserProvider] = ParserProvider.LOCAL
     use_modality_fallback: bool = False

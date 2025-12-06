@@ -11,6 +11,8 @@ if TYPE_CHECKING:
     from llama_index.core.ingestion import IngestionCache
     from llama_index.core.schema import BaseNode, TransformComponent
 
+__all__ = ["IngestCacheContainer", "IngestCacheManager"]
+
 
 @dataclass(kw_only=True)
 class IngestCacheContainer:

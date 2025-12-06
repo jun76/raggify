@@ -8,7 +8,7 @@ from mashumaro import DataClassDictMixin
 
 from ..core.const import PROJECT_NAME
 
-__all__ = ["IngestCacheProvider"]
+__all__ = ["IngestCacheProvider", "IngestCacheConfig"]
 
 
 class IngestCacheProvider(StrEnum):

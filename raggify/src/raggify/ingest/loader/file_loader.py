@@ -3,13 +3,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable
 
 from ...logger import logger
-from ..parser import BaseParser
 from .base_loader import BaseLoader
 
 if TYPE_CHECKING:
     from llama_index.core.schema import ImageNode, TextNode
 
     from ...llama_like.core.schema import AudioNode, VideoNode
+    from ..parser import BaseParser
+
+__all__ = ["FileLoader"]
 
 
 class FileLoader(BaseLoader):

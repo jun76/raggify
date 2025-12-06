@@ -12,6 +12,9 @@ if TYPE_CHECKING:
     from llama_index.core.vector_stores.types import BasePydanticVectorStore
 
 
+__all__ = ["VectorStoreManager", "VectorStoreContainer"]
+
+
 @dataclass(kw_only=True)
 class VectorStoreContainer:
     """Aggregate vector store parameters per modality."""

@@ -8,7 +8,7 @@ from mashumaro import DataClassDictMixin
 
 from ..core.const import PROJECT_NAME
 
-__all__ = ["DocumentStoreProvider"]
+__all__ = ["DocumentStoreProvider", "DocumentStoreConfig"]
 
 
 class DocumentStoreProvider(StrEnum):

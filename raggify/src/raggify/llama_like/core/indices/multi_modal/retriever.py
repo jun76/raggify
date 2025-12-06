@@ -26,6 +26,8 @@ if TYPE_CHECKING:
 
 Embeddings = Sequence[float]
 
+__all__ = ["AudioEncoders", "VideoEncoders", "AudioRetriever", "VideoRetriever"]
+
 
 @dataclass(kw_only=True)
 class AudioEncoders:
