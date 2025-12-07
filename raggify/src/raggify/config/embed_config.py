@@ -56,8 +56,8 @@ class EmbedConfig(DataClassDictMixin):
     )
     clap_embed_model_text: dict[str, Any] = field(
         default_factory=lambda: {
-            EmbedModel.NAME.value: "effect_varlen",
-            EmbedModel.ALIAS.value: "efvl",
+            EmbedModel.NAME.value: "laion/clap-htsat-unfused",
+            EmbedModel.ALIAS.value: "lchu",
             EmbedModel.DIM.value: 512,
         }
     )
@@ -123,8 +123,8 @@ class EmbedConfig(DataClassDictMixin):
     # Audio
     clap_embed_model_audio: dict[str, Any] = field(
         default_factory=lambda: {
-            EmbedModel.NAME.value: "effect_varlen",
-            EmbedModel.ALIAS.value: "efvl",
+            EmbedModel.NAME.value: "laion/clap-htsat-unfused",
+            EmbedModel.ALIAS.value: "lchu",
             EmbedModel.DIM.value: 512,
         }
     )

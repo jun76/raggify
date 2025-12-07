@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .bedrock import BedrockEmbedding, BedrockModels, MultiModalBedrockEmbedding
-from .clap import ClapEmbedding, ClapModels
+from .clap import ClapEmbedding
 from .multi_modal_base import AudioEmbedding, AudioType, VideoEmbedding, VideoType
 
 __all__ = [
@@ -9,7 +9,6 @@ __all__ = [
     "BedrockModels",
     "MultiModalBedrockEmbedding",
     "ClapEmbedding",
-    "ClapModels",
     "AudioEmbedding",
     "VideoEmbedding",
     "AudioType",

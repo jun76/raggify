@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from types import SimpleNamespace
 from typing import Any, Optional
 
@@ -96,11 +96,7 @@ def make_dummy_runtime(
 class DummyWhisperModel:
     transcript: str
     expected_path: Optional[str] = None
-    calls: list[str] = None
-
-    def __post_init__(self) -> None:
-        if self.calls is None:
-            self.calls = []
+    calls: list[str] = field(default_factory=list)
 
     def transcribe(self, path: str) -> dict[str, str]:
         if self.expected_path is not None:

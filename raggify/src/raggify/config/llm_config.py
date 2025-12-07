@@ -8,7 +8,6 @@ __all__ = ["LLMProvider", "LLMConfig"]
 
 class LLMProvider(StrEnum):
     OPENAI = auto()
-    HUGGINGFACE = auto()
 
 
 @dataclass(kw_only=True)
@@ -17,14 +16,12 @@ class LLMConfig:
 
     # Text
     openai_text_summarize_transform_model: str = "gpt-4o-mini"
-    huggingface_text_summarize_transform_model: str = "Qwen/Qwen2-VL-2B-Instruct"
 
     # Image
     openai_image_summarize_transform_model: str = "gpt-4o-mini"
-    huggingface_image_summarize_transform_model: str = "Qwen/Qwen2-VL-2B-Instruct"
 
     # Audio
-    # TODO: Add audio summarize transform model configs
+    clap_audio_summarize_transform_model: str = "openai/whisper-base"
 
     # Video
-    # TODO: Add video summarize transform model configs
+    clap_video_summarize_transform_model: str = "openai/whisper-base"

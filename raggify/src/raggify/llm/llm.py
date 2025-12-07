@@ -62,8 +62,6 @@ def _create_text_summarize_transform(cfg: ConfigManager) -> LLMContainer:
     match provider:
         case LLMProvider.OPENAI:
             return _openai_text_summarize_transform(cfg)
-        case LLMProvider.HUGGINGFACE:
-            return _huggingface_text_summarize_transform(cfg)
         case _:
             raise ValueError(
                 f"unsupported text summarize transform provider: {provider}"
@@ -88,8 +86,6 @@ def _create_image_summarize_transform(cfg: ConfigManager) -> LLMContainer:
     match provider:
         case LLMProvider.OPENAI:
             return _openai_image_summarize_transform(cfg)
-        case LLMProvider.HUGGINGFACE:
-            return _huggingface_image_summarize_transform(cfg)
         case _:
             raise ValueError(
                 f"unsupported image summarize transform provider: {provider}"
@@ -98,13 +94,13 @@ def _create_image_summarize_transform(cfg: ConfigManager) -> LLMContainer:
 
 # Container generation helpers per provider
 def _openai_text_summarize_transform(cfg: ConfigManager) -> LLMContainer:
-    from llama_index.multi_modal_llms.openai import OpenAIMultiModal
+    from llama_index.llms.openai import OpenAI
 
     from .llm_manager import LLMContainer
 
     return LLMContainer(
         provider_name=LLMProvider.OPENAI,
-        llm=OpenAIMultiModal(
+        llm=OpenAI(
             model=cfg.llm.openai_text_summarize_transform_model,
             api_base=cfg.general.openai_base_url,
             temperature=0,
@@ -112,69 +108,16 @@ def _openai_text_summarize_transform(cfg: ConfigManager) -> LLMContainer:
     )
 
 
-def _huggingface_text_summarize_transform(cfg: ConfigManager) -> LLMContainer:
-    try:
-        # FIXME: issue #6 HuggingFaceMultiModal version mismatch
-        from llama_index.multi_modal_llms.huggingface import (
-            HuggingFaceMultiModal,  # type: ignore
-        )
-    except ImportError as e:
-        raise ImportError(
-            EXTRA_PKG_NOT_FOUND_MSG.format(
-                pkg="llama-index-multi-modal-llms-huggingface",
-                extra="localmodel",
-                feature="HuggingFaceMultiModal",
-            )
-        ) from e
-
-    from .llm_manager import LLMContainer
-
-    return LLMContainer(
-        provider_name=LLMProvider.HUGGINGFACE,
-        llm=HuggingFaceMultiModal.from_model_name(
-            model_name=cfg.llm.huggingface_text_summarize_transform_model,
-            device=cfg.general.device,
-            temperature=0,
-        ),
-    )
-
-
 def _openai_image_summarize_transform(cfg: ConfigManager) -> LLMContainer:
-    from llama_index.multi_modal_llms.openai import OpenAIMultiModal
+    from llama_index.llms.openai import OpenAI
 
     from .llm_manager import LLMContainer
 
     return LLMContainer(
         provider_name=LLMProvider.OPENAI,
-        llm=OpenAIMultiModal(
+        llm=OpenAI(
             model=cfg.llm.openai_image_summarize_transform_model,
             api_base=cfg.general.openai_base_url,
-            temperature=0,
-        ),
-    )
-
-
-def _huggingface_image_summarize_transform(cfg: ConfigManager) -> LLMContainer:
-    try:
-        from llama_index.multi_modal_llms.huggingface import (
-            HuggingFaceMultiModal,  # type: ignore
-        )
-    except ImportError as e:
-        raise ImportError(
-            EXTRA_PKG_NOT_FOUND_MSG.format(
-                pkg="llama-index-multi-modal-llms-huggingface",
-                extra="localmodel",
-                feature="HuggingFaceMultiModal",
-            )
-        ) from e
-
-    from .llm_manager import LLMContainer
-
-    return LLMContainer(
-        provider_name=LLMProvider.HUGGINGFACE,
-        llm=HuggingFaceMultiModal.from_model_name(
-            model_name=cfg.llm.huggingface_image_summarize_transform_model,
-            device=cfg.general.device,
             temperature=0,
         ),
     )

@@ -1,49 +1,53 @@
 VENV := .venv
-
 ifeq ($(RUNNER_OS),Windows)
-	PY := $(VENV)/Scripts/python.exe
+PY := $(VENV)/Scripts/python.exe
 else
-	PY := $(VENV)/bin/python
+PY := $(VENV)/bin/python
 endif
-
-PIP := $(PY) -m pip
+UV := uv
 CLIP_PKG := "clip@git+https://github.com/openai/CLIP.git"
-WHISPER_PKG := "openai-whisper@git+https://github.com/openai/whisper.git"
-TOOL_PY := $(shell uv tool dir)/raggify/bin/python
+TOOL_DIR := $(shell $(UV) tool dir)
+TOOL_PY := $(TOOL_DIR)/raggify/bin/python
+
+.PHONY: venv min api all tools test clean
 
 venv:
-	@if [ ! -d "$(VENV)" ]; then uv venv $(VENV) --prompt raggify-dev; fi
-	uv pip install --python $(PY) --upgrade pip
+	$(UV) sync
 
 min: venv
-	$(PIP) install -e raggify
-	$(PIP) install -e raggify-client
-	
-	uv tool install --reinstall -e ./raggify
-	uv tool install --reinstall -e ./raggify-client
+	$(UV) sync --no-dev
+	$(UV) pip install -e ./raggify-client
+	$(MAKE) tools
 
 api: venv
-	$(PIP) install -e raggify[text,image,audio,video,rerank,postgres,redis,exam,dev]
-	$(PIP) install -e raggify-client
-	
-	uv tool install --reinstall -e ./raggify
-	uv tool install --reinstall -e ./raggify-client
+	$(UV) sync --extra text \
+		--extra image \
+		--extra audio \
+		--extra video \
+		--extra rerank \
+		--extra postgres \
+		--extra redis \
+		--extra exam
+	$(UV) pip install -e ./raggify-client
+	$(MAKE) tools
 
 all: venv
-	$(PIP) install -e raggify[all]
-	$(PIP) install -e raggify-client
-	$(PIP) install $(CLIP_PKG)
-	$(PIP) install $(WHISPER_PKG)
-	
-	uv tool install --reinstall -e ./raggify
-	uv tool install --reinstall -e ./raggify-client
-	uv pip install $(CLIP_PKG)
-	uv pip install $(WHISPER_PKG)
-	uv pip install --python $(TOOL_PY) $(CLIP_PKG)
-	uv pip install --python $(TOOL_PY) $(WHISPER_PKG)
+	$(UV) sync --all-extras
+	$(UV) pip install -e ./raggify-client
+	$(UV) pip install $(CLIP_PKG)
+	$(MAKE) tools
+	$(UV) pip install --python $(TOOL_PY) $(CLIP_PKG)
+
+tools:
+	$(UV) tool install -e ./raggify
+	$(UV) tool install -e ./raggify-client
 
 test:
-	$(PY) -m pytest --maxfail=1 --cov=raggify --cov=raggify_client --cov-report=term-missing --cov-report=xml
+	$(PY) -m pytest --maxfail=1 \
+		--cov=raggify \
+		--cov=raggify_client \
+		--cov-report=term-missing \
+		--cov-report=xml
 
 clean:
 	rm -rf $(VENV)

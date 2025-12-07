@@ -118,28 +118,74 @@ def setup_bedrock_mock(
 
 
 def setup_clap_mock(monkeypatch):
-    class FakeVector(list):
-        def tolist(self):
-            return list(self)
+    import torch
 
-    class FakeCLAPModule:
-        instances: list[FakeCLAPModule] = []
+    class DummyBatch(dict):
+        def to(self, device):
+            return DummyBatch({key: value.to(device) for key, value in self.items()})
 
-        def __init__(self, **kwargs):
-            self.kwargs = kwargs
-            FakeCLAPModule.instances.append(self)
+    class FakeProcessor:
+        def __init__(self) -> None:
+            self.feature_extractor = SimpleNamespace(sampling_rate=48000)
 
-        def load_ckpt(self, model_id):
-            self.model_id = model_id
+        def __call__(self, *, text=None, audios=None, **kwargs):
+            if text is not None:
+                batch = len(text)
+            else:
+                batch = len(audios or [])
+            tensor = torch.ones((batch, 2), dtype=torch.float32)
+            return DummyBatch({"inputs": tensor})
 
-        def get_text_embedding(self, x):
-            return [FakeVector([0.1, 0.2]) for _ in x]
+    def _batch_size(kwargs):
+        if not kwargs:
+            return 1
+        first = next(iter(kwargs.values()))
+        return first.shape[0]
 
-        def get_audio_embedding_from_filelist(self, x):
-            return [FakeVector([0.3, 0.4]) for _ in x]
+    class FakeClapModel:
+        instances: list[FakeClapModel] = []
 
-    instances: list[FakeCLAPModule] = []
-    FakeCLAPModule.instances = instances
-    fake_module = SimpleNamespace(CLAP_Module=FakeCLAPModule, instances=instances)
-    monkeypatch.setitem(sys.modules, "laion_clap", fake_module)
-    return fake_module
+        def __init__(self) -> None:
+            FakeClapModel.instances.append(self)
+            self.device = "cpu"
+
+        def to(self, device):
+            self.device = device
+            return self
+
+        def eval(self):
+            return self
+
+        def get_text_features(self, **kwargs):
+            batch = _batch_size(kwargs)
+            return torch.tensor([[1.0, 0.0]] * batch, dtype=torch.float32)
+
+        def get_audio_features(self, **kwargs):
+            batch = _batch_size(kwargs)
+            return torch.tensor([[0.0, 1.0]] * batch, dtype=torch.float32)
+
+    processor_calls: list[tuple[tuple, dict]] = []
+    model_calls: list[tuple[tuple, dict]] = []
+
+    def fake_processor_from_pretrained(*args, **kwargs):
+        processor_calls.append((args, kwargs))
+        return FakeProcessor()
+
+    def fake_model_from_pretrained(*args, **kwargs):
+        model_calls.append((args, kwargs))
+        return FakeClapModel()
+
+    monkeypatch.setattr(
+        "transformers.AutoProcessor.from_pretrained",
+        fake_processor_from_pretrained,
+    )
+    monkeypatch.setattr(
+        "transformers.ClapModel.from_pretrained",
+        fake_model_from_pretrained,
+    )
+
+    return SimpleNamespace(
+        model_instances=FakeClapModel.instances,
+        processor_calls=processor_calls,
+        model_calls=model_calls,
+    )
