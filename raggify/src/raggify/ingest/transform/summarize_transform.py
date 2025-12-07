@@ -52,6 +52,7 @@ class LLMSummarizeTransform(TransformComponent):
             llm_manager (LLMManager): LLM manager.
         """
         self._llm_manager = llm_manager
+        self._whisper_model = None
 
     def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
         """Synchronous interface.
@@ -167,16 +168,40 @@ just an empty string (no need for unnecessary comments).
 
         return node
 
-    async def _asummarize_audio(self, node: AudioNode) -> BaseNode:
+    async def _asummarize_audio(self, node: AudioNode | VideoNode) -> BaseNode:
         """Summarize an audio node using LLM.
 
         Args:
-            node (AudioNode): Node to summarize.
+            node (AudioNode | VideoNode): Node to summarize.
 
         Returns:
             BaseNode: Node after summarization.
         """
-        logger.debug("audio summarization is not implemented yet")
+        from ...core.const import PKG_NOT_FOUND_MSG
+        from ...core.metadata import MetaKeys as MK
+
+        try:
+            import whisper
+        except ImportError as e:
+            raise ImportError(
+                PKG_NOT_FOUND_MSG.format(
+                    pkg="whisper",
+                    cmd="pip install openai-whisper@git+https://github.com/openai/whisper.git",
+                )
+            ) from e
+
+        try:
+            if self._whisper_model is None:
+                self._whisper_model = whisper.load_model("base")
+
+            result = self._whisper_model.transcribe(node.metadata[MK.FILE_PATH])
+            transcription = result["text"]
+
+            if isinstance(transcription, str):
+                node.text = transcription.strip()
+        except Exception as e:
+            logger.error(f"failed to summarize audio node: {e}")
+
         return node
 
     async def _asummarize_video(self, node: VideoNode) -> BaseNode:
@@ -188,5 +213,12 @@ just an empty string (no need for unnecessary comments).
         Returns:
             BaseNode: Node after summarization.
         """
-        logger.debug("video summarization is not implemented yet")
+        from ...core.exts import Exts
+        from ...core.utils import has_media
+
+        WHISPER_SUPPORTED_EXTS = {Exts.MP4}
+
+        if has_media(node=node, exts=WHISPER_SUPPORTED_EXTS):
+            return await self._asummarize_audio(node)
+
         return node

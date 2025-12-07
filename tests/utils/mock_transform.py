@@ -1,9 +1,20 @@
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
+from types import SimpleNamespace
 from typing import Any, Optional
 
 from tests.utils.mock_embed import DummyAudioBase, DummyMultiModalBase, DummyVideoBase
+
+__all__ = [
+    "DummyLLM",
+    "DummyLLMManager",
+    "DummyWhisperModel",
+    "apply_patch_embedding_bases",
+    "make_dummy_runtime",
+    "patch_dummy_whisper",
+]
 
 
 def apply_patch_embedding_bases(monkeypatch: Any) -> None:
@@ -79,3 +90,31 @@ def make_dummy_runtime(
         text_summarize_transform=text_llm, image_summarize_transform=image_llm
     )
     return DummyRuntime(manager)
+
+
+@dataclass
+class DummyWhisperModel:
+    transcript: str
+    expected_path: Optional[str] = None
+    calls: list[str] = None
+
+    def __post_init__(self) -> None:
+        if self.calls is None:
+            self.calls = []
+
+    def transcribe(self, path: str) -> dict[str, str]:
+        if self.expected_path is not None:
+            assert path == self.expected_path
+
+        self.calls.append(path)
+        return {"text": self.transcript}
+
+
+def patch_dummy_whisper(
+    monkeypatch: Any, transcript: str, expected_path: Optional[str] = None
+) -> DummyWhisperModel:
+    model = DummyWhisperModel(transcript=transcript, expected_path=expected_path)
+    dummy_module = SimpleNamespace(load_model=lambda *_args, **_kwargs: model)
+    monkeypatch.setitem(sys.modules, "whisper", dummy_module)
+
+    return model

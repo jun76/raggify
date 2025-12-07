@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
 from ..config.llm_config import LLMProvider
-from ..core.const import PKG_NOT_FOUND_MSG
+from ..core.const import EXTRA_PKG_NOT_FOUND_MSG
 from ..logger import logger
 
 if TYPE_CHECKING:
@@ -120,7 +120,7 @@ def _huggingface_text_summarize_transform(cfg: ConfigManager) -> LLMContainer:
         )
     except ImportError as e:
         raise ImportError(
-            PKG_NOT_FOUND_MSG.format(
+            EXTRA_PKG_NOT_FOUND_MSG.format(
                 pkg="llama-index-multi-modal-llms-huggingface",
                 extra="localmodel",
                 feature="HuggingFaceMultiModal",
@@ -161,7 +161,7 @@ def _huggingface_image_summarize_transform(cfg: ConfigManager) -> LLMContainer:
         )
     except ImportError as e:
         raise ImportError(
-            PKG_NOT_FOUND_MSG.format(
+            EXTRA_PKG_NOT_FOUND_MSG.format(
                 pkg="llama-index-multi-modal-llms-huggingface",
                 extra="localmodel",
                 feature="HuggingFaceMultiModal",

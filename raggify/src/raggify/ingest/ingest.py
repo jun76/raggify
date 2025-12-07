@@ -73,6 +73,7 @@ def _build_text_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
         DefaultSummarizeTransform,
         EmbedTransform,
         LLMSummarizeTransform,
+        RemoveTempFileTransform,
         SplitTransform,
     )
 
@@ -91,6 +92,7 @@ def _build_text_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
     transformations.append(SplitTransform(rt.cfg.ingest))
     transformations.append(AddChunkIndexTransform())
     transformations.append(EmbedTransform(rt.embed_manager))
+    transformations.append(RemoveTempFileTransform())
 
     return rt.build_pipeline(
         modality=Modality.TEXT,
@@ -112,6 +114,7 @@ def _build_image_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
         DefaultSummarizeTransform,
         EmbedTransform,
         LLMSummarizeTransform,
+        RemoveTempFileTransform,
     )
 
     rt = _rt()
@@ -122,6 +125,7 @@ def _build_image_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
             else DefaultSummarizeTransform()
         ),
         EmbedTransform(rt.embed_manager),
+        RemoveTempFileTransform(),
     ]
 
     return rt.build_pipeline(
@@ -144,6 +148,7 @@ def _build_audio_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
         DefaultSummarizeTransform,
         EmbedTransform,
         LLMSummarizeTransform,
+        RemoveTempFileTransform,
         SplitTransform,
     )
 
@@ -157,6 +162,8 @@ def _build_audio_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
         SplitTransform(rt.cfg.ingest),
     ]
     transformations.append(EmbedTransform(rt.embed_manager))
+    transformations.append(RemoveTempFileTransform())
+
     return rt.build_pipeline(
         modality=Modality.AUDIO,
         transformations=transformations,
@@ -177,6 +184,7 @@ def _build_video_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
         DefaultSummarizeTransform,
         EmbedTransform,
         LLMSummarizeTransform,
+        RemoveTempFileTransform,
         SplitTransform,
     )
 
@@ -190,6 +198,7 @@ def _build_video_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
         SplitTransform(rt.cfg.ingest),
     ]
     transformations.append(EmbedTransform(rt.embed_manager))
+    transformations.append(RemoveTempFileTransform())
 
     return rt.build_pipeline(
         modality=Modality.VIDEO,

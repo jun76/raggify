@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
 from ..config.document_store_config import DocumentStoreConfig, DocumentStoreProvider
-from ..core.const import PJNAME_ALIAS, PKG_NOT_FOUND_MSG
+from ..core.const import EXTRA_PKG_NOT_FOUND_MSG, PJNAME_ALIAS
 from ..core.utils import sanitize_str
 from ..logger import logger
 
@@ -64,7 +64,7 @@ def _redis(cfg: DocumentStoreConfig, table_name: str) -> DocumentStoreManager:
         )
     except ImportError:
         raise ImportError(
-            PKG_NOT_FOUND_MSG.format(
+            EXTRA_PKG_NOT_FOUND_MSG.format(
                 pkg="llama-index-storage-docstore-redis",
                 extra="redis",
                 feature="RedisDocumentStore",
@@ -91,7 +91,7 @@ def _postgres(cfg: DocumentStoreConfig, table_name: str) -> DocumentStoreManager
         )
     except ImportError:
         raise ImportError(
-            PKG_NOT_FOUND_MSG.format(
+            EXTRA_PKG_NOT_FOUND_MSG.format(
                 pkg="llama-index-storage-docstore-postgres",
                 extra="postgres",
                 feature="PostgresDocumentStore",

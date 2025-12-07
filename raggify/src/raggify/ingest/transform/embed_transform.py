@@ -72,25 +72,6 @@ class EmbedTransform(TransformComponent):
 
         return split_nodes
 
-    def _get_media_path(self, node: BaseNode) -> str:
-        """Get media path for embedded non-text content.
-
-        Args:
-            node (BaseNode): Target node.
-
-        Returns:
-            str: Media path.
-        """
-        from ...core.metadata import MetaKeys as MK
-
-        temp = node.metadata.get(MK.TEMP_FILE_PATH)
-        if temp:
-            # Temp file fetched
-            return temp
-
-        # Local file
-        return node.metadata[MK.FILE_PATH]
-
     async def _aembed_text(self, nodes: list[BaseNode]) -> list[BaseNode]:
         """Embed a text node.
 
@@ -123,6 +104,7 @@ class EmbedTransform(TransformComponent):
             list[BaseNode]: Embedded image nodes.
         """
         from ...core.exts import Exts
+        from ...core.metadata import MetaKeys as MK
         from ...core.utils import has_media
 
         async def batch_image(paths: list[ImageType]) -> list[Embedding]:
@@ -130,7 +112,7 @@ class EmbedTransform(TransformComponent):
 
         def extractor(node: BaseNode) -> Optional[str]:
             if has_media(node=node, exts=Exts.IMAGE):
-                return self._get_media_path(node)
+                return node.metadata[MK.FILE_PATH]
 
             logger.warning("image is not found, skipped")
             return None
@@ -147,6 +129,7 @@ class EmbedTransform(TransformComponent):
             list[BaseNode]: Embedded audio nodes.
         """
         from ...core.exts import Exts
+        from ...core.metadata import MetaKeys as MK
         from ...core.utils import has_media
 
         async def batch_audio(paths: list[AudioType]) -> list[Embedding]:
@@ -154,7 +137,7 @@ class EmbedTransform(TransformComponent):
 
         def extractor(node: BaseNode) -> Optional[str]:
             if has_media(node=node, exts=Exts.AUDIO):
-                return self._get_media_path(node)
+                return node.metadata[MK.FILE_PATH]
 
             logger.warning("audio is not found, skipped")
             return None
@@ -171,6 +154,7 @@ class EmbedTransform(TransformComponent):
             list[BaseNode]: Embedded video nodes.
         """
         from ...core.exts import Exts
+        from ...core.metadata import MetaKeys as MK
         from ...core.utils import has_media
 
         async def batch_video(paths: list[VideoType]) -> list[Embedding]:
@@ -178,7 +162,7 @@ class EmbedTransform(TransformComponent):
 
         def extractor(node: BaseNode) -> Optional[str]:
             if has_media(node=node, exts=Exts.VIDEO):
-                return self._get_media_path(node)
+                return node.metadata[MK.FILE_PATH]
 
             logger.warning("video is not found, skipped")
             return None
@@ -229,11 +213,5 @@ class EmbedTransform(TransformComponent):
         # Write back to nodes
         for i, vec in zip(backrefs, vecs):
             nodes[i].embedding = vec
-
-            if nodes[i].metadata.get(MK.TEMP_FILE_PATH):
-                # Overwrite file_path with base_source for nodes with temp files
-                # (either becomes empty or restores original path kept by
-                # custom readers such as PDF)
-                nodes[i].metadata[MK.FILE_PATH] = nodes[i].metadata[MK.BASE_SOURCE]
 
         return nodes

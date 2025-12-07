@@ -8,7 +8,7 @@ from typing import Any, Iterable, Sequence
 from llama_index.core.readers.base import BaseReader
 from llama_index.core.schema import Document
 
-from ....core.const import PKG_NOT_FOUND_MSG
+from ....core.const import EXTRA_PKG_NOT_FOUND_MSG
 from ....core.exts import Exts
 from ....core.metadata import BasicMetaData
 from ....core.utils import get_temp_file_path_from
@@ -63,7 +63,7 @@ class VideoReader(BaseReader):
             import ffmpeg  # type: ignore
         except ImportError:
             raise ImportError(
-                PKG_NOT_FOUND_MSG.format(
+                EXTRA_PKG_NOT_FOUND_MSG.format(
                     pkg="ffmpeg-python (additionally, ffmpeg itself must be installed separately)",
                     extra="ffmpeg",
                     feature="ffmpeg",
@@ -111,7 +111,7 @@ class VideoReader(BaseReader):
             import ffmpeg  # type: ignore
         except ImportError:
             raise ImportError(
-                PKG_NOT_FOUND_MSG.format(
+                EXTRA_PKG_NOT_FOUND_MSG.format(
                     pkg="ffmpeg-python (additionally, ffmpeg itself must be installed separately)",
                     extra="ffmpeg",
                     feature="ffmpeg",

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Optional, Type
 from llama_index.core.schema import BaseNode, TransformComponent
 
 from ...config.ingest_config import IngestConfig
-from ...core.const import PKG_NOT_FOUND_MSG
+from ...core.const import EXTRA_PKG_NOT_FOUND_MSG
 from ...core.event import async_loop_runner
 from ...logger import logger
 
@@ -176,7 +176,7 @@ class SplitTransform(TransformComponent):
             import ffmpeg  # type: ignore
         except ImportError:
             raise ImportError(
-                PKG_NOT_FOUND_MSG.format(
+                EXTRA_PKG_NOT_FOUND_MSG.format(
                     pkg="ffmpeg-python (additionally, ffmpeg itself must be installed separately)",
                     extra="ffmpeg",
                     feature="ffmpeg",
@@ -207,7 +207,7 @@ class SplitTransform(TransformComponent):
             import ffmpeg  # type: ignore
         except ImportError:
             raise ImportError(
-                PKG_NOT_FOUND_MSG.format(
+                EXTRA_PKG_NOT_FOUND_MSG.format(
                     pkg="ffmpeg-python (additionally, ffmpeg itself must be installed separately)",
                     extra="ffmpeg",
                     feature="ffmpeg",

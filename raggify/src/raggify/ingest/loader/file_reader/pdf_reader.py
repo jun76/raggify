@@ -6,11 +6,11 @@ from typing import TYPE_CHECKING, Any, Iterable
 from llama_index.core.readers.base import BaseReader
 from llama_index.core.schema import Document
 
-from ....core.const import PKG_NOT_FOUND_MSG
+from ....core.const import EXTRA_PKG_NOT_FOUND_MSG
 from ....core.exts import Exts
 from ....logger import logger
 
-_PYMUPDF_NOT_FOUND_MSG = PKG_NOT_FOUND_MSG.format(
+_PYMUPDF_NOT_FOUND_MSG = EXTRA_PKG_NOT_FOUND_MSG.format(
     pkg="pymupdf",
     extra="image",
     feature="MultiPDFReader",

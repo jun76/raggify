@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
 from ..config.vector_store_config import VectorStoreConfig, VectorStoreProvider
-from ..core.const import PJNAME_ALIAS, PKG_NOT_FOUND_MSG
+from ..core.const import EXTRA_PKG_NOT_FOUND_MSG, PJNAME_ALIAS
 from ..core.utils import sanitize_str
 from ..document_store.document_store_manager import DocumentStoreManager
 from ..llama_like.core.schema import Modality
@@ -132,7 +132,7 @@ def _pgvector(
         from llama_index.vector_stores.postgres import PGVectorStore  # type: ignore
     except ImportError:
         raise ImportError(
-            PKG_NOT_FOUND_MSG.format(
+            EXTRA_PKG_NOT_FOUND_MSG.format(
                 pkg="llama-index-vector-stores-postgres",
                 extra="postgres",
                 feature="PGVectorStore",
@@ -191,7 +191,7 @@ def _redis(cfg: VectorStoreConfig, table_name: str, dim: int) -> VectorStoreCont
         from redisvl.schema import IndexSchema  # type: ignore
     except ImportError:
         raise ImportError(
-            PKG_NOT_FOUND_MSG.format(
+            EXTRA_PKG_NOT_FOUND_MSG.format(
                 pkg="llama-index-vector-stores-redis",
                 extra="redis",
                 feature="RedisVectorStore",

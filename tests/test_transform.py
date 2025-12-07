@@ -24,6 +24,7 @@ from raggify.ingest.transform import (
     DefaultSummarizeTransform,
     EmbedTransform,
     LLMSummarizeTransform,
+    RemoveTempFileTransform,
     SplitTransform,
 )
 from raggify.llama_like.core.schema import AudioNode, Modality, VideoNode
@@ -39,6 +40,7 @@ from tests.utils.mock_transform import (
     DummyLLM,
     apply_patch_embedding_bases,
     make_dummy_runtime,
+    patch_dummy_whisper,
 )
 from tests.utils.node_factory import make_sample_text_node
 
@@ -207,7 +209,6 @@ def test_embed_transform_writes_text_embeddings():
     result = asyncio.run(transform.acall([node, blank]))
 
     assert result[0].embedding == [1.0, 1.0]
-    assert result[0].metadata["file_path"] == "/orig/path.txt"
     assert result[1].embedding is None
 
 
@@ -251,6 +252,22 @@ def test_embed_transform_handles_video_nodes():
     nodes = asyncio.run(transform.acall([video]))
 
     assert nodes[0].embedding == [0.3, 0.3]
+
+
+def test_remove_temp_file_transform_removes_files(tmp_path):
+    temp = tmp_path / "temp.txt"
+    temp.write_text("payload")
+
+    node = make_sample_text_node()
+    node.metadata[MK.TEMP_FILE_PATH] = str(temp)
+    node.metadata[MK.BASE_SOURCE] = "/orig/path.txt"
+    node.metadata[MK.FILE_PATH] = str(temp)
+
+    transform = RemoveTempFileTransform()
+    result = transform([node])
+
+    assert not temp.exists()
+    assert result[0].metadata[MK.FILE_PATH] == "/orig/path.txt"
 
 
 def test_default_summarize_transform_returns_nodes():
@@ -305,15 +322,40 @@ def test_llm_summarize_transform_summarizes_image():
     assert image_llm.calls
 
 
-def test_llm_summarize_transform_audio_and_video_noop():
-    audio = AudioNode(id_="audio", metadata={})
-    video = VideoNode(id_="video", metadata={})
+def test_llm_summarize_transform_transcribes_audio(monkeypatch, tmp_path):
+    audio_path = tmp_path / "sample.wav"
+    audio = AudioNode(id_="audio", metadata={MK.FILE_PATH: str(audio_path)})
     runtime = make_dummy_runtime()
     summarize_transform = LLMSummarizeTransform(cast("LLMManager", runtime.llm_manager))
-    result = asyncio.run(summarize_transform.acall([audio, video]))
 
-    assert result[0] is audio
-    assert result[1] is video
+    transcript = " transcribed audio "
+    model = patch_dummy_whisper(
+        monkeypatch, transcript=transcript, expected_path=str(audio_path)
+    )
+
+    result = asyncio.run(summarize_transform.acall([audio]))
+    node = cast(AudioNode, result[0])
+
+    assert node.text == transcript.strip()
+    assert model.calls == [str(audio_path)]
+
+
+def test_llm_summarize_transform_transcribes_video(monkeypatch, tmp_path):
+    video_path = tmp_path / "sample.mp4"
+    video = VideoNode(id_="video", metadata={MK.FILE_PATH: str(video_path)})
+    runtime = make_dummy_runtime()
+    summarize_transform = LLMSummarizeTransform(cast("LLMManager", runtime.llm_manager))
+
+    transcript = " video narration "
+    model = patch_dummy_whisper(
+        monkeypatch, transcript=transcript, expected_path=str(video_path)
+    )
+
+    result = asyncio.run(summarize_transform.acall([video]))
+    node = cast(VideoNode, result[0])
+
+    assert node.text == transcript.strip()
+    assert model.calls == [str(video_path)]
 
 
 def test_llm_summarize_transform_rejects_unknown_node():

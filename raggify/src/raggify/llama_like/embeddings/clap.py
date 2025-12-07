@@ -65,10 +65,10 @@ class ClapEmbedding(AudioEmbedding):
         try:
             import laion_clap  # type: ignore
         except ImportError:
-            from ...core.const import PKG_NOT_FOUND_MSG
+            from ...core.const import EXTRA_PKG_NOT_FOUND_MSG
 
             raise ImportError(
-                PKG_NOT_FOUND_MSG.format(
+                EXTRA_PKG_NOT_FOUND_MSG.format(
                     pkg="laion-clap",
                     extra="localmodel",
                     feature="ClapEmbedding",

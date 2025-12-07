@@ -9,7 +9,7 @@ from ..config.config_manager import ConfigManager
 from ..config.embed_config import EmbedConfig
 from ..config.embed_config import EmbedModel as EM
 from ..config.embed_config import EmbedProvider
-from ..core.const import PKG_NOT_FOUND_MSG
+from ..core.const import EXTRA_PKG_NOT_FOUND_MSG
 from ..llama_like.core.schema import Modality
 
 if TYPE_CHECKING:
@@ -192,7 +192,7 @@ def _cohere(model: dict[str, Any], extra: str) -> EmbedContainer:
         from llama_index.embeddings.cohere.base import CohereEmbedding  # type: ignore
     except ImportError:
         raise ImportError(
-            PKG_NOT_FOUND_MSG.format(
+            EXTRA_PKG_NOT_FOUND_MSG.format(
                 pkg="llama-index-embeddings-cohere",
                 extra=extra,
                 feature="CohereEmbedding",
@@ -225,7 +225,7 @@ def _clip(model: dict[str, Any], extra: str, device: str) -> EmbedContainer:
         from llama_index.embeddings.clip import ClipEmbedding  # type: ignore
     except ImportError:
         raise ImportError(
-            PKG_NOT_FOUND_MSG.format(
+            EXTRA_PKG_NOT_FOUND_MSG.format(
                 pkg="llama-index-embeddings-clip",
                 extra=extra,
                 feature="ClipEmbedding",
@@ -291,7 +291,7 @@ def _huggingface(model: dict[str, Any], extra: str, device: str) -> EmbedContain
         )
     except ImportError:
         raise ImportError(
-            PKG_NOT_FOUND_MSG.format(
+            EXTRA_PKG_NOT_FOUND_MSG.format(
                 pkg="llama-index-embeddings-huggingface",
                 extra=extra,
                 feature="HuggingFaceEmbedding",
@@ -333,7 +333,7 @@ def _voyage(model: dict[str, Any], extra: str) -> EmbedContainer:
         from llama_index.embeddings.voyageai.base import VoyageEmbedding  # type: ignore
     except ImportError:
         raise ImportError(
-            PKG_NOT_FOUND_MSG.format(
+            EXTRA_PKG_NOT_FOUND_MSG.format(
                 pkg="llama-index-embeddings-voyageai",
                 extra=extra,
                 feature="VoyageEmbedding",

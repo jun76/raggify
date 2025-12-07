@@ -52,10 +52,10 @@ class AudioReader(BaseReader):
         try:
             import ffmpeg  # type: ignore
         except ImportError:
-            from ....core.const import PKG_NOT_FOUND_MSG
+            from ....core.const import EXTRA_PKG_NOT_FOUND_MSG
 
             raise ImportError(
-                PKG_NOT_FOUND_MSG.format(
+                EXTRA_PKG_NOT_FOUND_MSG.format(
                     pkg="ffmpeg-python (additionally, ffmpeg itself must be installed separately)",
                     extra="audio",
                     feature="AudioReader",
