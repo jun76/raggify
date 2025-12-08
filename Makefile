@@ -8,6 +8,8 @@ UV := uv
 CLIP_PKG := "clip@git+https://github.com/openai/CLIP.git"
 TOOL_DIR := $(shell $(UV) tool dir)
 TOOL_PY := $(TOOL_DIR)/raggify/bin/python
+TOOL_PIP := $(UV) pip install --python $(TOOL_PY)
+RAGGIFY_ALL_EXTRA := './raggify[all]'
 
 .PHONY: venv min api all tools test clean
 
@@ -33,10 +35,13 @@ all: venv
 	$(UV) sync --all-packages --extra all
 	$(MAKE) tools
 	$(UV) pip install $(CLIP_PKG)
-	$(UV) pip install --python $(TOOL_PY) $(CLIP_PKG)
+	$(TOOL_PIP) -e $(RAGGIFY_ALL_EXTRA)
+	$(TOOL_PIP) $(CLIP_PKG)
 
 tools:
+	$(UV) tool uninstall raggify
 	$(UV) tool install -e ./raggify
+	$(UV) tool uninstall raggify-client
 	$(UV) tool install -e ./raggify-client
 
 upgrade-all:

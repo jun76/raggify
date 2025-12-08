@@ -134,7 +134,7 @@ class ClapEmbedding(AudioEmbedding):
         """
         audio_arrays = self._prepare_audio_inputs(audio_file_paths)
         model_inputs = self._processor(
-            audios=audio_arrays,
+            audio=audio_arrays,
             sampling_rate=self._target_sampling_rate,
             return_tensors="pt",
             padding=True,

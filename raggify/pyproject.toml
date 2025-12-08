@@ -48,6 +48,7 @@ dependencies = [
     "python-multipart",
     "raggify-client",
     "requests",
+    "typer",
     "uvicorn[standard]",
     "wikipedia",
 ]
@@ -83,6 +84,7 @@ localmodel = [
     "llama-index-llms-huggingface==0.6.1",
     "llama-index-postprocessor-flag-embedding-reranker",
     "sentence-transformers==2.7.0",
+    "soundfile",
     "torch==2.9.0",
     "torchaudio==2.9.0",
     "torchvision==0.24.0",
@@ -131,6 +133,7 @@ all = [
     "pytest-cov",
     "pymupdf",
     "sentence-transformers==2.7.0",
+    "soundfile",
     "streamlit",
     "torch==2.9.0",
     "torchaudio==2.9.0",
