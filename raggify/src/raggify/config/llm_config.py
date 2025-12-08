@@ -21,7 +21,7 @@ class LLMConfig:
     openai_image_summarize_transform_model: str = "gpt-4o-mini"
 
     # Audio
-    clap_audio_summarize_transform_model: str = "openai/whisper-base"
+    openai_audio_summarize_transform_model: str = "gpt-4o-audio-preview"
 
     # Video
-    clap_video_summarize_transform_model: str = "openai/whisper-base"
+    openai_video_summarize_transform_model: str = "gpt-4o-audio-preview"

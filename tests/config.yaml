@@ -11,7 +11,7 @@ general:
   audio_embed_provider: bedrock
   video_embed_provider: bedrock
   text_summarize_transform_provider: openai
-  image_summarize_transform_provider: openai
+  image_summarize_transform_provider: null
   audio_summarize_transform_provider: null
   video_summarize_transform_provider: null
   rerank_provider: null
@@ -121,9 +121,9 @@ ingest:
   audio_chunk_seconds: 25
   video_chunk_seconds: 25
   additional_exts:
-    - .rst
     - .py
     - .c
+    - .rst
   user_agent: raggify
   load_asset: true
   req_per_sec: 2
@@ -173,6 +173,6 @@ retrieve:
   fusion_lambda_bm25: 0.5
 llm:
   openai_text_summarize_transform_model: gpt-4o-mini
-  huggingface_text_summarize_transform_model: Qwen/Qwen2-VL-2B-Instruct
   openai_image_summarize_transform_model: gpt-4o-mini
-  huggingface_image_summarize_transform_model: Qwen/Qwen2-VL-2B-Instruct
+  openai_audio_summarize_transform_model: gpt-4o-audio-preview
+  openai_video_summarize_transform_model: gpt-4o-audio-preview

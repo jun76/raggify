@@ -1,13 +1,19 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Sequence
 
+from llama_index.core.llms import AudioBlock, ChatMessage, ImageBlock, TextBlock
 from llama_index.core.schema import BaseNode, TransformComponent
 
 from ...core.event import async_loop_runner
+from ...core.metadata import MetaKeys as MK
 from ...logger import logger
 
+_BlockSequence = Sequence[TextBlock | ImageBlock | AudioBlock]
+
+
 if TYPE_CHECKING:
+    from llama_index.core.llms import LLM
     from llama_index.core.schema import ImageNode, TextNode
 
     from ...llama_like.core.schema import AudioNode, VideoNode
@@ -52,7 +58,6 @@ class LLMSummarizeTransform(TransformComponent):
             llm_manager (LLMManager): LLM manager.
         """
         self._llm_manager = llm_manager
-        self._whisper_model = None
 
     def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
         """Synchronous interface.
@@ -104,7 +109,7 @@ class LLMSummarizeTransform(TransformComponent):
         """
         return cls.__name__
 
-    async def _asummarize_text(self, node: TextNode, **kwargs) -> BaseNode:
+    async def _asummarize_text(self, node: TextNode) -> BaseNode:
         """Summarize a text node using LLM.
 
         Args:
@@ -113,7 +118,6 @@ class LLMSummarizeTransform(TransformComponent):
         Returns:
             BaseNode: Node after summarization.
         """
-        llm = self._llm_manager.text_summarize_transform
         prompt = """
 Please extract only the main text useful for semantic search from the following text.
 Remove advertisements, copyright notices, 
@@ -125,20 +129,21 @@ DO NOT SUMMARIZE its content SEMANTICALLY here.
 If no useful text is available, please return ONLY an empty string (no need for unnecessary comments).
 
 Original text:
-{text}
+{original_text}
 """
-        try:
-            resp = await llm.acomplete(
-                prompt=prompt.format(text=node.text), image_documents=[]
-            )
-            node.text = resp.text.strip()
-        except Exception as e:
-            logger.error(f"failed to summarize text node: {e}")
-            return node
+        llm = self._llm_manager.text_summarize_transform
 
-        logger.debug(f"summary: {node.text[:50]}...")
+        def _build_blocks(target: TextNode) -> list[TextBlock]:
+            return [
+                TextBlock(text=prompt.format(original_text=target.text)),
+            ]
 
-        return node
+        return await self._summarize_with_llm(
+            node=node,
+            llm=llm,
+            block_builder=_build_blocks,
+            modality="text",
+        )
 
     async def _asummarize_image(self, node: ImageNode) -> BaseNode:
         """Summarize an image node using LLM.
@@ -149,60 +154,62 @@ Original text:
         Returns:
             BaseNode: Node after summarization.
         """
-        llm = self._llm_manager.image_summarize_transform
+        from pathlib import Path
+
         prompt = """
-Please provide a concise description of the content of the following image for 
-semantic search purposes. If the image is not describable, please return 
-just an empty string (no need for unnecessary comments).
+Please provide a concise description of the image for semantic search purposes. 
+If the image is not describable, 
+please return just an empty string (no need for unnecessary comments).
 """
-        try:
-            resp = await llm.acomplete(prompt=prompt, image_documents=[node])
-            caption = resp.text.strip()
-            if caption:
-                node.text = caption
-        except Exception as e:
-            logger.error(f"failed to summarize image node: {e}")
-            return node
+        llm = self._llm_manager.image_summarize_transform
 
-        logger.debug(f"caption: {caption}")
+        def _build_blocks(target: BaseNode) -> list[TextBlock | ImageBlock]:
+            path = target.metadata[MK.FILE_PATH]
+            return [
+                ImageBlock(path=Path(path)),
+                TextBlock(text=prompt),
+            ]
 
-        return node
+        return await self._summarize_with_llm(
+            node=node,
+            llm=llm,
+            block_builder=_build_blocks,
+            modality="image",
+        )
 
-    async def _asummarize_audio(self, node: AudioNode | VideoNode) -> BaseNode:
+    async def _asummarize_audio(self, node: AudioNode) -> BaseNode:
         """Summarize an audio node using LLM.
 
         Args:
-            node (AudioNode | VideoNode): Node to summarize.
+            node (AudioNode): Node to summarize.
 
         Returns:
             BaseNode: Node after summarization.
         """
-        from ...core.const import PKG_NOT_FOUND_MSG
-        from ...core.metadata import MetaKeys as MK
+        from pathlib import Path
 
-        try:
-            import whisper
-        except ImportError as e:
-            raise ImportError(
-                PKG_NOT_FOUND_MSG.format(
-                    pkg="whisper",
-                    cmd="pip install openai-whisper@git+https://github.com/openai/whisper.git",
-                )
-            ) from e
+        from ...core.exts import Exts
 
-        try:
-            if self._whisper_model is None:
-                self._whisper_model = whisper.load_model("base")
+        prompt = """
+Please provide a concise description of the audio for semantic search purposes. 
+If the audio is not describable, 
+please return just an empty string (no need for unnecessary comments).
+"""
+        llm = self._llm_manager.audio_summarize_transform
 
-            result = self._whisper_model.transcribe(node.metadata[MK.FILE_PATH])
-            transcription = result["text"]
+        def _build_blocks(target: BaseNode) -> list[TextBlock | AudioBlock]:
+            path = target.metadata[MK.FILE_PATH]
+            return [
+                AudioBlock(path=Path(path), format=Exts.get_ext(uri=path, dot=False)),
+                TextBlock(text=prompt),
+            ]
 
-            if isinstance(transcription, str):
-                node.text = transcription.strip()
-        except Exception as e:
-            logger.error(f"failed to summarize audio node: {e}")
-
-        return node
+        return await self._summarize_with_llm(
+            node=node,
+            llm=llm,
+            block_builder=_build_blocks,
+            modality="audio",
+        )
 
     async def _asummarize_video(self, node: VideoNode) -> BaseNode:
         """Summarize a video node using LLM.
@@ -213,12 +220,50 @@ just an empty string (no need for unnecessary comments).
         Returns:
             BaseNode: Node after summarization.
         """
-        from ...core.exts import Exts
-        from ...core.utils import has_media
+        logger.warning("video summarization is not implemented yet")
+        return node
 
-        WHISPER_SUPPORTED_EXTS = {Exts.MP4}
+    async def _summarize_with_llm(
+        self,
+        node: TextNode,
+        llm: LLM,
+        block_builder: Callable[[TextNode], _BlockSequence],
+        modality: str,
+    ) -> BaseNode:
+        """Run summarization with provided LLM and block builder.
 
-        if has_media(node=node, exts=WHISPER_SUPPORTED_EXTS):
-            return await self._asummarize_audio(node)
+        Args:
+            node (TextNode): Target node.
+            llm (LLM): LLM instance to use.
+            block_builder (Callable[[TextNode], _BlockSequence]):
+                Callable that returns chat message blocks for the node.
+            modality (str): Modality label for logging.
+
+        Returns:
+            BaseNode: Node after summarization.
+        """
+        try:
+            blocks = list(block_builder(node))
+        except Exception as e:
+            logger.error(f"failed to build {modality} summary blocks: {e}")
+            return node
+
+        messages = [
+            ChatMessage(
+                role="user",
+                blocks=blocks,
+            )
+        ]
+
+        summary = ""
+        try:
+            response = await llm.achat(messages)
+            summary = (response.message.content or "").strip()
+            if summary:
+                node.text = summary
+        except Exception as e:
+            logger.error(f"failed to summarize {modality} node: {e}")
+
+        logger.debug(f"summarized {modality} node: {summary[:50]}...")
 
         return node

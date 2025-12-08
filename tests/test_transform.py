@@ -40,7 +40,6 @@ from tests.utils.mock_transform import (
     DummyLLM,
     apply_patch_embedding_bases,
     make_dummy_runtime,
-    patch_dummy_whisper,
 )
 from tests.utils.node_factory import make_sample_text_node
 
@@ -322,40 +321,32 @@ def test_llm_summarize_transform_summarizes_image():
     assert image_llm.calls
 
 
-def test_llm_summarize_transform_transcribes_audio(monkeypatch, tmp_path):
+def test_llm_summarize_transform_summarizes_audio(tmp_path):
     audio_path = tmp_path / "sample.wav"
+    audio_path.write_bytes(b"\x00")
     audio = AudioNode(id_="audio", metadata={MK.FILE_PATH: str(audio_path)})
-    runtime = make_dummy_runtime()
+    audio_llm = DummyLLM(" transcribed audio ")
+    runtime = make_dummy_runtime(audio_llm=audio_llm)
     summarize_transform = LLMSummarizeTransform(cast("LLMManager", runtime.llm_manager))
-
-    transcript = " transcribed audio "
-    model = patch_dummy_whisper(
-        monkeypatch, transcript=transcript, expected_path=str(audio_path)
-    )
 
     result = asyncio.run(summarize_transform.acall([audio]))
     node = cast(AudioNode, result[0])
 
-    assert node.text == transcript.strip()
-    assert model.calls == [str(audio_path)]
+    assert node.text == "transcribed audio"
+    assert audio_llm.calls
 
 
-def test_llm_summarize_transform_transcribes_video(monkeypatch, tmp_path):
+def test_llm_summarize_transform_logs_video_not_implemented(tmp_path):
     video_path = tmp_path / "sample.mp4"
+    video_path.write_text("")  # create placeholder file
     video = VideoNode(id_="video", metadata={MK.FILE_PATH: str(video_path)})
     runtime = make_dummy_runtime()
     summarize_transform = LLMSummarizeTransform(cast("LLMManager", runtime.llm_manager))
 
-    transcript = " video narration "
-    model = patch_dummy_whisper(
-        monkeypatch, transcript=transcript, expected_path=str(video_path)
-    )
-
     result = asyncio.run(summarize_transform.acall([video]))
     node = cast(VideoNode, result[0])
 
-    assert node.text == transcript.strip()
-    assert model.calls == [str(video_path)]
+    assert node.text == ""
 
 
 def test_llm_summarize_transform_rejects_unknown_node():
