@@ -12,15 +12,14 @@ TOOL_PY := $(TOOL_DIR)/raggify/bin/python
 .PHONY: venv min api all tools test clean
 
 venv:
-	$(UV) sync
+	$(UV) sync --all-packages
 
 min: venv
-	$(UV) sync --no-dev
-	$(UV) pip install -e ./raggify-client
 	$(MAKE) tools
 
 api: venv
-	$(UV) sync --extra text \
+	$(UV) sync --all-packages \
+		--extra text \
 		--extra image \
 		--extra audio \
 		--extra video \
@@ -28,19 +27,21 @@ api: venv
 		--extra postgres \
 		--extra redis \
 		--extra exam
-	$(UV) pip install -e ./raggify-client
 	$(MAKE) tools
 
 all: venv
-	$(UV) sync --all-extras
-	$(UV) pip install -e ./raggify-client
-	$(UV) pip install $(CLIP_PKG)
+	$(UV) sync --all-packages --extra all
 	$(MAKE) tools
+	$(UV) pip install $(CLIP_PKG)
 	$(UV) pip install --python $(TOOL_PY) $(CLIP_PKG)
 
 tools:
 	$(UV) tool install -e ./raggify
 	$(UV) tool install -e ./raggify-client
+
+upgrade-all:
+	$(UV) lock --upgrade
+	$(MAKE) all
 
 test:
 	$(PY) -m pytest --maxfail=1 \
