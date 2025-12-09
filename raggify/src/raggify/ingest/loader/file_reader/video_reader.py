@@ -25,16 +25,12 @@ class VideoReader(BaseReader):
         *,
         fps: int = 1,
         audio_sample_rate: int = 16000,
-        image_suffix: str = Exts.PNG,
-        audio_suffix: str = Exts.WAV,
     ) -> None:
         """Constructor.
 
         Args:
             fps (int, optional): Frames per second to extract. Defaults to 1.
             audio_sample_rate (int, optional): Sample rate for audio extraction. Defaults to 16000.
-            image_suffix (str, optional): Frame image extension. Defaults to Exts.PNG.
-            audio_suffix (str, optional): Audio file extension. Defaults to Exts.WAV.
 
         Raises:
             ImportError: If ffmpeg is not installed.
@@ -44,8 +40,6 @@ class VideoReader(BaseReader):
 
         self._fps = fps
         self._audio_sample_rate = audio_sample_rate
-        self._image_suffix = image_suffix
-        self._audio_suffix = audio_suffix
 
     def _extract_frames(self, src: str) -> list[Path]:
         """Extract frame images from a video.
@@ -59,37 +53,11 @@ class VideoReader(BaseReader):
         Returns:
             list[Path]: Extracted frame paths.
         """
-        try:
-            import ffmpeg  # type: ignore
-        except ImportError:
-            raise ImportError(
-                EXTRA_PKG_NOT_FOUND_MSG.format(
-                    pkg="ffmpeg-python (additionally, ffmpeg itself must be installed separately)",
-                    extra="ffmpeg",
-                    feature="ffmpeg",
-                )
-            )
-
-        base_path = Path(get_temp_file_path_from(source=src, suffix=self._image_suffix))
-        temp_dir = base_path.parent / f"{base_path.stem}_frames"
-
-        if temp_dir.exists():
-            shutil.rmtree(temp_dir)
-
-        temp_dir.mkdir(parents=True, exist_ok=True)
-        pattern = str(temp_dir / f"{base_path.stem}_%05d{self._image_suffix}")
-        try:
-            (
-                ffmpeg.input(src)
-                .filter("fps", self._fps)
-                .output(pattern, format="image2", vcodec="png")
-                .overwrite_output()
-                .run(quiet=True)
-            )
-        except Exception as e:
-            logger.warning(f"ffmpeg frame extraction from {src} failure: {e}")
-            return []
-
+        from ...util import MediaConverter
+        base_path = Path(get_temp_file_path_from(source=src, suffix=Exts.PNG))
+        converter = MediaConverter()
+        temp_dir = converter.extract_png_frames_from_video(
+            src=src, frame_rate=self._fps, 
         frames = sorted(temp_dir.glob(f"{base_path.stem}_*{self._image_suffix}"))
         logger.debug(f"extracted {len(frames)} frame(s) from {src}")
 
