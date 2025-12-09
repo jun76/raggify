@@ -1,11 +1,13 @@
 from __future__ import annotations
+from pathlib import Path
+from typing import Optional
 
 from llama_index.core.schema import BaseNode
 
 from .exts import Exts
 from .metadata import MetaKeys as MK
 
-__all__ = ["sanitize_str", "get_temp_file_path_from", "has_media"]
+__all__ = ["sanitize_str", "get_temp_path", "has_media"]
 
 
 def sanitize_str(s: str, hash: bool = False) -> str:
@@ -40,12 +42,12 @@ def sanitize_str(s: str, hash: bool = False) -> str:
     # Replace all symbols with underscores
     sanitized = re.sub(r"[^a-zA-Z0-9_]", "_", s)
 
-    l = len(sanitized)
-    if l < MIN_LEN:
+    sanitized_len = len(sanitized)
+    if sanitized_len < MIN_LEN:
         # Pad with underscores if too short
         return f"{sanitized:_>{MIN_LEN}}"
 
-    if l > MAX_LEN:
+    if sanitized_len > MAX_LEN:
         # Too long
         if hash:
             # Hash the string
@@ -59,18 +61,18 @@ def sanitize_str(s: str, hash: bool = False) -> str:
     return sanitized
 
 
-def get_temp_file_path_from(source: str, suffix: str) -> str:
-    """Get a temporary file path uniquely tied to the source.
+def get_temp_path(seed: str, suffix: Optional[str] = None) -> Path:
+    """Get a temporary file or directory path uniquely tied to the source.
 
     Intended for managing assets extracted from PDFs, etc. Avoid random strings
     so hashes stay stable when metadata contains the path.
 
     Args:
-        source (str): Path or URL. Include page numbers, etc., if needed for uniqueness.
-        suffix (str): Extension or suffix.
+        seed (str): Path or URL. Include page numbers, etc., if needed for uniqueness.
+        suffix (Optional[str], optional): Extension or suffix. Defaults to None.
 
     Returns:
-        str: Temporary file path.
+        Path: Temporary file or directory path.
     """
     import hashlib
     import tempfile
@@ -79,9 +81,15 @@ def get_temp_file_path_from(source: str, suffix: str) -> str:
     from .const import TEMP_FILE_PREFIX
 
     temp_dir = Path(tempfile.gettempdir())
-    filename = TEMP_FILE_PREFIX + hashlib.md5(source.encode()).hexdigest() + suffix
+    base_name = TEMP_FILE_PREFIX + hashlib.md5(seed.encode()).hexdigest()
+    if suffix is None:
+        temp_path = temp_dir / base_name
+        temp_path.mkdir(parents=True, exist_ok=True)
+    else:
+        filename = base_name + suffix
+        temp_path = temp_dir / filename
 
-    return str(temp_dir / filename)
+    return temp_path
 
 
 def has_media(node: BaseNode, exts: set[str]) -> bool:

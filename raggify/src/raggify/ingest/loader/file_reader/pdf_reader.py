@@ -133,7 +133,7 @@ class MultiPDFReader(BaseReader):
             raise ImportError(_PYMUPDF_NOT_FOUND_MSG)
 
         from ....core.metadata import BasicMetaData
-        from ....core.utils import get_temp_file_path_from
+        from ....core.utils import get_temp_path
 
         docs = []
         for page_no in range(pdf.page_count):
@@ -153,12 +153,12 @@ class MultiPDFReader(BaseReader):
                     if (
                         pix.n - (1 if pix.alpha else 0) == 4
                     ):  # CMYK (regardless of alpha)
-                        old_pix = pix
                         pix = fitz.Pixmap(fitz.csRGB, pix)
-                        del old_pix
 
-                    temp = get_temp_file_path_from(
-                        source=f"{path}:{page_no}:{image_no}", suffix=Exts.PNG
+                    temp = str(
+                        get_temp_path(
+                            seed=f"{path}:{page_no}:{image_no}", suffix=Exts.PNG
+                        )
                     )
                     pix.save(temp)
 

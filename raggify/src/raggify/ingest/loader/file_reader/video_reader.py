@@ -1,17 +1,15 @@
 from __future__ import annotations
 
 import os
-import shutil
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any, Iterable, Optional, Sequence
 
 from llama_index.core.readers.base import BaseReader
 from llama_index.core.schema import Document
 
-from ....core.const import EXTRA_PKG_NOT_FOUND_MSG
 from ....core.exts import Exts
 from ....core.metadata import BasicMetaData
-from ....core.utils import get_temp_file_path_from
+from ....core.utils import get_temp_path
 from ....logger import logger
 
 __all__ = ["VideoReader"]
@@ -41,11 +39,11 @@ class VideoReader(BaseReader):
         self._fps = fps
         self._audio_sample_rate = audio_sample_rate
 
-    def _extract_frames(self, src: str) -> list[Path]:
+    def _extract_frames(self, src: Path) -> list[Path]:
         """Extract frame images from a video.
 
         Args:
-            src (str): Video file path.
+            src (Path): Video file path.
 
         Raises:
             ImportError: If ffmpeg is not installed.
@@ -54,73 +52,49 @@ class VideoReader(BaseReader):
             list[Path]: Extracted frame paths.
         """
         from ...util import MediaConverter
-        base_path = Path(get_temp_file_path_from(source=src, suffix=Exts.PNG))
+
+        base_dir = get_temp_path(seed=str(src), suffix=Exts.PNG)
         converter = MediaConverter()
-        temp_dir = converter.extract_png_frames_from_video(
-            src=src, frame_rate=self._fps, 
-        frames = sorted(temp_dir.glob(f"{base_path.stem}_*{self._image_suffix}"))
-        logger.debug(f"extracted {len(frames)} frame(s) from {src}")
+        base_dir = converter.extract_png_frames_from_video(
+            src=src, dst=base_dir, frame_rate=self._fps
+        )
+        if base_dir is None:
+            return []
 
-        return frames
+        return sorted(base_dir.glob(f"{base_dir.stem}_*{Exts.PNG}"))
 
-    def _extract_audio(self, src: str) -> Path | None:
+    def _extract_audio(self, src: Path) -> Optional[Path]:
         """Extract an audio track from a video.
 
         Args:
-            src (str): Video file path.
-
+            src (Path): Video file path.
         Raises:
             ImportError: If ffmpeg is not installed.
 
         Returns:
-            Path | None: Extracted audio file path.
+            Optional[Path]: Extracted audio file path.
         """
-        try:
-            import ffmpeg  # type: ignore
-        except ImportError:
-            raise ImportError(
-                EXTRA_PKG_NOT_FOUND_MSG.format(
-                    pkg="ffmpeg-python (additionally, ffmpeg itself must be installed separately)",
-                    extra="ffmpeg",
-                    feature="ffmpeg",
-                )
-            )
+        from ...util import MediaConverter
 
-        temp_path = Path(get_temp_file_path_from(source=src, suffix=self._audio_suffix))
-        temp_path.parent.mkdir(parents=True, exist_ok=True)
+        temp_path = Path(get_temp_path(seed=str(src), suffix=Exts.MP3))
+        converter = MediaConverter()
 
-        if temp_path.exists():
-            temp_path.unlink()
+        return converter.extract_mp3_audio_from_video(
+            src=src, dst=temp_path, sample_rate=self._audio_sample_rate
+        )
 
-        try:
-            (
-                ffmpeg.input(src)
-                .output(
-                    str(temp_path), acodec="pcm_s16le", ac=1, ar=self._audio_sample_rate
-                )
-                .overwrite_output()
-                .run(quiet=True)
-            )
-        except Exception as e:
-            logger.warning(f"ffmpeg audio extraction from {src} failure: {e}")
-            return None
-
-        logger.debug(f"extracted 1 audio track from {src}")
-
-        return temp_path
-
-    def _image_docs(self, frame_paths: Sequence[Path], source: str) -> list[Document]:
+    def _image_docs(self, frames: Sequence[Path], source: str) -> list[Document]:
         """Convert frame images to Document objects.
 
         Args:
-            frame_paths (Sequence[Path]): Frame image paths.
+            frames (Sequence[Path]): Frame image paths.
             source (str): Source video path.
 
         Returns:
             list[Document]: Generated documents.
         """
         docs: list[Document] = []
-        for i, frame_path in enumerate(frame_paths):
+        for i, frame_path in enumerate(frames):
             meta = BasicMetaData()
             meta.file_path = str(frame_path)
             meta.temp_file_path = str(frame_path)
@@ -171,9 +145,9 @@ class VideoReader(BaseReader):
                 f"unsupported video ext: {abs_path}. supported: {' '.join(allowed_exts)}"
             )
 
-        frames = self._extract_frames(abs_path)
-        audio = self._extract_audio(abs_path)
-        docs = self._image_docs(frames, abs_path)
+        frames = self._extract_frames(Path(abs_path))
+        audio = self._extract_audio(Path(abs_path))
+        docs = self._image_docs(frames=frames, source=abs_path)
         if audio is not None:
             docs.append(self._audio_doc(audio, abs_path))
             logger.debug(

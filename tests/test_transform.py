@@ -100,27 +100,27 @@ def test_split_transform_splits_audio_and_rebuilds(monkeypatch, tmp_path):
     local = tmp_path / "sample.wav"
     shutil.copy(src, local)
 
-    chunk_dir = tmp_path / "chunks"
-
     def fake_probe(self, path):
         return 10.0
 
-    def fake_create(self, path, chunk_seconds=None, **_):
-        chunk_paths = []
-        chunk_dir.mkdir(parents=True, exist_ok=True)
+    def fake_split(self, src, dst, chunk_seconds):
+        dst.mkdir(parents=True, exist_ok=True)
         for i in range(2):
-            dest = chunk_dir / f"chunk_{i}.wav"
+            dest = dst / f"chunk_{i}.wav"
             shutil.copy(local, dest)
-            chunk_paths.append(str(dest))
-        return chunk_paths
+        return dst
 
     monkeypatch.setattr(
-        "raggify.ingest.transform.split_transform.SplitTransform._probe_duration",
+        "raggify.ingest.transform.split_transform.MediaConverter.__init__",
+        lambda self: None,
+    )
+    monkeypatch.setattr(
+        "raggify.ingest.transform.split_transform.MediaConverter.probe_duration",
         fake_probe,
     )
     monkeypatch.setattr(
-        "raggify.ingest.transform.split_transform.SplitTransform._create_segments",
-        fake_create,
+        "raggify.ingest.transform.split_transform.MediaConverter.split",
+        fake_split,
     )
 
     node = _make_media_node(AudioNode, local, ref_doc_id="audio-doc")
@@ -142,21 +142,24 @@ def test_split_transform_splits_video(monkeypatch, tmp_path):
     def fake_probe(self, path):
         return 12.0
 
-    def fake_create(self, path, chunk_seconds=None, **_):
-        files = []
+    def fake_split(self, src, dst, chunk_seconds):
+        dst.mkdir(parents=True, exist_ok=True)
         for i in range(3):
-            dest = tmp_path / f"segment_{i}.mp4"
+            dest = dst / f"segment_{i}.mp4"
             shutil.copy(local, dest)
-            files.append(str(dest))
-        return files
+        return dst
 
     monkeypatch.setattr(
-        "raggify.ingest.transform.split_transform.SplitTransform._probe_duration",
+        "raggify.ingest.transform.split_transform.MediaConverter.__init__",
+        lambda self: None,
+    )
+    monkeypatch.setattr(
+        "raggify.ingest.transform.split_transform.MediaConverter.probe_duration",
         fake_probe,
     )
     monkeypatch.setattr(
-        "raggify.ingest.transform.split_transform.SplitTransform._create_segments",
-        fake_create,
+        "raggify.ingest.transform.split_transform.MediaConverter.split",
+        fake_split,
     )
 
     node = _make_media_node(VideoNode, local, ref_doc_id="video-doc")

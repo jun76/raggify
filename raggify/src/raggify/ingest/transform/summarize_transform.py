@@ -120,10 +120,10 @@ class LLMSummarizeTransform(TransformComponent):
         """
         prompt = """
 Please extract only the main text useful for semantic search from the following text.
-Remove advertisements, copyright notices, 
+Remove advertisements, copyright notices,
 clearly unnecessary text such as headers and footers etc.
 
-Since the extracted text will be shortened later, 
+Since the extracted text will be shortened later,
 DO NOT SUMMARIZE its content SEMANTICALLY here.
 
 If no useful text is available, please return ONLY an empty string (no need for unnecessary comments).
@@ -157,8 +157,8 @@ Original text:
         from pathlib import Path
 
         prompt = """
-Please provide a concise description of the image for semantic search purposes. 
-If the image is not describable, 
+Please provide a concise description of the image for semantic search purposes.
+If the image is not describable,
 please return just an empty string (no need for unnecessary comments).
 """
         llm = self._llm_manager.image_summarize_transform
@@ -191,8 +191,8 @@ please return just an empty string (no need for unnecessary comments).
         from ...core.exts import Exts
 
         prompt = """
-Please provide a concise description of the audio for semantic search purposes. 
-If the audio is not describable, 
+Please provide a concise description of the audio for semantic search purposes.
+If the audio is not describable,
 please return just an empty string (no need for unnecessary comments).
 """
         llm = self._llm_manager.audio_summarize_transform

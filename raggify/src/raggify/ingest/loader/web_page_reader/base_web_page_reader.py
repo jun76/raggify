@@ -117,7 +117,7 @@ class BaseWebPageReader(ABC):
         Returns:
             Optional[str]: Local temporary file path.
         """
-        from ....core.utils import get_temp_file_path_from
+        from ....core.utils import get_temp_path
 
         ext = Exts.get_ext(url)
         if ext not in allowed_exts:
@@ -152,7 +152,7 @@ class BaseWebPageReader(ABC):
         # FIXME: issue #5 Handling MIME Types When Asset URL Extensions and
         # Actual Entities Mismatch in HTMLReader._adownload_direct_linked_file
         ext = Exts.get_ext(url)
-        path = get_temp_file_path_from(source=url, suffix=ext)
+        path = str(get_temp_path(seed=url, suffix=ext))
         try:
             with open(path, "wb") as f:
                 f.write(body)
@@ -261,7 +261,7 @@ class BaseWebPageReader(ABC):
         """
         from ....core.exts import Exts
         from ....core.metadata import MetaKeys as MK
-        from ....core.utils import get_temp_file_path_from
+        from ....core.utils import get_temp_path
         from ..util import afetch_text
 
         # Prefetch to avoid ingesting Not Found pages
@@ -276,7 +276,7 @@ class BaseWebPageReader(ABC):
             return [], ""
 
         html = self._cleanse_html_text(html)
-        path = get_temp_file_path_from(source=url, suffix=Exts.HTML)
+        path = str(get_temp_path(seed=url, suffix=Exts.HTML))
         try:
             with open(path, "w") as f:
                 f.write(html)

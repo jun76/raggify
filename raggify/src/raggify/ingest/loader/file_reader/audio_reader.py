@@ -9,7 +9,7 @@ from llama_index.core.schema import Document
 
 from ....core.exts import Exts
 from ....core.metadata import BasicMetaData
-from ....core.utils import get_temp_file_path_from
+from ....core.utils import get_temp_path
 from ....logger import logger
 
 __all__ = ["AudioReader"]
@@ -34,11 +34,11 @@ class AudioReader(BaseReader):
         self._sample_rate = sample_rate
         self._bitrate = bitrate
 
-    def _convert(self, src: str) -> Optional[Path]:
+    def _convert(self, src: Path) -> Optional[Path]:
         """Execute audio conversion.
 
         Args:
-            src (str): Source audio file path.
+            src (Path): Source audio file path.
 
         Raises:
             ImportError: If ffmpeg is not installed.
@@ -49,13 +49,12 @@ class AudioReader(BaseReader):
         from ....core.exts import Exts
         from ...util import MediaConverter
 
-        temp_path = Path(get_temp_file_path_from(source=src, suffix=Exts.MP3))
-        temp_path.parent.mkdir(parents=True, exist_ok=True)
+        temp_path = get_temp_path(seed=str(src), suffix=Exts.MP3)
         converter = MediaConverter()
 
         return converter.audio_to_mp3(
             src=src,
-            path=temp_path,
+            dst=temp_path,
             sample_rate=self._sample_rate,
             bitrate=self._bitrate,
         )
@@ -80,7 +79,7 @@ class AudioReader(BaseReader):
             )
             return []
 
-        converted = self._convert(abs_path)
+        converted = self._convert(Path(abs_path))
         if converted is None:
             return []
 

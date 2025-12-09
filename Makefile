@@ -39,9 +39,9 @@ all: venv
 	$(TOOL_PIP) $(CLIP_PKG)
 
 tools:
-	$(UV) tool uninstall raggify
+	-$(UV) tool uninstall raggify >/dev/null 2>&1
 	$(UV) tool install -e ./raggify
-	$(UV) tool uninstall raggify-client
+	-$(UV) tool uninstall raggify-client >/dev/null 2>&1
 	$(UV) tool install -e ./raggify-client
 
 upgrade-all:
