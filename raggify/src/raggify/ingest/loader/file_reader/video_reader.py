@@ -122,44 +122,6 @@ class VideoReader(BaseReader):
 
         return Document(text=source, metadata=meta.to_dict())
 
-    def _load_video(self, path: str, allowed_exts: Iterable[str]) -> list[Document]:
-        """Load a video and generate frame and audio documents.
-
-        Args:
-            path (str): Video file path.
-            allowed_exts (Iterable[str]): Allowed extensions.
-
-        Raises:
-            ValueError: If an unsupported extension is specified.
-
-        Returns:
-            list[Document]: Generated documents.
-        """
-        abs_path = os.path.abspath(path)
-        if not os.path.exists(abs_path):
-            logger.warning(f"file not found: {abs_path}")
-            return []
-
-        if not Exts.endswith_exts(abs_path, set(allowed_exts)):
-            raise ValueError(
-                f"unsupported video ext: {abs_path}. supported: {' '.join(allowed_exts)}"
-            )
-
-        frames = self._extract_frames(Path(abs_path))
-        audio = self._extract_audio(Path(abs_path))
-        docs = self._image_docs(frames=frames, source=abs_path)
-        if audio is not None:
-            docs.append(self._audio_doc(audio, abs_path))
-            logger.debug(
-                f"loaded {len(frames)} image docs + 1 audio doc from {abs_path}"
-            )
-        else:
-            logger.debug(
-                f"loaded {len(frames)} image docs from {abs_path} (audio missing)"
-            )
-
-        return docs
-
     def lazy_load_data(self, path: str, extra_info: Any = None) -> Iterable[Document]:
         """Split a video file into image and audio documents.
 
@@ -178,4 +140,22 @@ class VideoReader(BaseReader):
             logger.warning(f"file not found: {abs_path}")
             return []
 
-        return self._load_video(abs_path, allowed_exts=Exts.VIDEO)
+        if not Exts.endswith_exts(abs_path, set(Exts.VIDEO)):
+            raise ValueError(
+                f"unsupported video ext: {abs_path}. supported: {' '.join(Exts.VIDEO)}"
+            )
+
+        frames = self._extract_frames(Path(abs_path))
+        audio = self._extract_audio(Path(abs_path))
+        docs = self._image_docs(frames=frames, source=abs_path)
+        if audio is not None:
+            docs.append(self._audio_doc(audio, abs_path))
+            logger.debug(
+                f"loaded {len(frames)} image docs + 1 audio doc from {abs_path}"
+            )
+        else:
+            logger.debug(
+                f"loaded {len(frames)} image docs from {abs_path} (audio missing)"
+            )
+
+        return docs

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Sequence
 
 from llama_index.core.llms import AudioBlock, ChatMessage, ImageBlock, TextBlock
@@ -51,13 +52,15 @@ class DefaultSummarizeTransform(TransformComponent):
 class LLMSummarizeTransform(TransformComponent):
     """Transform to summarize multimodal nodes using an LLM."""
 
-    def __init__(self, llm_manager: LLMManager) -> None:
+    def __init__(self, llm_manager: LLMManager, audio_sample_rate: int = 16000) -> None:
         """Constructor.
 
         Args:
             llm_manager (LLMManager): LLM manager.
+            audio_sample_rate (int, optional): Audio sample rate. Defaults to 16000.
         """
         self._llm_manager = llm_manager
+        self._audio_sample_rate = audio_sample_rate
 
     def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
         """Synchronous interface.
@@ -109,14 +112,14 @@ class LLMSummarizeTransform(TransformComponent):
         """
         return cls.__name__
 
-    async def _asummarize_text(self, node: TextNode) -> BaseNode:
+    async def _asummarize_text(self, node: TextNode) -> TextNode:
         """Summarize a text node using LLM.
 
         Args:
             node (TextNode): Node to summarize.
 
         Returns:
-            BaseNode: Node after summarization.
+            TextNode: Node after summarization.
         """
         prompt = """
 Please extract only the main text useful for semantic search from the following text.
@@ -145,14 +148,14 @@ Original text:
             modality="text",
         )
 
-    async def _asummarize_image(self, node: ImageNode) -> BaseNode:
+    async def _asummarize_image(self, node: ImageNode) -> TextNode:
         """Summarize an image node using LLM.
 
         Args:
             node (ImageNode): Node to summarize.
 
         Returns:
-            BaseNode: Node after summarization.
+            TextNode: Node after summarization.
         """
         from pathlib import Path
 
@@ -163,7 +166,7 @@ please return just an empty string (no need for unnecessary comments).
 """
         llm = self._llm_manager.image_summarize_transform
 
-        def _build_blocks(target: BaseNode) -> list[TextBlock | ImageBlock]:
+        def _build_blocks(target: TextNode) -> list[TextBlock | ImageBlock]:
             path = target.metadata[MK.FILE_PATH]
             return [
                 ImageBlock(path=Path(path)),
@@ -177,14 +180,14 @@ please return just an empty string (no need for unnecessary comments).
             modality="image",
         )
 
-    async def _asummarize_audio(self, node: AudioNode) -> BaseNode:
+    async def _asummarize_audio(self, node: AudioNode | VideoNode) -> TextNode:
         """Summarize an audio node using LLM.
 
         Args:
-            node (AudioNode): Node to summarize.
+            node (AudioNode | VideoNode): Node to summarize.
 
         Returns:
-            BaseNode: Node after summarization.
+            TextNode: Node after summarization.
         """
         from pathlib import Path
 
@@ -197,7 +200,7 @@ please return just an empty string (no need for unnecessary comments).
 """
         llm = self._llm_manager.audio_summarize_transform
 
-        def _build_blocks(target: BaseNode) -> list[TextBlock | AudioBlock]:
+        def _build_blocks(target: TextNode) -> list[TextBlock | AudioBlock]:
             path = target.metadata[MK.FILE_PATH]
             return [
                 AudioBlock(path=Path(path), format=Exts.get_ext(uri=path, dot=False)),
@@ -211,16 +214,33 @@ please return just an empty string (no need for unnecessary comments).
             modality="audio",
         )
 
-    async def _asummarize_video(self, node: VideoNode) -> BaseNode:
+    async def _asummarize_video(self, node: VideoNode) -> TextNode:
         """Summarize a video node using LLM.
 
         Args:
             node (VideoNode): Node to summarize.
 
         Returns:
-            BaseNode: Node after summarization.
+            TextNode: Node after summarization.
         """
-        logger.warning("video summarization is not implemented yet")
+        from ..util import MediaConverter
+        from ...core.exts import Exts
+        from ...core.utils import get_temp_path
+        from ...core.metadata import MetaKeys as MK
+
+        path = node.metadata[MK.FILE_PATH]
+        temp_path = Path(get_temp_path(seed=path, suffix=Exts.MP3))
+        converter = MediaConverter()
+        temp_path = converter.extract_mp3_audio_from_video(
+            src=Path(path), dst=temp_path, sample_rate=self._audio_sample_rate
+        )
+        if temp_path is not None:
+            audio_node = AudioNode(
+                text=node.text, metadata={MK.FILE_PATH: str(temp_path)}
+            )
+            audio_node = await self._asummarize_audio(audio_node)
+            node.text = audio_node.text
+
         return node
 
     async def _summarize_with_llm(
@@ -229,7 +249,7 @@ please return just an empty string (no need for unnecessary comments).
         llm: LLM,
         block_builder: Callable[[TextNode], _BlockSequence],
         modality: str,
-    ) -> BaseNode:
+    ) -> TextNode:
         """Run summarization with provided LLM and block builder.
 
         Args:
@@ -240,7 +260,7 @@ please return just an empty string (no need for unnecessary comments).
             modality (str): Modality label for logging.
 
         Returns:
-            BaseNode: Node after summarization.
+            TextNode: Node after summarization.
         """
         try:
             blocks = list(block_builder(node))
