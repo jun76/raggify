@@ -70,16 +70,21 @@ class AudioReader(BaseReader):
         """
         abs_path = os.path.abspath(path)
         if not os.path.exists(abs_path):
-            logger.warning(f"file not found: {abs_path}")
+            logger.error(f"file not found: {abs_path}")
             return []
 
         if not Exts.endswith_exts(abs_path, Exts.AUDIO):
-            logger.warning(
+            logger.error(
                 f"unsupported audio ext: {abs_path}. supported: {' '.join(Exts.AUDIO)}"
             )
             return []
 
-        converted = self._convert(Path(abs_path))
+        try:
+            converted = self._convert(Path(abs_path))
+        except ImportError as e:
+            logger.error(f"ffmpeg not installed, cannot read audio files: {e}")
+            return []
+
         if converted is None:
             return []
 

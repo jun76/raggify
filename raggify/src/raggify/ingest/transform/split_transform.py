@@ -114,8 +114,8 @@ class SplitTransform(TransformComponent):
             list[BaseNode]: Split nodes or the original node on failure.
         """
         from ...core.metadata import MetaKeys as MK
-        from ...ingest.util import MediaConverter
         from ...core.utils import get_temp_path
+        from ...ingest.util import MediaConverter
 
         nodes: list[BaseNode] = [node]
 

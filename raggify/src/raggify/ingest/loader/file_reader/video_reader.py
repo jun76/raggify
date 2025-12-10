@@ -29,10 +29,6 @@ class VideoReader(BaseReader):
         Args:
             fps (int, optional): Frames per second to extract. Defaults to 1.
             audio_sample_rate (int, optional): Sample rate for audio extraction. Defaults to 16000.
-
-        Raises:
-            ImportError: If ffmpeg is not installed.
-            ValueError: If fps is zero or negative.
         """
         super().__init__()
 
@@ -68,6 +64,7 @@ class VideoReader(BaseReader):
 
         Args:
             src (Path): Video file path.
+
         Raises:
             ImportError: If ffmpeg is not installed.
 
@@ -129,24 +126,27 @@ class VideoReader(BaseReader):
             path (str): Video file path.
             extra_info (Any, optional): Unused extra info. Defaults to None.
 
-        Raises:
-            ValueError: If the extension is unsupported.
-
         Returns:
             Iterable[Document]: Extracted documents.
         """
         abs_path = os.path.abspath(path)
         if not os.path.exists(abs_path):
-            logger.warning(f"file not found: {abs_path}")
+            logger.error(f"file not found: {abs_path}")
             return []
 
         if not Exts.endswith_exts(abs_path, set(Exts.VIDEO)):
-            raise ValueError(
+            logger.error(
                 f"unsupported video ext: {abs_path}. supported: {' '.join(Exts.VIDEO)}"
             )
+            return []
 
-        frames = self._extract_frames(Path(abs_path))
-        audio = self._extract_audio(Path(abs_path))
+        try:
+            frames = self._extract_frames(Path(abs_path))
+            audio = self._extract_audio(Path(abs_path))
+        except ImportError as e:
+            logger.error(f"ffmpeg not installed, cannot read video files: {e}")
+            return []
+
         docs = self._image_docs(frames=frames, source=abs_path)
         if audio is not None:
             docs.append(self._audio_doc(audio, abs_path))

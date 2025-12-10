@@ -17,3 +17,5 @@ debug
 coverage.xml
 .local
 output.md
+.vscode
+.codex

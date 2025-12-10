@@ -223,14 +223,19 @@ please return just an empty string (no need for unnecessary comments).
         Returns:
             TextNode: Node after summarization.
         """
-        from ..util import MediaConverter
         from ...core.exts import Exts
-        from ...core.utils import get_temp_path
         from ...core.metadata import MetaKeys as MK
+        from ...core.utils import get_temp_path
+        from ..util import MediaConverter
 
         path = node.metadata[MK.FILE_PATH]
         temp_path = Path(get_temp_path(seed=path, suffix=Exts.MP3))
-        converter = MediaConverter()
+        try:
+            converter = MediaConverter()
+        except ImportError as e:
+            logger.error(f"ffmpeg not installed, cannot summarize video audio: {e}")
+            return node
+
         temp_path = converter.extract_mp3_audio_from_video(
             src=Path(path), dst=temp_path, sample_rate=self._audio_sample_rate
         )

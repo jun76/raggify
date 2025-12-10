@@ -111,15 +111,15 @@ def test_split_transform_splits_audio_and_rebuilds(monkeypatch, tmp_path):
         return dst
 
     monkeypatch.setattr(
-        "raggify.ingest.transform.split_transform.MediaConverter.__init__",
+        "raggify.ingest.util.MediaConverter.__init__",
         lambda self: None,
     )
     monkeypatch.setattr(
-        "raggify.ingest.transform.split_transform.MediaConverter.probe_duration",
+        "raggify.ingest.util.MediaConverter.probe_duration",
         fake_probe,
     )
     monkeypatch.setattr(
-        "raggify.ingest.transform.split_transform.MediaConverter.split",
+        "raggify.ingest.util.MediaConverter.split",
         fake_split,
     )
 
@@ -150,15 +150,15 @@ def test_split_transform_splits_video(monkeypatch, tmp_path):
         return dst
 
     monkeypatch.setattr(
-        "raggify.ingest.transform.split_transform.MediaConverter.__init__",
+        "raggify.ingest.util.MediaConverter.__init__",
         lambda self: None,
     )
     monkeypatch.setattr(
-        "raggify.ingest.transform.split_transform.MediaConverter.probe_duration",
+        "raggify.ingest.util.MediaConverter.probe_duration",
         fake_probe,
     )
     monkeypatch.setattr(
-        "raggify.ingest.transform.split_transform.MediaConverter.split",
+        "raggify.ingest.util.MediaConverter.split",
         fake_split,
     )
 

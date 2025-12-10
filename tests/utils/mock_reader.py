@@ -39,13 +39,13 @@ def patch_video_extract(
 
 
 def patch_html_temp_file(monkeypatch, path: Path) -> None:
-    """Patch get_temp_file_path_from used by BaseWebPageReader."""
+    """Patch get_temp_path used by BaseWebPageReader."""
     from raggify.core import utils as core_utils
 
-    def _fake_temp(source: str, suffix: str) -> str:
-        return str(path)
+    def _fake_temp(seed: str, suffix: str | None = None):
+        return Path(path)
 
-    monkeypatch.setattr(core_utils, "get_temp_file_path_from", _fake_temp)
+    monkeypatch.setattr(core_utils, "get_temp_path", _fake_temp)
 
 
 def patch_html_asset_download(
