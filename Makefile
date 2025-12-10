@@ -28,7 +28,8 @@ api: venv
 		--extra rerank \
 		--extra postgres \
 		--extra redis \
-		--extra exam
+		--extra exam \
+		--extra dev
 	$(MAKE) tools
 
 all: venv
