@@ -118,7 +118,57 @@ def setup_bedrock_mock(
 
 
 def setup_clap_mock(monkeypatch):
-    import torch
+    class _FakeTensor:
+        def __init__(self, data: list[list[float]]):
+            self._data = [row[:] for row in data]
+
+        @property
+        def shape(self) -> tuple[int, int]:
+            rows = len(self._data)
+            cols = len(self._data[0]) if rows else 0
+            return (rows, cols)
+
+        def to(self, device):
+            return self
+
+        def cpu(self):
+            return self
+
+        def tolist(self) -> list[list[float]]:
+            return [row[:] for row in self._data]
+
+    class _FakeNoGrad:
+        def __enter__(self):
+            return None
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    class FakeTorchModule:
+        class nn:  # type: ignore[valid-type]
+            class functional:  # type: ignore[valid-type]
+                @staticmethod
+                def normalize(tensor, p=2, dim=-1):
+                    return tensor
+
+        float32 = "float32"
+
+        @staticmethod
+        def tensor(data, dtype=None):
+            return _FakeTensor([list(row) for row in data])
+
+        @staticmethod
+        def ones(shape, dtype=None):
+            rows, cols = shape
+            return _FakeTensor([[1.0] * cols for _ in range(rows)])
+
+        def no_grad(self):
+            return _FakeNoGrad()
+
+    torch_module = sys.modules.get("torch")
+    if torch_module is None:
+        torch_module = FakeTorchModule()
+        monkeypatch.setitem(sys.modules, "torch", torch_module)
 
     class DummyBatch(dict):
         def to(self, device):
@@ -134,7 +184,9 @@ def setup_clap_mock(monkeypatch):
             else:
                 payload = audio if audio is not None else audios or []
                 batch = len(payload)
-            tensor = torch.ones((batch, 2), dtype=torch.float32)
+            tensor = torch_module.ones(
+                (batch, 2), dtype=getattr(torch_module, "float32", None)
+            )
             return DummyBatch({"inputs": tensor})
 
     def _batch_size(kwargs):
@@ -159,11 +211,15 @@ def setup_clap_mock(monkeypatch):
 
         def get_text_features(self, **kwargs):
             batch = _batch_size(kwargs)
-            return torch.tensor([[1.0, 0.0]] * batch, dtype=torch.float32)
+            return torch_module.tensor(
+                [[1.0, 0.0]] * batch, dtype=getattr(torch_module, "float32", None)
+            )
 
         def get_audio_features(self, **kwargs):
             batch = _batch_size(kwargs)
-            return torch.tensor([[0.0, 1.0]] * batch, dtype=torch.float32)
+            return torch_module.tensor(
+                [[0.0, 1.0]] * batch, dtype=getattr(torch_module, "float32", None)
+            )
 
     processor_calls: list[tuple[tuple, dict]] = []
     model_calls: list[tuple[tuple, dict]] = []
