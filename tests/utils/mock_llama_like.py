@@ -128,11 +128,12 @@ def setup_clap_mock(monkeypatch):
         def __init__(self) -> None:
             self.feature_extractor = SimpleNamespace(sampling_rate=48000)
 
-        def __call__(self, *, text=None, audios=None, **kwargs):
+        def __call__(self, *, text=None, audio=None, audios=None, **kwargs):
             if text is not None:
                 batch = len(text)
             else:
-                batch = len(audios or [])
+                payload = audio if audio is not None else audios or []
+                batch = len(payload)
             tensor = torch.ones((batch, 2), dtype=torch.float32)
             return DummyBatch({"inputs": tensor})
 

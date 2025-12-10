@@ -79,6 +79,15 @@ class AudioReader(BaseReader):
             )
             return []
 
+        if Exts.endswith_ext(abs_path, Exts.MP3):
+            meta = BasicMetaData()
+            meta.file_path = abs_path
+            meta.base_source = abs_path
+
+            logger.debug(f"audio file is already mp3, skipping conversion: {abs_path}")
+
+            return [Document(text=abs_path, metadata=meta.to_dict())]
+
         try:
             converted = self._convert(Path(abs_path))
         except ImportError as e:

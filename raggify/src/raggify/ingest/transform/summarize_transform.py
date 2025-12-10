@@ -226,6 +226,7 @@ please return just an empty string (no need for unnecessary comments).
         from ...core.exts import Exts
         from ...core.metadata import MetaKeys as MK
         from ...core.utils import get_temp_path
+        from ...llama_like.core.schema import AudioNode
         from ..util import MediaConverter
 
         path = node.metadata[MK.FILE_PATH]

@@ -48,7 +48,7 @@ class MediaConverter:
         """
         try:
             (
-                self._ffmpeg.input(src)
+                self._ffmpeg.input(str(src))
                 .output(
                     str(dst),
                     acodec="libmp3lame",
@@ -77,9 +77,9 @@ class MediaConverter:
         """
         try:
             (
-                self._ffmpeg.input(src)
+                self._ffmpeg.input(str(src))
                 .output(
-                    dst,
+                    str(dst),
                     acodec="libmp3lame",
                     ac=1,
                     ar=sample_rate,
@@ -109,7 +109,7 @@ class MediaConverter:
         pattern = str(dst / "%05d.png")
         try:
             (
-                self._ffmpeg.input(src)
+                self._ffmpeg.input(str(src))
                 .output(pattern, vf=f"fps={frame_rate}")
                 .overwrite_output()
                 .run(quiet=True)
@@ -134,7 +134,7 @@ class MediaConverter:
         pattern = dst / f"%05d{dst.suffix}"
         try:
             (
-                self._ffmpeg.input(src)
+                self._ffmpeg.input(str(src))
                 .output(
                     str(pattern),
                     f="segment",
