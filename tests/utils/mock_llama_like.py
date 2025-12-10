@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import sys
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 from typing import Any, Dict, List, Optional, Sequence
+
+import numpy as np
 
 from llama_index.core.schema import BaseNode, TextNode
 
@@ -118,28 +120,143 @@ def setup_bedrock_mock(
 
 
 def setup_clap_mock(monkeypatch):
-    class FakeVector(list):
-        def tolist(self):
-            return list(self)
+    class _FakeTensor:
+        def __init__(self, data: list[list[float]]):
+            self._data = [row[:] for row in data]
 
-    class FakeCLAPModule:
-        instances: list[FakeCLAPModule] = []
+        @property
+        def shape(self) -> tuple[int, int]:
+            rows = len(self._data)
+            cols = len(self._data[0]) if rows else 0
+            return (rows, cols)
 
-        def __init__(self, **kwargs):
-            self.kwargs = kwargs
-            FakeCLAPModule.instances.append(self)
+        def to(self, device):
+            return self
 
-        def load_ckpt(self, model_id):
-            self.model_id = model_id
+        def cpu(self):
+            return self
 
-        def get_text_embedding(self, x):
-            return [FakeVector([0.1, 0.2]) for _ in x]
+        def tolist(self) -> list[list[float]]:
+            return [row[:] for row in self._data]
 
-        def get_audio_embedding_from_filelist(self, x):
-            return [FakeVector([0.3, 0.4]) for _ in x]
+    class _FakeNoGrad:
+        def __enter__(self):
+            return None
 
-    instances: list[FakeCLAPModule] = []
-    FakeCLAPModule.instances = instances
-    fake_module = SimpleNamespace(CLAP_Module=FakeCLAPModule, instances=instances)
-    monkeypatch.setitem(sys.modules, "laion_clap", fake_module)
-    return fake_module
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    class FakeTorchModule:
+        class nn:  # type: ignore[valid-type]
+            class functional:  # type: ignore[valid-type]
+                @staticmethod
+                def normalize(tensor, p=2, dim=-1):
+                    return tensor
+
+        float32 = "float32"
+
+        @staticmethod
+        def tensor(data, dtype=None):
+            return _FakeTensor([list(row) for row in data])
+
+        @staticmethod
+        def ones(shape, dtype=None):
+            rows, cols = shape
+            return _FakeTensor([[1.0] * cols for _ in range(rows)])
+
+        def no_grad(self):
+            return _FakeNoGrad()
+
+    torch_module = sys.modules.get("torch")
+    if torch_module is None:
+        torch_module = FakeTorchModule()
+        monkeypatch.setitem(sys.modules, "torch", torch_module)
+
+    class _FakeSoundFile(ModuleType):
+        def __init__(self) -> None:
+            super().__init__("soundfile")
+
+        def read(self, audio):  # type: ignore[override]
+            # Return a simple mono waveform and sampling rate.
+            return np.zeros(16000, dtype=np.float32), 48000
+
+    if "soundfile" not in sys.modules:
+        monkeypatch.setitem(sys.modules, "soundfile", _FakeSoundFile())
+
+    class DummyBatch(dict):
+        def to(self, device):
+            return DummyBatch({key: value.to(device) for key, value in self.items()})
+
+    class FakeProcessor:
+        def __init__(self) -> None:
+            self.feature_extractor = SimpleNamespace(sampling_rate=48000)
+
+        def __call__(self, *, text=None, audio=None, audios=None, **kwargs):
+            if text is not None:
+                batch = len(text)
+            else:
+                payload = audio if audio is not None else audios or []
+                batch = len(payload)
+            tensor = torch_module.ones(
+                (batch, 2), dtype=getattr(torch_module, "float32", None)
+            )
+            return DummyBatch({"inputs": tensor})
+
+    def _batch_size(kwargs):
+        if not kwargs:
+            return 1
+        first = next(iter(kwargs.values()))
+        return first.shape[0]
+
+    class FakeClapModel:
+        instances: list[FakeClapModel] = []
+
+        def __init__(self) -> None:
+            FakeClapModel.instances.append(self)
+            self.device = "cpu"
+
+        def to(self, device):
+            self.device = device
+            return self
+
+        def eval(self):
+            return self
+
+        def get_text_features(self, **kwargs):
+            batch = _batch_size(kwargs)
+            return torch_module.tensor(
+                [[1.0, 0.0]] * batch, dtype=getattr(torch_module, "float32", None)
+            )
+
+        def get_audio_features(self, **kwargs):
+            batch = _batch_size(kwargs)
+            return torch_module.tensor(
+                [[0.0, 1.0]] * batch, dtype=getattr(torch_module, "float32", None)
+            )
+
+    processor_calls: list[tuple[tuple, dict]] = []
+    model_calls: list[tuple[tuple, dict]] = []
+
+    class _AutoProcessor:
+        @staticmethod
+        def from_pretrained(*args, **kwargs):
+            processor_calls.append((args, kwargs))
+            return FakeProcessor()
+
+    class _ClapModel:
+        @staticmethod
+        def from_pretrained(*args, **kwargs):
+            model_calls.append((args, kwargs))
+            return FakeClapModel()
+
+    class _FakeTransformers(ModuleType):
+        AutoProcessor = _AutoProcessor
+        ClapModel = _ClapModel
+
+    monkeypatch.setitem(sys.modules, "transformers", _FakeTransformers("transformers"))
+
+    return SimpleNamespace(
+        model_instances=FakeClapModel.instances,
+        processor_calls=processor_calls,
+        model_calls=model_calls,
+    )

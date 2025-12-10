@@ -24,6 +24,7 @@ from raggify.ingest.transform import (
     DefaultSummarizeTransform,
     EmbedTransform,
     LLMSummarizeTransform,
+    RemoveTempFileTransform,
     SplitTransform,
 )
 from raggify.llama_like.core.schema import AudioNode, Modality, VideoNode
@@ -99,27 +100,27 @@ def test_split_transform_splits_audio_and_rebuilds(monkeypatch, tmp_path):
     local = tmp_path / "sample.wav"
     shutil.copy(src, local)
 
-    chunk_dir = tmp_path / "chunks"
-
     def fake_probe(self, path):
         return 10.0
 
-    def fake_create(self, path, chunk_seconds=None, **_):
-        chunk_paths = []
-        chunk_dir.mkdir(parents=True, exist_ok=True)
+    def fake_split(self, src, dst, chunk_seconds):
+        dst.mkdir(parents=True, exist_ok=True)
         for i in range(2):
-            dest = chunk_dir / f"chunk_{i}.wav"
+            dest = dst / f"chunk_{i}.wav"
             shutil.copy(local, dest)
-            chunk_paths.append(str(dest))
-        return chunk_paths
+        return dst
 
     monkeypatch.setattr(
-        "raggify.ingest.transform.split_transform.SplitTransform._probe_duration",
+        "raggify.ingest.util.MediaConverter.__init__",
+        lambda self: None,
+    )
+    monkeypatch.setattr(
+        "raggify.ingest.util.MediaConverter.probe_duration",
         fake_probe,
     )
     monkeypatch.setattr(
-        "raggify.ingest.transform.split_transform.SplitTransform._create_segments",
-        fake_create,
+        "raggify.ingest.util.MediaConverter.split",
+        fake_split,
     )
 
     node = _make_media_node(AudioNode, local, ref_doc_id="audio-doc")
@@ -141,21 +142,24 @@ def test_split_transform_splits_video(monkeypatch, tmp_path):
     def fake_probe(self, path):
         return 12.0
 
-    def fake_create(self, path, chunk_seconds=None, **_):
-        files = []
+    def fake_split(self, src, dst, chunk_seconds):
+        dst.mkdir(parents=True, exist_ok=True)
         for i in range(3):
-            dest = tmp_path / f"segment_{i}.mp4"
+            dest = dst / f"segment_{i}.mp4"
             shutil.copy(local, dest)
-            files.append(str(dest))
-        return files
+        return dst
 
     monkeypatch.setattr(
-        "raggify.ingest.transform.split_transform.SplitTransform._probe_duration",
+        "raggify.ingest.util.MediaConverter.__init__",
+        lambda self: None,
+    )
+    monkeypatch.setattr(
+        "raggify.ingest.util.MediaConverter.probe_duration",
         fake_probe,
     )
     monkeypatch.setattr(
-        "raggify.ingest.transform.split_transform.SplitTransform._create_segments",
-        fake_create,
+        "raggify.ingest.util.MediaConverter.split",
+        fake_split,
     )
 
     node = _make_media_node(VideoNode, local, ref_doc_id="video-doc")
@@ -207,7 +211,6 @@ def test_embed_transform_writes_text_embeddings():
     result = asyncio.run(transform.acall([node, blank]))
 
     assert result[0].embedding == [1.0, 1.0]
-    assert result[0].metadata["file_path"] == "/orig/path.txt"
     assert result[1].embedding is None
 
 
@@ -251,6 +254,22 @@ def test_embed_transform_handles_video_nodes():
     nodes = asyncio.run(transform.acall([video]))
 
     assert nodes[0].embedding == [0.3, 0.3]
+
+
+def test_remove_temp_file_transform_removes_files(tmp_path):
+    temp = tmp_path / "temp.txt"
+    temp.write_text("payload")
+
+    node = make_sample_text_node()
+    node.metadata[MK.TEMP_FILE_PATH] = str(temp)
+    node.metadata[MK.BASE_SOURCE] = "/orig/path.txt"
+    node.metadata[MK.FILE_PATH] = str(temp)
+
+    transform = RemoveTempFileTransform()
+    result = transform([node])
+
+    assert not temp.exists()
+    assert result[0].metadata[MK.FILE_PATH] == "/orig/path.txt"
 
 
 def test_default_summarize_transform_returns_nodes():
@@ -305,15 +324,32 @@ def test_llm_summarize_transform_summarizes_image():
     assert image_llm.calls
 
 
-def test_llm_summarize_transform_audio_and_video_noop():
-    audio = AudioNode(id_="audio", metadata={})
-    video = VideoNode(id_="video", metadata={})
+def test_llm_summarize_transform_summarizes_audio(tmp_path):
+    audio_path = tmp_path / "sample.wav"
+    audio_path.write_bytes(b"\x00")
+    audio = AudioNode(id_="audio", metadata={MK.FILE_PATH: str(audio_path)})
+    audio_llm = DummyLLM(" transcribed audio ")
+    runtime = make_dummy_runtime(audio_llm=audio_llm)
+    summarize_transform = LLMSummarizeTransform(cast("LLMManager", runtime.llm_manager))
+
+    result = asyncio.run(summarize_transform.acall([audio]))
+    node = cast(AudioNode, result[0])
+
+    assert node.text == "transcribed audio"
+    assert audio_llm.calls
+
+
+def test_llm_summarize_transform_logs_video_not_implemented(tmp_path):
+    video_path = tmp_path / "sample.mp4"
+    video_path.write_text("")  # create placeholder file
+    video = VideoNode(id_="video", metadata={MK.FILE_PATH: str(video_path)})
     runtime = make_dummy_runtime()
     summarize_transform = LLMSummarizeTransform(cast("LLMManager", runtime.llm_manager))
-    result = asyncio.run(summarize_transform.acall([audio, video]))
 
-    assert result[0] is audio
-    assert result[1] is video
+    result = asyncio.run(summarize_transform.acall([video]))
+    node = cast(VideoNode, result[0])
+
+    assert node.text == ""
 
 
 def test_llm_summarize_transform_rejects_unknown_node():

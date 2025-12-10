@@ -12,10 +12,10 @@ from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional
 try:
     from llama_index.embeddings.bedrock import BedrockEmbedding  # type: ignore
 except ImportError:
-    from ...core.const import PKG_NOT_FOUND_MSG
+    from ...core.const import EXTRA_PKG_NOT_FOUND_MSG
 
     raise ImportError(
-        PKG_NOT_FOUND_MSG.format(
+        EXTRA_PKG_NOT_FOUND_MSG.format(
             pkg="bedrock",
             extra="video",
             feature="BedrockEmbedding",

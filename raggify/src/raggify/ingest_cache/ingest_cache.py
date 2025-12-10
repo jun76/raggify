@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
 from ..config.ingest_cache_config import IngestCacheConfig, IngestCacheProvider
-from ..core.const import PJNAME_ALIAS, PKG_NOT_FOUND_MSG
+from ..core.const import EXTRA_PKG_NOT_FOUND_MSG, PJNAME_ALIAS
 from ..core.utils import sanitize_str
 from ..llama_like.core.schema import Modality
 from ..logger import logger
@@ -119,7 +119,7 @@ def _redis(cfg: IngestCacheConfig, table_name: str) -> IngestCacheContainer:
         from llama_index.storage.kvstore.redis import RedisKVStore  # type: ignore
     except ImportError:
         raise ImportError(
-            PKG_NOT_FOUND_MSG.format(
+            EXTRA_PKG_NOT_FOUND_MSG.format(
                 pkg="llama-index-storage-docstore-redis",
                 extra="redis",
                 feature="RedisKVStore",
@@ -148,7 +148,7 @@ def _postgres(cfg: IngestCacheConfig, table_name: str) -> IngestCacheContainer:
         from llama_index.storage.kvstore.postgres import PostgresKVStore  # type: ignore
     except ImportError:
         raise ImportError(
-            PKG_NOT_FOUND_MSG.format(
+            EXTRA_PKG_NOT_FOUND_MSG.format(
                 pkg="llama-index-storage-kvstore-postgres",
                 extra="postgres",
                 feature="PostgresKVStore",

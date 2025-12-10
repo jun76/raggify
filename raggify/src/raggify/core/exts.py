@@ -13,6 +13,8 @@ class Exts:
     PDF: str = ".pdf"
     HTML: str = ".html"
     SVG: str = ".svg"
+    MP4: str = ".mp4"
+    MP3: str = ".mp3"
 
     # Follow the extensions supported by reader
     # (llama_index.core.readers.file.base._try_loading_included_file_formats).
@@ -23,11 +25,11 @@ class Exts:
     IMAGE: set[str] = {PNG, ".jpg", ".jpeg", ".gif", ".webp"}
 
     # Extensions accepted by multimodal (audio) embedding models
-    AUDIO: set[str] = {".mp3", WAV, ".ogg"}
+    AUDIO: set[str] = {MP3, WAV, ".ogg"}
 
     # Extensions accepted by multimodal (video) embedding models
     VIDEO: set[str] = {
-        ".mp4",
+        MP4,
         ".mov",
         ".mkv",
         ".webm",

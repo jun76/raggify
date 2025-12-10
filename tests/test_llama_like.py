@@ -19,11 +19,7 @@ from raggify.llama_like.core.indices.multi_modal.retriever import (
     VideoRetriever,
 )
 from raggify.llama_like.embeddings.bedrock import MultiModalBedrockEmbedding
-from raggify.llama_like.embeddings.clap import (
-    ClapEmbedding,
-    ClapModels,
-    _AudioEncoderModel,
-)
+from raggify.llama_like.embeddings.clap import ClapEmbedding
 from raggify.llama_like.embeddings.multi_modal_base import AudioType, VideoType
 from tests.utils.mock_llama_like import (
     DummyEmbedModel,
@@ -35,6 +31,8 @@ from tests.utils.mock_llama_like import (
 from .config import configure_test_env
 
 configure_test_env()
+
+CLAP_MODEL_ID = "laion/clap-htsat-unfused"
 
 
 def test_audio_encoders_from_embed_model():
@@ -123,10 +121,10 @@ def test_multimodal_bedrock_handles_media(monkeypatch):
 
 def test_clap_embedding_returns_embeddings(monkeypatch):
     setup_clap_mock(monkeypatch)
-    embed = ClapEmbedding(model_name=ClapModels.EFFECT_VARLEN, device="cpu")
+    embed = ClapEmbedding(model_name=CLAP_MODEL_ID, device="cpu")
     vecs = embed._get_audio_embeddings(["tests/data/audios/sample.wav"])
     assert len(vecs) == 1
-    assert vecs[0] == [0.3, 0.4]
+    assert vecs[0] == [0.0, 1.0]
 
 
 def test_bedrock_delegates_to_super_for_non_nova(monkeypatch):
@@ -373,7 +371,7 @@ def test_bedrock_aget_image_embedding(monkeypatch):
 
 def test_clap_text_methods(monkeypatch):
     setup_clap_mock(monkeypatch)
-    embed = ClapEmbedding(model_name=ClapModels.EFFECT_VARLEN, device="cpu")
+    embed = ClapEmbedding(model_name=CLAP_MODEL_ID, device="cpu")
     object.__setattr__(
         embed,
         "callback_manager",
@@ -381,15 +379,15 @@ def test_clap_text_methods(monkeypatch):
             on_event_start=lambda *a, **k: "evt", on_event_end=lambda *a, **k: None
         ),
     )
-    assert embed._get_text_embedding("hello") == [0.1, 0.2]
-    assert embed._get_text_embeddings(["hi"]) == [[0.1, 0.2]]
-    assert embed._get_query_embedding("hi") == [0.1, 0.2]
+    assert embed._get_text_embedding("hello") == [1.0, 0.0]
+    assert embed._get_text_embeddings(["hi"]) == [[1.0, 0.0]]
+    assert embed._get_query_embedding("hi") == [1.0, 0.0]
 
 
 def test_clap_async_audio_batch(monkeypatch):
     setup_clap_mock(monkeypatch)
     embed = ClapEmbedding(
-        model_name=ClapModels.EFFECT_VARLEN, device="cpu", embed_batch_size=1
+        model_name=CLAP_MODEL_ID, device="cpu", embed_batch_size=1
     )
     object.__setattr__(
         embed,
@@ -409,15 +407,15 @@ def test_clap_async_audio_batch(monkeypatch):
 
 def test_clap_audio_helpers(monkeypatch):
     setup_clap_mock(monkeypatch)
-    embed = ClapEmbedding(model_name=ClapModels.EFFECT_VARLEN, device="cpu")
+    embed = ClapEmbedding(model_name=CLAP_MODEL_ID, device="cpu")
     vecs = embed._get_audio_embeddings(["tests/data/audios/sample.wav"])
-    assert vecs[0] == [0.3, 0.4]
+    assert vecs[0] == [0.0, 1.0]
     async_result = asyncio.run(
         embed._aget_audio_embeddings(
             cast(list[AudioType], ["tests/data/audios/sample.wav"])
         )
     )
-    assert async_result[0] == [0.3, 0.4]
+    assert async_result[0] == [0.0, 1.0]
 
 
 def test_clap_async_audio_batch_with_progress(monkeypatch):
@@ -429,7 +427,7 @@ def test_clap_async_audio_batch_with_progress(monkeypatch):
     )
     monkeypatch.setitem(sys.modules, "tqdm.asyncio", fake_module)
     embed = ClapEmbedding(
-        model_name=ClapModels.EFFECT_VARLEN, device="cpu", embed_batch_size=1
+        model_name=CLAP_MODEL_ID, device="cpu", embed_batch_size=1
     )
     object.__setattr__(
         embed,
@@ -446,27 +444,3 @@ def test_clap_async_audio_batch_with_progress(monkeypatch):
         )
     )
     assert len(result) == 2
-
-
-def test_clap_effect_short_initialization(monkeypatch):
-    fake_module = setup_clap_mock(monkeypatch)
-    ClapEmbedding(model_name=ClapModels.EFFECT_SHORT, device="cpu")
-    inst = fake_module.instances[-1]
-    assert inst.kwargs["enable_fusion"] is False
-    assert inst.kwargs["amodel"] == _AudioEncoderModel.HTSAT_TINY
-    assert inst.model_id == 1
-
-
-def test_clap_effect_varlen_initialization(monkeypatch):
-    fake_module = setup_clap_mock(monkeypatch)
-    ClapEmbedding(model_name=ClapModels.EFFECT_VARLEN, device="cpu")
-    inst = fake_module.instances[-1]
-    assert inst.kwargs["enable_fusion"] is True
-    assert inst.kwargs["amodel"] == _AudioEncoderModel.HTSAT_TINY
-    assert inst.model_id == 3
-
-
-def test_clap_unsupported_models(monkeypatch):
-    setup_clap_mock(monkeypatch)
-    with pytest.raises(NotImplementedError):
-        ClapEmbedding(model_name=ClapModels.MUSIC, device="cpu")

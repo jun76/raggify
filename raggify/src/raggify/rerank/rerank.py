@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
 from ..config.rerank_config import RerankProvider
-from ..core.const import PKG_NOT_FOUND_MSG
+from ..core.const import EXTRA_PKG_NOT_FOUND_MSG
 
 if TYPE_CHECKING:
     from .rerank_manager import RerankContainer, RerankManager
@@ -49,7 +49,7 @@ def _cohere(cfg: ConfigManager) -> RerankContainer:
         from llama_index.postprocessor.cohere_rerank import CohereRerank  # type: ignore
     except ImportError:
         raise ImportError(
-            PKG_NOT_FOUND_MSG.format(
+            EXTRA_PKG_NOT_FOUND_MSG.format(
                 pkg="llama-index-postprocessor-cohere-rerank",
                 extra="rerank",
                 feature="CohereRerank",
@@ -71,7 +71,7 @@ def _flagembedding(cfg: ConfigManager) -> RerankContainer:
         )
     except ImportError:
         raise ImportError(
-            PKG_NOT_FOUND_MSG.format(
+            EXTRA_PKG_NOT_FOUND_MSG.format(
                 pkg="llama-index-postprocessor-flag-embedding-reranker",
                 extra="rerank",
                 feature="FlagEmbeddingReranker",
@@ -93,7 +93,7 @@ def _voyage(cfg: ConfigManager) -> RerankContainer:
         )
     except ImportError:
         raise ImportError(
-            PKG_NOT_FOUND_MSG.format(
+            EXTRA_PKG_NOT_FOUND_MSG.format(
                 pkg="llama-index-postprocessor-voyageai-rerank",
                 extra="rerank",
                 feature="VoyageAIRerank",

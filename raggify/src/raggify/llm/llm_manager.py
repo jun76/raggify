@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from enum import StrEnum, auto
 
 from llama_index.core.llms import LLM
-from llama_index.core.multi_modal_llms import MultiModalLLM
 
 from ..logger import logger
 
@@ -24,7 +23,7 @@ class LLMContainer:
     """Container for LLM-related parameters per modality."""
 
     provider_name: str
-    llm: LLM | MultiModalLLM
+    llm: LLM
 
 
 class LLMManager:
@@ -64,7 +63,7 @@ class LLMManager:
         return set(self._conts.keys())
 
     @property
-    def text_summarize_transform(self) -> LLM | MultiModalLLM:
+    def text_summarize_transform(self) -> LLM:
         """Get the text summarize transform LLM.
 
         Raises:
@@ -76,7 +75,7 @@ class LLMManager:
         return self.get_container(LLMUsage.TEXT_SUMMARIZER).llm
 
     @property
-    def image_summarize_transform(self) -> LLM | MultiModalLLM:
+    def image_summarize_transform(self) -> LLM:
         """Get the image summarize transform LLM.
 
         Raises:
@@ -88,7 +87,7 @@ class LLMManager:
         return self.get_container(LLMUsage.IMAGE_SUMMARIZER).llm
 
     @property
-    def audio_summarize_transform(self) -> LLM | MultiModalLLM:
+    def audio_summarize_transform(self) -> LLM:
         """Get the audio summarize transform LLM.
 
         Raises:
@@ -100,7 +99,7 @@ class LLMManager:
         return self.get_container(LLMUsage.AUDIO_SUMMARIZER).llm
 
     @property
-    def video_summarize_transform(self) -> LLM | MultiModalLLM:
+    def video_summarize_transform(self) -> LLM:
         """Get the video summarize transform LLM.
 
         Raises:

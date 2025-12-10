@@ -1,49 +1,60 @@
 VENV := .venv
-
 ifeq ($(RUNNER_OS),Windows)
-	PY := $(VENV)/Scripts/python.exe
+PY := $(VENV)/Scripts/python.exe
 else
-	PY := $(VENV)/bin/python
+PY := $(VENV)/bin/python
 endif
-
-PIP := $(PY) -m pip
+UV := uv
 CLIP_PKG := "clip@git+https://github.com/openai/CLIP.git"
-WHISPER_PKG := "openai-whisper@git+https://github.com/openai/whisper.git"
-TOOL_PY := $(shell uv tool dir)/raggify/bin/python
+TOOL_DIR := $(shell $(UV) tool dir)
+TOOL_PY := $(TOOL_DIR)/raggify/bin/python
+TOOL_PIP := $(UV) pip install --python $(TOOL_PY)
+RAGGIFY_ALL_EXTRA := './raggify[all]'
+
+.PHONY: venv min api all tools test clean
 
 venv:
-	@if [ ! -d "$(VENV)" ]; then uv venv $(VENV) --prompt raggify-dev; fi
-	uv pip install --python $(PY) --upgrade pip
+	$(UV) sync --all-packages
 
 min: venv
-	$(PIP) install -e raggify
-	$(PIP) install -e raggify-client
-	
-	uv tool install --reinstall -e ./raggify
-	uv tool install --reinstall -e ./raggify-client
+	$(MAKE) tools
 
 api: venv
-	$(PIP) install -e raggify[text,image,audio,video,rerank,postgres,redis,exam,dev]
-	$(PIP) install -e raggify-client
-	
-	uv tool install --reinstall -e ./raggify
-	uv tool install --reinstall -e ./raggify-client
+	$(UV) sync --all-packages \
+		--extra text \
+		--extra image \
+		--extra audio \
+		--extra video \
+		--extra rerank \
+		--extra postgres \
+		--extra redis \
+		--extra exam \
+		--extra dev
+	$(MAKE) tools
 
 all: venv
-	$(PIP) install -e raggify[all]
-	$(PIP) install -e raggify-client
-	$(PIP) install $(CLIP_PKG)
-	$(PIP) install $(WHISPER_PKG)
-	
-	uv tool install --reinstall -e ./raggify
-	uv tool install --reinstall -e ./raggify-client
-	uv pip install $(CLIP_PKG)
-	uv pip install $(WHISPER_PKG)
-	uv pip install --python $(TOOL_PY) $(CLIP_PKG)
-	uv pip install --python $(TOOL_PY) $(WHISPER_PKG)
+	$(UV) sync --all-packages --extra all
+	$(MAKE) tools
+	$(UV) pip install $(CLIP_PKG)
+	$(TOOL_PIP) -e $(RAGGIFY_ALL_EXTRA)
+	$(TOOL_PIP) $(CLIP_PKG)
+
+tools:
+	-$(UV) tool uninstall raggify >/dev/null 2>&1
+	$(UV) tool install -e ./raggify
+	-$(UV) tool uninstall raggify-client >/dev/null 2>&1
+	$(UV) tool install -e ./raggify-client
+
+upgrade-all:
+	$(UV) lock --upgrade
+	$(MAKE) all
 
 test:
-	$(PY) -m pytest --maxfail=1 --cov=raggify --cov=raggify_client --cov-report=term-missing --cov-report=xml
+	$(PY) -m pytest --maxfail=1 \
+		--cov=raggify \
+		--cov=raggify_client \
+		--cov-report=term-missing \
+		--cov-report=xml
 
 clean:
 	rm -rf $(VENV)

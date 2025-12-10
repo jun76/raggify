@@ -96,12 +96,6 @@ To use the following features, additional installation is required.
 pip install clip@git+https://github.com/openai/CLIP.git
 ```
 
-🎤 local CLAP
-
-```bash
-pip install openai-whisper@git+https://github.com/openai/whisper.git
-```
-
 🎤🎬 ffmpeg
 
 Example of Ubuntu
@@ -203,7 +197,6 @@ Need to install:
 
 ```bash
 pip install 'raggify[audio,localmodel]'
-pip install openai-whisper@git+https://github.com/openai/whisper.git
 ```
 
 and set `audio_embed_provider` /etc/raggify/config.yaml:
@@ -653,7 +646,7 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 | `ingest_cache_provider`   | Ingest cache backend.                              | `local`      | `local`, `redis`, `postgres`.                                                  |
 | `text_embed_provider`     | Provider for text embeddings.                      | `openai`     | `openai`, `cohere`, `clip`(⚠️), `huggingface`, `voyage`, `bedrock`, or `null`. |
 | `image_embed_provider`    | Provider for image embeddings.                     | `cohere`     | `cohere`, `clip`(⚠️), `huggingface`, `voyage`, `bedrock`, or `null`.           |
-| `audio_embed_provider`    | Provider for audio embeddings.                     | `bedrock`    | `clap`(⚠️), `bedrock`, or `null`.                                              |
+| `audio_embed_provider`    | Provider for audio embeddings.                     | `bedrock`    | `clap`, `bedrock`, or `null`.                                                  |
 | `video_embed_provider`    | Provider for video embeddings.                     | `bedrock`    | `bedrock` or `null`.                                                           |
 | `rerank_provider`         | Provider for reranking.                            | `cohere`     | `flagembedding`, `cohere`, `voyage`, or `null`.                                |
 | `parser_provider`         | Parser backend for document ingestion.             | `local`      | `local`, `llama_cloud`.                                                        |
@@ -662,7 +655,7 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 | `device`                  | Target device for embedding models.                | `cpu`        | `cpu`, `cuda`, `mps`.                                                          |
 | `log_level`               | Logging verbosity.                                 | `DEBUG`      | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.                               |
 
-⚠️ Local CLIP / CLAP usage still needs the extra git-based pip installs listed in the install section above.
+⚠️ Local CLIP usage still needs the extra git-based pip installs listed in the install section above.
 
 ### Vector store
 
@@ -707,55 +700,55 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 
 ### Embed
 
-| Parameter                             | Description                                 | Default                                    | Allowed values / examples                                                                          |
-| ------------------------------------- | ------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `embed_batch_size`                    | Number of nodes processed per embed batch.  | `1000`                                     | Any positive integer.                                                                              |
-| `batch_interval_sec`                  | Delay between embedding batches (seconds).  | `1`                                        | Any non-negative integer.                                                                          |
-| `openai_embed_model_text.name`        | OpenAI text embed model.                    | `text-embedding-3-small`                   | Fixed model name.                                                                                  |
-| `openai_embed_model_text.alias`       | Alias for OpenAI text embed model.          | `te3s`                                     | Any string.                                                                                        |
-| `openai_embed_model_text.dim`         | Dimension of OpenAI text embeddings.        | `1536`                                     | Fixed value.                                                                                       |
-| `cohere_embed_model_text.name`        | Cohere text embed model.                    | `embed-v4.0`                               | Fixed model name.                                                                                  |
-| `cohere_embed_model_text.alias`       | Alias for Cohere text embed model.          | `emv4`                                     | Any string.                                                                                        |
-| `cohere_embed_model_text.dim`         | Dimension of Cohere text embeddings.        | `1536`                                     | Fixed value.                                                                                       |
-| `clip_embed_model_text.name`          | CLIP text embed model.                      | `ViT-B/32`                                 | Fixed model name.                                                                                  |
-| `clip_embed_model_text.alias`         | Alias for CLIP text embed model.            | `vi32`                                     | Any string.                                                                                        |
-| `clip_embed_model_text.dim`           | Dimension of CLIP text embeddings.          | `512`                                      | Fixed value.                                                                                       |
-| `clap_embed_model_text.name`          | CLAP text embed model.                      | `effect_varlen`                            | `effect_short`, `effect_varlen`, ~~`music`, `speech`, `general`~~ (last 3 pending implementation). |
-| `clap_embed_model_text.alias`         | Alias for CLAP text embed model.            | `efvl`                                     | Any string.                                                                                        |
-| `clap_embed_model_text.dim`           | Dimension of CLAP text embeddings.          | `512`                                      | Fixed value.                                                                                       |
-| `huggingface_embed_model_text.name`   | Hugging Face text embed model.              | `intfloat/multilingual-e5-base`            | Fixed model name.                                                                                  |
-| `huggingface_embed_model_text.alias`  | Alias for Hugging Face text embed model.    | `imeb`                                     | Any string.                                                                                        |
-| `huggingface_embed_model_text.dim`    | Dimension of Hugging Face text embeddings.  | `768`                                      | Fixed value.                                                                                       |
-| `voyage_embed_model_text.name`        | Voyage text embed model.                    | `voyage-3.5`                               | Fixed model name.                                                                                  |
-| `voyage_embed_model_text.alias`       | Alias for Voyage text embed model.          | `vo35`                                     | Any string.                                                                                        |
-| `voyage_embed_model_text.dim`         | Dimension of Voyage text embeddings.        | `2048`                                     | Fixed value.                                                                                       |
-| `bedrock_embed_model_text.name`       | Bedrock text embed model.                   | `amazon.nova-2-multimodal-embeddings-v1:0` | Fixed model name.                                                                                  |
-| `bedrock_embed_model_text.alias`      | Alias for Bedrock text embed model.         | `n2v1`                                     | Any string.                                                                                        |
-| `bedrock_embed_model_text.dim`        | Dimension of Bedrock text embeddings.       | `1024`                                     | Fixed value.                                                                                       |
-| `cohere_embed_model_image.name`       | Cohere image embed model.                   | `embed-v4.0`                               | Fixed model name.                                                                                  |
-| `cohere_embed_model_image.alias`      | Alias for Cohere image embed model.         | `emv4`                                     | Any string.                                                                                        |
-| `cohere_embed_model_image.dim`        | Dimension of Cohere image embeddings.       | `1536`                                     | Fixed value.                                                                                       |
-| `clip_embed_model_image.name`         | CLIP image embed model.                     | `ViT-B/32`                                 | Fixed model name.                                                                                  |
-| `clip_embed_model_image.alias`        | Alias for CLIP image embed model.           | `vi32`                                     | Any string.                                                                                        |
-| `clip_embed_model_image.dim`          | Dimension of CLIP image embeddings.         | `512`                                      | Fixed value.                                                                                       |
-| `huggingface_embed_model_image.name`  | Hugging Face image embed model.             | `llamaindex/vdr-2b-multi-v1`               | Fixed model name.                                                                                  |
-| `huggingface_embed_model_image.alias` | Alias for Hugging Face image embed model.   | `v2m1`                                     | Any string.                                                                                        |
-| `huggingface_embed_model_image.dim`   | Dimension of Hugging Face image embeddings. | `1536`                                     | Fixed value.                                                                                       |
-| `voyage_embed_model_image.name`       | Voyage image embed model.                   | `voyage-multimodal-3`                      | Fixed model name.                                                                                  |
-| `voyage_embed_model_image.alias`      | Alias for Voyage image embed model.         | `vom3`                                     | Any string.                                                                                        |
-| `voyage_embed_model_image.dim`        | Dimension of Voyage image embeddings.       | `1024`                                     | Fixed value.                                                                                       |
-| `bedrock_embed_model_image.name`      | Bedrock image embed model.                  | `amazon.nova-2-multimodal-embeddings-v1:0` | Fixed model name.                                                                                  |
-| `bedrock_embed_model_image.alias`     | Alias for Bedrock image embed model.        | `n2v1`                                     | Any string.                                                                                        |
-| `bedrock_embed_model_image.dim`       | Dimension of Bedrock image embeddings.      | `1024`                                     | Fixed value.                                                                                       |
-| `clap_embed_model_audio.name`         | CLAP audio embed model.                     | `effect_varlen`                            | `effect_short`, `effect_varlen`, ~~`music`, `speech`, `general`~~ (last 3 pending implementation). |
-| `clap_embed_model_audio.alias`        | Alias for CLAP audio embed model.           | `efvl`                                     | Any string.                                                                                        |
-| `clap_embed_model_audio.dim`          | Dimension of CLAP audio embeddings.         | `512`                                      | Fixed value.                                                                                       |
-| `bedrock_embed_model_audio.name`      | Bedrock audio embed model.                  | `amazon.nova-2-multimodal-embeddings-v1:0` | Fixed model name.                                                                                  |
-| `bedrock_embed_model_audio.alias`     | Alias for Bedrock audio embed model.        | `n2v1`                                     | Any string.                                                                                        |
-| `bedrock_embed_model_audio.dim`       | Dimension of Bedrock audio embeddings.      | `1024`                                     | Fixed value.                                                                                       |
-| `bedrock_embed_model_video.name`      | Bedrock video embed model.                  | `amazon.nova-2-multimodal-embeddings-v1:0` | Fixed model name.                                                                                  |
-| `bedrock_embed_model_video.alias`     | Alias for Bedrock video embed model.        | `n2v1`                                     | Any string.                                                                                        |
-| `bedrock_embed_model_video.dim`       | Dimension of Bedrock video embeddings.      | `1024`                                     | Fixed value.                                                                                       |
+| Parameter                             | Description                                 | Default                                    | Allowed values / examples            |
+| ------------------------------------- | ------------------------------------------- | ------------------------------------------ | ------------------------------------ |
+| `embed_batch_size`                    | Number of nodes processed per embed batch.  | `1000`                                     | Any positive integer.                |
+| `batch_interval_sec`                  | Delay between embedding batches (seconds).  | `1`                                        | Any non-negative integer.            |
+| `openai_embed_model_text.name`        | OpenAI text embed model.                    | `text-embedding-3-small`                   | Fixed model name.                    |
+| `openai_embed_model_text.alias`       | Alias for OpenAI text embed model.          | `te3s`                                     | Any string.                          |
+| `openai_embed_model_text.dim`         | Dimension of OpenAI text embeddings.        | `1536`                                     | Fixed value.                         |
+| `cohere_embed_model_text.name`        | Cohere text embed model.                    | `embed-v4.0`                               | Fixed model name.                    |
+| `cohere_embed_model_text.alias`       | Alias for Cohere text embed model.          | `emv4`                                     | Any string.                          |
+| `cohere_embed_model_text.dim`         | Dimension of Cohere text embeddings.        | `1536`                                     | Fixed value.                         |
+| `clip_embed_model_text.name`          | CLIP text embed model.                      | `ViT-B/32`                                 | Fixed model name.                    |
+| `clip_embed_model_text.alias`         | Alias for CLIP text embed model.            | `vi32`                                     | Any string.                          |
+| `clip_embed_model_text.dim`           | Dimension of CLIP text embeddings.          | `512`                                      | Fixed value.                         |
+| `clap_embed_model_text.name`          | CLAP text embed model.                      | `laion/clap-htsat-unfused`                 | Any Hugging Face CLAP checkpoint ID. |
+| `clap_embed_model_text.alias`         | Alias for CLAP text embed model.            | `lchu`                                     | Any string.                          |
+| `clap_embed_model_text.dim`           | Dimension of CLAP text embeddings.          | `512`                                      | Fixed value.                         |
+| `huggingface_embed_model_text.name`   | Hugging Face text embed model.              | `intfloat/multilingual-e5-base`            | Fixed model name.                    |
+| `huggingface_embed_model_text.alias`  | Alias for Hugging Face text embed model.    | `imeb`                                     | Any string.                          |
+| `huggingface_embed_model_text.dim`    | Dimension of Hugging Face text embeddings.  | `768`                                      | Fixed value.                         |
+| `voyage_embed_model_text.name`        | Voyage text embed model.                    | `voyage-3.5`                               | Fixed model name.                    |
+| `voyage_embed_model_text.alias`       | Alias for Voyage text embed model.          | `vo35`                                     | Any string.                          |
+| `voyage_embed_model_text.dim`         | Dimension of Voyage text embeddings.        | `2048`                                     | Fixed value.                         |
+| `bedrock_embed_model_text.name`       | Bedrock text embed model.                   | `amazon.nova-2-multimodal-embeddings-v1:0` | Fixed model name.                    |
+| `bedrock_embed_model_text.alias`      | Alias for Bedrock text embed model.         | `n2v1`                                     | Any string.                          |
+| `bedrock_embed_model_text.dim`        | Dimension of Bedrock text embeddings.       | `1024`                                     | Fixed value.                         |
+| `cohere_embed_model_image.name`       | Cohere image embed model.                   | `embed-v4.0`                               | Fixed model name.                    |
+| `cohere_embed_model_image.alias`      | Alias for Cohere image embed model.         | `emv4`                                     | Any string.                          |
+| `cohere_embed_model_image.dim`        | Dimension of Cohere image embeddings.       | `1536`                                     | Fixed value.                         |
+| `clip_embed_model_image.name`         | CLIP image embed model.                     | `ViT-B/32`                                 | Fixed model name.                    |
+| `clip_embed_model_image.alias`        | Alias for CLIP image embed model.           | `vi32`                                     | Any string.                          |
+| `clip_embed_model_image.dim`          | Dimension of CLIP image embeddings.         | `512`                                      | Fixed value.                         |
+| `huggingface_embed_model_image.name`  | Hugging Face image embed model.             | `llamaindex/vdr-2b-multi-v1`               | Fixed model name.                    |
+| `huggingface_embed_model_image.alias` | Alias for Hugging Face image embed model.   | `v2m1`                                     | Any string.                          |
+| `huggingface_embed_model_image.dim`   | Dimension of Hugging Face image embeddings. | `1536`                                     | Fixed value.                         |
+| `voyage_embed_model_image.name`       | Voyage image embed model.                   | `voyage-multimodal-3`                      | Fixed model name.                    |
+| `voyage_embed_model_image.alias`      | Alias for Voyage image embed model.         | `vom3`                                     | Any string.                          |
+| `voyage_embed_model_image.dim`        | Dimension of Voyage image embeddings.       | `1024`                                     | Fixed value.                         |
+| `bedrock_embed_model_image.name`      | Bedrock image embed model.                  | `amazon.nova-2-multimodal-embeddings-v1:0` | Fixed model name.                    |
+| `bedrock_embed_model_image.alias`     | Alias for Bedrock image embed model.        | `n2v1`                                     | Any string.                          |
+| `bedrock_embed_model_image.dim`       | Dimension of Bedrock image embeddings.      | `1024`                                     | Fixed value.                         |
+| `clap_embed_model_audio.name`         | CLAP audio embed model.                     | `laion/clap-htsat-unfused`                 | Any Hugging Face CLAP checkpoint ID. |
+| `clap_embed_model_audio.alias`        | Alias for CLAP audio embed model.           | `lchu`                                     | Any string.                          |
+| `clap_embed_model_audio.dim`          | Dimension of CLAP audio embeddings.         | `512`                                      | Fixed value.                         |
+| `bedrock_embed_model_audio.name`      | Bedrock audio embed model.                  | `amazon.nova-2-multimodal-embeddings-v1:0` | Fixed model name.                    |
+| `bedrock_embed_model_audio.alias`     | Alias for Bedrock audio embed model.        | `n2v1`                                     | Any string.                          |
+| `bedrock_embed_model_audio.dim`       | Dimension of Bedrock audio embeddings.      | `1024`                                     | Fixed value.                         |
+| `bedrock_embed_model_video.name`      | Bedrock video embed model.                  | `amazon.nova-2-multimodal-embeddings-v1:0` | Fixed model name.                    |
+| `bedrock_embed_model_video.alias`     | Alias for Bedrock video embed model.        | `n2v1`                                     | Any string.                          |
+| `bedrock_embed_model_video.dim`       | Dimension of Bedrock video embeddings.      | `1024`                                     | Fixed value.                         |
 
 ### Ingest
 

@@ -4,7 +4,9 @@ from collections import defaultdict
 
 from llama_index.core.schema import BaseNode, TransformComponent
 
-__all__ = ["AddChunkIndexTransform"]
+from ...logger import logger
+
+__all__ = ["AddChunkIndexTransform", "RemoveTempFileTransform"]
 
 
 class AddChunkIndexTransform(TransformComponent):
@@ -44,3 +46,48 @@ class AddChunkIndexTransform(TransformComponent):
 
     async def acall(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
         return self.__call__(nodes, **kwargs)
+
+
+class RemoveTempFileTransform(TransformComponent):
+    """Transform to remove temporary files from nodes."""
+
+    @classmethod
+    def class_name(cls) -> str:
+        """Return class name string.
+
+        Returns:
+            str: Class name.
+        """
+        return cls.__name__
+
+    def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
+        """Interface called from the pipeline.
+
+        Args:
+            nodes (list[BaseNode]): Nodes to process.
+
+        Returns:
+            list[BaseNode]: Nodes after removing temporary files.
+        """
+        import os
+
+        from ...core.metadata import MetaKeys as MK
+
+        for node in nodes:
+            meta = node.metadata
+            temp_file_path = meta.get(MK.TEMP_FILE_PATH)
+            if temp_file_path:
+                if os.path.exists(temp_file_path):
+                    try:
+                        os.remove(temp_file_path)
+                    except Exception:
+                        logger.warning(
+                            f"failed to remove temporary file: {temp_file_path}"
+                        )
+
+                # Overwrite file_path with base_source for nodes with temp files
+                # (either becomes empty or restores original path kept by
+                # custom readers such as PDF)
+                meta[MK.FILE_PATH] = meta[MK.BASE_SOURCE]
+
+        return nodes

@@ -55,8 +55,8 @@ def test_video_reader_splits_frames_and_audio(monkeypatch, tmp_path):
 def test_video_reader_invalid_extension(monkeypatch):
     patch_video_extract(monkeypatch, [], None)
     reader = VideoReader()
-    with pytest.raises(ValueError):
-        list(reader.lazy_load_data("tests/data/texts/sample.c"))
+    docs = list(reader.lazy_load_data("tests/data/texts/sample.c"))
+    assert docs == []
 
 
 def test_pdf_reader_loads_documents():

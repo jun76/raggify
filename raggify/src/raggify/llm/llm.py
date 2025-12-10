@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 from ..config.config_manager import ConfigManager
 from ..config.llm_config import LLMProvider
-from ..core.const import PKG_NOT_FOUND_MSG
 from ..logger import logger
 
 if TYPE_CHECKING:
@@ -30,9 +29,13 @@ def create_llm_manager(cfg: ConfigManager) -> LLMManager:
     try:
         conts: dict[LLMUsage, LLMContainer] = {}
         if cfg.general.text_summarize_transform_provider:
-            conts[LLMUsage.TEXT_SUMMARIZER] = _create_text_summarize_transform(cfg)
+            conts[LLMUsage.TEXT_SUMMARIZER] = _create_text_summarize(cfg)
         if cfg.general.image_summarize_transform_provider:
-            conts[LLMUsage.IMAGE_SUMMARIZER] = _create_image_summarize_transform(cfg)
+            conts[LLMUsage.IMAGE_SUMMARIZER] = _create_image_summarize(cfg)
+        if cfg.general.audio_summarize_transform_provider:
+            conts[LLMUsage.AUDIO_SUMMARIZER] = _create_audio_summarize(cfg)
+        if cfg.general.video_summarize_transform_provider:
+            conts[LLMUsage.VIDEO_SUMMARIZER] = _create_video_summarize(cfg)
     except (ValueError, ImportError) as e:
         raise RuntimeError("invalid LLM settings") from e
     except Exception as e:
@@ -44,7 +47,7 @@ def create_llm_manager(cfg: ConfigManager) -> LLMManager:
     return LLMManager(conts)
 
 
-def _create_text_summarize_transform(cfg: ConfigManager) -> LLMContainer:
+def _create_text_summarize(cfg: ConfigManager) -> LLMContainer:
     """Create text summarize transform container.
 
     Args:
@@ -61,16 +64,14 @@ def _create_text_summarize_transform(cfg: ConfigManager) -> LLMContainer:
         raise ValueError("text summarize transform provider is not specified")
     match provider:
         case LLMProvider.OPENAI:
-            return _openai_text_summarize_transform(cfg)
-        case LLMProvider.HUGGINGFACE:
-            return _huggingface_text_summarize_transform(cfg)
+            return _openai_text_summarize(cfg)
         case _:
             raise ValueError(
                 f"unsupported text summarize transform provider: {provider}"
             )
 
 
-def _create_image_summarize_transform(cfg: ConfigManager) -> LLMContainer:
+def _create_image_summarize(cfg: ConfigManager) -> LLMContainer:
     """Create image summarize transform container.
 
     Args:
@@ -87,24 +88,70 @@ def _create_image_summarize_transform(cfg: ConfigManager) -> LLMContainer:
         raise ValueError("image summarize transform provider is not specified")
     match provider:
         case LLMProvider.OPENAI:
-            return _openai_image_summarize_transform(cfg)
-        case LLMProvider.HUGGINGFACE:
-            return _huggingface_image_summarize_transform(cfg)
+            return _openai_image_summarize(cfg)
         case _:
             raise ValueError(
                 f"unsupported image summarize transform provider: {provider}"
             )
 
 
+def _create_audio_summarize(cfg: ConfigManager) -> LLMContainer:
+    """Create audio summarize transform container.
+
+    Args:
+        cfg (ConfigManager): Config manager.
+
+    Raises:
+        ValueError: If audio summarize transform provider is not specified or unsupported.
+
+    Returns:
+        LLMContainer: Audio summarize transform container.
+    """
+    provider = cfg.general.audio_summarize_transform_provider
+    if provider is None:
+        raise ValueError("audio summarize transform provider is not specified")
+    match provider:
+        case LLMProvider.OPENAI:
+            return _openai_audio_summarize(cfg)
+        case _:
+            raise ValueError(
+                f"unsupported audio summarize transform provider: {provider}"
+            )
+
+
+def _create_video_summarize(cfg: ConfigManager) -> LLMContainer:
+    """Create video summarize transform container.
+
+    Args:
+        cfg (ConfigManager): Config manager.
+
+    Raises:
+        ValueError: If video summarize transform provider is not specified or unsupported.
+
+    Returns:
+        LLMContainer: Video summarize transform container.
+    """
+    provider = cfg.general.video_summarize_transform_provider
+    if provider is None:
+        raise ValueError("video summarize transform provider is not specified")
+    match provider:
+        case LLMProvider.OPENAI:
+            return _openai_video_summarize(cfg)
+        case _:
+            raise ValueError(
+                f"unsupported video summarize transform provider: {provider}"
+            )
+
+
 # Container generation helpers per provider
-def _openai_text_summarize_transform(cfg: ConfigManager) -> LLMContainer:
-    from llama_index.multi_modal_llms.openai import OpenAIMultiModal
+def _openai_text_summarize(cfg: ConfigManager) -> LLMContainer:
+    from llama_index.llms.openai import OpenAI
 
     from .llm_manager import LLMContainer
 
     return LLMContainer(
         provider_name=LLMProvider.OPENAI,
-        llm=OpenAIMultiModal(
+        llm=OpenAI(
             model=cfg.llm.openai_text_summarize_transform_model,
             api_base=cfg.general.openai_base_url,
             temperature=0,
@@ -112,41 +159,14 @@ def _openai_text_summarize_transform(cfg: ConfigManager) -> LLMContainer:
     )
 
 
-def _huggingface_text_summarize_transform(cfg: ConfigManager) -> LLMContainer:
-    try:
-        # FIXME: issue #6 HuggingFaceMultiModal version mismatch
-        from llama_index.multi_modal_llms.huggingface import (
-            HuggingFaceMultiModal,  # type: ignore
-        )
-    except ImportError as e:
-        raise ImportError(
-            PKG_NOT_FOUND_MSG.format(
-                pkg="llama-index-multi-modal-llms-huggingface",
-                extra="localmodel",
-                feature="HuggingFaceMultiModal",
-            )
-        ) from e
-
-    from .llm_manager import LLMContainer
-
-    return LLMContainer(
-        provider_name=LLMProvider.HUGGINGFACE,
-        llm=HuggingFaceMultiModal.from_model_name(
-            model_name=cfg.llm.huggingface_text_summarize_transform_model,
-            device=cfg.general.device,
-            temperature=0,
-        ),
-    )
-
-
-def _openai_image_summarize_transform(cfg: ConfigManager) -> LLMContainer:
-    from llama_index.multi_modal_llms.openai import OpenAIMultiModal
+def _openai_image_summarize(cfg: ConfigManager) -> LLMContainer:
+    from llama_index.llms.openai import OpenAI
 
     from .llm_manager import LLMContainer
 
     return LLMContainer(
         provider_name=LLMProvider.OPENAI,
-        llm=OpenAIMultiModal(
+        llm=OpenAI(
             model=cfg.llm.openai_image_summarize_transform_model,
             api_base=cfg.general.openai_base_url,
             temperature=0,
@@ -154,27 +174,33 @@ def _openai_image_summarize_transform(cfg: ConfigManager) -> LLMContainer:
     )
 
 
-def _huggingface_image_summarize_transform(cfg: ConfigManager) -> LLMContainer:
-    try:
-        from llama_index.multi_modal_llms.huggingface import (
-            HuggingFaceMultiModal,  # type: ignore
-        )
-    except ImportError as e:
-        raise ImportError(
-            PKG_NOT_FOUND_MSG.format(
-                pkg="llama-index-multi-modal-llms-huggingface",
-                extra="localmodel",
-                feature="HuggingFaceMultiModal",
-            )
-        ) from e
+def _openai_audio_summarize(cfg: ConfigManager) -> LLMContainer:
+    from llama_index.llms.openai import OpenAI
 
     from .llm_manager import LLMContainer
 
     return LLMContainer(
-        provider_name=LLMProvider.HUGGINGFACE,
-        llm=HuggingFaceMultiModal.from_model_name(
-            model_name=cfg.llm.huggingface_image_summarize_transform_model,
-            device=cfg.general.device,
+        provider_name=LLMProvider.OPENAI,
+        llm=OpenAI(
+            model=cfg.llm.openai_audio_summarize_transform_model,
+            api_base=cfg.general.openai_base_url,
             temperature=0,
+            modalities=["text"],
+        ),
+    )
+
+
+def _openai_video_summarize(cfg: ConfigManager) -> LLMContainer:
+    from llama_index.llms.openai import OpenAI
+
+    from .llm_manager import LLMContainer
+
+    return LLMContainer(
+        provider_name=LLMProvider.OPENAI,
+        llm=OpenAI(
+            model=cfg.llm.openai_video_summarize_transform_model,
+            api_base=cfg.general.openai_base_url,
+            temperature=0,
+            modalities=["text"],
         ),
     )
