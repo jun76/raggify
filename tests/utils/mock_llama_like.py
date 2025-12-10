@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import sys
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 from typing import Any, Dict, List, Optional, Sequence
+
+import numpy as np
 
 from llama_index.core.schema import BaseNode, TextNode
 
@@ -170,6 +172,17 @@ def setup_clap_mock(monkeypatch):
         torch_module = FakeTorchModule()
         monkeypatch.setitem(sys.modules, "torch", torch_module)
 
+    class _FakeSoundFile(ModuleType):
+        def __init__(self) -> None:
+            super().__init__("soundfile")
+
+        def read(self, audio):  # type: ignore[override]
+            # Return a simple mono waveform and sampling rate.
+            return np.zeros(16000, dtype=np.float32), 48000
+
+    if "soundfile" not in sys.modules:
+        monkeypatch.setitem(sys.modules, "soundfile", _FakeSoundFile())
+
     class DummyBatch(dict):
         def to(self, device):
             return DummyBatch({key: value.to(device) for key, value in self.items()})
@@ -224,22 +237,23 @@ def setup_clap_mock(monkeypatch):
     processor_calls: list[tuple[tuple, dict]] = []
     model_calls: list[tuple[tuple, dict]] = []
 
-    def fake_processor_from_pretrained(*args, **kwargs):
-        processor_calls.append((args, kwargs))
-        return FakeProcessor()
+    class _AutoProcessor:
+        @staticmethod
+        def from_pretrained(*args, **kwargs):
+            processor_calls.append((args, kwargs))
+            return FakeProcessor()
 
-    def fake_model_from_pretrained(*args, **kwargs):
-        model_calls.append((args, kwargs))
-        return FakeClapModel()
+    class _ClapModel:
+        @staticmethod
+        def from_pretrained(*args, **kwargs):
+            model_calls.append((args, kwargs))
+            return FakeClapModel()
 
-    monkeypatch.setattr(
-        "transformers.AutoProcessor.from_pretrained",
-        fake_processor_from_pretrained,
-    )
-    monkeypatch.setattr(
-        "transformers.ClapModel.from_pretrained",
-        fake_model_from_pretrained,
-    )
+    class _FakeTransformers(ModuleType):
+        AutoProcessor = _AutoProcessor
+        ClapModel = _ClapModel
+
+    monkeypatch.setitem(sys.modules, "transformers", _FakeTransformers("transformers"))
 
     return SimpleNamespace(
         model_instances=FakeClapModel.instances,
