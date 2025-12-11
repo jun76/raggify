@@ -11,6 +11,7 @@ from ..config.embed_config import EmbedModel as EM
 from ..config.embed_config import EmbedProvider
 from ..core.const import EXTRA_PKG_NOT_FOUND_MSG
 from ..llama_like.core.schema import Modality
+from ..logger import logger
 
 if TYPE_CHECKING:
     from .embed_manager import EmbedContainer, EmbedManager
@@ -234,6 +235,8 @@ def _clip(model: dict[str, Any], extra: str, device: str) -> EmbedContainer:
 
     from .embed_manager import EmbedContainer
 
+    logger.debug(f"Initializing CLIP Embedding with model: {model[EM.NAME]}")
+
     return EmbedContainer(
         provider_name=EmbedProvider.CLIP,
         embed=ClipEmbedding(
@@ -264,6 +267,8 @@ def _clip_image(cfg: ConfigManager) -> EmbedContainer:
 def _clap(model: dict[str, Any], device: str) -> EmbedContainer:
     from ..llama_like.embeddings.clap import ClapEmbedding
     from .embed_manager import EmbedContainer
+
+    logger.debug(f"Initializing CLAP Embedding with model: {model[EM.NAME]}")
 
     return EmbedContainer(
         provider_name=EmbedProvider.CLAP,
@@ -299,6 +304,8 @@ def _huggingface(model: dict[str, Any], extra: str, device: str) -> EmbedContain
         )
 
     from .embed_manager import EmbedContainer
+
+    logger.debug(f"Initializing HuggingFace Embedding with model: {model[EM.NAME]}")
 
     return EmbedContainer(
         provider_name=EmbedProvider.HUGGINGFACE,
