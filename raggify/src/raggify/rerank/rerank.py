@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from ..config.config_manager import ConfigManager
 from ..config.rerank_config import RerankProvider
 from ..core.const import EXTRA_PKG_NOT_FOUND_MSG
+from ..logger import logger
 
 if TYPE_CHECKING:
     from .rerank_manager import RerankContainer, RerankManager
@@ -80,9 +81,12 @@ def _flagembedding(cfg: ConfigManager) -> RerankContainer:
 
     from .rerank_manager import RerankContainer
 
+    model = cfg.rerank.flagembedding_rerank_model
+    logger.debug(f"Initializing FlagEmbedding Reranker with model: {model}")
+
     return RerankContainer(
         provider_name=RerankProvider.FLAGEMBEDDING,
-        rerank=FlagEmbeddingReranker(model=cfg.rerank.flagembedding_rerank_model),
+        rerank=FlagEmbeddingReranker(model=model),
     )
 
 

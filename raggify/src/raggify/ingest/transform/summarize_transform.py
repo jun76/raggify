@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from llama_index.core.schema import ImageNode, TextNode
 
     from ...llama_like.core.schema import AudioNode, VideoNode
-    from ...llm.llm import LLMManager
+    from ...llm.llm_manager import LLMManager
 
 __all__ = ["DefaultSummarizeTransform", "LLMSummarizeTransform"]
 

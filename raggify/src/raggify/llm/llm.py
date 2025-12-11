@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from ..config.config_manager import ConfigManager
 from ..config.llm_config import LLMProvider
@@ -144,7 +144,9 @@ def _create_video_summarize(cfg: ConfigManager) -> LLMContainer:
 
 
 # Container generation helpers per provider
-def _openai_text_summarize(cfg: ConfigManager) -> LLMContainer:
+def _openai(
+    model: str, api_base: Optional[str], modalities: Optional[list[str]] = None
+) -> LLMContainer:
     from llama_index.llms.openai import OpenAI
 
     from .llm_manager import LLMContainer
@@ -152,55 +154,39 @@ def _openai_text_summarize(cfg: ConfigManager) -> LLMContainer:
     return LLMContainer(
         provider_name=LLMProvider.OPENAI,
         llm=OpenAI(
-            model=cfg.llm.openai_text_summarize_transform_model,
-            api_base=cfg.general.openai_base_url,
+            model=model,
+            api_base=api_base,
             temperature=0,
+            modalities=modalities,
         ),
+    )
+
+
+def _openai_text_summarize(cfg: ConfigManager) -> LLMContainer:
+    return _openai(
+        model=cfg.llm.openai_text_summarize_transform_model,
+        api_base=cfg.general.openai_base_url,
     )
 
 
 def _openai_image_summarize(cfg: ConfigManager) -> LLMContainer:
-    from llama_index.llms.openai import OpenAI
-
-    from .llm_manager import LLMContainer
-
-    return LLMContainer(
-        provider_name=LLMProvider.OPENAI,
-        llm=OpenAI(
-            model=cfg.llm.openai_image_summarize_transform_model,
-            api_base=cfg.general.openai_base_url,
-            temperature=0,
-        ),
+    return _openai(
+        model=cfg.llm.openai_image_summarize_transform_model,
+        api_base=cfg.general.openai_base_url,
     )
 
 
 def _openai_audio_summarize(cfg: ConfigManager) -> LLMContainer:
-    from llama_index.llms.openai import OpenAI
-
-    from .llm_manager import LLMContainer
-
-    return LLMContainer(
-        provider_name=LLMProvider.OPENAI,
-        llm=OpenAI(
-            model=cfg.llm.openai_audio_summarize_transform_model,
-            api_base=cfg.general.openai_base_url,
-            temperature=0,
-            modalities=["text"],
-        ),
+    return _openai(
+        model=cfg.llm.openai_audio_summarize_transform_model,
+        api_base=cfg.general.openai_base_url,
+        modalities=["text"],
     )
 
 
 def _openai_video_summarize(cfg: ConfigManager) -> LLMContainer:
-    from llama_index.llms.openai import OpenAI
-
-    from .llm_manager import LLMContainer
-
-    return LLMContainer(
-        provider_name=LLMProvider.OPENAI,
-        llm=OpenAI(
-            model=cfg.llm.openai_video_summarize_transform_model,
-            api_base=cfg.general.openai_base_url,
-            temperature=0,
-            modalities=["text"],
-        ),
+    return _openai(
+        model=cfg.llm.openai_video_summarize_transform_model,
+        api_base=cfg.general.openai_base_url,
+        modalities=["text"],
     )
