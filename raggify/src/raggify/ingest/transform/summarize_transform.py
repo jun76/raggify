@@ -4,11 +4,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Sequence
 
 from llama_index.core.llms import AudioBlock, ChatMessage, ImageBlock, TextBlock
-from llama_index.core.schema import BaseNode, TransformComponent
+from llama_index.core.schema import BaseNode
 
 from ...core.event import async_loop_runner
 from ...core.metadata import MetaKeys as MK
 from ...logger import logger
+from .base_transform import BaseTransform
 
 _BlockSequence = Sequence[TextBlock | ImageBlock | AudioBlock]
 
@@ -23,8 +24,12 @@ if TYPE_CHECKING:
 __all__ = ["DefaultSummarizeTransform", "LLMSummarizeTransform"]
 
 
-class DefaultSummarizeTransform(TransformComponent):
+class DefaultSummarizeTransform(BaseTransform):
     """A placeholder summarize transform that returns nodes unchanged."""
+
+    def __init__(self) -> None:
+        """Constructor."""
+        super().__init__()
 
     def __call__(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
         """Return nodes unchanged.
@@ -35,6 +40,9 @@ class DefaultSummarizeTransform(TransformComponent):
         Returns:
             Sequence[BaseNode]: Unchanged nodes.
         """
+        if self._pipe_callback:
+            self._pipe_callback(self, nodes)
+
         return nodes
 
     async def acall(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
@@ -49,16 +57,21 @@ class DefaultSummarizeTransform(TransformComponent):
         return nodes
 
 
-class LLMSummarizeTransform(TransformComponent):
+class LLMSummarizeTransform(BaseTransform):
     """Transform to summarize multimodal nodes using an LLM."""
 
-    def __init__(self, llm_manager: LLMManager, audio_sample_rate: int = 16000) -> None:
+    def __init__(
+        self,
+        llm_manager: LLMManager,
+        audio_sample_rate: int = 16000,
+    ) -> None:
         """Constructor.
 
         Args:
             llm_manager (LLMManager): LLM manager.
             audio_sample_rate (int, optional): Audio sample rate. Defaults to 16000.
         """
+        super().__init__()
         self._llm_manager = llm_manager
         self._audio_sample_rate = audio_sample_rate
 
@@ -100,6 +113,9 @@ class LLMSummarizeTransform(TransformComponent):
                 raise ValueError(f"unsupported node type: {type(node)}")
 
             summarized_nodes.append(summarized)
+
+        if self._pipe_callback:
+            self._pipe_callback(self, summarized_nodes)
 
         return summarized_nodes
 

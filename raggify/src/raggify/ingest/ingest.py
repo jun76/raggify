@@ -4,8 +4,6 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional, Sequence
 
-from llama_index.core.ingestion import IngestionPipeline
-
 from ..core.event import async_loop_runner
 from ..llama_like.core.schema import Modality
 from ..logger import logger
@@ -20,6 +18,7 @@ if TYPE_CHECKING:
     )
 
     from ..llama_like.core.schema import AudioNode, VideoNode
+    from ..pipeline.pipeline_manager import TracablePipeline
 
 
 __all__ = [
@@ -59,14 +58,14 @@ def _read_list(path: str) -> list[str]:
     return lst
 
 
-def _build_text_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
+def _build_text_pipeline(persist_dir: Optional[Path]) -> TracablePipeline:
     """Build an ingestion pipeline for text.
 
     Args:
         persist_dir (Optional[Path]): Persist directory.
 
     Returns:
-        IngestionPipeline: Pipeline instance.
+        TracablePipeline: Pipeline instance.
     """
     from .transform import (
         AddChunkIndexTransform,
@@ -94,21 +93,21 @@ def _build_text_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
     transformations.append(EmbedTransform(rt.embed_manager))
     transformations.append(RemoveTempFileTransform())
 
-    return rt.build_pipeline(
+    return rt.pipeline.build_pipeline(
         modality=Modality.TEXT,
         transformations=transformations,
         persist_dir=persist_dir,
     )
 
 
-def _build_image_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
+def _build_image_pipeline(persist_dir: Optional[Path]) -> TracablePipeline:
     """Build an ingestion pipeline for images.
 
     Args:
         persist_dir (Optional[Path]): Persist directory.
 
     Returns:
-        IngestionPipeline: Pipeline instance.
+        TracablePipeline: Pipeline instance.
     """
     from .transform import (
         DefaultSummarizeTransform,
@@ -128,21 +127,21 @@ def _build_image_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
         RemoveTempFileTransform(),
     ]
 
-    return rt.build_pipeline(
+    return rt.pipeline.build_pipeline(
         modality=Modality.IMAGE,
         transformations=transformations,
         persist_dir=persist_dir,
     )
 
 
-def _build_audio_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
+def _build_audio_pipeline(persist_dir: Optional[Path]) -> TracablePipeline:
     """Build an ingestion pipeline for audio.
 
     Args:
         persist_dir (Optional[Path]): Persist directory.
 
     Returns:
-        IngestionPipeline: Pipeline instance.
+        TracablePipeline: Pipeline instance.
     """
     from .transform import (
         DefaultSummarizeTransform,
@@ -164,21 +163,21 @@ def _build_audio_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
     transformations.append(EmbedTransform(rt.embed_manager))
     transformations.append(RemoveTempFileTransform())
 
-    return rt.build_pipeline(
+    return rt.pipeline.build_pipeline(
         modality=Modality.AUDIO,
         transformations=transformations,
         persist_dir=persist_dir,
     )
 
 
-def _build_video_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
+def _build_video_pipeline(persist_dir: Optional[Path]) -> TracablePipeline:
     """Build an ingestion pipeline for video.
 
     Args:
         persist_dir (Optional[Path]): Persist directory.
 
     Returns:
-        IngestionPipeline: Pipeline instance.
+        TracablePipeline: Pipeline instance.
     """
     from .transform import (
         DefaultSummarizeTransform,
@@ -200,7 +199,7 @@ def _build_video_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
     transformations.append(EmbedTransform(rt.embed_manager))
     transformations.append(RemoveTempFileTransform())
 
-    return rt.build_pipeline(
+    return rt.pipeline.build_pipeline(
         modality=Modality.VIDEO,
         transformations=transformations,
         persist_dir=persist_dir,
@@ -246,6 +245,7 @@ async def _process_batches(
     for idx in range(0, len(nodes), pipe_batch_size):
         delay = 1
         for i in range(retry_count):
+            pipe.reset_nodes()
             try:
                 if is_canceled():
                     logger.info("Job is canceled, aborting batch processing")
@@ -259,6 +259,7 @@ async def _process_batches(
                 )
 
                 trans_nodes.extend(await pipe.arun(nodes=batch))
+                pipe.reset_nodes()
                 break
             except Exception as e:
                 for node in batch:
@@ -271,23 +272,22 @@ async def _process_batches(
                         ref_doc_id=node.ref_doc_id, raise_error=False
                     )
 
-                # FIXME: issue #4 Excessive rollbacks in ingest._process_batches
-
                 # Roll back cache entries
-                # rt.ingest_cache.delete(
-                #     modality=modality,
-                #     nodes=batch,
-                #     transformations=pipe.transformations,
-                #     persist_dir=persist_dir,
-                # )
-                rt.ingest_cache.delete_all(persist_dir)
+                for transformation, nodes in pipe.nodes:
+                    rt.ingest_cache.delete(
+                        modality=modality,
+                        nodes=nodes,
+                        transformations=[transformation],
+                        persist_dir=persist_dir,
+                    )
+                pipe.reset_nodes()
 
                 logger.error(f"failed to process batch {prog}, rolled back: {e}")
                 time.sleep(delay)
                 delay *= 2
                 logger.debug(f"retry count: {i + 1} / {retry_count}")
 
-    rt.persist_pipeline(pipe=pipe, modality=modality, persist_dir=persist_dir)
+    rt.pipeline.persist_pipeline(pipe=pipe, modality=modality, persist_dir=persist_dir)
     logger.debug(f"{len(nodes)} nodes --pipeline--> {len(trans_nodes)} nodes")
 
 

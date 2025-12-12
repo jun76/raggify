@@ -3,11 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Sequence, Type
 
-from llama_index.core.schema import BaseNode, TransformComponent
+from llama_index.core.schema import BaseNode
 
 from ...config.ingest_config import IngestConfig
 from ...core.event import async_loop_runner
 from ...logger import logger
+from .base_transform import BaseTransform
 
 if TYPE_CHECKING:
     from llama_index.core.schema import TextNode
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
 __all__ = ["SplitTransform"]
 
 
-class SplitTransform(TransformComponent):
+class SplitTransform(BaseTransform):
     """Base class for splitting media nodes into fixed-length chunks."""
 
     def __init__(self, cfg: IngestConfig) -> None:
@@ -24,6 +25,7 @@ class SplitTransform(TransformComponent):
         Args:
             cfg (IngestConfig): Ingest configuration.
         """
+        super().__init__()
         self._text_chunk_size = cfg.text_primary_chunk_size
         self._text_chunk_overlap = cfg.text_chunk_overlap
         self._audio_chunk_seconds = cfg.audio_chunk_seconds
@@ -74,6 +76,9 @@ class SplitTransform(TransformComponent):
                 raise ValueError(f"unsupported node type: {type(node)}")
 
             split_nodes.extend(split)
+
+        if self._pipe_callback:
+            self._pipe_callback(self, split_nodes)
 
         return split_nodes
 

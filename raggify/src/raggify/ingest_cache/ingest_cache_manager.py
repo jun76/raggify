@@ -19,7 +19,7 @@ class IngestCacheContainer:
     """Container for ingest cache parameters per modality."""
 
     provider_name: str
-    cache: Optional[IngestionCache]
+    cache: IngestionCache
     table_name: str
 
 

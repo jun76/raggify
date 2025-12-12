@@ -32,6 +32,11 @@ class RerankManager:
         """
         self._cont = cont
 
+        if cont:
+            logger.debug(f"{cont.provider_name} rerank initialized")
+        else:
+            logger.debug("rerank provider is not specified")
+
     @property
     def name(self) -> str:
         """Provider name.

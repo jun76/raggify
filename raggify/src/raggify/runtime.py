@@ -2,25 +2,19 @@ from __future__ import annotations
 
 import atexit
 import threading
-from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
-from llama_index.core.ingestion import IngestionPipeline
-
 from .config.config_manager import ConfigManager
-from .logger import logger
 
 if TYPE_CHECKING:
-    from llama_index.core.schema import TransformComponent
-
     from .document_store.document_store_manager import DocumentStoreManager
     from .embed.embed_manager import EmbedManager
     from .ingest.loader.file_loader import FileLoader
     from .ingest.loader.web_page_loader import WebPageLoader
     from .ingest.parser import BaseParser
     from .ingest_cache.ingest_cache_manager import IngestCacheManager
-    from .llama_like.core.schema import Modality
     from .llm.llm_manager import LLMManager
+    from .pipeline.pipeline_manager import PipelineManager
     from .rerank.rerank_manager import RerankManager
     from .vector_store.vector_store_manager import VectorStoreManager
 
@@ -41,6 +35,7 @@ class Runtime:
         self._vector_store: Optional[VectorStoreManager] = None
         self._document_store: Optional[DocumentStoreManager] = None
         self._ingest_cache: Optional[IngestCacheManager] = None
+        self._pipeline: Optional[PipelineManager] = None
         self._rerank_manager: Optional[RerankManager] = None
         self._llm_manager: Optional[LLMManager] = None
         self._parser: Optional[BaseParser] = None
@@ -62,6 +57,7 @@ class Runtime:
         self._vector_store = None
         self._document_store = None
         self._ingest_cache = None
+        self._pipeline = None
         self._rerank_manager = None
         self._llm_manager = None
         self._parser = None
@@ -87,6 +83,7 @@ class Runtime:
         self.vector_store
         self.document_store
         self.ingest_cache
+        self.pipeline
         self.rerank_manager
         self.llm_manager
         self.parser
@@ -94,117 +91,6 @@ class Runtime:
         self.web_page_loader
 
         configure_logging(self.cfg.general.log_level)
-
-    def _use_local_workspace(self) -> bool:
-        """Whether to persist cache or document store locally.
-
-        Returns:
-            bool: True when persisting locally.
-        """
-        from .config.document_store_config import DocumentStoreProvider
-        from .config.ingest_cache_config import IngestCacheProvider
-
-        cfg = self.cfg.general
-        if (cfg.ingest_cache_provider is IngestCacheProvider.LOCAL) or (
-            cfg.document_store_provider is DocumentStoreProvider.LOCAL
-        ):
-            return True
-
-        return False
-
-    def build_pipeline(
-        self,
-        modality: Modality,
-        transformations: list[TransformComponent] | None = None,
-        persist_dir: Optional[Path] = None,
-    ) -> IngestionPipeline:
-        """Create or load an ingestion pipeline.
-
-        Args:
-            modality (Modality): Modality.
-            transformations (list[TransformComponent] | None):
-                Sequence of transforms. Defaults to None.
-            persist_dir (Optional[Path], optional): Persistence directory. Defaults to None.
-
-        Returns:
-            IngestionPipeline: Pipeline instance.
-        """
-        from llama_index.core.ingestion import DocstoreStrategy
-
-        pipe = IngestionPipeline(
-            transformations=transformations,
-            vector_store=self.vector_store.get_container(modality).store,
-            cache=self.ingest_cache.get_container(modality).cache,
-            docstore=self.document_store.store,
-            docstore_strategy=DocstoreStrategy.UPSERTS,
-        )
-
-        if not self._use_local_workspace():
-            return pipe
-
-        if not (persist_dir and persist_dir.exists()):
-            return pipe
-
-        try:
-            pipe.load(str(persist_dir))
-            with self._pipeline_lock:
-                self.ingest_cache.get_container(modality).cache = pipe.cache
-                if pipe.docstore is None:
-                    logger.warning("pipeline has no docstore")
-                else:
-                    self.document_store.store = pipe.docstore
-                logger.debug(f"loaded pipeline from {persist_dir}")
-        except Exception as e:
-            logger.warning(f"failed to load persist dir: {e}")
-
-        return pipe
-
-    def persist_pipeline(
-        self,
-        pipe: IngestionPipeline,
-        modality: Modality,
-        persist_dir: Optional[Path] = None,
-    ) -> None:
-        """Persist the pipeline to storage.
-
-        Args:
-            pipe (IngestionPipeline): Pipeline instance.
-            modality (Modality): Modality.
-            persist_dir (Optional[Path], optional): Persistence directory. Defaults to None.
-        """
-        if not self._use_local_workspace():
-            return
-
-        if persist_dir is None:
-            logger.warning(f"persist dir not specified, skipped persisting")
-            return
-
-        try:
-            pipe.persist(str(persist_dir))
-            with self._pipeline_lock:
-                self.ingest_cache.get_container(modality).cache = pipe.cache
-                if pipe.docstore is None:
-                    logger.warning("pipeline has no docstore")
-                else:
-                    self.document_store.store = pipe.docstore
-                logger.debug(f"persisted pipeline to {persist_dir}")
-        except Exception as e:
-            logger.warning(f"failed to persist: {e}")
-
-    def delete_all_persisted_data(self) -> None:
-        """Delete all data persisted in each store."""
-        with self._pipeline_lock:
-            if self._use_local_workspace():
-                persist_dir = self.cfg.ingest.pipe_persist_dir
-            else:
-                persist_dir = None
-
-            if not self.vector_store.delete_all():
-                ref_doc_ids = self.document_store.get_ref_doc_ids()
-                self.vector_store.delete_nodes(ref_doc_ids)
-
-            self.ingest_cache.delete_all(persist_dir)
-            self.document_store.delete_all(persist_dir)
 
     # Singleton getters follow.
     @property
@@ -253,6 +139,20 @@ class Runtime:
             )
 
         return self._ingest_cache
+
+    @property
+    def pipeline(self) -> PipelineManager:
+        if self._pipeline is None:
+            from .pipeline.pipeline import create_pipeline_manager
+
+            self._pipeline = create_pipeline_manager(
+                cfg=self.cfg,
+                vector_store=self.vector_store,
+                ingest_cache=self.ingest_cache,
+                document_store=self.document_store,
+            )
+
+        return self._pipeline
 
     @property
     def rerank_manager(self) -> RerankManager:

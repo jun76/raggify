@@ -2,15 +2,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Awaitable, Callable, Optional, Sequence
 
-from llama_index.core.schema import BaseNode, ImageNode, TextNode, TransformComponent
+from llama_index.core.schema import BaseNode, ImageNode, TextNode
 
 from ...core.event import async_loop_runner
 from ...llama_like.core.schema import AudioNode, VideoNode
 from ...logger import logger
+from .base_transform import BaseTransform
 
 if TYPE_CHECKING:
     from llama_index.core.base.embeddings.base import Embedding
-    from llama_index.core.schema import ImageType
+    from llama_index.core.schema import BaseNode, ImageType
 
     from ...embed.embed_manager import EmbedManager
     from ...llama_like.embeddings.multi_modal_base import AudioType, VideoType
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
 __all__ = ["EmbedTransform"]
 
 
-class EmbedTransform(TransformComponent):
+class EmbedTransform(BaseTransform):
     """Transform to embed various modalities."""
 
     def __init__(self, embed: EmbedManager) -> None:
@@ -27,6 +28,7 @@ class EmbedTransform(TransformComponent):
         Args:
             embed (EmbedManager): Embedding manager.
         """
+        super().__init__()
         self._embed = embed
 
     @classmethod
@@ -73,6 +75,9 @@ class EmbedTransform(TransformComponent):
             split_nodes = await self._aembed_text(nodes)
         else:
             raise ValueError(f"unsupported node type: {type(candidate)}")
+
+        if self._pipe_callback:
+            self._pipe_callback(self, split_nodes)
 
         return split_nodes
 

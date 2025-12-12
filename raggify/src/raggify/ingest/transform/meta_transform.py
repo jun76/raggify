@@ -3,15 +3,20 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Sequence
 
-from llama_index.core.schema import BaseNode, TransformComponent
+from llama_index.core.schema import BaseNode
 
 from ...logger import logger
+from .base_transform import BaseTransform
 
 __all__ = ["AddChunkIndexTransform", "RemoveTempFileTransform"]
 
 
-class AddChunkIndexTransform(TransformComponent):
+class AddChunkIndexTransform(BaseTransform):
     """Transform to assign chunk indexes."""
+
+    def __init__(self) -> None:
+        """Constructor."""
+        super().__init__()
 
     @classmethod
     def class_name(cls) -> str:
@@ -43,14 +48,21 @@ class AddChunkIndexTransform(TransformComponent):
             for i, node in enumerate(group):
                 node.metadata[MK.CHUNK_NO] = i
 
+        if self._pipe_callback:
+            self._pipe_callback(self, nodes)
+
         return nodes
 
     async def acall(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
         return self.__call__(nodes, **kwargs)
 
 
-class RemoveTempFileTransform(TransformComponent):
+class RemoveTempFileTransform(BaseTransform):
     """Transform to remove temporary files from nodes."""
+
+    def __init__(self) -> None:
+        """Constructor."""
+        super().__init__()
 
     @classmethod
     def class_name(cls) -> str:
@@ -91,4 +103,10 @@ class RemoveTempFileTransform(TransformComponent):
                 # custom readers such as PDF)
                 meta[MK.FILE_PATH] = meta[MK.BASE_SOURCE]
 
+        if self._pipe_callback:
+            self._pipe_callback(self, nodes)
+
         return nodes
+
+    async def acall(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
+        return self.__call__(nodes, **kwargs)
