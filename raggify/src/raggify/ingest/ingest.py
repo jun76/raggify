@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Callable, Optional, Sequence
 from llama_index.core.ingestion import IngestionPipeline
 
 from ..core.event import async_loop_runner
-from ..embed.embed_manager import Modality
+from ..llama_like.core.schema import Modality
 from ..logger import logger
 from ..runtime import get_runtime as _rt
 
@@ -81,7 +81,7 @@ def _build_text_pipeline(persist_dir: Optional[Path]) -> IngestionPipeline:
     if rt.cfg.general.text_summarize_transform_provider is not None:
         transformations: list[TransformComponent] = [
             # Split before LLM summarization to avoid token limit issues
-            SplitTransform(cfg=rt.cfg.ingest, text_chunk_size=10000),
+            SplitTransform(rt.cfg.ingest),
             LLMSummarizeTransform(rt.llm_manager),
         ]
     else:

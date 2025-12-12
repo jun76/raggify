@@ -26,6 +26,7 @@ class IngestConfig(DataClassDictMixin):
     """Config dataclass for document ingestion settings."""
 
     # General
+    text_primary_chunk_size: int = 2000
     text_chunk_size: int = 500
     text_chunk_overlap: int = 50
     upload_dir: Path = DEFAULT_WORKSPACE_PATH / "upload"

@@ -18,16 +18,13 @@ __all__ = ["SplitTransform"]
 class SplitTransform(TransformComponent):
     """Base class for splitting media nodes into fixed-length chunks."""
 
-    def __init__(
-        self, cfg: IngestConfig, text_chunk_size: Optional[int] = None
-    ) -> None:
+    def __init__(self, cfg: IngestConfig) -> None:
         """Constructor.
 
         Args:
             cfg (IngestConfig): Ingest configuration.
-            text_chunk_size (Optional[int]): Optional text chunk size to override config.
         """
-        self._text_chunk_size = text_chunk_size or cfg.text_chunk_size
+        self._text_chunk_size = cfg.text_primary_chunk_size
         self._text_chunk_overlap = cfg.text_chunk_overlap
         self._audio_chunk_seconds = cfg.audio_chunk_seconds
         self._video_chunk_seconds = cfg.video_chunk_seconds

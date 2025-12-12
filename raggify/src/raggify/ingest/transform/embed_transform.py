@@ -58,6 +58,10 @@ class EmbedTransform(TransformComponent):
         Returns:
             Sequence[BaseNode]: Nodes after splitting.
         """
+        # For subsequent ingestions from known sources, nodes become empty
+        if not nodes:
+            return nodes
+
         candidate = nodes[0]
         if isinstance(candidate, ImageNode):
             split_nodes = await self._aembed_image(nodes)

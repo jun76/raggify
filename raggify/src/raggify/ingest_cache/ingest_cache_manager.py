@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Sequence
 
-from ..embed.embed_manager import Modality
+from ..llama_like.core.schema import Modality
 from ..logger import logger
 
 if TYPE_CHECKING:
