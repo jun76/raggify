@@ -63,7 +63,7 @@ class LLMManager:
         return set(self._conts.keys())
 
     @property
-    def text_summarize_transform(self) -> LLM:
+    def text_summarizer(self) -> LLM:
         """Get the text summarize transform LLM.
 
         Raises:
@@ -75,7 +75,7 @@ class LLMManager:
         return self.get_container(LLMUsage.TEXT_SUMMARIZER).llm
 
     @property
-    def image_summarize_transform(self) -> LLM:
+    def image_summarizer(self) -> LLM:
         """Get the image summarize transform LLM.
 
         Raises:
@@ -87,7 +87,7 @@ class LLMManager:
         return self.get_container(LLMUsage.IMAGE_SUMMARIZER).llm
 
     @property
-    def audio_summarize_transform(self) -> LLM:
+    def audio_summarizer(self) -> LLM:
         """Get the audio summarize transform LLM.
 
         Raises:
@@ -99,7 +99,7 @@ class LLMManager:
         return self.get_container(LLMUsage.AUDIO_SUMMARIZER).llm
 
     @property
-    def video_summarize_transform(self) -> LLM:
+    def video_summarizer(self) -> LLM:
         """Get the video summarize transform LLM.
 
         Raises:

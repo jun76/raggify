@@ -7,9 +7,7 @@ from typing import Any, Iterable, Optional, Sequence
 from llama_index.core.readers.base import BaseReader
 from llama_index.core.schema import Document
 
-from ....core.exts import Exts
 from ....core.metadata import BasicMetaData
-from ....core.utils import get_temp_path
 from ....logger import logger
 
 __all__ = ["VideoReader"]
@@ -47,12 +45,13 @@ class VideoReader(BaseReader):
         Returns:
             list[Path]: Extracted frame paths.
         """
+        from ....core.exts import Exts
+        from ....core.utils import get_temp_path
         from ...util import MediaConverter
 
-        base_dir = get_temp_path(seed=str(src), suffix=Exts.PNG)
-        converter = MediaConverter()
-        base_dir = converter.extract_png_frames_from_video(
-            src=src, dst=base_dir, frame_rate=self._fps
+        dst = get_temp_path(seed=str(src), suffix=Exts.PNG)
+        base_dir = MediaConverter().extract_png_frames_from_video(
+            src=src, dst=dst, frame_rate=self._fps
         )
         if base_dir is None:
             return []
@@ -71,13 +70,14 @@ class VideoReader(BaseReader):
         Returns:
             Optional[Path]: Extracted audio file path.
         """
+        from ....core.exts import Exts
+        from ....core.utils import get_temp_path
         from ...util import MediaConverter
 
-        temp_path = Path(get_temp_path(seed=str(src), suffix=Exts.MP3))
-        converter = MediaConverter()
+        dst = Path(get_temp_path(seed=str(src), suffix=Exts.MP3))
 
-        return converter.extract_mp3_audio_from_video(
-            src=src, dst=temp_path, sample_rate=self._audio_sample_rate
+        return MediaConverter().extract_mp3_audio_from_video(
+            src=src, dst=dst, sample_rate=self._audio_sample_rate
         )
 
     def _image_docs(self, frames: Sequence[Path], source: str) -> list[Document]:
@@ -119,43 +119,37 @@ class VideoReader(BaseReader):
 
         return Document(text=source, metadata=meta.to_dict())
 
-    def lazy_load_data(self, path: str, extra_info: Any = None) -> Iterable[Document]:
+    def lazy_load_data(self, path: Any, extra_info: Any = None) -> Iterable[Document]:
         """Split a video file into image and audio documents.
 
         Args:
-            path (str): Video file path.
+            path (Any): Video file path-like object.
             extra_info (Any, optional): Unused extra info. Defaults to None.
 
         Returns:
             Iterable[Document]: Extracted documents.
         """
-        abs_path = os.path.abspath(path)
-        if not os.path.exists(abs_path):
-            logger.error(f"file not found: {abs_path}")
-            return []
+        from ....core.exts import Exts
 
-        if not Exts.endswith_exts(abs_path, set(Exts.VIDEO)):
+        path = os.fspath(path)
+        if not Exts.endswith_exts(path, set(Exts.VIDEO)):
             logger.error(
-                f"unsupported video ext: {abs_path}. supported: {' '.join(Exts.VIDEO)}"
+                f"unsupported video ext: {path}. supported: {' '.join(Exts.VIDEO)}"
             )
             return []
 
         try:
-            frames = self._extract_frames(Path(abs_path))
-            audio = self._extract_audio(Path(abs_path))
+            frames = self._extract_frames(Path(path))
+            audio = self._extract_audio(Path(path))
         except ImportError as e:
             logger.error(f"ffmpeg not installed, cannot read video files: {e}")
             return []
 
-        docs = self._image_docs(frames=frames, source=abs_path)
+        docs = self._image_docs(frames=frames, source=path)
         if audio is not None:
-            docs.append(self._audio_doc(audio, abs_path))
-            logger.debug(
-                f"loaded {len(frames)} image docs + 1 audio doc from {abs_path}"
-            )
+            docs.append(self._audio_doc(audio, path))
+            logger.debug(f"loaded {len(frames)} image docs + 1 audio doc from {path}")
         else:
-            logger.debug(
-                f"loaded {len(frames)} image docs from {abs_path} (audio missing)"
-            )
+            logger.debug(f"loaded {len(frames)} image docs from {path} (audio missing)")
 
         return docs

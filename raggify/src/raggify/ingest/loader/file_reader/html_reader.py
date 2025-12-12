@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Any, Iterable
 
 from llama_index.core.readers.base import BaseReader
@@ -18,21 +19,22 @@ class HTMLReader(BaseReader):
         so we reuse the HTML files saved to temporary files by this custom Reader.
     """
 
-    def lazy_load_data(self, path: str, extra_info: Any = None) -> Iterable[Document]:
+    def lazy_load_data(self, path: Any, extra_info: Any = None) -> Iterable[Document]:
         """Load an HTML file and generate text documents.
 
         Args:
-            path (str): File path.
+            path (Any): File path-like object.
 
         Returns:
             Iterable[Document]: List of documents read from the HTML file.
         """
-        import html2text
-
         from ....core.metadata import BasicMetaData
 
         try:
+            path = os.fspath(path)
             with open(path, "r", encoding="utf-8") as f:
+                import html2text
+
                 html = f.read()
 
                 # Convert to markdown-like text

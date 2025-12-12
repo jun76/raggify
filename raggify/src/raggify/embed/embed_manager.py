@@ -47,6 +47,8 @@ class EmbedManager:
             embed_batch_size (int): Number of nodes processed per embed batch.
             batch_interval_sec (int): Interval between batches in seconds.
         """
+        from llama_index.core.embeddings.mock_embed_model import MockEmbedding
+
         self._conts = conts
         self._embed_batch_size = embed_batch_size
         self._batch_interval_sec = batch_interval_sec
@@ -59,7 +61,9 @@ class EmbedManager:
             )
             logger.debug(f"space_key: {cont.space_key} generated")
 
-        Settings.embed_model = None  # disable llama_index default embed model
+        Settings.embed_model = MockEmbedding(
+            embed_dim=1
+        )  # disable llama_index default embed model
 
     @property
     def name(self) -> str:

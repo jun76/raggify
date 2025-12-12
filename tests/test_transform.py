@@ -100,9 +100,6 @@ def test_split_transform_splits_audio_and_rebuilds(monkeypatch, tmp_path):
     local = tmp_path / "sample.wav"
     shutil.copy(src, local)
 
-    def fake_probe(self, path):
-        return 10.0
-
     def fake_split(self, src, dst, chunk_seconds):
         dst.mkdir(parents=True, exist_ok=True)
         for i in range(2):
@@ -113,10 +110,6 @@ def test_split_transform_splits_audio_and_rebuilds(monkeypatch, tmp_path):
     monkeypatch.setattr(
         "raggify.ingest.util.MediaConverter.__init__",
         lambda self: None,
-    )
-    monkeypatch.setattr(
-        "raggify.ingest.util.MediaConverter.probe_duration",
-        fake_probe,
     )
     monkeypatch.setattr(
         "raggify.ingest.util.MediaConverter.split",
@@ -139,9 +132,6 @@ def test_split_transform_splits_video(monkeypatch, tmp_path):
     local = tmp_path / "sample.mp4"
     shutil.copy(src, local)
 
-    def fake_probe(self, path):
-        return 12.0
-
     def fake_split(self, src, dst, chunk_seconds):
         dst.mkdir(parents=True, exist_ok=True)
         for i in range(3):
@@ -152,10 +142,6 @@ def test_split_transform_splits_video(monkeypatch, tmp_path):
     monkeypatch.setattr(
         "raggify.ingest.util.MediaConverter.__init__",
         lambda self: None,
-    )
-    monkeypatch.setattr(
-        "raggify.ingest.util.MediaConverter.probe_duration",
-        fake_probe,
     )
     monkeypatch.setattr(
         "raggify.ingest.util.MediaConverter.split",
@@ -284,7 +270,7 @@ def test_default_summarize_transform_returns_nodes():
 def test_llm_summarize_transform_summarizes_text():
     node = make_sample_text_node()
     node.text = "Original"
-    text_llm = DummyLLM(" trimmed text ")
+    text_llm = DummyLLM(response_text=" trimmed text ")
     runtime = make_dummy_runtime(text_llm=text_llm)
 
     summarize_transform = LLMSummarizeTransform(cast("LLMManager", runtime.llm_manager))
@@ -313,7 +299,7 @@ def test_llm_summarize_transform_summarizes_image():
         id_="img",
         metadata={"file_path": "tests/data/images/sample.png"},
     )
-    image_llm = DummyLLM(" caption ")
+    image_llm = DummyLLM(response_text=" caption ")
     runtime = make_dummy_runtime(image_llm=image_llm)
 
     summarize_transform = LLMSummarizeTransform(cast("LLMManager", runtime.llm_manager))
@@ -328,7 +314,7 @@ def test_llm_summarize_transform_summarizes_audio(tmp_path):
     audio_path = tmp_path / "sample.wav"
     audio_path.write_bytes(b"\x00")
     audio = AudioNode(id_="audio", metadata={MK.FILE_PATH: str(audio_path)})
-    audio_llm = DummyLLM(" transcribed audio ")
+    audio_llm = DummyLLM(response_text=" transcribed audio ")
     runtime = make_dummy_runtime(audio_llm=audio_llm)
     summarize_transform = LLMSummarizeTransform(cast("LLMManager", runtime.llm_manager))
 

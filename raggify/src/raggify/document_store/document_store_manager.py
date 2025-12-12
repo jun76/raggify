@@ -102,8 +102,6 @@ class DocumentStoreManager:
         Args:
             persist_dir (Optional[Path]): Persist directory.
         """
-        from llama_index.core.storage.docstore.types import DEFAULT_PERSIST_FNAME
-
         try:
             for doc_id in list(self.store.docs.keys()):
                 self.store.delete_document(doc_id, raise_error=False)
@@ -115,6 +113,10 @@ class DocumentStoreManager:
 
         if persist_dir is not None:
             try:
+                from llama_index.core.storage.docstore.types import (
+                    DEFAULT_PERSIST_FNAME,
+                )
+
                 self.store.persist(str(persist_dir / DEFAULT_PERSIST_FNAME))
             except Exception as e:
                 logger.warning(f"failed to persist: {e}")

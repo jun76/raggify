@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Optional, Sequence, Type
 
 from llama_index.core.schema import BaseNode, TransformComponent
 
@@ -33,25 +33,25 @@ class SplitTransform(TransformComponent):
         self._video_chunk_seconds = cfg.video_chunk_seconds
         self._text_split_transform = None
 
-    def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
+    def __call__(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
         """Synchronous interface.
 
         Args:
-            nodes (list[BaseNode]): Nodes to summarize.
+            nodes (Sequence[BaseNode]): Nodes to summarize.
 
         Returns:
-            list[BaseNode]: Nodes after summarization.
+            Sequence[BaseNode]: Nodes after summarization.
         """
         return async_loop_runner.run(lambda: self.acall(nodes=nodes, **kwargs))
 
-    async def acall(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
+    async def acall(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
         """Interface called from the pipeline asynchronously.
 
         Args:
-            nodes (list[BaseNode]): Nodes to split.
+            nodes (Sequence[BaseNode]): Nodes to split.
 
         Returns:
-            list[BaseNode]: Nodes after splitting.
+            Sequence[BaseNode]: Nodes after splitting.
         """
         from llama_index.core.schema import TextNode
 
@@ -117,26 +117,19 @@ class SplitTransform(TransformComponent):
         from ...core.utils import get_temp_path
         from ...ingest.util import MediaConverter
 
-        nodes: list[BaseNode] = [node]
-
         path = node.metadata.get(MK.FILE_PATH) or node.metadata.get(MK.TEMP_FILE_PATH)
         if not path:
-            return nodes
+            return [node]
 
         if chunk_seconds is None:
-            return nodes
+            return [node]
 
-        converter = MediaConverter()
-        duration = converter.probe_duration(Path(path))
-        if duration is None or duration <= chunk_seconds:
-            return nodes
-
-        base_dir = Path(get_temp_path(path))
-        base_dir = converter.split(
-            src=Path(path), dst=base_dir, chunk_seconds=chunk_seconds
+        dst = Path(get_temp_path(path))
+        base_dir = MediaConverter().split(
+            src=Path(path), dst=dst, chunk_seconds=chunk_seconds
         )
         if not base_dir:
-            return nodes
+            return [node]
 
         return self._build_chunk_nodes(node, base_dir, node_cls)
 

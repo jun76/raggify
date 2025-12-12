@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from typing import Sequence
 
 from llama_index.core.schema import BaseNode, TransformComponent
 
@@ -21,30 +22,30 @@ class AddChunkIndexTransform(TransformComponent):
         """
         return cls.__name__
 
-    def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
+    def __call__(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
         """Interface called from the pipeline.
 
         Args:
-            nodes (list[BaseNode]): Nodes already split.
+            nodes (Sequence[BaseNode]): Nodes already split.
 
         Returns:
-            list[BaseNode]: Nodes with chunk numbers assigned.
+            Sequence[BaseNode]: Nodes with chunk numbers assigned.
         """
         from ...core.metadata import MetaKeys as MK
 
+        node: BaseNode
         buckets = defaultdict(list)
         for node in nodes:
             id = node.ref_doc_id
             buckets[id].append(node)
 
-        node: BaseNode
         for id, group in buckets.items():
             for i, node in enumerate(group):
                 node.metadata[MK.CHUNK_NO] = i
 
         return nodes
 
-    async def acall(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
+    async def acall(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
         return self.__call__(nodes, **kwargs)
 
 
@@ -60,14 +61,14 @@ class RemoveTempFileTransform(TransformComponent):
         """
         return cls.__name__
 
-    def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
+    def __call__(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
         """Interface called from the pipeline.
 
         Args:
-            nodes (list[BaseNode]): Nodes to process.
+            nodes (Sequence[BaseNode]): Nodes to process.
 
         Returns:
-            list[BaseNode]: Nodes after removing temporary files.
+            Sequence[BaseNode]: Nodes after removing temporary files.
         """
         import os
 

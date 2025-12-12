@@ -102,9 +102,9 @@ def server(
     mcp = mcp or cfg.general.mcp
 
     if mcp:
-        logger.debug("mount MCP HTTP server")
         from ..server.mcp import app as _mcp
 
+        logger.debug("mount MCP HTTP server")
         _mcp.mount_http()
 
     uvicorn.run(

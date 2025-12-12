@@ -2,14 +2,11 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable
 
 from llama_index.core.readers.base import BaseReader
 from llama_index.core.schema import Document
 
-from ....core.exts import Exts
-from ....core.metadata import BasicMetaData
-from ....core.utils import get_temp_path
 from ....logger import logger
 
 __all__ = ["AudioReader"]
@@ -34,62 +31,44 @@ class AudioReader(BaseReader):
         self._sample_rate = sample_rate
         self._bitrate = bitrate
 
-    def _convert(self, src: Path) -> Optional[Path]:
-        """Execute audio conversion.
-
-        Args:
-            src (Path): Source audio file path.
-
-        Raises:
-            ImportError: If ffmpeg is not installed.
-
-        Returns:
-            Optional[Path]: Converted audio file path, or None on failure.
-        """
-        from ....core.exts import Exts
-        from ...util import MediaConverter
-
-        temp_path = get_temp_path(seed=str(src), suffix=Exts.MP3)
-        converter = MediaConverter()
-
-        return converter.audio_to_mp3(
-            src=src,
-            dst=temp_path,
-            sample_rate=self._sample_rate,
-            bitrate=self._bitrate,
-        )
-
-    def lazy_load_data(self, path: str, extra_info: Any = None) -> Iterable[Document]:
+    def lazy_load_data(self, path: Any, extra_info: Any = None) -> Iterable[Document]:
         """Convert audio files and return document placeholders.
 
         Args:
-            path (str): File path.
+            path (Any): File path-like object.
 
         Returns:
             Iterable[Document]: Documents referencing converted files.
         """
-        abs_path = os.path.abspath(path)
-        if not os.path.exists(abs_path):
-            logger.error(f"file not found: {abs_path}")
-            return []
+        from ....core.exts import Exts
+        from ....core.metadata import BasicMetaData
+        from ....core.utils import get_temp_path
 
-        if not Exts.endswith_exts(abs_path, Exts.AUDIO):
+        path = os.fspath(path)
+        if not Exts.endswith_exts(path, Exts.AUDIO):
             logger.error(
-                f"unsupported audio ext: {abs_path}. supported: {' '.join(Exts.AUDIO)}"
+                f"unsupported audio ext: {path}. supported: {' '.join(Exts.AUDIO)}"
             )
             return []
 
-        if Exts.endswith_ext(abs_path, Exts.MP3):
+        if Exts.endswith_ext(path, Exts.MP3):
             meta = BasicMetaData()
-            meta.file_path = abs_path
-            meta.base_source = abs_path
+            meta.file_path = path
+            meta.base_source = path
 
-            logger.debug(f"audio file is already mp3, skipping conversion: {abs_path}")
+            logger.debug(f"audio file is already mp3, skipping conversion: {path}")
 
-            return [Document(text=abs_path, metadata=meta.to_dict())]
+            return [Document(text=path, metadata=meta.to_dict())]
 
         try:
-            converted = self._convert(Path(abs_path))
+            from ...util import MediaConverter
+
+            converted = MediaConverter().audio_to_mp3(
+                src=Path(path),
+                dst=get_temp_path(seed=path, suffix=Exts.MP3),
+                sample_rate=self._sample_rate,
+                bitrate=self._bitrate,
+            )
         except ImportError as e:
             logger.error(f"ffmpeg not installed, cannot read audio files: {e}")
             return []
@@ -100,8 +79,8 @@ class AudioReader(BaseReader):
         meta = BasicMetaData()
         meta.file_path = str(converted)
         meta.temp_file_path = str(converted)
-        meta.base_source = abs_path
+        meta.base_source = path
 
-        logger.debug(f"converted audio {abs_path} -> {converted}")
+        logger.debug(f"converted audio {path} -> {converted}")
 
-        return [Document(text=abs_path, metadata=meta.to_dict())]
+        return [Document(text=path, metadata=meta.to_dict())]

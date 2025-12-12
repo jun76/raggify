@@ -52,11 +52,12 @@ class WebPageLoader(BaseLoader):
         from xml.etree.ElementTree import fromstring
 
         sitemap = fromstring(raw_sitemap)
-        sitemap_urls = []
+        sitemap_urls: list[str] = []
 
         for url in sitemap.findall(f"{{{self.xml_schema_sitemap}}}url"):
             location = url.find(f"{{{self.xml_schema_sitemap}}}loc").text  # type: ignore
-            sitemap_urls.append(location)
+            if location:
+                sitemap_urls.append(location)
 
         return sitemap_urls
 

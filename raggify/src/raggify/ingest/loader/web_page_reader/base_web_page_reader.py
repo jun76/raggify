@@ -53,7 +53,7 @@ class BaseWebPageReader(ABC):
         Returns:
             str: Cleansed text.
         """
-        from bs4 import BeautifulSoup
+        from bs4 import BeautifulSoup, Tag
 
         soup = BeautifulSoup(html, "html.parser")
 
@@ -87,7 +87,7 @@ class BaseWebPageReader(ABC):
             if unique_nodes:
                 # Move only the "main content candidates" to a new soup
                 new_soup = BeautifulSoup("<html><body></body></html>", "html.parser")
-                body = new_soup.body or []
+                body: Tag | list = new_soup.body or []
                 for node in unique_nodes:
                     # Extract from the original soup and move to new_soup
                     body.append(node.extract())
@@ -97,9 +97,8 @@ class BaseWebPageReader(ABC):
         # Remove excessive blank lines
         cleansed = [ln.strip() for ln in str(soup).splitlines()]
         cleansed = [ln for ln in cleansed if ln]
-        cleansed = "\n".join(cleansed)
 
-        return cleansed
+        return "\n".join(cleansed)
 
     async def _adownload_direct_linked_file(
         self,
@@ -117,8 +116,6 @@ class BaseWebPageReader(ABC):
         Returns:
             Optional[str]: Local temporary file path.
         """
-        from ....core.utils import get_temp_path
-
         ext = Exts.get_ext(url)
         if ext not in allowed_exts:
             logger.warning(
@@ -151,6 +148,8 @@ class BaseWebPageReader(ABC):
 
         # FIXME: issue #5 Handling MIME Types When Asset URL Extensions and
         # Actual Entities Mismatch in HTMLReader._adownload_direct_linked_file
+        from ....core.utils import get_temp_path
+
         ext = Exts.get_ext(url)
         path = str(get_temp_path(seed=url, suffix=ext))
         try:

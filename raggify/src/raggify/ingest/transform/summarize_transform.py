@@ -26,25 +26,25 @@ __all__ = ["DefaultSummarizeTransform", "LLMSummarizeTransform"]
 class DefaultSummarizeTransform(TransformComponent):
     """A placeholder summarize transform that returns nodes unchanged."""
 
-    def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
+    def __call__(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
         """Return nodes unchanged.
 
         Args:
-            nodes (list[BaseNode]): Input nodes.
+            nodes (Sequence[BaseNode]): Input nodes.
 
         Returns:
-            list[BaseNode]: Unchanged nodes.
+            Sequence[BaseNode]: Unchanged nodes.
         """
         return nodes
 
-    async def acall(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
+    async def acall(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
         """Async wrapper matching the synchronous call.
 
         Args:
-            nodes (list[BaseNode]): Input nodes.
+            nodes (Sequence[BaseNode]): Input nodes.
 
         Returns:
-            list[BaseNode]: Unchanged nodes.
+            Sequence[BaseNode]: Unchanged nodes.
         """
         return nodes
 
@@ -62,25 +62,25 @@ class LLMSummarizeTransform(TransformComponent):
         self._llm_manager = llm_manager
         self._audio_sample_rate = audio_sample_rate
 
-    def __call__(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
+    def __call__(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
         """Synchronous interface.
 
         Args:
-            nodes (list[BaseNode]): Nodes to summarize.
+            nodes (Sequence[BaseNode]): Nodes to summarize.
 
         Returns:
-            list[BaseNode]: Nodes after summarization.
+            Sequence[BaseNode]: Nodes after summarization.
         """
         return async_loop_runner.run(lambda: self.acall(nodes=nodes, **kwargs))
 
-    async def acall(self, nodes: list[BaseNode], **kwargs) -> list[BaseNode]:
+    async def acall(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
         """Interface called from the pipeline asynchronously.
 
         Args:
-            nodes (list[BaseNode]): Nodes to summarize.
+            nodes (Sequence[BaseNode]): Nodes to summarize.
 
         Returns:
-            list[BaseNode]: Nodes after summarization.
+            Sequence[BaseNode]: Nodes after summarization.
         """
         from llama_index.core.schema import ImageNode, TextNode
 
@@ -134,7 +134,7 @@ If no useful text is available, please return ONLY an empty string (no need for 
 Original text:
 {original_text}
 """
-        llm = self._llm_manager.text_summarize_transform
+        llm = self._llm_manager.text_summarizer
 
         def _build_blocks(target: TextNode) -> list[TextBlock]:
             return [
@@ -164,7 +164,7 @@ Please provide a concise description of the image for semantic search purposes.
 If the image is not describable,
 please return just an empty string (no need for unnecessary comments).
 """
-        llm = self._llm_manager.image_summarize_transform
+        llm = self._llm_manager.image_summarizer
 
         def _build_blocks(target: TextNode) -> list[TextBlock | ImageBlock]:
             path = target.metadata[MK.FILE_PATH]
@@ -198,7 +198,7 @@ Please provide a concise description of the audio for semantic search purposes.
 If the audio is not describable,
 please return just an empty string (no need for unnecessary comments).
 """
-        llm = self._llm_manager.audio_summarize_transform
+        llm = self._llm_manager.audio_summarizer
 
         def _build_blocks(target: TextNode) -> list[TextBlock | AudioBlock]:
             path = target.metadata[MK.FILE_PATH]

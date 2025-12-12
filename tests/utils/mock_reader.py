@@ -9,13 +9,13 @@ from unittest.mock import AsyncMock, patch
 
 
 def patch_audio_convert(monkeypatch, output_path: Path) -> None:
-    """Patch AudioReader._convert to avoid ffmpeg calls."""
-    from raggify.ingest.loader.file_reader.audio_reader import AudioReader
+    """Patch MediaConverter.audio_to_mp3 to avoid ffmpeg calls."""
+    from raggify.ingest.util import MediaConverter
 
-    def _fake_convert(self, src: str) -> Path:
+    def _fake_audio_to_mp3(self, src, dst, sample_rate=16000, bitrate="192k"):
         return Path(output_path)
 
-    monkeypatch.setattr(AudioReader, "_convert", _fake_convert)
+    monkeypatch.setattr(MediaConverter, "audio_to_mp3", _fake_audio_to_mp3)
 
 
 def patch_video_extract(
@@ -23,15 +23,15 @@ def patch_video_extract(
     frame_paths: Iterable[Path],
     audio_path: Path | None,
 ) -> None:
-    """Patch frame/audio extraction for VideoReader."""
+    """Patch frame/audio extraction helpers for VideoReader."""
     from raggify.ingest.loader.file_reader.video_reader import VideoReader
 
     frames = [Path(p) for p in frame_paths]
 
-    def _fake_frames(self, src: str) -> list[Path]:
+    def _fake_frames(self, src):
         return frames
 
-    def _fake_audio(self, src: str) -> Path | None:
+    def _fake_audio(self, src):
         return Path(audio_path) if audio_path else None
 
     monkeypatch.setattr(VideoReader, "_extract_frames", _fake_frames)

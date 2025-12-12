@@ -7,7 +7,6 @@ from llama_index.core.readers.base import BaseReader
 from llama_index.core.schema import Document
 
 from ....core.const import EXTRA_PKG_NOT_FOUND_MSG
-from ....core.exts import Exts
 from ....logger import logger
 
 _PYMUPDF_NOT_FOUND_MSG = EXTRA_PKG_NOT_FOUND_MSG.format(
@@ -28,11 +27,11 @@ __all__ = ["MultiPDFReader"]
 class MultiPDFReader(BaseReader):
     """Custom PDF reader that also extracts images."""
 
-    def lazy_load_data(self, path: str, extra_info: Any = None) -> Iterable[Document]:
+    def lazy_load_data(self, path: Any, extra_info: Any = None) -> Iterable[Document]:
         """Load a PDF file and generate text and image documents.
 
         Args:
-            path (str): File path.
+            path (Any): File path-like object.
 
         Raises:
             ImportError: If pymupdf is not installed.
@@ -40,16 +39,14 @@ class MultiPDFReader(BaseReader):
         Returns:
             Iterable[Document]: Text and image documents.
         """
+        from ....core.exts import Exts
+
         try:
             import pymupdf as fitz  # type: ignore
         except ImportError:
             raise ImportError(_PYMUPDF_NOT_FOUND_MSG)
 
-        path = os.path.abspath(path)
-        if not os.path.exists(path):
-            logger.warning(f"file not found: {path}")
-            return []
-
+        path = os.fspath(path)
         if not Exts.endswith_ext(path, Exts.PDF):
             logger.warning(f"unsupported ext. {Exts.PDF} is allowed.")
             return []
@@ -132,6 +129,7 @@ class MultiPDFReader(BaseReader):
         except ImportError:
             raise ImportError(_PYMUPDF_NOT_FOUND_MSG)
 
+        from ....core.exts import Exts
         from ....core.metadata import BasicMetaData
         from ....core.utils import get_temp_path
 

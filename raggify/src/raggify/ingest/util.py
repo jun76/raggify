@@ -60,7 +60,7 @@ class MediaConverter:
                 .run(quiet=True)
             )
         except Exception as e:
-            logger.error(f"{src} ffmpeg audio conversion failure: {e}")
+            logger.error(f"failed to convert audio to mp3 for {src}: {e}")
             return None
 
         return dst
@@ -88,7 +88,7 @@ class MediaConverter:
                 .run(quiet=True)
             )
         except Exception as e:
-            logger.error(f"{src} ffmpeg audio extraction failure: {e}")
+            logger.error(f"failed to extract mp3 audio from video for {src}: {e}")
             return None
 
         return dst
@@ -115,7 +115,7 @@ class MediaConverter:
                 .run(quiet=True)
             )
         except Exception as e:
-            logger.error(f"{src} ffmpeg frame extraction failure: {e}")
+            logger.error(f"failed to extract png frames from video for {src}: {e}")
             return None
 
         return dst
@@ -131,6 +131,16 @@ class MediaConverter:
         Returns:
             Optional[Path]: Directory path containing chunks, or None on failure.
         """
+        try:
+            probe = self._ffmpeg.probe(src)
+            duration = float(probe["format"]["duration"])
+        except Exception as e:
+            logger.error(f"failed to probe media duration for {src}: {e}")
+            return None
+
+        if duration is None or duration <= chunk_seconds:
+            return None
+
         pattern = dst / f"%05d{dst.suffix}"
         try:
             (
@@ -146,23 +156,7 @@ class MediaConverter:
                 .run(quiet=True)
             )
         except Exception as e:
-            logger.error(f"{src} ffmpeg video splitting failure: {e}")
+            logger.error(f"failed to split video for {src}: {e}")
             return None
 
         return dst
-
-    def probe_duration(self, path: Path) -> Optional[float]:
-        """Probe media duration in seconds.
-
-        Args:
-            path (Path): Media file path.
-
-        Returns:
-            Optional[float]: Duration in seconds, or None on failure.
-        """
-        try:
-            probe = self._ffmpeg.probe(path)
-            return float(probe["format"]["duration"])
-        except Exception as e:
-            logger.error(f"failed to probe media duration for {path}: {e}")
-            return None
