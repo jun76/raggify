@@ -13,10 +13,16 @@ __all__ = ["BaseTransform"]
 class BaseTransform(TransformComponent):
     """Base class for all transform components."""
 
-    def __init__(self) -> None:
+    def __init__(self, is_canceled: Callable[[], bool]) -> None:
+        """Constructor.
+
+        Args:
+            is_canceled (Callable[[], bool]): Cancellation flag for the job.
+        """
         self._pipe_callback: (
             Callable[[TransformComponent, Sequence[BaseNode]], None] | None
         ) = None
+        self._is_canceled = is_canceled
 
     def set_pipe_callback(
         self, pipe_callback: Callable[[TransformComponent, Sequence[BaseNode]], None]

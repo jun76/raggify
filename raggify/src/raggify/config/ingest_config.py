@@ -83,3 +83,15 @@ class IngestConfig(DataClassDictMixin):
             "ins",
         ]
     )
+    strip_query_keys: list[str] = field(
+        default_factory=lambda: [
+            "utm_source",
+            "utm_medium",
+            "utm_campaign",
+            "utm_term",
+            "utm_content",
+            "gclid",
+            "fbclid",
+            "nocache",
+        ]
+    )

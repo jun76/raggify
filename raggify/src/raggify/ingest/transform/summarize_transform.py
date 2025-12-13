@@ -27,9 +27,14 @@ __all__ = ["DefaultSummarizeTransform", "LLMSummarizeTransform"]
 class DefaultSummarizeTransform(BaseTransform):
     """A placeholder summarize transform that returns nodes unchanged."""
 
-    def __init__(self) -> None:
-        """Constructor."""
-        super().__init__()
+    def __init__(self, is_canceled: Callable[[], bool] = lambda: False) -> None:
+        """Constructor.
+
+        Args:
+            is_canceled (Callable[[], bool], optional):
+                Cancellation flag for the job. Defaults to lambda: False.
+        """
+        super().__init__(is_canceled)
 
     def __call__(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
         """Return nodes unchanged.
@@ -63,15 +68,17 @@ class LLMSummarizeTransform(BaseTransform):
     def __init__(
         self,
         llm_manager: LLMManager,
+        is_canceled: Callable[[], bool],
         audio_sample_rate: int = 16000,
     ) -> None:
         """Constructor.
 
         Args:
             llm_manager (LLMManager): LLM manager.
+            is_canceled (Callable[[], bool]): Cancellation flag for the job.
             audio_sample_rate (int, optional): Audio sample rate. Defaults to 16000.
         """
-        super().__init__()
+        super().__init__(is_canceled)
         self._llm_manager = llm_manager
         self._audio_sample_rate = audio_sample_rate
 
@@ -99,8 +106,15 @@ class LLMSummarizeTransform(BaseTransform):
 
         from ...llama_like.core.schema import AudioNode, VideoNode
 
+        if not nodes:
+            return nodes
+
         summarized_nodes: list[BaseNode] = []
         for node in nodes:
+            if self._is_canceled():
+                logger.info("Job is canceled, aborting batch processing")
+                return []
+
             if isinstance(node, ImageNode):
                 summarized = await self._asummarize_image(node)
             elif isinstance(node, AudioNode):

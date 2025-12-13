@@ -55,6 +55,8 @@ class BaseWebPageReader(ABC):
         """
         from bs4 import BeautifulSoup, Tag
 
+        # Remove query strings from image URLs to avoid duplication
+        html = self._strip_asset_cache_busters(html)
         soup = BeautifulSoup(html, "html.parser")
 
         # Drop unwanted tags
@@ -99,6 +101,34 @@ class BaseWebPageReader(ABC):
         cleansed = [ln for ln in cleansed if ln]
 
         return "\n".join(cleansed)
+
+    def _strip_asset_cache_busters(self, html: str) -> str:
+        """Remove cache busters from asset URLs in HTML.
+
+        Args:
+            html (str): Raw HTML text.
+
+        Returns:
+            str: HTML text with cache busters removed.
+        """
+        import re
+
+        exts = sorted(
+            {
+                ext.lstrip(".")
+                for ext in Exts.IMAGE | {Exts.SVG} | Exts.AUDIO | Exts.VIDEO
+            }
+        )
+        if not exts:
+            return html
+
+        # png|jpe?g|webp etc.
+        ext_pattern = "|".join(
+            ext.replace("+", r"\+").replace(".", r"\.") for ext in exts
+        )
+        pattern = rf"(\.(?:{ext_pattern}))\?[^\s\"'<>]+"
+
+        return re.sub(pattern, r"\1", html)
 
     async def _adownload_direct_linked_file(
         self,

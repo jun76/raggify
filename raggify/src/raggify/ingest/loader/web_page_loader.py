@@ -186,30 +186,32 @@ class WebPageLoader(BaseLoader):
         return await self._asplit_docs_modality(docs)
 
     def _remove_query_params(self, uri: str) -> str:
-        """Remove query parameters from a file path or URL.
+        """Normalize URL query parameters by dropping configured keys.
 
         Args:
             uri (str): File path or URL string.
 
         Returns:
-            str: URI without query parameters.
+            str: URI with selected query keys removed.
         """
-        from urllib.parse import urlparse, urlunparse
+        from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
-        remove_exts: set[str] = Exts.IMAGE | {Exts.SVG}
-
-        if not remove_exts:
-            return uri
-
-        ext = Exts.get_ext(uri)
-        if ext not in remove_exts:
+        strip_keys = {key.lower() for key in self._cfg.strip_query_keys}
+        if not strip_keys:
             return uri
 
         parsed = urlparse(uri)
         if not parsed.query:
             return uri
 
-        return urlunparse(parsed._replace(query=""))
+        params = parse_qsl(parsed.query, keep_blank_values=True)
+        filtered = [
+            (key, value) for key, value in params if key.lower() not in strip_keys
+        ]
+        if len(filtered) == len(params):
+            return uri
+
+        return urlunparse(parsed._replace(query=urlencode(filtered)))
 
     async def aload_from_urls(
         self,

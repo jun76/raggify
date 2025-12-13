@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Sequence
+from typing import Callable, Sequence
 
 from llama_index.core.schema import BaseNode
 
@@ -14,9 +14,13 @@ __all__ = ["AddChunkIndexTransform", "RemoveTempFileTransform"]
 class AddChunkIndexTransform(BaseTransform):
     """Transform to assign chunk indexes."""
 
-    def __init__(self) -> None:
-        """Constructor."""
-        super().__init__()
+    def __init__(self, is_canceled: Callable[[], bool]) -> None:
+        """Constructor.
+
+        Args:
+            is_canceled (Callable[[], bool]): Cancellation flag for the job.
+        """
+        super().__init__(is_canceled)
 
     @classmethod
     def class_name(cls) -> str:
@@ -37,6 +41,13 @@ class AddChunkIndexTransform(BaseTransform):
             Sequence[BaseNode]: Nodes with chunk numbers assigned.
         """
         from ...core.metadata import MetaKeys as MK
+
+        if not nodes:
+            return nodes
+
+        if self._is_canceled():
+            logger.info("Job is canceled, aborting batch processing")
+            return []
 
         node: BaseNode
         buckets = defaultdict(list)
@@ -60,9 +71,13 @@ class AddChunkIndexTransform(BaseTransform):
 class RemoveTempFileTransform(BaseTransform):
     """Transform to remove temporary files from nodes."""
 
-    def __init__(self) -> None:
-        """Constructor."""
-        super().__init__()
+    def __init__(self, is_canceled: Callable[[], bool]) -> None:
+        """Constructor.
+
+        Args:
+            is_canceled (Callable[[], bool]): Cancellation flag for the job.
+        """
+        super().__init__(is_canceled)
 
     @classmethod
     def class_name(cls) -> str:
@@ -85,6 +100,12 @@ class RemoveTempFileTransform(BaseTransform):
         import os
 
         from ...core.metadata import MetaKeys as MK
+
+        if not nodes:
+            return nodes
+
+        if self._is_canceled():
+            logger.info("Job is canceled, but continuing to remove temp files")
 
         for node in nodes:
             meta = node.metadata

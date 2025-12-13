@@ -48,6 +48,10 @@ from .config import configure_test_env
 configure_test_env()
 
 
+def _never_canceled() -> bool:
+    return False
+
+
 @pytest.fixture(autouse=True)
 def patch_embedding_bases(monkeypatch):
     apply_patch_embedding_bases(monkeypatch)
@@ -78,7 +82,7 @@ def _make_media_node(node_cls, path: Path, ref_doc_id: str) -> TextNode:
 
 
 def test_add_chunk_index_transform_assigns_per_doc():
-    t = AddChunkIndexTransform()
+    t = AddChunkIndexTransform(_never_canceled)
     node1 = make_sample_text_node()
     node2 = make_sample_text_node()
     node3 = make_sample_text_node()
@@ -119,7 +123,7 @@ def test_split_transform_splits_audio_and_rebuilds(monkeypatch, tmp_path):
     node = _make_media_node(AudioNode, local, ref_doc_id="audio-doc")
 
     cfg = _make_ingest_cfg(audio_chunk_seconds=2)
-    split_transform = SplitTransform(cfg)
+    split_transform = SplitTransform(cfg, _never_canceled)
     result = split_transform([node])
 
     assert len(result) == 2
@@ -151,7 +155,7 @@ def test_split_transform_splits_video(monkeypatch, tmp_path):
     node = _make_media_node(VideoNode, local, ref_doc_id="video-doc")
 
     cfg = _make_ingest_cfg(video_chunk_seconds=3)
-    split_transform = SplitTransform(cfg)
+    split_transform = SplitTransform(cfg, _never_canceled)
     nodes = split_transform([node])
 
     assert len(nodes) == 3
@@ -178,7 +182,7 @@ def test_split_transform_dispatches_text(monkeypatch):
     )
 
     cfg = _make_ingest_cfg(text_chunk_size=100, text_chunk_overlap=10)
-    split_transform = SplitTransform(cfg)
+    split_transform = SplitTransform(cfg, _never_canceled)
     result = split_transform([node])
 
     texts = [cast(TextNode, n).text for n in result]
@@ -187,7 +191,7 @@ def test_split_transform_dispatches_text(monkeypatch):
 
 def test_embed_transform_writes_text_embeddings():
     manager = make_dummy_manager({Modality.TEXT: DummyTextEmbedding()})
-    transform = EmbedTransform(manager)
+    transform = EmbedTransform(manager, _never_canceled)
 
     node = make_sample_text_node()
     node.metadata[MK.TEMP_FILE_PATH] = "/tmp/temp.txt"
@@ -202,7 +206,7 @@ def test_embed_transform_writes_text_embeddings():
 
 def test_embed_transform_handles_image_nodes():
     manager = make_dummy_manager({Modality.IMAGE: DummyImageEmbedding()})
-    transform = EmbedTransform(manager)
+    transform = EmbedTransform(manager, _never_canceled)
 
     node = ImageNode(id_="img", metadata={"file_path": "tests/data/images/sample.png"})
     other = TextNode(text="text", id_="txt")
@@ -214,7 +218,7 @@ def test_embed_transform_handles_image_nodes():
 
 def test_embed_transform_handles_audio_nodes():
     manager = make_dummy_manager({Modality.AUDIO: DummyAudioEmbedding()})
-    transform = EmbedTransform(manager)
+    transform = EmbedTransform(manager, _never_canceled)
 
     audio = AudioNode(
         text="audio",
@@ -230,7 +234,7 @@ def test_embed_transform_handles_audio_nodes():
 
 def test_embed_transform_handles_video_nodes():
     manager = make_dummy_manager({Modality.VIDEO: DummyVideoEmbedding()})
-    transform = EmbedTransform(manager)
+    transform = EmbedTransform(manager, _never_canceled)
 
     video = VideoNode(
         text="video",
@@ -251,7 +255,7 @@ def test_remove_temp_file_transform_removes_files(tmp_path):
     node.metadata[MK.BASE_SOURCE] = "/orig/path.txt"
     node.metadata[MK.FILE_PATH] = str(temp)
 
-    transform = RemoveTempFileTransform()
+    transform = RemoveTempFileTransform(_never_canceled)
     result = transform([node])
 
     assert not temp.exists()
@@ -273,7 +277,9 @@ def test_llm_summarize_transform_summarizes_text():
     text_llm = DummyLLM(response_text=" trimmed text ")
     runtime = make_dummy_runtime(text_llm=text_llm)
 
-    summarize_transform = LLMSummarizeTransform(cast("LLMManager", runtime.llm_manager))
+    summarize_transform = LLMSummarizeTransform(
+        cast("LLMManager", runtime.llm_manager), _never_canceled
+    )
     result = asyncio.run(summarize_transform.acall([node]))
     text_node = cast(TextNode, result[0])
 
@@ -287,7 +293,9 @@ def test_llm_summarize_transform_handles_text_error():
     text_llm = DummyLLM(error=RuntimeError("boom"))
     runtime = make_dummy_runtime(text_llm=text_llm)
 
-    summarize_transform = LLMSummarizeTransform(cast("LLMManager", runtime.llm_manager))
+    summarize_transform = LLMSummarizeTransform(
+        cast("LLMManager", runtime.llm_manager), _never_canceled
+    )
     result = asyncio.run(summarize_transform.acall([node]))
     text_node = cast(TextNode, result[0])
 
@@ -302,7 +310,9 @@ def test_llm_summarize_transform_summarizes_image():
     image_llm = DummyLLM(response_text=" caption ")
     runtime = make_dummy_runtime(image_llm=image_llm)
 
-    summarize_transform = LLMSummarizeTransform(cast("LLMManager", runtime.llm_manager))
+    summarize_transform = LLMSummarizeTransform(
+        cast("LLMManager", runtime.llm_manager), _never_canceled
+    )
     result = asyncio.run(summarize_transform.acall([image_node]))
     img_node = cast(ImageNode, result[0])
 
@@ -316,7 +326,9 @@ def test_llm_summarize_transform_summarizes_audio(tmp_path):
     audio = AudioNode(id_="audio", metadata={MK.FILE_PATH: str(audio_path)})
     audio_llm = DummyLLM(response_text=" transcribed audio ")
     runtime = make_dummy_runtime(audio_llm=audio_llm)
-    summarize_transform = LLMSummarizeTransform(cast("LLMManager", runtime.llm_manager))
+    summarize_transform = LLMSummarizeTransform(
+        cast("LLMManager", runtime.llm_manager), _never_canceled
+    )
 
     result = asyncio.run(summarize_transform.acall([audio]))
     node = cast(AudioNode, result[0])
@@ -330,7 +342,9 @@ def test_llm_summarize_transform_logs_video_not_implemented(tmp_path):
     video_path.write_text("")  # create placeholder file
     video = VideoNode(id_="video", metadata={MK.FILE_PATH: str(video_path)})
     runtime = make_dummy_runtime()
-    summarize_transform = LLMSummarizeTransform(cast("LLMManager", runtime.llm_manager))
+    summarize_transform = LLMSummarizeTransform(
+        cast("LLMManager", runtime.llm_manager), _never_canceled
+    )
 
     result = asyncio.run(summarize_transform.acall([video]))
     node = cast(VideoNode, result[0])
@@ -340,7 +354,9 @@ def test_llm_summarize_transform_logs_video_not_implemented(tmp_path):
 
 def test_llm_summarize_transform_rejects_unknown_node():
     runtime = make_dummy_runtime()
-    summarize_transform = LLMSummarizeTransform(cast("LLMManager", runtime.llm_manager))
+    summarize_transform = LLMSummarizeTransform(
+        cast("LLMManager", runtime.llm_manager), _never_canceled
+    )
     doc = Document(text="doc", id_="doc")
 
     with pytest.raises(ValueError):

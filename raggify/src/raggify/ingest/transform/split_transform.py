@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Sequence, Type
+from typing import TYPE_CHECKING, Callable, Optional, Sequence, Type
 
 from llama_index.core.schema import BaseNode
 
@@ -19,13 +19,14 @@ __all__ = ["SplitTransform"]
 class SplitTransform(BaseTransform):
     """Base class for splitting media nodes into fixed-length chunks."""
 
-    def __init__(self, cfg: IngestConfig) -> None:
+    def __init__(self, cfg: IngestConfig, is_canceled: Callable[[], bool]) -> None:
         """Constructor.
 
         Args:
             cfg (IngestConfig): Ingest configuration.
+            is_canceled (Callable[[], bool]): Cancellation flag for the job.
         """
-        super().__init__()
+        super().__init__(is_canceled)
         self._text_chunk_size = cfg.text_primary_chunk_size
         self._text_chunk_overlap = cfg.text_chunk_overlap
         self._audio_chunk_seconds = cfg.audio_chunk_seconds
@@ -56,8 +57,15 @@ class SplitTransform(BaseTransform):
 
         from ...llama_like.core.schema import AudioNode, VideoNode
 
+        if not nodes:
+            return nodes
+
         split_nodes: list[BaseNode] = []
         for node in nodes:
+            if self._is_canceled():
+                logger.info("Job is canceled, aborting batch processing")
+                return []
+
             if isinstance(node, AudioNode):
                 split = self._split_media(
                     node=node,

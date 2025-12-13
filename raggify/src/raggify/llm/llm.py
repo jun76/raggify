@@ -29,13 +29,13 @@ def create_llm_manager(cfg: ConfigManager) -> LLMManager:
     try:
         conts: dict[LLMUsage, LLMContainer] = {}
         if cfg.general.text_summarize_transform_provider:
-            conts[LLMUsage.TEXT_SUMMARIZER] = _create_text_summarize(cfg)
+            conts[LLMUsage.TEXT_SUMMARIZER] = _create_text_summarizer(cfg)
         if cfg.general.image_summarize_transform_provider:
-            conts[LLMUsage.IMAGE_SUMMARIZER] = _create_image_summarize(cfg)
+            conts[LLMUsage.IMAGE_SUMMARIZER] = _create_image_summarizer(cfg)
         if cfg.general.audio_summarize_transform_provider:
-            conts[LLMUsage.AUDIO_SUMMARIZER] = _create_audio_summarize(cfg)
+            conts[LLMUsage.AUDIO_SUMMARIZER] = _create_audio_summarizer(cfg)
         if cfg.general.video_summarize_transform_provider:
-            conts[LLMUsage.VIDEO_SUMMARIZER] = _create_video_summarize(cfg)
+            conts[LLMUsage.VIDEO_SUMMARIZER] = _create_video_summarizer(cfg)
     except (ValueError, ImportError) as e:
         raise RuntimeError("invalid LLM settings") from e
     except Exception as e:
@@ -47,7 +47,7 @@ def create_llm_manager(cfg: ConfigManager) -> LLMManager:
     return LLMManager(conts)
 
 
-def _create_text_summarize(cfg: ConfigManager) -> LLMContainer:
+def _create_text_summarizer(cfg: ConfigManager) -> LLMContainer:
     """Create text summarize transform container.
 
     Args:
@@ -64,14 +64,14 @@ def _create_text_summarize(cfg: ConfigManager) -> LLMContainer:
         raise ValueError("text summarize transform provider is not specified")
     match provider:
         case LLMProvider.OPENAI:
-            return _openai_text_summarize(cfg)
+            return _openai_text_summarizer(cfg)
         case _:
             raise ValueError(
                 f"unsupported text summarize transform provider: {provider}"
             )
 
 
-def _create_image_summarize(cfg: ConfigManager) -> LLMContainer:
+def _create_image_summarizer(cfg: ConfigManager) -> LLMContainer:
     """Create image summarize transform container.
 
     Args:
@@ -88,14 +88,14 @@ def _create_image_summarize(cfg: ConfigManager) -> LLMContainer:
         raise ValueError("image summarize transform provider is not specified")
     match provider:
         case LLMProvider.OPENAI:
-            return _openai_image_summarize(cfg)
+            return _openai_image_summarizer(cfg)
         case _:
             raise ValueError(
                 f"unsupported image summarize transform provider: {provider}"
             )
 
 
-def _create_audio_summarize(cfg: ConfigManager) -> LLMContainer:
+def _create_audio_summarizer(cfg: ConfigManager) -> LLMContainer:
     """Create audio summarize transform container.
 
     Args:
@@ -112,14 +112,14 @@ def _create_audio_summarize(cfg: ConfigManager) -> LLMContainer:
         raise ValueError("audio summarize transform provider is not specified")
     match provider:
         case LLMProvider.OPENAI:
-            return _openai_audio_summarize(cfg)
+            return _openai_audio_summarizer(cfg)
         case _:
             raise ValueError(
                 f"unsupported audio summarize transform provider: {provider}"
             )
 
 
-def _create_video_summarize(cfg: ConfigManager) -> LLMContainer:
+def _create_video_summarizer(cfg: ConfigManager) -> LLMContainer:
     """Create video summarize transform container.
 
     Args:
@@ -136,7 +136,7 @@ def _create_video_summarize(cfg: ConfigManager) -> LLMContainer:
         raise ValueError("video summarize transform provider is not specified")
     match provider:
         case LLMProvider.OPENAI:
-            return _openai_video_summarize(cfg)
+            return _openai_video_summarizer(cfg)
         case _:
             raise ValueError(
                 f"unsupported video summarize transform provider: {provider}"
@@ -162,21 +162,21 @@ def _openai(
     )
 
 
-def _openai_text_summarize(cfg: ConfigManager) -> LLMContainer:
+def _openai_text_summarizer(cfg: ConfigManager) -> LLMContainer:
     return _openai(
         model=cfg.llm.openai_text_summarize_transform_model,
         api_base=cfg.general.openai_base_url,
     )
 
 
-def _openai_image_summarize(cfg: ConfigManager) -> LLMContainer:
+def _openai_image_summarizer(cfg: ConfigManager) -> LLMContainer:
     return _openai(
         model=cfg.llm.openai_image_summarize_transform_model,
         api_base=cfg.general.openai_base_url,
     )
 
 
-def _openai_audio_summarize(cfg: ConfigManager) -> LLMContainer:
+def _openai_audio_summarizer(cfg: ConfigManager) -> LLMContainer:
     return _openai(
         model=cfg.llm.openai_audio_summarize_transform_model,
         api_base=cfg.general.openai_base_url,
@@ -184,7 +184,7 @@ def _openai_audio_summarize(cfg: ConfigManager) -> LLMContainer:
     )
 
 
-def _openai_video_summarize(cfg: ConfigManager) -> LLMContainer:
+def _openai_video_summarizer(cfg: ConfigManager) -> LLMContainer:
     return _openai(
         model=cfg.llm.openai_video_summarize_transform_model,
         api_base=cfg.general.openai_base_url,

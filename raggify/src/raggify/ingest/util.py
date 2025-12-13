@@ -12,7 +12,7 @@ class MediaConverter:
     """Utility class for audio or video conversion using ffmpeg."""
 
     def __init__(self) -> None:
-        """Constractor.
+        """Constructor.
 
         Raises:
             ImportError: If ffmpeg is not installed.

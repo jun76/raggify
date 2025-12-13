@@ -42,7 +42,7 @@ class LLMManager:
         self._conts = conts
 
         for llm_usage, cont in self._conts.items():
-            logger.debug(f"{cont.provider_name} {llm_usage} LLM initialized")
+            logger.debug(f"{cont.provider_name} {llm_usage} initialized")
 
     @property
     def name(self) -> str:

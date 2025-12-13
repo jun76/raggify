@@ -22,13 +22,14 @@ __all__ = ["EmbedTransform"]
 class EmbedTransform(BaseTransform):
     """Transform to embed various modalities."""
 
-    def __init__(self, embed: EmbedManager) -> None:
+    def __init__(self, embed: EmbedManager, is_canceled: Callable[[], bool]) -> None:
         """Constructor.
 
         Args:
             embed (EmbedManager): Embedding manager.
+            is_canceled (Callable[[], bool]): Cancellation flag for the job.
         """
-        super().__init__()
+        super().__init__(is_canceled)
         self._embed = embed
 
     @classmethod
@@ -63,6 +64,10 @@ class EmbedTransform(BaseTransform):
         # For subsequent ingestions from known sources, nodes become empty
         if not nodes:
             return nodes
+
+        if self._is_canceled():
+            logger.info("Job is canceled, aborting batch processing")
+            return []
 
         candidate = nodes[0]
         if isinstance(candidate, ImageNode):

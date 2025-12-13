@@ -96,6 +96,16 @@ class DocumentStoreManager:
 
         return list(infos.keys())
 
+    def delete(self, ref_doc_id: str, raise_error: bool = True) -> None:
+        """Delete ref_docs and related nodes stored.
+
+        Args:
+            ref_doc_id (str): Reference document ID to delete.
+            raise_error (bool, optional):
+                Whether to raise an error if deletion fails. Defaults to True.
+        """
+        self.store.delete_ref_doc(ref_doc_id=ref_doc_id, raise_error=raise_error)
+
     def delete_all(self, persist_dir: Optional[Path]) -> None:
         """Delete all ref_docs and related nodes stored.
 

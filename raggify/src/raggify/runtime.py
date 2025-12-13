@@ -42,8 +42,6 @@ class Runtime:
         self._file_loader: Optional[FileLoader] = None
         self._web_page_loader: Optional[WebPageLoader] = None
 
-        self._pipeline_lock = threading.Lock()
-
     def _release(self, with_cfg: bool = True) -> None:
         """Dispose of existing resources.
 
