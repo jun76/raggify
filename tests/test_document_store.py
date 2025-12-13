@@ -11,7 +11,7 @@ from raggify.config.document_store_config import (
     DocumentStoreProvider,
 )
 from raggify.config.general_config import GeneralConfig
-from raggify.config.ingest_config import IngestConfig
+from raggify.config.pipeline_config import PipelineConfig
 from raggify.document_store.document_store import create_document_store_manager
 from tests.utils.mock_document_store import (
     DummyPostgresDocumentStore,
@@ -44,9 +44,9 @@ def _make_cfg(provider: DocumentStoreProvider, persist_dir) -> ConfigManager:
         document_store_provider=provider, knowledgebase_name="My KB"
     )
     document_store = DocumentStoreConfig()
-    ingest = IngestConfig(pipe_persist_dir=persist_dir)
+    pipeline = PipelineConfig(persist_dir=persist_dir)
     stub = SimpleNamespace(
-        general=general, document_store=document_store, ingest=ingest
+        general=general, document_store=document_store, pipeline=pipeline
     )
     return cast(ConfigManager, stub)
 

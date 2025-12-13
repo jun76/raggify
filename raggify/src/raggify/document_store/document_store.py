@@ -34,7 +34,7 @@ def create_document_store_manager(cfg: ConfigManager) -> DocumentStoreManager:
         case DocumentStoreProvider.POSTGRES:
             return _postgres(cfg=cfg.document_store, table_name=table_name)
         case DocumentStoreProvider.LOCAL:
-            return _local(cfg.ingest.pipe_persist_dir)
+            return _local(cfg.pipeline.persist_dir)
         case _:
             raise RuntimeError(
                 f"unsupported document store: {cfg.general.document_store_provider}"

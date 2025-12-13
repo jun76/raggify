@@ -84,9 +84,7 @@ def _create_container(cfg: ConfigManager, space_key: str) -> IngestCacheContaine
         case IngestCacheProvider.POSTGRES:
             return _postgres(cfg=cfg.ingest_cache, table_name=table_name)
         case IngestCacheProvider.LOCAL:
-            return _local(
-                persist_dir=cfg.ingest.pipe_persist_dir, table_name=table_name
-            )
+            return _local(persist_dir=cfg.pipeline.persist_dir, table_name=table_name)
         case _:
             raise RuntimeError(
                 f"unsupported ingest cache: {cfg.general.ingest_cache_provider}"

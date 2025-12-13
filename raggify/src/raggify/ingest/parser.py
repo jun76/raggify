@@ -90,7 +90,7 @@ class BaseParser:
                 raise_on_error=True,
             )
 
-            docs = await reader.aload_data(show_progress=True)
+            docs = await reader.aload_data()
         except Exception as e:
             logger.exception(e)
             raise ValueError("failed to parse from path") from e

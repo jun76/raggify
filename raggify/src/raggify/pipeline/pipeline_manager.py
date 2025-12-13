@@ -205,7 +205,7 @@ class PipelineManager:
         """Delete all data persisted in each store."""
         with self._pipeline_lock:
             if self._use_local_workspace():
-                persist_dir = self.cfg.ingest.pipe_persist_dir
+                persist_dir = self.cfg.pipeline.persist_dir
             else:
                 persist_dir = None
 

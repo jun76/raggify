@@ -702,7 +702,7 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 
 | Parameter                             | Description                                 | Default                                    | Allowed values / examples            |
 | ------------------------------------- | ------------------------------------------- | ------------------------------------------ | ------------------------------------ |
-| `embed_batch_size`                    | Number of nodes processed per embed batch.  | `1000`                                     | Any positive integer.                |
+| `batch_size`                          | Number of nodes processed per embed batch.  | `1000`                                     | Any positive integer.                |
 | `batch_interval_sec`                  | Delay between embedding batches (seconds).  | `1`                                        | Any non-negative integer.            |
 | `openai_embed_model_text.name`        | OpenAI text embed model.                    | `text-embedding-3-small`                   | Fixed model name.                    |
 | `openai_embed_model_text.alias`       | Alias for OpenAI text embed model.          | `te3s`                                     | Any string.                          |
@@ -758,8 +758,6 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 | `text_chunk_size`         | Chunk size for text splitting.                     | `500`                               | Any integer (e.g., `500`, `1024`).                |
 | `text_chunk_overlap`      | Overlap between adjacent chunks.                   | `50`                                | Any integer.                                      |
 | `upload_dir`              | Directory for uploaded files.                      | `~/.local/share/raggify/upload`     | Any filesystem path.                              |
-| `pipe_persist_dir`        | Pipeline persistence root per KB.                  | `~/.local/share/raggify/default_kb` | Any filesystem path.                              |
-| `pipe_batch_size`         | Number of nodes processed per pipeline batch.      | `10`                                | Any positive integer.                             |
 | `audio_chunk_seconds`     | Chunk length for audio splitting (seconds).        | `25`                                | Positive integer, or `null` to disable splitting. |
 | `video_chunk_seconds`     | Chunk length for video splitting (seconds).        | `25`                                | Positive integer, or `null` to disable splitting. |
 | `additional_exts`         | Extra whitelist extensions for local ingest.       | `[".c", ".py", ".rst"]`             | List of dot-prefixed extensions.                  |
@@ -773,6 +771,15 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 | `exclude_selectors`       | CSS selectors removed from parsed HTML.            | `["nav", "footer", ...]`            | List of selectors to drop.                        |
 | `strip_tags`              | HTML tags stripped entirely before parsing.        | `["script", "style", ...]`          | List of tag names.                                |
 | `strip_query_keys`        | Query parameters removed during URL normalization. | `["utm_source", "utm_medium", ...]` | List of query parameter keys.                     |
+
+### Pipeline
+
+| Parameter                  | Description                                                      | Default                             | Allowed values / examples |
+| -------------------------- | ---------------------------------------------------------------- | ----------------------------------- | ------------------------- |
+| `persist_dir`              | Pipeline persistence root per KB.                                | `~/.local/share/raggify/default_kb` | Any filesystem path.      |
+| `batch_size`               | Number of nodes processed per pipeline batch.                    | `10`                                | Any positive integer.     |
+| `batch_retry_interval_sec` | Backoff schedule (seconds) between retries of a failed batch.    | `[1.0, 2.0, 4.0, 8.0, 16.0]`        | List of floats.           |
+| `batch_interval_sec`       | Delay (seconds) inserted between batches to throttle throughput. | `0.5`                               | Any non-negative float.   |
 
 ### Rerank
 

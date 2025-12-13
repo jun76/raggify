@@ -85,14 +85,14 @@ async def aingest_path(
     """
     rt = _rt()
     texts, images, audios, videos = await rt.file_loader.aload_from_path(path)
-    pipe_batch_size = pipe_batch_size or rt.cfg.ingest.pipe_batch_size
+    pipe_batch_size = pipe_batch_size or rt.cfg.pipeline.batch_size
 
     await aupsert_nodes(
         text_nodes=texts,
         image_nodes=images,
         audio_nodes=audios,
         video_nodes=videos,
-        persist_dir=rt.cfg.ingest.pipe_persist_dir,
+        persist_dir=rt.cfg.pipeline.persist_dir,
         pipe_batch_size=pipe_batch_size,
         is_canceled=is_canceled,
     )
@@ -140,13 +140,13 @@ async def aingest_path_list(
     texts, images, audios, videos = await rt.file_loader.aload_from_paths(
         paths=list(lst), is_canceled=is_canceled
     )
-    pipe_batch_size = pipe_batch_size or rt.cfg.ingest.pipe_batch_size
+    pipe_batch_size = pipe_batch_size or rt.cfg.pipeline.batch_size
     await aupsert_nodes(
         text_nodes=texts,
         image_nodes=images,
         audio_nodes=audios,
         video_nodes=videos,
-        persist_dir=rt.cfg.ingest.pipe_persist_dir,
+        persist_dir=rt.cfg.pipeline.persist_dir,
         pipe_batch_size=pipe_batch_size,
         is_canceled=is_canceled,
     )
@@ -195,14 +195,14 @@ async def aingest_url(
     texts, images, audios, videos = await rt.web_page_loader.aload_from_url(
         url=url, is_canceled=is_canceled
     )
-    pipe_batch_size = pipe_batch_size or rt.cfg.ingest.pipe_batch_size
+    pipe_batch_size = pipe_batch_size or rt.cfg.pipeline.batch_size
 
     await aupsert_nodes(
         text_nodes=texts,
         image_nodes=images,
         audio_nodes=audios,
         video_nodes=videos,
-        persist_dir=rt.cfg.ingest.pipe_persist_dir,
+        persist_dir=rt.cfg.pipeline.persist_dir,
         pipe_batch_size=pipe_batch_size,
         is_canceled=is_canceled,
     )
@@ -250,14 +250,14 @@ async def aingest_url_list(
     texts, images, audios, videos = await rt.web_page_loader.aload_from_urls(
         urls=list(lst), is_canceled=is_canceled
     )
-    pipe_batch_size = pipe_batch_size or rt.cfg.ingest.pipe_batch_size
+    pipe_batch_size = pipe_batch_size or rt.cfg.pipeline.batch_size
 
     await aupsert_nodes(
         text_nodes=texts,
         image_nodes=images,
         audio_nodes=audios,
         video_nodes=videos,
-        persist_dir=rt.cfg.ingest.pipe_persist_dir,
+        persist_dir=rt.cfg.pipeline.persist_dir,
         pipe_batch_size=pipe_batch_size,
         is_canceled=is_canceled,
     )

@@ -18,6 +18,7 @@ from .general_config import GeneralConfig
 from .ingest_cache_config import IngestCacheConfig
 from .ingest_config import IngestConfig
 from .llm_config import LLMConfig
+from .pipeline_config import PipelineConfig
 from .rerank_config import RerankConfig
 from .retrieve_config import RetrieveConfig
 from .vector_store_config import VectorStoreConfig
@@ -47,6 +48,7 @@ class _AppConfig(DataClassDictMixin):
     ingest_cache: IngestCacheConfig = field(default_factory=IngestCacheConfig)
     embed: EmbedConfig = field(default_factory=EmbedConfig)
     ingest: IngestConfig = field(default_factory=IngestConfig)
+    pipeline: PipelineConfig = field(default_factory=PipelineConfig)
     rerank: RerankConfig = field(default_factory=RerankConfig)
     retrieve: RetrieveConfig = field(default_factory=RetrieveConfig)
     llm: LLMConfig = field(default_factory=LLMConfig)
@@ -125,6 +127,10 @@ class ConfigManager:
     @property
     def ingest(self) -> IngestConfig:
         return self._config.ingest
+
+    @property
+    def pipeline(self) -> PipelineConfig:
+        return self._config.pipeline
 
     @property
     def rerank(self) -> RerankConfig:

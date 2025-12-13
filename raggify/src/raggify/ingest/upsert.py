@@ -282,7 +282,8 @@ async def _process_batches(
     persist_dir: Optional[Path],
     pipe_batch_size: int,
     is_canceled: Callable[[], bool],
-    retry_count: int = 5,
+    batch_interval_sec: float,
+    batch_retry_interval_sec: list[float],
 ) -> None:
     """Batch upserts to avoid long blocking when handling many nodes.
 
@@ -292,7 +293,9 @@ async def _process_batches(
         persist_dir (Optional[Path]): Persist directory.
         pipe_batch_size (int): Number of nodes processed per pipeline batch.
         is_canceled (Callable[[], bool]): Cancellation flag for the job.
-        retry_count (int): Number of retry attempts for processing a batch.
+        batch_interval_sec (float): Delay between processing batches in seconds.
+        batch_retry_interval_sec (list[float]):
+            Retry intervals for batch processing in seconds.
     """
     if not nodes or is_canceled():
         return
@@ -305,7 +308,7 @@ async def _process_batches(
 
     transformed = 0
     for idx in range(0, len(nodes), pipe_batch_size):
-        delay = 1
+        retry_count = len(batch_retry_interval_sec)
         for i in range(retry_count):
             if is_canceled():
                 logger.info("Job is canceled, aborting batch processing")
@@ -320,12 +323,12 @@ async def _process_batches(
                     is_canceled=is_canceled,
                 )
                 transformed += len(temp)
+                await asyncio.sleep(batch_interval_sec)
                 break
             except RuntimeError as e:
                 logger.debug(f"retry {i + 1} / {retry_count}: {e}")
 
-                await asyncio.sleep(delay)
-                delay *= 2
+                await asyncio.sleep(batch_retry_interval_sec[i])
         else:
             logger.error(
                 f"failed to process {modality} batch after {retry_count} attempts, aborting"
@@ -389,6 +392,8 @@ async def aupsert_nodes(
         is_canceled (Callable[[], bool]): Cancellation flag for the job.
     """
     rt = _rt()
+    batch_interval_sec = rt.cfg.pipeline.batch_interval_sec
+    batch_retry_interval_sec = rt.cfg.pipeline.batch_retry_interval_sec
     tasks = []
 
     if rt.cfg.general.text_embed_provider is not None:
@@ -399,6 +404,8 @@ async def aupsert_nodes(
                 persist_dir=persist_dir,
                 pipe_batch_size=pipe_batch_size,
                 is_canceled=is_canceled,
+                batch_interval_sec=batch_interval_sec,
+                batch_retry_interval_sec=batch_retry_interval_sec,
             )
         )
 
@@ -410,6 +417,8 @@ async def aupsert_nodes(
                 persist_dir=persist_dir,
                 pipe_batch_size=pipe_batch_size,
                 is_canceled=is_canceled,
+                batch_interval_sec=batch_interval_sec,
+                batch_retry_interval_sec=batch_retry_interval_sec,
             )
         )
 
@@ -421,6 +430,8 @@ async def aupsert_nodes(
                 persist_dir=persist_dir,
                 pipe_batch_size=pipe_batch_size,
                 is_canceled=is_canceled,
+                batch_interval_sec=batch_interval_sec,
+                batch_retry_interval_sec=batch_retry_interval_sec,
             )
         )
 
@@ -432,6 +443,8 @@ async def aupsert_nodes(
                 persist_dir=persist_dir,
                 pipe_batch_size=pipe_batch_size,
                 is_canceled=is_canceled,
+                batch_interval_sec=batch_interval_sec,
+                batch_retry_interval_sec=batch_retry_interval_sec,
             )
         )
 

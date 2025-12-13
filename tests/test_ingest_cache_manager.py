@@ -12,7 +12,7 @@ from raggify.config.config_manager import ConfigManager
 from raggify.config.embed_config import EmbedProvider
 from raggify.config.general_config import GeneralConfig
 from raggify.config.ingest_cache_config import IngestCacheConfig, IngestCacheProvider
-from raggify.config.ingest_config import IngestConfig
+from raggify.config.pipeline_config import PipelineConfig
 from raggify.embed.embed_manager import EmbedManager
 from raggify.ingest_cache.ingest_cache import create_ingest_cache_manager
 from raggify.ingest_cache.ingest_cache_manager import IngestCacheManager
@@ -54,11 +54,11 @@ def _make_cfg(provider: IngestCacheProvider, persist_dir) -> ConfigManager:
         video_embed_provider=None,
     )
     ingest_cache = IngestCacheConfig()
-    ingest = IngestConfig(pipe_persist_dir=persist_dir)
+    pipeline = PipelineConfig(persist_dir=persist_dir)
     stub = SimpleNamespace(
         general=general,
         ingest_cache=ingest_cache,
-        ingest=ingest,
+        pipeline=pipeline,
     )
     return cast(ConfigManager, stub)
 

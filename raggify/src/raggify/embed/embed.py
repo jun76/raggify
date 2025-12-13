@@ -53,7 +53,7 @@ def create_embed_manager(cfg: ConfigManager) -> EmbedManager:
 
     return EmbedManager(
         conts=conts,
-        embed_batch_size=cfg.embed.embed_batch_size,
+        embed_batch_size=cfg.embed.batch_size,
         batch_interval_sec=cfg.embed.batch_interval_sec,
     )
 

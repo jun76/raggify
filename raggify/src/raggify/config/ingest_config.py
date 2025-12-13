@@ -7,11 +7,7 @@ from typing import Optional
 
 from mashumaro import DataClassDictMixin
 
-from ..core.const import (
-    DEFAULT_KNOWLEDGEBASE_NAME,
-    DEFAULT_WORKSPACE_PATH,
-    PROJECT_NAME,
-)
+from ..core.const import DEFAULT_WORKSPACE_PATH, PROJECT_NAME
 
 __all__ = ["ParserProvider", "IngestConfig"]
 
@@ -30,8 +26,6 @@ class IngestConfig(DataClassDictMixin):
     text_chunk_size: int = 500
     text_chunk_overlap: int = 50
     upload_dir: Path = DEFAULT_WORKSPACE_PATH / "upload"
-    pipe_persist_dir: Path = DEFAULT_WORKSPACE_PATH / DEFAULT_KNOWLEDGEBASE_NAME
-    pipe_batch_size: int = 10
     audio_chunk_seconds: Optional[int] = 25
     video_chunk_seconds: Optional[int] = 25
     additional_exts: set[str] = field(default_factory=lambda: {".c", ".py", ".rst"})

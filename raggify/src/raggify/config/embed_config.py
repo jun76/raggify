@@ -29,7 +29,7 @@ class EmbedModel(StrEnum):
 class EmbedConfig(DataClassDictMixin):
     """Config dataclass for embedding settings."""
 
-    embed_batch_size: int = 1000
+    batch_size: int = 1000
     batch_interval_sec: int = 1
 
     # Text
