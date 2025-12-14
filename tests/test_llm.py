@@ -15,29 +15,25 @@ from tests.utils.mock_llm import patch_openai_llm
 
 def _make_cfg(
     *,
-    text_provider: Any = None,
     image_provider: Any = None,
     audio_provider: Any = None,
     video_provider: Any = None,
     openai_base_url: str | None = None,
-    text_model: str = "text-model",
     image_model: str = "image-model",
     audio_model: str = "audio-model",
     video_model: str = "video-model",
 ) -> ConfigManager:
     general = GeneralConfig()
-    general.text_summarize_transform_provider = text_provider
-    general.image_summarize_transform_provider = image_provider
-    general.audio_summarize_transform_provider = audio_provider
-    general.video_summarize_transform_provider = video_provider
+    general.image_caption_transform_provider = image_provider
+    general.audio_caption_transform_provider = audio_provider
+    general.video_caption_transform_provider = video_provider
     if openai_base_url is not None:
         general.openai_base_url = openai_base_url
 
     llm_cfg = LLMConfig()
-    llm_cfg.openai_text_summarize_transform_model = text_model
-    llm_cfg.openai_image_summarize_transform_model = image_model
-    llm_cfg.openai_audio_summarize_transform_model = audio_model
-    llm_cfg.openai_video_summarize_transform_model = video_model
+    llm_cfg.openai_image_caption_transform_model = image_model
+    llm_cfg.openai_audio_caption_transform_model = audio_model
+    llm_cfg.openai_video_caption_transform_model = video_model
 
     return cast(ConfigManager, SimpleNamespace(general=general, llm=llm_cfg))
 
@@ -45,12 +41,10 @@ def _make_cfg(
 def test_create_llm_manager_with_openai_providers(monkeypatch):
     dummy = patch_openai_llm(monkeypatch)
     cfg = _make_cfg(
-        text_provider=LLMProvider.OPENAI,
         image_provider=LLMProvider.OPENAI,
         audio_provider=LLMProvider.OPENAI,
         video_provider=LLMProvider.OPENAI,
         openai_base_url="https://api.example.com",
-        text_model="text-1",
         image_model="image-2",
         audio_model="audio-3",
         video_model="video-4",
@@ -59,24 +53,21 @@ def test_create_llm_manager_with_openai_providers(monkeypatch):
     manager = create_llm_manager(cfg)
 
     assert manager.llm_usage == {
-        LLMUsage.TEXT_SUMMARIZER,
-        LLMUsage.IMAGE_SUMMARIZER,
-        LLMUsage.AUDIO_SUMMARIZER,
-        LLMUsage.VIDEO_SUMMARIZER,
+        LLMUsage.IMAGE_CAPTIONER,
+        LLMUsage.AUDIO_CAPTIONER,
+        LLMUsage.VIDEO_CAPTIONER,
     }
     instances = dummy.instances
     assert [inst.kwargs["model"] for inst in instances] == [
-        "text-1",
         "image-2",
         "audio-3",
         "video-4",
     ]
-    assert manager.text_summarizer is instances[0]
-    assert manager.image_summarizer is instances[1]
-    assert manager.audio_summarizer is instances[2]
-    assert manager.video_summarizer is instances[3]
+    assert manager.image_captioner is instances[0]
+    assert manager.audio_captioner is instances[1]
+    assert manager.video_captioner is instances[2]
+    assert instances[1].kwargs["modalities"] == ["text"]
     assert instances[2].kwargs["modalities"] == ["text"]
-    assert instances[3].kwargs["modalities"] == ["text"]
 
 
 def test_create_llm_manager_without_providers(monkeypatch):
@@ -86,6 +77,6 @@ def test_create_llm_manager_without_providers(monkeypatch):
 
 
 def test_create_llm_manager_raises_on_unsupported_provider():
-    cfg = _make_cfg(text_provider=cast(LLMProvider, "unsupported"))
+    cfg = _make_cfg(image_provider=cast(LLMProvider, "unsupported"))
     with pytest.raises(RuntimeError, match="invalid LLM settings"):
         create_llm_manager(cfg)

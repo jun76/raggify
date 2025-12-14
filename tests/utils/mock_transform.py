@@ -143,34 +143,29 @@ class DummyRuntime:
 
 def _build_llm_manager(
     *,
-    text_llm: Optional[DummyLLM] = None,
     image_llm: Optional[DummyLLM] = None,
     audio_llm: Optional[DummyLLM] = None,
     video_llm: Optional[DummyLLM] = None,
 ) -> LLMManager:
     conts: dict[LLMUsage, LLMContainer] = {}
-    text = text_llm or DummyLLM(response_text="text-summary")
     image = image_llm or DummyLLM(response_text="image-summary")
     audio = audio_llm or DummyLLM(response_text="audio-summary")
     video = video_llm or DummyLLM(response_text="video-summary")
 
-    conts[LLMUsage.TEXT_SUMMARIZER] = LLMContainer(provider_name="dummy", llm=text)
-    conts[LLMUsage.IMAGE_SUMMARIZER] = LLMContainer(provider_name="dummy", llm=image)
-    conts[LLMUsage.AUDIO_SUMMARIZER] = LLMContainer(provider_name="dummy", llm=audio)
-    conts[LLMUsage.VIDEO_SUMMARIZER] = LLMContainer(provider_name="dummy", llm=video)
+    conts[LLMUsage.IMAGE_CAPTIONER] = LLMContainer(provider_name="dummy", llm=image)
+    conts[LLMUsage.AUDIO_CAPTIONER] = LLMContainer(provider_name="dummy", llm=audio)
+    conts[LLMUsage.VIDEO_CAPTIONER] = LLMContainer(provider_name="dummy", llm=video)
 
     return LLMManager(conts)
 
 
 def make_dummy_runtime(
     *,
-    text_llm: Optional[DummyLLM] = None,
     image_llm: Optional[DummyLLM] = None,
     audio_llm: Optional[DummyLLM] = None,
     video_llm: Optional[DummyLLM] = None,
 ) -> DummyRuntime:
     manager = _build_llm_manager(
-        text_llm=text_llm,
         image_llm=image_llm,
         audio_llm=audio_llm,
         video_llm=video_llm,

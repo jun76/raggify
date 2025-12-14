@@ -7,7 +7,6 @@ from ....config.ingest_config import IngestConfig
 from ....core.exts import Exts
 from ....logger import logger
 from ...parser import BaseParser
-from ..util import arequest_get
 
 if TYPE_CHECKING:
     from llama_index.core.schema import Document
@@ -44,92 +43,6 @@ class BaseWebPageReader(ABC):
         """
         ...
 
-    def _cleanse_html_text(self, html: str) -> str:
-        """Cleanse HTML content by applying include/exclude selectors.
-
-        Args:
-            html (str): Raw HTML text.
-
-        Returns:
-            str: Cleansed text.
-        """
-        from bs4 import BeautifulSoup, Tag
-
-        # Remove query strings from image URLs to avoid duplication
-        html = self._strip_asset_cache_busters(html)
-        soup = BeautifulSoup(html, "html.parser")
-
-        # Drop unwanted tags
-        for tag_name in self._cfg.strip_tags:
-            for t in soup.find_all(tag_name):
-                t.decompose()
-
-        for selector in self._cfg.exclude_selectors:
-            for t in soup.select(selector):
-                t.decompose()
-
-        # Include only selected tags
-        include_selectors = self._cfg.include_selectors
-        if include_selectors:
-            included_nodes: list = []
-            for selector in include_selectors:
-                included_nodes.extend(soup.select(selector))
-
-            seen = set()
-            unique_nodes = []
-            for node in included_nodes:
-                key = id(node)
-
-                if key in seen:
-                    continue
-
-                seen.add(key)
-                unique_nodes.append(node)
-
-            if unique_nodes:
-                # Move only the "main content candidates" to a new soup
-                new_soup = BeautifulSoup("<html><body></body></html>", "html.parser")
-                body: Tag | list = new_soup.body or []
-                for node in unique_nodes:
-                    # Extract from the original soup and move to new_soup
-                    body.append(node.extract())
-
-                soup = new_soup
-
-        # Remove excessive blank lines
-        cleansed = [ln.strip() for ln in str(soup).splitlines()]
-        cleansed = [ln for ln in cleansed if ln]
-
-        return "\n".join(cleansed)
-
-    def _strip_asset_cache_busters(self, html: str) -> str:
-        """Remove cache busters from asset URLs in HTML.
-
-        Args:
-            html (str): Raw HTML text.
-
-        Returns:
-            str: HTML text with cache busters removed.
-        """
-        import re
-
-        exts = sorted(
-            {
-                ext.lstrip(".")
-                for ext in Exts.IMAGE | {Exts.SVG} | Exts.AUDIO | Exts.VIDEO
-            }
-        )
-        if not exts:
-            return html
-
-        # png|jpe?g|webp etc.
-        ext_pattern = "|".join(
-            ext.replace("+", r"\+").replace(".", r"\.") for ext in exts
-        )
-        pattern = rf"(\.(?:{ext_pattern}))\?[^\s\"'<>]+"
-
-        return re.sub(pattern, r"\1", html)
-
     async def _adownload_direct_linked_file(
         self,
         url: str,
@@ -146,6 +59,8 @@ class BaseWebPageReader(ABC):
         Returns:
             Optional[str]: Local temporary file path.
         """
+        from ..util import arequest_get
+
         ext = Exts.get_ext(url)
         if ext not in allowed_exts:
             logger.warning(
@@ -210,15 +125,15 @@ class BaseWebPageReader(ABC):
     async def aload_direct_linked_file(
         self,
         url: str,
+        max_asset_bytes: int,
         base_url: Optional[str] = None,
-        max_asset_bytes: int = 100 * 1024 * 1024,
     ) -> list[Document]:
         """Create a document from a direct-linked file.
 
         Args:
             url (str): Target URL.
+            max_asset_bytes (int): Max size in bytes.
             base_url (Optional[str], optional): Base source URL. Defaults to None.
-            max_asset_bytes (int, optional): Max size in bytes. Defaults to 100*1024*1024.
 
         Returns:
             list[Document]: Generated documents.
@@ -247,15 +162,15 @@ class BaseWebPageReader(ABC):
     async def aload_direct_linked_files(
         self,
         urls: list[str],
+        max_asset_bytes: int,
         base_url: Optional[str] = None,
-        max_asset_bytes: int = 100 * 1024 * 1024,
     ) -> list[Document]:
         """Create documents from multiple direct-linked files.
 
         Args:
             urls (list[str]): Target URLs.
+            max_asset_bytes (int): Max size in bytes.
             base_url (Optional[str], optional): Base source URL. Defaults to None.
-            max_asset_bytes (int, optional): Max size in bytes. Defaults to 100*1024*1024.
 
         Returns:
             list[Document]: Generated documents.
@@ -288,7 +203,6 @@ class BaseWebPageReader(ABC):
         Returns:
             tuple[list[Document], str]: Generated documents and the raw HTML.
         """
-        from ....core.exts import Exts
         from ....core.metadata import MetaKeys as MK
         from ....core.utils import get_temp_path
         from ..util import afetch_text
@@ -304,7 +218,6 @@ class BaseWebPageReader(ABC):
             logger.warning(f"failed to fetch html from {url}, skipped")
             return [], ""
 
-        html = self._cleanse_html_text(html)
         path = str(get_temp_path(seed=url, suffix=Exts.HTML))
         try:
             with open(path, "w") as f:

@@ -27,20 +27,20 @@ class SplitTransform(BaseTransform):
             is_canceled (Callable[[], bool]): Cancellation flag for the job.
         """
         super().__init__(is_canceled)
-        self._text_chunk_size = cfg.text_primary_chunk_size
+        self._text_chunk_size = cfg.text_chunk_size
         self._text_chunk_overlap = cfg.text_chunk_overlap
         self._audio_chunk_seconds = cfg.audio_chunk_seconds
         self._video_chunk_seconds = cfg.video_chunk_seconds
         self._text_split_transform = None
 
     def __call__(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
-        """Synchronous interface.
+        """Interface called from the pipeline.
 
         Args:
-            nodes (Sequence[BaseNode]): Nodes to summarize.
+            nodes (Sequence[BaseNode]): Nodes to split.
 
         Returns:
-            Sequence[BaseNode]: Nodes after summarization.
+            Sequence[BaseNode]: Nodes after splitting.
         """
         return async_loop_runner.run(lambda: self.acall(nodes=nodes, **kwargs))
 

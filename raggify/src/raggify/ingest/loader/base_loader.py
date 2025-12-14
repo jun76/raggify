@@ -96,7 +96,7 @@ class BaseLoader:
                         text=doc.text,
                         image_path=doc.metadata.get(
                             MK.FILE_PATH
-                        ),  # for summarize transform use
+                        ),  # for caption transform use
                         id_=doc.id_,
                         doc_id=doc.doc_id,
                         ref_doc_id=doc.doc_id,

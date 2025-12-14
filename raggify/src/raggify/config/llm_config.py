@@ -14,14 +14,11 @@ class LLMProvider(StrEnum):
 class LLMConfig:
     """Config dataclass for LLM settings."""
 
-    # Text
-    openai_text_summarize_transform_model: str = "gpt-4o-mini"
-
     # Image
-    openai_image_summarize_transform_model: str = "gpt-4o-mini"
+    openai_image_caption_transform_model: str = "gpt-4o-mini"
 
     # Audio
-    openai_audio_summarize_transform_model: str = "gpt-4o-audio-preview"
+    openai_audio_caption_transform_model: str = "gpt-4o-audio-preview"
 
     # Video
-    openai_video_summarize_transform_model: str = "gpt-4o-audio-preview"
+    openai_video_caption_transform_model: str = "gpt-4o-audio-preview"

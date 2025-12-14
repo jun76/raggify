@@ -109,6 +109,6 @@ class MultiWikipediaReader(BaseWebPageReader):
         """
         return await self.aload_direct_linked_files(
             urls=page.images,
-            base_url=page.url,
             max_asset_bytes=self._cfg.max_asset_bytes,
+            base_url=page.url,
         )

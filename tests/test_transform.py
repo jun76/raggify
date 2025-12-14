@@ -21,9 +21,9 @@ from raggify.core.metadata import BasicMetaData
 from raggify.core.metadata import MetaKeys as MK
 from raggify.ingest.transform import (
     AddChunkIndexTransform,
-    DefaultSummarizeTransform,
+    DefaultCaptionTransform,
     EmbedTransform,
-    LLMSummarizeTransform,
+    LLMCaptionTransform,
     RemoveTempFileTransform,
     SplitTransform,
 )
@@ -262,47 +262,16 @@ def test_remove_temp_file_transform_removes_files(tmp_path):
     assert result[0].metadata[MK.FILE_PATH] == "/orig/path.txt"
 
 
-def test_default_summarize_transform_returns_nodes():
-    summarize_transform = DefaultSummarizeTransform()
+def test_default_caption_transform_returns_nodes():
+    caption_transform = DefaultCaptionTransform()
     node = make_sample_text_node()
     nodes: list[BaseNode] = [node]
 
-    assert summarize_transform(nodes) is nodes
-    assert asyncio.run(summarize_transform.acall(nodes)) is nodes
+    assert caption_transform(nodes) is nodes
+    assert asyncio.run(caption_transform.acall(nodes)) is nodes
 
 
-def test_llm_summarize_transform_summarizes_text():
-    node = make_sample_text_node()
-    node.text = "Original"
-    text_llm = DummyLLM(response_text=" trimmed text ")
-    runtime = make_dummy_runtime(text_llm=text_llm)
-
-    summarize_transform = LLMSummarizeTransform(
-        cast("LLMManager", runtime.llm_manager), _never_canceled
-    )
-    result = asyncio.run(summarize_transform.acall([node]))
-    text_node = cast(TextNode, result[0])
-
-    assert text_node.text == "trimmed text"
-    assert text_llm.calls
-
-
-def test_llm_summarize_transform_handles_text_error():
-    node = make_sample_text_node()
-    node.text = "error text"
-    text_llm = DummyLLM(error=RuntimeError("boom"))
-    runtime = make_dummy_runtime(text_llm=text_llm)
-
-    summarize_transform = LLMSummarizeTransform(
-        cast("LLMManager", runtime.llm_manager), _never_canceled
-    )
-    result = asyncio.run(summarize_transform.acall([node]))
-    text_node = cast(TextNode, result[0])
-
-    assert text_node.text == "error text"
-
-
-def test_llm_summarize_transform_summarizes_image():
+def test_llm_caption_transform_captions_image():
     image_node = ImageNode(
         id_="img",
         metadata={"file_path": "tests/data/images/sample.png"},
@@ -310,54 +279,54 @@ def test_llm_summarize_transform_summarizes_image():
     image_llm = DummyLLM(response_text=" caption ")
     runtime = make_dummy_runtime(image_llm=image_llm)
 
-    summarize_transform = LLMSummarizeTransform(
+    caption_transform = LLMCaptionTransform(
         cast("LLMManager", runtime.llm_manager), _never_canceled
     )
-    result = asyncio.run(summarize_transform.acall([image_node]))
+    result = asyncio.run(caption_transform.acall([image_node]))
     img_node = cast(ImageNode, result[0])
 
     assert img_node.text == "caption"
     assert image_llm.calls
 
 
-def test_llm_summarize_transform_summarizes_audio(tmp_path):
+def test_llm_caption_transform_captions_audio(tmp_path):
     audio_path = tmp_path / "sample.wav"
     audio_path.write_bytes(b"\x00")
     audio = AudioNode(id_="audio", metadata={MK.FILE_PATH: str(audio_path)})
     audio_llm = DummyLLM(response_text=" transcribed audio ")
     runtime = make_dummy_runtime(audio_llm=audio_llm)
-    summarize_transform = LLMSummarizeTransform(
+    caption_transform = LLMCaptionTransform(
         cast("LLMManager", runtime.llm_manager), _never_canceled
     )
 
-    result = asyncio.run(summarize_transform.acall([audio]))
+    result = asyncio.run(caption_transform.acall([audio]))
     node = cast(AudioNode, result[0])
 
     assert node.text == "transcribed audio"
     assert audio_llm.calls
 
 
-def test_llm_summarize_transform_logs_video_not_implemented(tmp_path):
+def test_llm_caption_transform_logs_video_not_implemented(tmp_path):
     video_path = tmp_path / "sample.mp4"
     video_path.write_text("")  # create placeholder file
     video = VideoNode(id_="video", metadata={MK.FILE_PATH: str(video_path)})
     runtime = make_dummy_runtime()
-    summarize_transform = LLMSummarizeTransform(
+    caption_transform = LLMCaptionTransform(
         cast("LLMManager", runtime.llm_manager), _never_canceled
     )
 
-    result = asyncio.run(summarize_transform.acall([video]))
+    result = asyncio.run(caption_transform.acall([video]))
     node = cast(VideoNode, result[0])
 
     assert node.text == ""
 
 
-def test_llm_summarize_transform_rejects_unknown_node():
+def test_llm_caption_transform_rejects_unknown_node():
     runtime = make_dummy_runtime()
-    summarize_transform = LLMSummarizeTransform(
+    caption_transform = LLMCaptionTransform(
         cast("LLMManager", runtime.llm_manager), _never_canceled
     )
     doc = Document(text="doc", id_="doc")
 
-    with pytest.raises(ValueError):
-        asyncio.run(summarize_transform.acall([doc]))
+    result = asyncio.run(caption_transform.acall([doc]))
+    assert result[0] is doc

@@ -42,13 +42,13 @@ class EmbedTransform(BaseTransform):
         return cls.__name__
 
     def __call__(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
-        """Synchronous interface.
+        """Interface called from the pipeline.
 
         Args:
-            nodes (Sequence[BaseNode]): Nodes to summarize.
+            nodes (Sequence[BaseNode]): Nodes to embed.
 
         Returns:
-            Sequence[BaseNode]: Nodes after summarization.
+            Sequence[BaseNode]: Nodes after embedding.
         """
         return async_loop_runner.run(lambda: self.acall(nodes=nodes, **kwargs))
 
@@ -56,10 +56,10 @@ class EmbedTransform(BaseTransform):
         """Interface called from the pipeline asynchronously.
 
         Args:
-            nodes (Sequence[BaseNode]): Nodes to split.
+            nodes (Sequence[BaseNode]): Nodes to embed.
 
         Returns:
-            Sequence[BaseNode]: Nodes after splitting.
+            Sequence[BaseNode]: Nodes after embedding.
         """
         # For subsequent ingestions from known sources, nodes become empty
         if not nodes:

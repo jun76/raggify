@@ -35,10 +35,10 @@ class AddChunkIndexTransform(BaseTransform):
         """Interface called from the pipeline.
 
         Args:
-            nodes (Sequence[BaseNode]): Nodes already split.
+            nodes (Sequence[BaseNode]): Nodes to process.
 
         Returns:
-            Sequence[BaseNode]: Nodes with chunk numbers assigned.
+            Sequence[BaseNode]: Nodes after assigning chunk indexes.
         """
         from ...core.metadata import MetaKeys as MK
 
@@ -130,4 +130,12 @@ class RemoveTempFileTransform(BaseTransform):
         return nodes
 
     async def acall(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
+        """Interface called from the pipeline asynchronously.
+
+        Args:
+            nodes (Sequence[BaseNode]): Nodes to process.
+
+        Returns:
+            Sequence[BaseNode]: Nodes after processing.
+        """
         return self.__call__(nodes, **kwargs)

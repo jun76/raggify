@@ -6,10 +6,9 @@ general:
   image_embed_provider: cohere
   audio_embed_provider: bedrock
   video_embed_provider: bedrock
-  text_summarize_transform_provider: openai
-  image_summarize_transform_provider: null
-  audio_summarize_transform_provider: null
-  video_summarize_transform_provider: null
+  image_caption_transform_provider: null
+  audio_caption_transform_provider: null
+  video_caption_transform_provider: null
   rerank_provider: null
   parser_provider: local
   use_modality_fallback: false

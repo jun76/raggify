@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 __all__ = ["get_runtime"]
 
 
-_runtime: Runtime | None = None
+_runtime: Optional[Runtime] = None
 _lock = threading.Lock()
 
 

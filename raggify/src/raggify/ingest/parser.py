@@ -160,7 +160,7 @@ class DefaultParser(BaseParser):
                 pass
 
         # HTML content is loaded via a temporary .html file
-        self._readers[Exts.HTML] = HTMLReader()
+        self._readers[Exts.HTML] = HTMLReader(cfg.ingest)
 
         # For other media types, use dummy reader to pass through
         dummy_reader = DummyMediaReader()

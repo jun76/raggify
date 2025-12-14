@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import pytest
 
+from raggify.config.ingest_config import IngestConfig
 from raggify.ingest.loader.file_reader.audio_reader import AudioReader
 from raggify.ingest.loader.file_reader.dummy_media_reader import DummyMediaReader
+from raggify.ingest.loader.file_reader.html_reader import HTMLReader
 from raggify.ingest.loader.file_reader.pdf_reader import MultiPDFReader
 from raggify.ingest.loader.file_reader.video_reader import VideoReader
 from tests.utils.mock_reader import patch_audio_convert, patch_video_extract
@@ -78,3 +80,26 @@ def test_dummy_media_reader_invalid_ext():
     reader = DummyMediaReader()
     docs = list(reader.lazy_load_data("tests/data/texts/sample.c"))
     assert docs == []
+
+
+def test_html_reader_cleanses_content():
+    cfg = IngestConfig(
+        include_selectors=["article"],
+        exclude_selectors=["nav", ".ads"],
+        strip_tags=["script", "style"],
+    )
+    reader = HTMLReader(cfg)
+    html = """
+<html>
+    <body>
+        <nav>nav</nav>
+        <article><p>Keep me</p><script>alert('x');</script></article>
+        <div class='ads'>ads</div>
+    </body>
+</html>
+"""
+    cleansed = reader._cleanse_html_text(html)  # type: ignore[attr-defined]
+    assert "Keep me" in cleansed
+    assert "nav" not in cleansed
+    assert "ads" not in cleansed
+    assert "script" not in cleansed

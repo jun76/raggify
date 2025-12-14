@@ -36,31 +36,18 @@ def _build_text_pipeline(
     """
     from .transform import (
         AddChunkIndexTransform,
-        DefaultSummarizeTransform,
         EmbedTransform,
-        LLMSummarizeTransform,
         RemoveTempFileTransform,
         SplitTransform,
     )
 
     rt = _rt()
-    if rt.cfg.general.text_summarize_transform_provider is not None:
-        transformations: list[TransformComponent] = [
-            # Split before LLM summarization to avoid token limit issues
-            SplitTransform(cfg=rt.cfg.ingest, is_canceled=is_canceled),
-            LLMSummarizeTransform(llm_manager=rt.llm_manager, is_canceled=is_canceled),
-        ]
-    else:
-        transformations: list[TransformComponent] = [
-            DefaultSummarizeTransform(),
-        ]
-
-    transformations.append(SplitTransform(cfg=rt.cfg.ingest, is_canceled=is_canceled))
-    transformations.append(AddChunkIndexTransform(is_canceled))
-    transformations.append(
-        EmbedTransform(embed=rt.embed_manager, is_canceled=is_canceled)
-    )
-    transformations.append(RemoveTempFileTransform(is_canceled))
+    transformations: list[TransformComponent] = [
+        SplitTransform(cfg=rt.cfg.ingest, is_canceled=is_canceled),
+        AddChunkIndexTransform(is_canceled),
+        EmbedTransform(embed=rt.embed_manager, is_canceled=is_canceled),
+        RemoveTempFileTransform(is_canceled),
+    ]
 
     return rt.pipeline.build(
         modality=Modality.TEXT,
@@ -82,18 +69,18 @@ def _build_image_pipeline(
         TracablePipeline: Pipeline instance.
     """
     from .transform import (
-        DefaultSummarizeTransform,
+        DefaultCaptionTransform,
         EmbedTransform,
-        LLMSummarizeTransform,
+        LLMCaptionTransform,
         RemoveTempFileTransform,
     )
 
     rt = _rt()
     transformations: list[TransformComponent] = [
         (
-            LLMSummarizeTransform(llm_manager=rt.llm_manager, is_canceled=is_canceled)
-            if rt.cfg.general.image_summarize_transform_provider is not None
-            else DefaultSummarizeTransform()
+            LLMCaptionTransform(llm_manager=rt.llm_manager, is_canceled=is_canceled)
+            if rt.cfg.general.image_caption_transform_provider is not None
+            else DefaultCaptionTransform()
         ),
         EmbedTransform(embed=rt.embed_manager, is_canceled=is_canceled),
         RemoveTempFileTransform(is_canceled),
@@ -119,9 +106,9 @@ def _build_audio_pipeline(
         TracablePipeline: Pipeline instance.
     """
     from .transform import (
-        DefaultSummarizeTransform,
+        DefaultCaptionTransform,
         EmbedTransform,
-        LLMSummarizeTransform,
+        LLMCaptionTransform,
         RemoveTempFileTransform,
         SplitTransform,
     )
@@ -129,9 +116,9 @@ def _build_audio_pipeline(
     rt = _rt()
     transformations: list[TransformComponent] = [
         (
-            LLMSummarizeTransform(llm_manager=rt.llm_manager, is_canceled=is_canceled)
-            if rt.cfg.general.audio_summarize_transform_provider is not None
-            else DefaultSummarizeTransform()
+            LLMCaptionTransform(llm_manager=rt.llm_manager, is_canceled=is_canceled)
+            if rt.cfg.general.audio_caption_transform_provider is not None
+            else DefaultCaptionTransform()
         ),
         SplitTransform(cfg=rt.cfg.ingest, is_canceled=is_canceled),
     ]
@@ -160,9 +147,9 @@ def _build_video_pipeline(
         TracablePipeline: Pipeline instance.
     """
     from .transform import (
-        DefaultSummarizeTransform,
+        DefaultCaptionTransform,
         EmbedTransform,
-        LLMSummarizeTransform,
+        LLMCaptionTransform,
         RemoveTempFileTransform,
         SplitTransform,
     )
@@ -170,9 +157,9 @@ def _build_video_pipeline(
     rt = _rt()
     transformations: list[TransformComponent] = [
         (
-            LLMSummarizeTransform(llm_manager=rt.llm_manager, is_canceled=is_canceled)
-            if rt.cfg.general.video_summarize_transform_provider is not None
-            else DefaultSummarizeTransform()
+            LLMCaptionTransform(llm_manager=rt.llm_manager, is_canceled=is_canceled)
+            if rt.cfg.general.video_caption_transform_provider is not None
+            else DefaultCaptionTransform()
         ),
         SplitTransform(cfg=rt.cfg.ingest, is_canceled=is_canceled),
     ]

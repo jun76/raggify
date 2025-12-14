@@ -30,10 +30,9 @@ class GeneralConfig(DataClassDictMixin):
     image_embed_provider: Optional[EmbedProvider] = None
     audio_embed_provider: Optional[EmbedProvider] = None
     video_embed_provider: Optional[EmbedProvider] = None
-    text_summarize_transform_provider: Optional[LLMProvider] = LLMProvider.OPENAI
-    image_summarize_transform_provider: Optional[LLMProvider] = None
-    audio_summarize_transform_provider: Optional[LLMProvider] = None
-    video_summarize_transform_provider: Optional[LLMProvider] = None
+    image_caption_transform_provider: Optional[LLMProvider] = None
+    audio_caption_transform_provider: Optional[LLMProvider] = None
+    video_caption_transform_provider: Optional[LLMProvider] = None
     rerank_provider: Optional[RerankProvider] = None
     parser_provider: Optional[ParserProvider] = ParserProvider.LOCAL
     use_modality_fallback: bool = False

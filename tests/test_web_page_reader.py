@@ -38,28 +38,6 @@ def _make_reader(
     )
 
 
-def test_cleanse_html_content_strips_and_includes():
-    reader = _make_reader(
-        include_selectors=["article"],
-        exclude_selectors=["nav", ".ads"],
-        strip_tags=["script", "style"],
-    )
-    html = """
-<html>
-    <body>
-        <nav>nav</nav>
-        <article><p>Keep me</p><script>alert('x');</script></article>
-        <div class='ads'>ads</div>
-    </body>
-</html>
-"""
-    cleansed = reader._cleanse_html_text(html)
-    assert "Keep me" in cleansed
-    assert "nav" not in cleansed
-    assert "ads" not in cleansed
-    assert "script" not in cleansed
-
-
 def test_gather_asset_links_filters_and_normalizes():
     reader = cast(DefaultWebPageReader, _make_reader(cls=DefaultWebPageReader))
     html = """

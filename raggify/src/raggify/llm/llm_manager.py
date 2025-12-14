@@ -9,10 +9,9 @@ from ..logger import logger
 
 
 class LLMUsage(StrEnum):
-    TEXT_SUMMARIZER = auto()
-    IMAGE_SUMMARIZER = auto()
-    AUDIO_SUMMARIZER = auto()
-    VIDEO_SUMMARIZER = auto()
+    IMAGE_CAPTIONER = auto()
+    AUDIO_CAPTIONER = auto()
+    VIDEO_CAPTIONER = auto()
 
 
 __all__ = ["LLMContainer", "LLMManager"]
@@ -63,52 +62,40 @@ class LLMManager:
         return set(self._conts.keys())
 
     @property
-    def text_summarizer(self) -> LLM:
-        """Get the text summarize transform LLM.
+    def image_captioner(self) -> LLM:
+        """Get the image caption transform LLM.
 
         Raises:
             RuntimeError: If uninitialized.
 
         Returns:
-            LLM: Text summarize transform LLM.
+            LLM: Image caption transform LLM.
         """
-        return self.get_container(LLMUsage.TEXT_SUMMARIZER).llm
+        return self.get_container(LLMUsage.IMAGE_CAPTIONER).llm
 
     @property
-    def image_summarizer(self) -> LLM:
-        """Get the image summarize transform LLM.
+    def audio_captioner(self) -> LLM:
+        """Get the audio caption transform LLM.
 
         Raises:
             RuntimeError: If uninitialized.
 
         Returns:
-            LLM: Image summarize transform LLM.
+            LLM: Audio caption transform LLM.
         """
-        return self.get_container(LLMUsage.IMAGE_SUMMARIZER).llm
+        return self.get_container(LLMUsage.AUDIO_CAPTIONER).llm
 
     @property
-    def audio_summarizer(self) -> LLM:
-        """Get the audio summarize transform LLM.
+    def video_captioner(self) -> LLM:
+        """Get the video caption transform LLM.
 
         Raises:
             RuntimeError: If uninitialized.
 
         Returns:
-            LLM: Audio summarize transform LLM.
+            LLM: Video caption transform LLM.
         """
-        return self.get_container(LLMUsage.AUDIO_SUMMARIZER).llm
-
-    @property
-    def video_summarizer(self) -> LLM:
-        """Get the video summarize transform LLM.
-
-        Raises:
-            RuntimeError: If uninitialized.
-
-        Returns:
-            LLM: Video summarize transform LLM.
-        """
-        return self.get_container(LLMUsage.VIDEO_SUMMARIZER).llm
+        return self.get_container(LLMUsage.VIDEO_CAPTIONER).llm
 
     def get_container(self, llm_usage: LLMUsage) -> LLMContainer:
         """Get the LLM container for a llm usage.

@@ -21,11 +21,11 @@ if TYPE_CHECKING:
     from ...llama_like.core.schema import AudioNode, VideoNode
     from ...llm.llm_manager import LLMManager
 
-__all__ = ["DefaultSummarizeTransform", "LLMSummarizeTransform"]
+__all__ = ["DefaultCaptionTransform", "LLMCaptionTransform"]
 
 
-class DefaultSummarizeTransform(BaseTransform):
-    """A placeholder summarize transform that returns nodes unchanged."""
+class DefaultCaptionTransform(BaseTransform):
+    """A placeholder caption transform that returns nodes unchanged."""
 
     def __init__(self, is_canceled: Callable[[], bool] = lambda: False) -> None:
         """Constructor.
@@ -37,13 +37,13 @@ class DefaultSummarizeTransform(BaseTransform):
         super().__init__(is_canceled)
 
     def __call__(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
-        """Return nodes unchanged.
+        """Interface called from the pipeline.
 
         Args:
-            nodes (Sequence[BaseNode]): Input nodes.
+            nodes (Sequence[BaseNode]): Nodes to caption.
 
         Returns:
-            Sequence[BaseNode]: Unchanged nodes.
+            Sequence[BaseNode]: Nodes after captioning.
         """
         if self._pipe_callback:
             self._pipe_callback(self, nodes)
@@ -51,19 +51,19 @@ class DefaultSummarizeTransform(BaseTransform):
         return nodes
 
     async def acall(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
-        """Async wrapper matching the synchronous call.
+        """Interface called from the pipeline asynchronously.
 
         Args:
-            nodes (Sequence[BaseNode]): Input nodes.
+            nodes (Sequence[BaseNode]): Nodes to caption.
 
         Returns:
-            Sequence[BaseNode]: Unchanged nodes.
+            Sequence[BaseNode]: Nodes after captioning.
         """
         return nodes
 
 
-class LLMSummarizeTransform(BaseTransform):
-    """Transform to summarize multimodal nodes using an LLM."""
+class LLMCaptionTransform(BaseTransform):
+    """Transform to caption multimodal nodes using an LLM."""
 
     def __init__(
         self,
@@ -83,13 +83,13 @@ class LLMSummarizeTransform(BaseTransform):
         self._audio_sample_rate = audio_sample_rate
 
     def __call__(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
-        """Synchronous interface.
+        """Interface called from the pipeline.
 
         Args:
-            nodes (Sequence[BaseNode]): Nodes to summarize.
+            nodes (Sequence[BaseNode]): Nodes to caption.
 
         Returns:
-            Sequence[BaseNode]: Nodes after summarization.
+            Sequence[BaseNode]: Nodes after captioning.
         """
         return async_loop_runner.run(lambda: self.acall(nodes=nodes, **kwargs))
 
@@ -97,41 +97,39 @@ class LLMSummarizeTransform(BaseTransform):
         """Interface called from the pipeline asynchronously.
 
         Args:
-            nodes (Sequence[BaseNode]): Nodes to summarize.
+            nodes (Sequence[BaseNode]): Nodes to caption.
 
         Returns:
-            Sequence[BaseNode]: Nodes after summarization.
+            Sequence[BaseNode]: Nodes after captioning.
         """
-        from llama_index.core.schema import ImageNode, TextNode
+        from llama_index.core.schema import ImageNode
 
         from ...llama_like.core.schema import AudioNode, VideoNode
 
         if not nodes:
             return nodes
 
-        summarized_nodes: list[BaseNode] = []
+        captioned_nodes: list[BaseNode] = []
         for node in nodes:
             if self._is_canceled():
                 logger.info("Job is canceled, aborting batch processing")
                 return []
 
             if isinstance(node, ImageNode):
-                summarized = await self._asummarize_image(node)
+                captioned = await self._acaption_image(node)
             elif isinstance(node, AudioNode):
-                summarized = await self._asummarize_audio(node)
+                captioned = await self._acaption_audio(node)
             elif isinstance(node, VideoNode):
-                summarized = await self._asummarize_video(node)
-            elif isinstance(node, TextNode):
-                summarized = await self._asummarize_text(node)
+                captioned = await self._acaption_video(node)
             else:
-                raise ValueError(f"unsupported node type: {type(node)}")
+                captioned = node
 
-            summarized_nodes.append(summarized)
+            captioned_nodes.append(captioned)
 
         if self._pipe_callback:
-            self._pipe_callback(self, summarized_nodes)
+            self._pipe_callback(self, captioned_nodes)
 
-        return summarized_nodes
+        return captioned_nodes
 
     @classmethod
     def class_name(cls) -> str:
@@ -142,50 +140,14 @@ class LLMSummarizeTransform(BaseTransform):
         """
         return cls.__name__
 
-    async def _asummarize_text(self, node: TextNode) -> TextNode:
-        """Summarize a text node using LLM.
+    async def _acaption_image(self, node: ImageNode) -> TextNode:
+        """Caption an image node using LLM.
 
         Args:
-            node (TextNode): Node to summarize.
+            node (ImageNode): Node to caption.
 
         Returns:
-            TextNode: Node after summarization.
-        """
-        prompt = """
-Please extract only the main text useful for semantic search from the following text.
-Remove advertisements, copyright notices,
-clearly unnecessary text such as headers and footers etc.
-
-Since the extracted text will be shortened later,
-DO NOT SUMMARIZE its content SEMANTICALLY here.
-
-If no useful text is available, please return ONLY an empty string (no need for unnecessary comments).
-
-Original text:
-{original_text}
-"""
-        llm = self._llm_manager.text_summarizer
-
-        def _build_blocks(target: TextNode) -> list[TextBlock]:
-            return [
-                TextBlock(text=prompt.format(original_text=target.text)),
-            ]
-
-        return await self._summarize_with_llm(
-            node=node,
-            llm=llm,
-            block_builder=_build_blocks,
-            modality="text",
-        )
-
-    async def _asummarize_image(self, node: ImageNode) -> TextNode:
-        """Summarize an image node using LLM.
-
-        Args:
-            node (ImageNode): Node to summarize.
-
-        Returns:
-            TextNode: Node after summarization.
+            TextNode: Node after captioning.
         """
         from pathlib import Path
 
@@ -194,7 +156,7 @@ Please provide a concise description of the image for semantic search purposes.
 If the image is not describable,
 please return just an empty string (no need for unnecessary comments).
 """
-        llm = self._llm_manager.image_summarizer
+        llm = self._llm_manager.image_captioner
 
         def _build_blocks(target: TextNode) -> list[TextBlock | ImageBlock]:
             path = target.metadata[MK.FILE_PATH]
@@ -203,21 +165,21 @@ please return just an empty string (no need for unnecessary comments).
                 TextBlock(text=prompt),
             ]
 
-        return await self._summarize_with_llm(
+        return await self._caption_with_llm(
             node=node,
             llm=llm,
             block_builder=_build_blocks,
             modality="image",
         )
 
-    async def _asummarize_audio(self, node: AudioNode | VideoNode) -> TextNode:
-        """Summarize an audio node using LLM.
+    async def _acaption_audio(self, node: AudioNode | VideoNode) -> TextNode:
+        """Caption an audio node using LLM.
 
         Args:
-            node (AudioNode | VideoNode): Node to summarize.
+            node (AudioNode | VideoNode): Node to caption.
 
         Returns:
-            TextNode: Node after summarization.
+            TextNode: Node after captioning.
         """
         from pathlib import Path
 
@@ -228,7 +190,7 @@ Please provide a concise description of the audio for semantic search purposes.
 If the audio is not describable,
 please return just an empty string (no need for unnecessary comments).
 """
-        llm = self._llm_manager.audio_summarizer
+        llm = self._llm_manager.audio_captioner
 
         def _build_blocks(target: TextNode) -> list[TextBlock | AudioBlock]:
             path = target.metadata[MK.FILE_PATH]
@@ -237,21 +199,21 @@ please return just an empty string (no need for unnecessary comments).
                 TextBlock(text=prompt),
             ]
 
-        return await self._summarize_with_llm(
+        return await self._caption_with_llm(
             node=node,
             llm=llm,
             block_builder=_build_blocks,
             modality="audio",
         )
 
-    async def _asummarize_video(self, node: VideoNode) -> TextNode:
-        """Summarize a video node using LLM.
+    async def _acaption_video(self, node: VideoNode) -> TextNode:
+        """Caption a video node using LLM.
 
         Args:
-            node (VideoNode): Node to summarize.
+            node (VideoNode): Node to caption.
 
         Returns:
-            TextNode: Node after summarization.
+            TextNode: Node after captioning.
         """
         from ...core.exts import Exts
         from ...core.metadata import MetaKeys as MK
@@ -264,7 +226,7 @@ please return just an empty string (no need for unnecessary comments).
         try:
             converter = MediaConverter()
         except ImportError as e:
-            logger.error(f"ffmpeg not installed, cannot summarize video audio: {e}")
+            logger.error(f"ffmpeg not installed, cannot caption video audio: {e}")
             return node
 
         temp_path = converter.extract_mp3_audio_from_video(
@@ -274,19 +236,19 @@ please return just an empty string (no need for unnecessary comments).
             audio_node = AudioNode(
                 text=node.text, metadata={MK.FILE_PATH: str(temp_path)}
             )
-            audio_node = await self._asummarize_audio(audio_node)
+            audio_node = await self._acaption_audio(audio_node)
             node.text = audio_node.text
 
         return node
 
-    async def _summarize_with_llm(
+    async def _caption_with_llm(
         self,
         node: TextNode,
         llm: LLM,
         block_builder: Callable[[TextNode], _BlockSequence],
         modality: str,
     ) -> TextNode:
-        """Run summarization with provided LLM and block builder.
+        """Run captioning with provided LLM and block builder.
 
         Args:
             node (TextNode): Target node.
@@ -296,7 +258,7 @@ please return just an empty string (no need for unnecessary comments).
             modality (str): Modality label for logging.
 
         Returns:
-            TextNode: Node after summarization.
+            TextNode: Node after captioning.
         """
         try:
             blocks = list(block_builder(node))
@@ -318,8 +280,8 @@ please return just an empty string (no need for unnecessary comments).
             if summary:
                 node.text = summary
         except Exception as e:
-            logger.error(f"failed to summarize {modality} node: {e}")
+            logger.error(f"failed to caption {modality} node: {e}")
 
-        logger.debug(f"summarized {modality} node: {summary[:50]}...")
+        logger.debug(f"captioned {modality} node: {summary[:50]}...")
 
         return node

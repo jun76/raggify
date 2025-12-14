@@ -63,7 +63,7 @@ def patch_html_asset_download(
         return _Resp()
 
     monkeypatch.setattr(
-        "raggify.ingest.loader.web_page_reader.base_web_page_reader.arequest_get",
+        "raggify.ingest.loader.util.arequest_get",
         AsyncMock(side_effect=_fake_get),
     )
 

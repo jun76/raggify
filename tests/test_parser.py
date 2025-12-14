@@ -5,6 +5,7 @@ from pathlib import Path
 from raggify.config.embed_config import EmbedProvider
 from raggify.config.general_config import GeneralConfig
 from raggify.core.exts import Exts
+from raggify.config.ingest_config import IngestConfig
 from raggify.ingest.loader.file_reader import AudioReader, VideoReader
 from raggify.ingest.parser import DefaultParser
 
@@ -19,6 +20,7 @@ def _make_parser(cfg: GeneralConfig, exts: set[str]) -> DefaultParser:
     class _Cfg:
         def __init__(self, general, exts):
             self.general = general
+            self.ingest = IngestConfig()
             self._exts = exts
 
         @property
