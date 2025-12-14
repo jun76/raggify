@@ -119,8 +119,8 @@ def test_vector_store_manager_delete_operations(tmp_path):
     cont.store = cast(BasePydanticVectorStore, FakeVectorStore())
     store = cast(FakeVectorStore, cont.store)
 
-    manager.delete_nodes(["doc1", "doc2"])
-    assert store.deleted == ["doc1", "doc2"]
+    manager.delete_nodes({"doc1", "doc2"})
+    assert store.deleted == {"doc1", "doc2"}
 
     assert manager.delete_all() is True
     assert store.cleared is True

@@ -74,7 +74,7 @@ class IngestCacheManager:
 
         return cont
 
-    def delete(
+    def delete_nodes(
         self,
         modality: Modality,
         nodes: Sequence[BaseNode],

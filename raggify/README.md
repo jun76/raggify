@@ -752,25 +752,26 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 
 ### Ingest
 
-| Parameter                 | Description                                        | Default                             | Allowed values / examples                         |
-| ------------------------- | -------------------------------------------------- | ----------------------------------- | ------------------------------------------------- |
-| `text_primary_chunk_size` | Chunk size used before LLM summarization.          | `2000`                              | Any integer (e.g., `1024`, `4096`).               |
-| `text_chunk_size`         | Chunk size for text splitting.                     | `500`                               | Any integer (e.g., `500`, `1024`).                |
-| `text_chunk_overlap`      | Overlap between adjacent chunks.                   | `50`                                | Any integer.                                      |
-| `upload_dir`              | Directory for uploaded files.                      | `~/.local/share/raggify/upload`     | Any filesystem path.                              |
-| `audio_chunk_seconds`     | Chunk length for audio splitting (seconds).        | `25`                                | Positive integer, or `null` to disable splitting. |
-| `video_chunk_seconds`     | Chunk length for video splitting (seconds).        | `25`                                | Positive integer, or `null` to disable splitting. |
-| `additional_exts`         | Extra whitelist extensions for local ingest.       | `[".c", ".py", ".rst"]`             | List of dot-prefixed extensions.                  |
-| `user_agent`              | User-Agent header for web ingestion.               | `raggify`                           | Any string.                                       |
-| `load_asset`              | Download linked assets during web ingestion.       | `true`                              | `true` / `false`.                                 |
-| `req_per_sec`             | Request rate limit for web ingestion.              | `2`                                 | Any integer.                                      |
-| `timeout_sec`             | Timeout for web ingestion (seconds).               | `30`                                | Any integer.                                      |
-| `same_origin`             | Restrict crawling to same origin.                  | `true`                              | `true` / `false`.                                 |
-| `max_asset_bytes`         | Maximum size per fetched asset (bytes).            | `104857600` (100 MB)                | Any positive integer.                             |
-| `include_selectors`       | CSS selectors to prioritize when parsing HTML      | `["article", "main", ...]`          | List of selectors applied in order.               |
-| `exclude_selectors`       | CSS selectors removed from parsed HTML.            | `["nav", "footer", ...]`            | List of selectors to drop.                        |
-| `strip_tags`              | HTML tags stripped entirely before parsing.        | `["script", "style", ...]`          | List of tag names.                                |
-| `strip_query_keys`        | Query parameters removed during URL normalization. | `["utm_source", "utm_medium", ...]` | List of query parameter keys.                     |
+| Parameter                 | Description                                                    | Default                             | Allowed values / examples                         |
+| ------------------------- | -------------------------------------------------------------- | ----------------------------------- | ------------------------------------------------- |
+| `text_primary_chunk_size` | Chunk size used before LLM summarization.                      | `2000`                              | Any integer (e.g., `1024`, `4096`).               |
+| `text_chunk_size`         | Chunk size for text splitting.                                 | `500`                               | Any integer (e.g., `500`, `1024`).                |
+| `text_chunk_overlap`      | Overlap between adjacent chunks.                               | `50`                                | Any integer.                                      |
+| `upload_dir`              | Directory for uploaded files.                                  | `~/.local/share/raggify/upload`     | Any filesystem path.                              |
+| `audio_chunk_seconds`     | Chunk length for audio splitting (seconds).                    | `25`                                | Positive integer, or `null` to disable splitting. |
+| `video_chunk_seconds`     | Chunk length for video splitting (seconds).                    | `25`                                | Positive integer, or `null` to disable splitting. |
+| `additional_exts`         | Extra whitelist extensions for local ingest.                   | `[".c", ".py", ".rst"]`             | List of dot-prefixed extensions.                  |
+| `skip_known_sources`      | Skip ingestion when the source already exists in the docstore. | `false`                             | `true` / `false`.                                 |
+| `user_agent`              | User-Agent header for web ingestion.                           | `raggify`                           | Any string.                                       |
+| `load_asset`              | Download linked assets during web ingestion.                   | `true`                              | `true` / `false`.                                 |
+| `req_per_sec`             | Request rate limit for web ingestion.                          | `2`                                 | Any integer.                                      |
+| `timeout_sec`             | Timeout for web ingestion (seconds).                           | `30`                                | Any integer.                                      |
+| `same_origin`             | Restrict crawling to same origin.                              | `true`                              | `true` / `false`.                                 |
+| `max_asset_bytes`         | Maximum size per fetched asset (bytes).                        | `104857600` (100 MB)                | Any positive integer.                             |
+| `include_selectors`       | CSS selectors to prioritize when parsing HTML                  | `["article", "main", ...]`          | List of selectors applied in order.               |
+| `exclude_selectors`       | CSS selectors removed from parsed HTML.                        | `["nav", "footer", ...]`            | List of selectors to drop.                        |
+| `strip_tags`              | HTML tags stripped entirely before parsing.                    | `["script", "style", ...]`          | List of tag names.                                |
+| `strip_query_keys`        | Query parameters removed during URL normalization.             | `["utm_source", "utm_medium", ...]` | List of query parameter keys.                     |
 
 ### Pipeline
 

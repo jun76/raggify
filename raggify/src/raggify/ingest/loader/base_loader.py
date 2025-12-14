@@ -67,6 +67,7 @@ class BaseLoader:
             f"{MK.ASSET_NO}:{meta.asset_no}_"
             f"{MK.CHUNK_NO}:{meta.chunk_no}_"
             f"{MK.URL}:{meta.url}_"
+            f"{MK.BASE_SOURCE}:{meta.base_source}_"
             f"{MK.TEMP_FILE_PATH}:{meta.temp_file_path}"  # To identify embedded images in PDFs, etc.
         )
 

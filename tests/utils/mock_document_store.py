@@ -46,6 +46,9 @@ class DummySimpleDocumentStore:
     def delete_document(self, doc_id: str, raise_error: bool = False) -> None:
         self.docs.pop(doc_id, None)
 
+    def delete_ref_doc(self, ref_doc_id: str, **kwargs) -> None:
+        self.delete_document(ref_doc_id, raise_error=kwargs.get("raise_error", False))
+
     def persist(self, path: str) -> None:
         self.persist_calls.append(path)
 
@@ -65,6 +68,9 @@ class FakeDocStore:
     def delete_document(self, doc_id: str, raise_error: bool = False) -> None:
         self.deleted.append(doc_id)
         self.docs.pop(doc_id, None)
+
+    def delete_ref_doc(self, ref_doc_id: str, **kwargs) -> None:
+        self.delete_document(ref_doc_id, raise_error=kwargs.get("raise_error", False))
 
     def persist(self, path: str) -> None:
         self.persist_paths.append(path)

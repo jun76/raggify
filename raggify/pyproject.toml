@@ -31,6 +31,7 @@ dependencies = [
     "docx2txt",
     "fastapi",
     "fastapi-mcp",
+    "ipython",
     "llama-cloud-services",
     "llama-index-embeddings-openai",
     "llama-index==0.14.10",

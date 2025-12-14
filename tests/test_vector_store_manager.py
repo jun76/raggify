@@ -73,8 +73,8 @@ def test_vector_store_manager_delete_nodes_and_all():
     store = FakeVectorStore()
     manager = _make_manager({Modality.TEXT: store})
 
-    manager.delete_nodes(["doc1", "doc2"])
-    assert store.deleted == ["doc1", "doc2"]
+    manager.delete_nodes({"doc1", "doc2"})
+    assert store.deleted == {"doc1", "doc2"}
 
     assert manager.delete_all() is True
     assert store.cleared is True

@@ -256,17 +256,18 @@ async def _process_batch(
         # Return [] if no nodes were processed
         return transformed_nodes
     except Exception as e:
-        for node in batch:
-            if node.ref_doc_id is None:
-                continue
-
-            # Roll back to prevent the next transform from being skipped
-            # due to docstore duplicate detection.
-            rt.document_store.delete(ref_doc_id=node.ref_doc_id, raise_error=False)
+        # Roll back to prevent the next transform from being skipped
+        # due to docstore duplicate detection.
+        rt.document_store.delete_nodes(
+            ref_doc_ids={
+                node.ref_doc_id for node in batch if node.ref_doc_id is not None
+            },
+            persist_dir=persist_dir,
+        )
 
         # Roll back cache entries
         for transformation, target_nodes in pipe.nodes:
-            rt.ingest_cache.delete(
+            rt.ingest_cache.delete_nodes(
                 modality=modality,
                 nodes=target_nodes,
                 transformations=[transformation],

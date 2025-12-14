@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Optional
 
 from ..config.config_manager import ConfigManager
 from ..core.event import async_loop_runner
@@ -25,13 +25,20 @@ __all__ = ["BaseParser", "DefaultParser", "LlamaParser", "create_parser"]
 class BaseParser:
     """Base parser that reads local files and generates documents."""
 
-    def __init__(self, cfg: ConfigManager) -> None:
+    def __init__(
+        self,
+        cfg: ConfigManager,
+        is_known_source: Optional[Callable[[str], bool]] = None,
+    ) -> None:
         """Constructor.
 
         Args:
             cfg (ConfigManager): Configuration manager.
+            is_known_source (Optional[Callable[[str], bool]]):
+                Function to check if a source is known to skip. Defaults to None.
         """
         self._ingest_target_exts = cfg.ingest_target_exts
+        self._is_known_source = is_known_source
         self._readers: dict[str, BaseReader] = {}
 
         if cfg.general.audio_embed_provider is not None:
@@ -90,6 +97,20 @@ class BaseParser:
                 raise_on_error=True,
             )
 
+            if self._is_known_source is not None:
+                filtered_files = []
+                for file_path in reader.input_files:
+                    if not self._is_known_source(str(file_path)):
+                        filtered_files.append(file_path)
+                    else:
+                        logger.debug(f"skip known source: {file_path}")
+
+                if not filtered_files:
+                    logger.debug("no new files found, skipped parsing")
+                    return []
+
+                reader.input_files = filtered_files
+
             docs = await reader.aload_data()
         except Exception as e:
             logger.exception(e)
@@ -114,15 +135,21 @@ class BaseParser:
 class DefaultParser(BaseParser):
     """Default parser that reads local files and generates documents."""
 
-    def __init__(self, cfg: ConfigManager) -> None:
+    def __init__(
+        self,
+        cfg: ConfigManager,
+        is_known_source: Optional[Callable[[str], bool]] = None,
+    ) -> None:
         """Constructor.
 
         Args:
             cfg (ConfigManager): Configuration manager.
+            is_known_source (Optional[Callable[[str], bool]]):
+                Function to check if a source is known to skip. Defaults to None.
         """
         from .loader.file_reader.html_reader import HTMLReader
 
-        super().__init__(cfg)
+        super().__init__(cfg=cfg, is_known_source=is_known_source)
 
         if cfg.general.image_embed_provider is not None:
             # Dictionary of custom readers to pass to SimpleDirectoryReader
@@ -144,15 +171,23 @@ class DefaultParser(BaseParser):
 class LlamaParser(BaseParser):
     """Llama Cloud parser that uses Llama Cloud API to parse files."""
 
-    def __init__(self, cfg: ConfigManager, *args, **kwargs) -> None:
+    def __init__(
+        self,
+        cfg: ConfigManager,
+        is_known_source: Optional[Callable[[str], bool]] = None,
+        *args,
+        **kwargs,
+    ) -> None:
         """Constructor.
 
         Args:
             cfg (ConfigManager): Configuration manager.
+            is_known_source (Optional[Callable[[str], bool]]):
+                Function to check if a source is known to skip. Defaults to None.
         """
         from llama_cloud_services import LlamaParse
 
-        super().__init__(cfg)
+        super().__init__(cfg=cfg, is_known_source=is_known_source)
 
         # https://developers.llamaindex.ai/python/cloud/llamaparse/features/supported_document_types/
         llama_supported_exts: set[str] = {
@@ -267,11 +302,18 @@ class LlamaParser(BaseParser):
             self._readers.setdefault(ext, parser)
 
 
-def create_parser(cfg: ConfigManager, *args, **kwargs) -> BaseParser:
+def create_parser(
+    cfg: ConfigManager,
+    is_known_source: Optional[Callable[[str], bool]] = None,
+    *args,
+    **kwargs,
+) -> BaseParser:
     """Factory method to create a parser instance based on configuration.
 
     Args:
         cfg (ConfigManager): Configuration manager.
+        is_known_source (Optional[Callable[[str], bool]]):
+            Function to check if a source is known to skip. Defaults to None.
 
     Returns:
         Parser: An instance of a parser.
@@ -280,8 +322,10 @@ def create_parser(cfg: ConfigManager, *args, **kwargs) -> BaseParser:
 
     match cfg.general.parser_provider:
         case ParserProvider.LOCAL:
-            return DefaultParser(cfg)
+            return DefaultParser(cfg=cfg, is_known_source=is_known_source)
         case ParserProvider.LLAMA_CLOUD:
-            return LlamaParser(cfg=cfg, *args, **kwargs)
+            return LlamaParser(
+                cfg=cfg, is_known_source=is_known_source, *args, **kwargs
+            )
         case _:
             raise ValueError("unsupported parser provider")

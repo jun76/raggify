@@ -29,6 +29,7 @@ class IngestConfig(DataClassDictMixin):
     audio_chunk_seconds: Optional[int] = 25
     video_chunk_seconds: Optional[int] = 25
     additional_exts: set[str] = field(default_factory=lambda: {".c", ".py", ".rst"})
+    skip_known_sources: bool = False
 
     # Web
     user_agent: str = PROJECT_NAME

@@ -175,7 +175,14 @@ class Runtime:
         if self._parser is None:
             from .ingest.parser import create_parser
 
-            self._parser = create_parser(self.cfg)
+            self._parser = create_parser(
+                cfg=self.cfg,
+                is_known_source=(
+                    self.document_store.is_known_source
+                    if self.cfg.ingest.skip_known_sources
+                    else None
+                ),
+            )
 
         return self._parser
 
@@ -194,7 +201,13 @@ class Runtime:
             from .ingest.loader.web_page_loader import WebPageLoader
 
             self._web_page_loader = WebPageLoader(
-                cfg=self.cfg.ingest, parser=self.parser
+                cfg=self.cfg.ingest,
+                parser=self.parser,
+                is_known_source=(
+                    self.document_store.is_known_source
+                    if self.cfg.ingest.skip_known_sources
+                    else None
+                ),
             )
 
         return self._web_page_loader

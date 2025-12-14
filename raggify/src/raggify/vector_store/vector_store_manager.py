@@ -152,11 +152,11 @@ class VectorStoreManager:
             case _:
                 raise RuntimeError("unexpected modality")
 
-    def delete_nodes(self, ref_doc_ids: list[str]) -> None:
+    def delete_nodes(self, ref_doc_ids: set[str]) -> None:
         """Delete nodes from the vector store by ref_doc_id.
 
         Args:
-            ref_doc_ids (list[str]): IDs to delete.
+            ref_doc_ids (set[str]): Reference document IDs to delete.
         """
         for mod in self.modality:
             store = self.get_container(mod).store

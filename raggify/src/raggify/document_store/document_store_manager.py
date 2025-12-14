@@ -84,42 +84,68 @@ class DocumentStoreManager:
         except Exception:
             return sum(1 for _ in docs_attr)
 
-    def get_ref_doc_ids(self) -> list[str]:
-        """Get all ref_doc_info keys stored in the docstore.
+    def get_ref_doc_ids(self) -> set[str]:
+        """Get all ref_doc_id values stored in the docstore.
 
         Returns:
-            list[str]: List of ref_doc_id values.
+            set[str]: Ref doc IDs known to the store.
         """
+        docs_attr = getattr(self.store, "docs", None)
+        if docs_attr:
+            try:
+                return set(docs_attr.keys())
+            except Exception:
+                return set()
+
         infos = self.store.get_all_ref_doc_info()
-        if infos is None:
-            return []
+        if infos:
+            return set(infos.keys())
 
-        return list(infos.keys())
+        return set()
 
-    def delete(self, ref_doc_id: str, raise_error: bool = True) -> None:
+    def is_known_source(self, source: str) -> bool:
+        """Check if the source is known based on ref_doc_ids.
+
+        Args:
+            source (str): File path or URL.
+
+        Returns:
+            bool: True if the source is known, False otherwise.
+        """
+        from ..core.metadata import MetaKeys as MK
+
+        def doc_id_mask(key: str, value: str) -> str:
+            return f"{key}:{value}"
+
+        flattened = "".join(self.get_ref_doc_ids())
+        file_path_mask = doc_id_mask(MK.FILE_PATH, source)
+        url_mask = doc_id_mask(MK.URL, source)
+        base_source_mask = doc_id_mask(MK.BASE_SOURCE, source)
+        if (
+            file_path_mask in flattened
+            or url_mask in flattened
+            or base_source_mask in flattened
+        ):
+            return True
+
+        return False
+
+    def delete_nodes(self, ref_doc_ids: set[str], persist_dir: Optional[Path]) -> None:
         """Delete ref_docs and related nodes stored.
 
         Args:
-            ref_doc_id (str): Reference document ID to delete.
-            raise_error (bool, optional):
-                Whether to raise an error if deletion fails. Defaults to True.
-        """
-        self.store.delete_ref_doc(ref_doc_id=ref_doc_id, raise_error=raise_error)
-
-    def delete_all(self, persist_dir: Optional[Path]) -> None:
-        """Delete all ref_docs and related nodes stored.
-
-        Args:
+            ref_doc_ids (set[str]): Reference document IDs to delete.
             persist_dir (Optional[Path]): Persist directory.
         """
         try:
-            for doc_id in list(self.store.docs.keys()):
-                self.store.delete_document(doc_id, raise_error=False)
+            sorted_ref_doc_ids = sorted(ref_doc_ids)
+            for ref_doc_id in sorted_ref_doc_ids:
+                self.store.delete_ref_doc(ref_doc_id)
         except Exception as e:
-            logger.warning(f"failed to delete doc {doc_id}: {e}")
+            logger.error(f"failed to delete ref_doc {ref_doc_id}: {e}")
             return
 
-        logger.info("all documents are deleted from document store")
+        logger.info(f"{len(ref_doc_ids)} documents are deleted from document store")
 
         if persist_dir is not None:
             try:
@@ -129,4 +155,13 @@ class DocumentStoreManager:
 
                 self.store.persist(str(persist_dir / DEFAULT_PERSIST_FNAME))
             except Exception as e:
-                logger.warning(f"failed to persist: {e}")
+                logger.error(f"failed to persist: {e}")
+
+    def delete_all(self, persist_dir: Optional[Path]) -> None:
+        """Delete all ref_docs and related nodes stored.
+
+        Args:
+            persist_dir (Optional[Path]): Persist directory.
+        """
+        ref_doc_ids = self.get_ref_doc_ids()
+        self.delete_nodes(ref_doc_ids=ref_doc_ids, persist_dir=persist_dir)

@@ -8,11 +8,11 @@ from raggify.embed.embed_manager import EmbedManager, Modality
 
 class FakeVectorStore:
     def __init__(self) -> None:
-        self.deleted: list[str] = []
+        self.deleted: set[str] = set()
         self.cleared = False
 
     def delete(self, ref_doc_id: str) -> None:
-        self.deleted.append(ref_doc_id)
+        self.deleted.add(ref_doc_id)
 
     def clear(self) -> None:
         self.cleared = True

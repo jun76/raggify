@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Optional
 
 from ...config.ingest_config import IngestConfig
 from ...core.exts import Exts
@@ -23,15 +23,19 @@ class WebPageLoader(BaseLoader):
         self,
         cfg: IngestConfig,
         parser: BaseParser,
+        is_known_source: Optional[Callable[[str], bool]] = None,
     ):
         """Constructor.
 
         Args:
             cfg (IngestConfig): Ingest configuration.
             parser (Parser): Parser instance.
+            is_known_source (Optional[Callable[[str], bool]]):
+                Function to check if a source is known to skip. Defaults to None.
         """
         self._cfg = cfg
         self._parser = parser
+        self._is_known_source = is_known_source
 
         # Do not include base_url in doc_id so identical URLs are treated
         # as the same document. Cache processed URLs in the same ingest run
@@ -144,47 +148,6 @@ class WebPageLoader(BaseLoader):
 
         return await reader.aload_data(url)
 
-    async def aload_from_url(
-        self,
-        url: str,
-        is_canceled: Callable[[], bool],
-        inloop: bool = False,
-    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
-        """Fetch content from a URL and generate nodes.
-
-        For sitemaps (.xml), traverse the tree to ingest multiple sites.
-
-        Args:
-            url (str): Target URL.
-            is_canceled (Callable[[], bool]): Whether this job has been canceled.
-            inloop (bool, optional): Whether called inside an upper URL loop. Defaults to False.
-
-        Returns:
-            tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
-                Text, image, audio, and video nodes.
-        """
-        from urllib.parse import urlparse
-
-        if not inloop:
-            self._asset_url_cache.clear()
-
-        if urlparse(url).scheme not in {"http", "https"}:
-            logger.error("invalid URL. expected http(s)://*")
-            return [], [], [], []
-
-        url = self._remove_query_params(url)
-
-        if Exts.endswith_exts(url, Exts.SITEMAP):
-            docs = await self._aload_from_sitemap(url=url, is_canceled=is_canceled)
-        elif "wikipedia.org" in url:
-            docs = await self._aload_from_wikipedia(url)
-        else:
-            docs = await self._aload_from_site(url)
-
-        logger.debug(f"loaded {len(docs)} docs from {url}")
-
-        return await self._asplit_docs_modality(docs)
-
     def _remove_query_params(self, uri: str) -> str:
         """Normalize URL query parameters by dropping configured keys.
 
@@ -212,6 +175,51 @@ class WebPageLoader(BaseLoader):
             return uri
 
         return urlunparse(parsed._replace(query=urlencode(filtered)))
+
+    async def aload_from_url(
+        self,
+        url: str,
+        is_canceled: Callable[[], bool],
+        inloop: bool = False,
+    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
+        """Fetch content from a URL and generate nodes.
+
+        For sitemaps (.xml), traverse the tree to ingest multiple sites.
+
+        Args:
+            url (str): Target URL.
+            is_canceled (Callable[[], bool]): Whether this job has been canceled.
+            inloop (bool, optional): Whether called inside an upper URL loop. Defaults to False.
+
+        Returns:
+            tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
+                Text, image, audio, and video nodes.
+        """
+        from urllib.parse import urlparse
+
+        if urlparse(url).scheme not in {"http", "https"}:
+            logger.error("invalid URL. expected http(s)://*")
+            return [], [], [], []
+
+        if self._is_known_source is not None and self._is_known_source(url):
+            logger.debug(f"skip already ingested URL: {url}")
+            return [], [], [], []
+
+        if not inloop:
+            self._asset_url_cache.clear()
+
+        url = self._remove_query_params(url)
+
+        if Exts.endswith_exts(url, Exts.SITEMAP):
+            docs = await self._aload_from_sitemap(url=url, is_canceled=is_canceled)
+        elif "wikipedia.org" in url:
+            docs = await self._aload_from_wikipedia(url)
+        else:
+            docs = await self._aload_from_site(url)
+
+        logger.debug(f"loaded {len(docs)} docs from {url}")
+
+        return await self._asplit_docs_modality(docs)
 
     async def aload_from_urls(
         self,

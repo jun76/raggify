@@ -43,6 +43,8 @@ class FileLoader(BaseLoader):
                 Text, image, audio, and video nodes.
         """
         docs = await self._parser.aparse(root)
+        logger.debug(f"loaded {len(docs)} docs from {root}")
+
         return await self._asplit_docs_modality(docs)
 
     async def aload_from_paths(

@@ -70,16 +70,15 @@ def test_bm25_corpus_size_handles_len_error():
 
 def test_get_ref_doc_ids_none_info():
     store = FakeDocStore()
-    store.ref_info = None
     manager = _make_manager(store)
-    assert manager.get_ref_doc_ids() == []
+    assert manager.get_ref_doc_ids() == set()
 
 
 def test_get_ref_doc_ids_returns_keys():
     store = FakeDocStore()
-    store.ref_info = {"a": {}, "b": {}}
+    store.docs = {"a": None, "b": None}
     manager = _make_manager(store)
-    assert set(manager.get_ref_doc_ids()) == {"a", "b"}
+    assert manager.get_ref_doc_ids() == {"a", "b"}
 
 
 def test_delete_all_with_persist(tmp_path):
