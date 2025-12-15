@@ -45,8 +45,8 @@ class DefaultCaptionTransform(BaseTransform):
         Returns:
             Sequence[BaseNode]: Nodes after captioning.
         """
-        if self._pipe_callback:
-            self._pipe_callback(self, nodes)
+        if self._record_nodes:
+            self._record_nodes(self, nodes)
 
         return nodes
 
@@ -126,8 +126,8 @@ class LLMCaptionTransform(BaseTransform):
 
             captioned_nodes.append(captioned)
 
-        if self._pipe_callback:
-            self._pipe_callback(self, captioned_nodes)
+        if self._record_nodes:
+            self._record_nodes(self, nodes)
 
         return captioned_nodes
 

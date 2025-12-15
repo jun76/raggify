@@ -71,26 +71,27 @@ class EmbedTransform(BaseTransform):
 
         candidate = nodes[0]
         if isinstance(candidate, ImageNode):
-            split_nodes = await self._aembed_image(nodes)
+            embed_nodes = await self._aembed_image(nodes)
         elif isinstance(candidate, AudioNode):
-            split_nodes = await self._aembed_audio(nodes)
+            embed_nodes = await self._aembed_audio(nodes)
         elif isinstance(candidate, VideoNode):
-            split_nodes = await self._aembed_video(nodes)
+            embed_nodes = await self._aembed_video(nodes)
         elif isinstance(candidate, TextNode):
-            split_nodes = await self._aembed_text(nodes)
+            embed_nodes = await self._aembed_text(nodes)
         else:
             raise ValueError(f"unsupported node type: {type(candidate)}")
 
-        if self._pipe_callback:
-            self._pipe_callback(self, split_nodes)
+        if self._record_nodes:
+            self._record_nodes(self, nodes)
 
-        return split_nodes
+        return embed_nodes
 
     async def _aembed_text(self, nodes: Sequence[BaseNode]) -> Sequence[BaseNode]:
         """Embed a text node.
 
         Args:
             nodes (Sequence[BaseNode]): Target text nodes.
+
         Returns:
             Sequence[BaseNode]: Embedded text nodes.
         """
@@ -112,6 +113,7 @@ class EmbedTransform(BaseTransform):
 
         Args:
             nodes (Sequence[BaseNode]): Target image nodes.
+
         Returns:
             Sequence[BaseNode]: Embedded image nodes.
         """
@@ -209,15 +211,19 @@ class EmbedTransform(BaseTransform):
             backrefs.append(i)
 
         if not inputs:
+            logger.warning("no valid inputs for embedding found, skipping")
             return nodes
 
         # Batch embedding
         vecs = await batch_embed_fn(inputs)
         if not vecs:
+            logger.warning("embedding function returned no vectors, skipping")
             return nodes
 
         if len(vecs) != len(inputs):
-            # Safety: do not write when lengths differ (log at caller)
+            logger.warning(
+                "embedding function returned mismatched number of vectors, skipping"
+            )
             return nodes
 
         # Write back to nodes

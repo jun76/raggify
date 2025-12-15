@@ -19,18 +19,18 @@ class BaseTransform(TransformComponent):
         Args:
             is_canceled (Callable[[], bool]): Cancellation flag for the job.
         """
-        self._pipe_callback: (
+        self._record_nodes: (
             Callable[[TransformComponent, Sequence[BaseNode]], None] | None
         ) = None
         self._is_canceled = is_canceled
 
     def set_pipe_callback(
-        self, pipe_callback: Callable[[TransformComponent, Sequence[BaseNode]], None]
+        self, record_nodes: Callable[[TransformComponent, Sequence[BaseNode]], None]
     ) -> None:
         """Set pipe callback.
 
         Args:
-            pipe_callback (Callable[[TransformComponent, Sequence[BaseNode]], None]):
+            record_nodes (Callable[[TransformComponent, Sequence[BaseNode]], None]):
                 Callback to register transformed nodes in the pipeline.
         """
-        self._pipe_callback = pipe_callback
+        self._record_nodes = record_nodes

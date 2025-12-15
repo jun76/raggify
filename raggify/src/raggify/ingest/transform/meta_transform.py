@@ -59,8 +59,8 @@ class AddChunkIndexTransform(BaseTransform):
             for i, node in enumerate(group):
                 node.metadata[MK.CHUNK_NO] = i
 
-        if self._pipe_callback:
-            self._pipe_callback(self, nodes)
+        if self._record_nodes:
+            self._record_nodes(self, nodes)
 
         return nodes
 
@@ -124,8 +124,8 @@ class RemoveTempFileTransform(BaseTransform):
                 # custom readers such as PDF)
                 meta[MK.FILE_PATH] = meta[MK.BASE_SOURCE]
 
-        if self._pipe_callback:
-            self._pipe_callback(self, nodes)
+        if self._record_nodes:
+            self._record_nodes(self, nodes)
 
         return nodes
 

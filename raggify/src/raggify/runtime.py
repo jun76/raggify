@@ -5,6 +5,7 @@ import threading
 from typing import TYPE_CHECKING, Optional
 
 from .config.config_manager import ConfigManager
+from .llama_like.core.schema import pipe_load_hook
 
 if TYPE_CHECKING:
     from .document_store.document_store_manager import DocumentStoreManager
@@ -23,6 +24,8 @@ __all__ = ["get_runtime"]
 
 _runtime: Optional[Runtime] = None
 _lock = threading.Lock()
+
+pipe_load_hook()
 
 
 class Runtime:

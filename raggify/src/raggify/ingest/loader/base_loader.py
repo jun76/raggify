@@ -136,4 +136,11 @@ class BaseLoader:
             else:
                 logger.warning(f"unexpected node type {type(doc)}, skipped")
 
+        logger.debug(
+            f"split into {len(text_nodes)} text, "
+            f"{len(image_nodes)} image, "
+            f"{len(audio_nodes)} audio, "
+            f"{len(video_nodes)} video nodes"
+        )
+
         return text_nodes, image_nodes, audio_nodes, video_nodes

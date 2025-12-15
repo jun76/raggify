@@ -85,8 +85,8 @@ class SplitTransform(BaseTransform):
 
             split_nodes.extend(split)
 
-        if self._pipe_callback:
-            self._pipe_callback(self, split_nodes)
+        if self._record_nodes:
+            self._record_nodes(self, nodes)
 
         return split_nodes
 

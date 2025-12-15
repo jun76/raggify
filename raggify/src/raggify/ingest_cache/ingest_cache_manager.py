@@ -78,19 +78,19 @@ class IngestCacheManager:
         self,
         modality: Modality,
         nodes: Sequence[BaseNode],
-        transformations: Sequence[TransformComponent],
+        transformation: TransformComponent,
         persist_dir: Optional[Path],
     ) -> None:
-        """Delete cache entries for given nodes and transformations.
+        """Delete cache entries for given nodes and transformation.
 
         Args:
             modality (Modality): Modality.
             nodes (Sequence[BaseNode]): Nodes.
-            transformations (Sequence[TransformComponent]): Transformations.
+            transformation (TransformComponent): Transformation.
             persist_dir (Optional[Path]): Persist directory.
 
         Notes:
-            Nodes must be the same (each transformations)
+            Nodes must be the same (each transformation)
             as those used to create the cache entries.
         """
         from llama_index.core.ingestion.cache import DEFAULT_CACHE_NAME
@@ -100,12 +100,11 @@ class IngestCacheManager:
         if cache is None:
             return
 
-        for transform in transformations:
-            try:
-                key = get_transformation_hash(nodes, transform)
-                cache.cache.delete(key=key, collection=cache.collection)
-            except Exception as e:
-                logger.warning(f"failed to delete cache entry: {e}")
+        try:
+            key = get_transformation_hash(nodes, transformation)
+            cache.cache.delete(key=key, collection=cache.collection)
+        except Exception as e:
+            logger.warning(f"failed to delete cache entry: {e}")
 
         try:
             if persist_dir is not None:

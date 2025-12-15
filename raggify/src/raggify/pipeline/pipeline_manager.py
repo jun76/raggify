@@ -81,7 +81,10 @@ class TracablePipeline(IngestionPipeline):
             transform (TransformComponent): Transform applied.
             nodes (Sequence[BaseNode]): Nodes after transformation.
         """
-        self._transformed_nodes.append((transform, nodes))
+        import copy
+
+        # use deepcopy for calling delete_nodes during rollback
+        self._transformed_nodes.append((transform, copy.deepcopy(nodes)))
 
 
 class PipelineManager:

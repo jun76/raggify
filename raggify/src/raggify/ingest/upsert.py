@@ -253,11 +253,11 @@ async def _process_batch(
         )
 
         # Roll back cache entries
-        for transformation, target_nodes in pipe.nodes:
+        for transformation, nodes in pipe.nodes:
             rt.ingest_cache.delete_nodes(
                 modality=modality,
-                nodes=target_nodes,
-                transformations=[transformation],
+                nodes=nodes,
+                transformation=transformation,
                 persist_dir=persist_dir,
             )
 

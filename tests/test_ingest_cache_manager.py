@@ -108,7 +108,7 @@ def test_delete_invokes_cache_operations(monkeypatch, tmp_path):
     cache = cast(FakeCache, container.cache)
 
     nodes = [TextNode(text="a", id_="1")]
-    transforms = [DummyTransform("t1")]
+    transform = DummyTransform("t1")
 
     def fake_hash(nodes, transform):
         return f"{transform.label}:{len(nodes)}"
@@ -117,7 +117,7 @@ def test_delete_invokes_cache_operations(monkeypatch, tmp_path):
         "llama_index.core.ingestion.pipeline.get_transformation_hash", fake_hash
     )
 
-    manager.delete_nodes(Modality.TEXT, nodes, transforms, persist_dir=tmp_path)
+    manager.delete_nodes(Modality.TEXT, nodes, transform, persist_dir=tmp_path)
 
     assert container.cache != None
     kv = cast(FakeKVStore, cache.cache)
@@ -129,7 +129,9 @@ def test_delete_handles_no_cache(tmp_path):
     manager = _build_manager(tmp_path)
     container = manager.get_container(Modality.TEXT)
     container.cache = None
-    manager.delete_nodes(Modality.TEXT, [], [], persist_dir=tmp_path)
+    manager.delete_nodes(
+        Modality.TEXT, [], DummyTransform("noop"), persist_dir=tmp_path
+    )
 
 
 def test_delete_all_clears_each_cache(tmp_path):

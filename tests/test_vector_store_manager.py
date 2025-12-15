@@ -7,7 +7,7 @@ import pytest
 from llama_index.core.vector_stores.types import BasePydanticVectorStore
 
 from raggify.document_store.document_store_manager import DocumentStoreManager
-from raggify.embed.embed_manager import Modality
+from raggify.llama_like.core.schema import Modality
 from raggify.vector_store.vector_store_manager import (
     VectorStoreContainer,
     VectorStoreManager,
