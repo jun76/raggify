@@ -261,7 +261,9 @@ async def _process_batch(
                 persist_dir=persist_dir,
             )
 
-        raise RuntimeError(f"failed to process {modality} batch, rolled back") from e
+        raise RuntimeError(
+            f"failed to process {modality} batch, rolled back: {e}"
+        ) from e
 
 
 async def _process_batches(

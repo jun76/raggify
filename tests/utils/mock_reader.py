@@ -12,7 +12,7 @@ def patch_audio_convert(monkeypatch, output_path: Path) -> None:
     """Patch MediaConverter.audio_to_mp3 to avoid ffmpeg calls."""
     from raggify.ingest.util import MediaConverter
 
-    def _fake_audio_to_mp3(self, src, dst, sample_rate=16000, bitrate="192k"):
+    def _fake_audio_to_mp3(self, src, sample_rate=16000, bitrate="192k"):
         return Path(output_path)
 
     monkeypatch.setattr(MediaConverter, "audio_to_mp3", _fake_audio_to_mp3)

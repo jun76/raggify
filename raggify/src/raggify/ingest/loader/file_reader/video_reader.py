@@ -46,12 +46,10 @@ class VideoReader(BaseReader):
             list[Path]: Extracted frame paths.
         """
         from ....core.exts import Exts
-        from ....core.utils import get_temp_path
         from ...util import MediaConverter
 
-        dst = get_temp_path(seed=str(src), suffix=Exts.PNG)
         base_dir = MediaConverter().extract_png_frames_from_video(
-            src=src, dst=dst, frame_rate=self._fps
+            src=src, frame_rate=self._fps
         )
         if base_dir is None:
             return []
@@ -70,14 +68,10 @@ class VideoReader(BaseReader):
         Returns:
             Optional[Path]: Extracted audio file path.
         """
-        from ....core.exts import Exts
-        from ....core.utils import get_temp_path
         from ...util import MediaConverter
 
-        dst = Path(get_temp_path(seed=str(src), suffix=Exts.MP3))
-
         return MediaConverter().extract_mp3_audio_from_video(
-            src=src, dst=dst, sample_rate=self._audio_sample_rate
+            src=src, sample_rate=self._audio_sample_rate
         )
 
     def _image_docs(self, frames: Sequence[Path], source: str) -> list[Document]:

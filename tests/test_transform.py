@@ -104,7 +104,8 @@ def test_split_transform_splits_audio_and_rebuilds(monkeypatch, tmp_path):
     local = tmp_path / "sample.wav"
     shutil.copy(src, local)
 
-    def fake_split(self, src, dst, chunk_seconds):
+    def fake_split(self, src, chunk_seconds):
+        dst = tmp_path / "audio_chunks"
         dst.mkdir(parents=True, exist_ok=True)
         for i in range(2):
             dest = dst / f"chunk_{i}.wav"
@@ -136,7 +137,8 @@ def test_split_transform_splits_video(monkeypatch, tmp_path):
     local = tmp_path / "sample.mp4"
     shutil.copy(src, local)
 
-    def fake_split(self, src, dst, chunk_seconds):
+    def fake_split(self, src, chunk_seconds):
+        dst = tmp_path / "video_chunks"
         dst.mkdir(parents=True, exist_ok=True)
         for i in range(3):
             dest = dst / f"segment_{i}.mp4"

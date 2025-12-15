@@ -10,13 +10,19 @@ __all__ = ["async_loop_runner"]
 
 
 class AsyncLoopRunner:
-    """共有イベントループ上でコルーチンを同期実行するヘルパ。"""
+    """A helper class to run async coroutines in a separate event loop
+    running in a background thread."""
 
     def __init__(self) -> None:
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._thread: Optional[threading.Thread] = None
 
     def _ensure_loop(self) -> asyncio.AbstractEventLoop:
+        """Ensure the background event loop is running.
+
+        Returns:
+            asyncio.AbstractEventLoop: The background event loop.
+        """
         if self._loop and self._loop.is_running():
             return self._loop
 
@@ -34,13 +40,14 @@ class AsyncLoopRunner:
         return loop
 
     def run(self, coro_factory: Callable[[], Coroutine[Any, Any, T]]) -> T:
-        """同期コンテキストから非同期処理を実行する。
+        """Run a coroutine in the background event loop and wait for the result.
 
         Args:
-            coro_factory: 実行したいコルーチンを返す関数
+            coro_factory (Callable[[], Coroutine[Any, Any, T]]):
+                A factory function that returns the coroutine to run.
 
         Returns:
-            コルーチンの戻り値
+            T: The result of the coroutine.
         """
         loop = self._ensure_loop()
         future = asyncio.run_coroutine_threadsafe(coro_factory(), loop)

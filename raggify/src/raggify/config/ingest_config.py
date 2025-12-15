@@ -25,8 +25,8 @@ class IngestConfig(DataClassDictMixin):
     text_chunk_size: int = 500
     text_chunk_overlap: int = 50
     upload_dir: Path = DEFAULT_WORKSPACE_PATH / "upload"
-    audio_chunk_seconds: Optional[int] = 25
-    video_chunk_seconds: Optional[int] = 25
+    audio_chunk_seconds: Optional[int] = 15
+    video_chunk_seconds: Optional[int] = 15
     additional_exts: set[str] = field(default_factory=lambda: {".c", ".py", ".rst"})
     skip_known_sources: bool = False
 

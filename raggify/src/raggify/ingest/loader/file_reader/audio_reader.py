@@ -42,7 +42,6 @@ class AudioReader(BaseReader):
         """
         from ....core.exts import Exts
         from ....core.metadata import BasicMetaData
-        from ....core.utils import get_temp_path
 
         path = os.fspath(path)
         if not Exts.endswith_exts(path, Exts.AUDIO):
@@ -65,7 +64,6 @@ class AudioReader(BaseReader):
 
             converted = MediaConverter().audio_to_mp3(
                 src=Path(path),
-                dst=get_temp_path(seed=path, suffix=Exts.MP3),
                 sample_rate=self._sample_rate,
                 bitrate=self._bitrate,
             )

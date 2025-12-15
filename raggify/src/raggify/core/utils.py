@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from pathlib import Path
 from typing import Optional
 
@@ -84,12 +85,29 @@ def get_temp_path(seed: str, suffix: Optional[str] = None) -> Path:
     base_name = TEMP_FILE_PREFIX + hashlib.md5(seed.encode()).hexdigest()
     if suffix is None:
         temp_path = temp_dir / base_name
-        temp_path.mkdir(parents=True, exist_ok=True)
     else:
         filename = base_name + suffix
         temp_path = temp_dir / filename
 
     return temp_path
+
+
+def make_temp_dir(path: Path, remove: bool = True) -> None:
+    """Create a temporary directory, optionally removing existing one.
+
+    Args:
+        path (Path): Directory or file path.
+        remove (bool, optional): Remove existing directory. Defaults to True.
+    """
+    import shutil
+
+    if path.is_file():
+        path = path.parent
+
+    if remove and path.exists():
+        shutil.rmtree(path)
+
+    path.mkdir(parents=True, exist_ok=True)
 
 
 def has_media(node: BaseNode, exts: set[str]) -> bool:

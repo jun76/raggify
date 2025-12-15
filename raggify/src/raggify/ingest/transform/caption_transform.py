@@ -165,7 +165,7 @@ please return just an empty string (no need for unnecessary comments).
                 TextBlock(text=prompt),
             ]
 
-        return await self._caption_with_llm(
+        return await self._acaption_with_llm(
             node=node,
             llm=llm,
             block_builder=_build_blocks,
@@ -199,7 +199,7 @@ please return just an empty string (no need for unnecessary comments).
                 TextBlock(text=prompt),
             ]
 
-        return await self._caption_with_llm(
+        return await self._acaption_with_llm(
             node=node,
             llm=llm,
             block_builder=_build_blocks,
@@ -215,14 +215,11 @@ please return just an empty string (no need for unnecessary comments).
         Returns:
             TextNode: Node after captioning.
         """
-        from ...core.exts import Exts
         from ...core.metadata import MetaKeys as MK
-        from ...core.utils import get_temp_path
         from ...llama_like.core.schema import AudioNode
         from ..util import MediaConverter
 
         path = node.metadata[MK.FILE_PATH]
-        temp_path = Path(get_temp_path(seed=path, suffix=Exts.MP3))
         try:
             converter = MediaConverter()
         except ImportError as e:
@@ -230,7 +227,7 @@ please return just an empty string (no need for unnecessary comments).
             return node
 
         temp_path = converter.extract_mp3_audio_from_video(
-            src=Path(path), dst=temp_path, sample_rate=self._audio_sample_rate
+            src=Path(path), sample_rate=self._audio_sample_rate
         )
         if temp_path is not None:
             audio_node = AudioNode(
@@ -241,7 +238,7 @@ please return just an empty string (no need for unnecessary comments).
 
         return node
 
-    async def _caption_with_llm(
+    async def _acaption_with_llm(
         self,
         node: TextNode,
         llm: LLM,

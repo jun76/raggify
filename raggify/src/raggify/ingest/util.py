@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
+from ..core.exts import Exts
 from ..logger import logger
 
 __all__ = ["MediaConverter"]
@@ -32,20 +33,42 @@ class MediaConverter:
 
         self._ffmpeg = ffmpeg
 
+    def _has_audio_stream(self, src: Path) -> bool:
+        """Check whether the given media file contains an audio stream.
+
+        Args:
+            src (Path): Source media file path.
+
+        Returns:
+            bool: True if audio stream exists, False otherwise.
+        """
+        try:
+            probe = self._ffmpeg.probe(str(src))
+        except Exception as e:
+            logger.error(f"failed to probe media streams for {src}: {e}")
+            return False
+
+        return any(
+            stream.get("codec_type") == "audio" for stream in probe.get("streams", [])
+        )
+
     def audio_to_mp3(
-        self, src: Path, dst: Path, sample_rate: int = 16000, bitrate: str = "192k"
+        self, src: Path, sample_rate: int = 16000, bitrate: str = "192k"
     ) -> Optional[Path]:
         """Convert audio file to mp3 format.
 
         Args:
             src (Path): Source audio file path.
-            dst (Path): Destination mp3 file path.
             sample_rate (int, optional): Target sample rate. Defaults to 16000.
             bitrate (str, optional): Audio bitrate string. Defaults to "192k".
 
         Returns:
             Optional[Path]: Converted audio file path, or None on failure.
         """
+        from ..core.utils import get_temp_path, make_temp_dir
+
+        dst = get_temp_path(seed=str(src), suffix=Exts.MP3)
+        make_temp_dir(dst)
         try:
             (
                 self._ffmpeg.input(str(src))
@@ -66,7 +89,7 @@ class MediaConverter:
         return dst
 
     def extract_mp3_audio_from_video(
-        self, src: Path, dst: Path, sample_rate: int = 16000
+        self, src: Path, sample_rate: int = 16000
     ) -> Optional[Path]:
         """Extract mp3 audio track from video file.
 
@@ -75,6 +98,14 @@ class MediaConverter:
             dst (Path): Destination mp3 file path.
             sample_rate (int, optional): Target sample rate. Defaults to 16000.
         """
+        from ..core.utils import get_temp_path, make_temp_dir
+
+        if not self._has_audio_stream(src):
+            logger.debug(f"skip extracting audio from {src}: no audio stream found")
+            return None
+
+        dst = Path(get_temp_path(seed=str(src), suffix=Exts.MP3))
+        make_temp_dir(dst)
         try:
             (
                 self._ffmpeg.input(str(src))
@@ -94,19 +125,22 @@ class MediaConverter:
         return dst
 
     def extract_png_frames_from_video(
-        self, src: Path, dst: Path, frame_rate: int
+        self, src: Path, frame_rate: int
     ) -> Optional[Path]:
         """Extract png frames from video file.
 
         Args:
             src (Path): Source video file path.
-            dst (Path): Directory path for extracted png frames.
             frame_rate (int): Frame extraction rate (frames per second).
 
         Returns:
             Optional[Path]: Directory path containing extracted png frames, or None on failure.
         """
-        pattern = str(dst / "%05d.png")
+        from ..core.utils import get_temp_path, make_temp_dir
+
+        dst = Path(get_temp_path(str(src)))
+        make_temp_dir(dst)
+        pattern = str(dst / f"%05d{Exts.PNG}")
         try:
             (
                 self._ffmpeg.input(str(src))
@@ -120,17 +154,20 @@ class MediaConverter:
 
         return dst
 
-    def split(self, src: Path, dst: Path, chunk_seconds: int) -> Optional[Path]:
+    def split(self, src: Path, chunk_seconds: int) -> Optional[Path]:
         """Split audio or video file into chunks.
 
         Args:
             src (Path): Source file path.
-            dst (Path): Directory path for output chunks.
             chunk_seconds (int): Chunk length in seconds.
 
         Returns:
             Optional[Path]: Directory path containing chunks, or None on failure.
         """
+        from ..core.utils import get_temp_path, make_temp_dir
+
+        dst = Path(get_temp_path(str(src)))
+        make_temp_dir(dst)
         try:
             probe = self._ffmpeg.probe(src)
             duration = float(probe["format"]["duration"])
@@ -139,9 +176,12 @@ class MediaConverter:
             return None
 
         if duration is None or duration <= chunk_seconds:
+            logger.warning(
+                f"too short to split({duration}s <= {chunk_seconds}s) for {src}, skipping"
+            )
             return None
 
-        pattern = dst / f"%05d{dst.suffix}"
+        pattern = dst / f"%05d{src.suffix}"
         try:
             (
                 self._ffmpeg.input(str(src))

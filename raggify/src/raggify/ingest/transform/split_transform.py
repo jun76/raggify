@@ -124,21 +124,17 @@ class SplitTransform(BaseTransform):
             list[BaseNode]: Split nodes or the original node on failure.
         """
         from ...core.metadata import MetaKeys as MK
-        from ...core.utils import get_temp_path
         from ...ingest.util import MediaConverter
 
         path = node.metadata.get(MK.FILE_PATH) or node.metadata.get(MK.TEMP_FILE_PATH)
-        if not path:
+        if path is None:
             return [node]
 
         if chunk_seconds is None:
             return [node]
 
-        dst = Path(get_temp_path(path))
-        base_dir = MediaConverter().split(
-            src=Path(path), dst=dst, chunk_seconds=chunk_seconds
-        )
-        if not base_dir:
+        base_dir = MediaConverter().split(src=Path(path), chunk_seconds=chunk_seconds)
+        if base_dir is None:
             return [node]
 
         return self._build_chunk_nodes(node, base_dir, node_cls)
@@ -201,5 +197,7 @@ class SplitTransform(BaseTransform):
                     metadata=meta.to_dict(),
                 )
             )
+
+        logger.debug(f"split node into {len(nodes)} chunks under {base_dir}")
 
         return nodes
