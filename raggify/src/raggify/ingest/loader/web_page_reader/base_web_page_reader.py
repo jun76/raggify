@@ -18,7 +18,10 @@ class BaseWebPageReader(ABC):
     """Reader abstract base for web pages that generates documents with parser."""
 
     def __init__(
-        self, cfg: IngestConfig, asset_url_cache: set[str], parser: BaseParser
+        self,
+        cfg: IngestConfig,
+        asset_url_cache: set[str],
+        parser: BaseParser,
     ) -> None:
         """Constructor.
 
@@ -183,8 +186,8 @@ class BaseWebPageReader(ABC):
 
             asset_docs = await self.aload_direct_linked_file(
                 url=asset_url,
-                base_url=base_url,
                 max_asset_bytes=max_asset_bytes,
+                base_url=base_url,
             )
             if not asset_docs:
                 logger.warning(f"failed to fetch from {asset_url}, skipped")

@@ -10,6 +10,7 @@ TOOL_DIR := $(shell $(UV) tool dir)
 TOOL_PY := $(TOOL_DIR)/raggify/bin/python
 TOOL_PIP := $(UV) pip install --python $(TOOL_PY)
 RAGGIFY_ALL_EXTRA := './raggify[all]'
+RAGGIFY_API_EXTRA := './raggify[text,image,audio,video,rerank,postgres,redis,exam,dev]'
 
 .PHONY: venv min api all tools test clean
 
@@ -31,6 +32,7 @@ api: venv
 		--extra exam \
 		--extra dev
 	$(MAKE) tools
+	$(TOOL_PIP) -e $(RAGGIFY_API_EXTRA)
 
 all: venv
 	$(UV) sync --all-packages --extra all

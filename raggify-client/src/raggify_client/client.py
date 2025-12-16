@@ -160,7 +160,7 @@ class RestAPIClient:
         """
         return self._post_json("/job", {"job_id": job_id, "rm": rm})
 
-    def ingest_path(self, path: str) -> dict[str, Any]:
+    def ingest_path(self, path: str, force: bool = False) -> dict[str, Any]:
         """Call the ingest-from-path API.
 
         Args:
@@ -169,9 +169,9 @@ class RestAPIClient:
         Returns:
             dict[str, Any]: Response data.
         """
-        return self._post_json("/ingest/path", {"path": path})
+        return self._post_json("/ingest/path", {"path": path, "force": force})
 
-    def ingest_path_list(self, path: str) -> dict[str, Any]:
+    def ingest_path_list(self, path: str, force: bool = False) -> dict[str, Any]:
         """Call the ingest-from-path-list API.
 
         Args:
@@ -180,9 +180,9 @@ class RestAPIClient:
         Returns:
             dict[str, Any]: Response data.
         """
-        return self._post_json("/ingest/path_list", {"path": path})
+        return self._post_json("/ingest/path_list", {"path": path, "force": force})
 
-    def ingest_url(self, url: str) -> dict[str, Any]:
+    def ingest_url(self, url: str, force: bool = False) -> dict[str, Any]:
         """Call the ingest-from-URL API.
 
         Args:
@@ -191,9 +191,9 @@ class RestAPIClient:
         Returns:
             dict[str, Any]: Response data.
         """
-        return self._post_json("/ingest/url", {"url": url})
+        return self._post_json("/ingest/url", {"url": url, "force": force})
 
-    def ingest_url_list(self, path: str) -> dict[str, Any]:
+    def ingest_url_list(self, path: str, force: bool = False) -> dict[str, Any]:
         """Call the ingest-from-URL-list API.
 
         Args:
@@ -202,7 +202,7 @@ class RestAPIClient:
         Returns:
             dict[str, Any]: Response data.
         """
-        return self._post_json("/ingest/url_list", {"path": path})
+        return self._post_json("/ingest/url_list", {"path": path, "force": force})
 
     def query_text_text(
         self,

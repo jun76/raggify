@@ -26,7 +26,7 @@ class FileLoader(BaseLoader):
         self._parser = parser
 
     async def aload_from_path(
-        self, root: str
+        self, root: str, force: bool
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
         """Load content from a local path and generate nodes.
 
@@ -34,6 +34,7 @@ class FileLoader(BaseLoader):
 
         Args:
             root (str): Target path.
+            force (bool): Whether to force reingestion even if already present.
 
         Raises:
             ValueError: For invalid path or load errors.
@@ -42,7 +43,7 @@ class FileLoader(BaseLoader):
             tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
                 Text, image, audio, and video nodes.
         """
-        docs = await self._parser.aparse(root)
+        docs = await self._parser.aparse(root=root, force=force)
         logger.debug(f"loaded {len(docs)} docs from {root}")
 
         return await self._asplit_docs_modality(docs)
@@ -50,12 +51,14 @@ class FileLoader(BaseLoader):
     async def aload_from_paths(
         self,
         paths: list[str],
+        force: bool,
         is_canceled: Callable[[], bool],
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
         """Load content from multiple paths and generate nodes.
 
         Args:
             paths (list[str]): Path list.
+            force (bool): Whether to force reingestion even if already present.
             is_canceled (Callable[[], bool]): Whether this job has been canceled.
 
         Returns:
@@ -72,7 +75,7 @@ class FileLoader(BaseLoader):
                 return [], [], [], []
             try:
                 temp_text, temp_image, temp_audio, temp_video = (
-                    await self.aload_from_path(path)
+                    await self.aload_from_path(root=path, force=force)
                 )
                 texts.extend(temp_text)
                 images.extend(temp_image)

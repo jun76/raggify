@@ -15,8 +15,8 @@ class DummyParser(BaseParser):
     def ingest_target_exts(self) -> set[str]:
         return self._exts
 
-    async def aparse(self, root: str):
+    async def aparse(self, root: str, force: bool = False) -> List:
         return []
 
-    def parse(self, root: str):
+    def parse(self, root: str, force: bool = False) -> List:
         return []

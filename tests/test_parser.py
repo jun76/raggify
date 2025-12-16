@@ -4,8 +4,8 @@ from pathlib import Path
 
 from raggify.config.embed_config import EmbedProvider
 from raggify.config.general_config import GeneralConfig
-from raggify.core.exts import Exts
 from raggify.config.ingest_config import IngestConfig
+from raggify.core.exts import Exts
 from raggify.ingest.loader.file_reader import AudioReader, VideoReader
 from raggify.ingest.parser import DefaultParser
 

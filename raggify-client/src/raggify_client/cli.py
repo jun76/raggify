@@ -137,9 +137,14 @@ def ingest_path_list():
 
 
 @app.command(name="iu", help="Ingest from Url.")
-def ingest_url(url: str = typer.Argument(help="Target url.")):
-    logger.debug(f"url = {url}")
-    _execute_client_command(lambda client: client.ingest_url(url))
+def ingest_url(
+    url: str = typer.Argument(help="Target url."),
+    force: bool = typer.Option(
+        default=False, help="Reingest even if the source was already processed."
+    ),
+):
+    logger.debug(f"url = {url}, force = {force}")
+    _execute_client_command(lambda client: client.ingest_url(url, force=force))
 
 
 @app.command(name="iul", help="Ingest from Url List.")
@@ -147,9 +152,14 @@ def ingest_url_list(
     list_path: str = typer.Argument(
         help="Target url-list path. The list can include comment(#) or blank line."
     ),
+    force: bool = typer.Option(
+        default=False, help="Reingest even if the source was already processed."
+    ),
 ):
-    logger.debug(f"list_path = {list_path}")
-    _execute_client_command(lambda client: client.ingest_url_list(list_path))
+    logger.debug(f"list_path = {list_path}, force = {force}")
+    _execute_client_command(
+        lambda client: client.ingest_url_list(list_path, force=force)
+    )
 
 
 @app.command(

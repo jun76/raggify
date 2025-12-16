@@ -173,44 +173,60 @@ def _patch_video_video() -> Iterator[None]:
 def ingest_path(
     path: str,
     pipe_batch_size: Optional[int] = None,
+    force: bool = False,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     with _patch_ingest_pipeline(), _patch_file_reader():
         _real_ingest_path(
-            path=path, pipe_batch_size=pipe_batch_size, is_canceled=is_canceled
+            path=path,
+            pipe_batch_size=pipe_batch_size,
+            force=force,
+            is_canceled=is_canceled,
         )
 
 
 def ingest_path_list(
     lst: str | Sequence[str],
     pipe_batch_size: Optional[int] = None,
+    force: bool = False,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     with _patch_ingest_pipeline(), _patch_file_reader():
         _real_ingest_path_list(
-            lst=lst, pipe_batch_size=pipe_batch_size, is_canceled=is_canceled
+            lst=lst,
+            pipe_batch_size=pipe_batch_size,
+            force=force,
+            is_canceled=is_canceled,
         )
 
 
 def ingest_url(
     url: str,
     pipe_batch_size: Optional[int] = None,
+    force: bool = False,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     with _patch_ingest_pipeline(), patch_html_fetchers(), patch_wikipedia_reader():
         _real_ingest_url(
-            url=url, pipe_batch_size=pipe_batch_size, is_canceled=is_canceled
+            url=url,
+            pipe_batch_size=pipe_batch_size,
+            force=force,
+            is_canceled=is_canceled,
         )
 
 
 def ingest_url_list(
     lst: str | Sequence[str],
     pipe_batch_size: Optional[int] = None,
+    force: bool = False,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     with _patch_ingest_pipeline(), patch_html_fetchers(), patch_wikipedia_reader():
         _real_ingest_url_list(
-            lst=lst, pipe_batch_size=pipe_batch_size, is_canceled=is_canceled
+            lst=lst,
+            pipe_batch_size=pipe_batch_size,
+            force=force,
+            is_canceled=is_canceled,
         )
 
 
@@ -290,23 +306,29 @@ def query_video_video(
 async def aingest_path(
     path: str,
     pipe_batch_size: Optional[int] = None,
+    force: bool = False,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     with _patch_ingest_pipeline(), _patch_file_reader():
         await _real_aingest_path(
-            path=path, pipe_batch_size=pipe_batch_size, is_canceled=is_canceled
+            path=path,
+            pipe_batch_size=pipe_batch_size,
+            force=force,
+            is_canceled=is_canceled,
         )
 
 
 async def aingest_path_list(
     lst: str | Sequence[str],
     pipe_batch_size: Optional[int] = None,
+    force: bool = False,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     with _patch_ingest_pipeline(), _patch_file_reader():
         await _real_aingest_path_list(
             lst=lst,
             pipe_batch_size=pipe_batch_size,
+            force=force,
             is_canceled=is_canceled,
         )
 
@@ -314,23 +336,29 @@ async def aingest_path_list(
 async def aingest_url(
     url: str,
     pipe_batch_size: Optional[int] = None,
+    force: bool = False,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     with _patch_ingest_pipeline(), patch_html_fetchers(), patch_wikipedia_reader():
         await _real_aingest_url(
-            url=url, pipe_batch_size=pipe_batch_size, is_canceled=is_canceled
+            url=url,
+            pipe_batch_size=pipe_batch_size,
+            force=force,
+            is_canceled=is_canceled,
         )
 
 
 async def aingest_url_list(
     lst: str | Sequence[str],
     pipe_batch_size: Optional[int] = None,
+    force: bool = False,
     is_canceled: Callable[[], bool] = lambda: False,
 ) -> None:
     with _patch_ingest_pipeline(), patch_html_fetchers(), patch_wikipedia_reader():
         await _real_aingest_url_list(
             lst=lst,
             pipe_batch_size=pipe_batch_size,
+            force=force,
             is_canceled=is_canceled,
         )
 

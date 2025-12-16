@@ -51,7 +51,9 @@ class DefaultWebPageReader(BaseWebPageReader):
                 return []
 
             docs = await self.aload_direct_linked_file(
-                url=url, max_asset_bytes=self._cfg.max_asset_bytes, base_url=url
+                url=url,
+                max_asset_bytes=self._cfg.max_asset_bytes,
+                base_url=url,
             )
             if docs is None:
                 logger.warning(f"failed to fetch from {url}")

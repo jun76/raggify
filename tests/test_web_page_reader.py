@@ -108,7 +108,7 @@ def test_aload_direct_linked_file_updates_metadata(tmp_path, monkeypatch):
     patch_html_asset_download(monkeypatch, b"payload")
     patch_html_temp_file(monkeypatch, temp_path)
 
-    async def fake_aparse(root: str):
+    async def fake_aparse(root: str, force: bool = False):
         assert root == str(temp_path)
         return [Document(text="img", metadata={})]
 

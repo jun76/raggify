@@ -154,9 +154,14 @@ def reload():
 
 
 @app.command(name="ip", help=f"Ingest from local Path.")
-def ingest_path(path: str = typer.Argument(help="Target path.")):
+def ingest_path(
+    path: str = typer.Argument(help="Target path."),
+    force: bool = typer.Option(
+        default=False, help="Reingest even if the source was already processed."
+    ),
+):
     logger.debug(f"path = {path}")
-    _execute_client_command(lambda client: client.ingest_path(path))
+    _execute_client_command(lambda client: client.ingest_path(path, force=force))
 
 
 @app.command(name="ipl", help="Ingest from local Path List.")
@@ -164,9 +169,14 @@ def ingest_path_list(
     list_path: str = typer.Argument(
         help="Target path-list path. The list can include comment(#) or blank line."
     ),
+    force: bool = typer.Option(
+        default=False, help="Reingest even if the source was already processed."
+    ),
 ):
     logger.debug(f"list_path = {list_path}")
-    _execute_client_command(lambda client: client.ingest_path_list(list_path))
+    _execute_client_command(
+        lambda client: client.ingest_path_list(list_path, force=force)
+    )
 
 
 if __name__ == "__main__":

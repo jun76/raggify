@@ -179,6 +179,7 @@ class WebPageLoader(BaseLoader):
     async def aload_from_url(
         self,
         url: str,
+        force: bool,
         is_canceled: Callable[[], bool],
         inloop: bool = False,
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
@@ -188,6 +189,7 @@ class WebPageLoader(BaseLoader):
 
         Args:
             url (str): Target URL.
+            force (bool): Whether to force reingestion even if already present.
             is_canceled (Callable[[], bool]): Whether this job has been canceled.
             inloop (bool, optional): Whether called inside an upper URL loop. Defaults to False.
 
@@ -201,7 +203,11 @@ class WebPageLoader(BaseLoader):
             logger.error("invalid URL. expected http(s)://*")
             return [], [], [], []
 
-        if self._is_known_source is not None and self._is_known_source(url):
+        if (
+            not force
+            and self._is_known_source is not None
+            and self._is_known_source(url)
+        ):
             logger.debug(f"skip already ingested URL: {url}")
             return [], [], [], []
 
@@ -224,12 +230,14 @@ class WebPageLoader(BaseLoader):
     async def aload_from_urls(
         self,
         urls: list[str],
+        force: bool,
         is_canceled: Callable[[], bool],
     ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
         """Fetch content from multiple URLs and generate nodes.
 
         Args:
             urls (list[str]): URL list.
+            force (bool): Whether to force reingestion even if already present.
             is_canceled (Callable[[], bool]): Whether this job has been canceled.
 
         Returns:
@@ -249,7 +257,7 @@ class WebPageLoader(BaseLoader):
             try:
                 temp_text, temp_image, temp_audio, temp_video = (
                     await self.aload_from_url(
-                        url=url, is_canceled=is_canceled, inloop=True
+                        url=url, force=force, is_canceled=is_canceled, inloop=True
                     )
                 )
                 texts.extend(temp_text)

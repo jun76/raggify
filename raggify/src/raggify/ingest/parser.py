@@ -70,10 +70,13 @@ class BaseParser:
     async def aparse(
         self,
         root: str,
+        force: bool = False,
     ) -> list[Document]:
         """Parse data asynchronously from the input path.
         Args:
             root (str): Target path.
+            force (bool):
+                Whether to force reingestion even if already present. Defaults to False.
 
         Returns:
             list[Document]: List of documents parsed from the input path(s).
@@ -97,7 +100,7 @@ class BaseParser:
                 raise_on_error=True,
             )
 
-            if self._is_known_source is not None:
+            if not force and self._is_known_source is not None:
                 filtered_files = []
                 for file_path in reader.input_files:
                     if not self._is_known_source(str(file_path)):
@@ -121,15 +124,18 @@ class BaseParser:
     def parse(
         self,
         root: str,
+        force: bool = False,
     ) -> list[Document]:
         """Parse data from the input path.
         Args:
             root (str): Target path.
+            force (bool):
+                Whether to force reingestion even if already present. Defaults to False.
 
         Returns:
             list[Document]: List of documents parsed from the input path(s).
         """
-        return async_loop_runner.run(lambda: self.aparse(root))
+        return async_loop_runner.run(lambda: self.aparse(root=root, force=force))
 
 
 class DefaultParser(BaseParser):
