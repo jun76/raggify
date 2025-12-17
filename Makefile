@@ -1,13 +1,16 @@
 VENV := .venv
+
 ifeq ($(RUNNER_OS),Windows)
 PY := $(VENV)/Scripts/python.exe
+TOOL_PY := $(TOOL_DIR)/raggify/Scripts/python.exe
 else
 PY := $(VENV)/bin/python
+TOOL_PY := $(TOOL_DIR)/raggify/bin/python
 endif
+
 UV := uv
 CLIP_PKG := "clip@git+https://github.com/openai/CLIP.git"
 TOOL_DIR := $(shell $(UV) tool dir)
-TOOL_PY := $(TOOL_DIR)/raggify/bin/python
 TOOL_PIP := $(UV) pip install --python $(TOOL_PY)
 RAGGIFY_ALL_EXTRA := './raggify[all]'
 RAGGIFY_API_EXTRA := './raggify[text,image,audio,video,rerank,postgres,redis,exam,dev]'
