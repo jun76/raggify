@@ -4,9 +4,16 @@
 
 <img alt="Image" src="https://raw.githubusercontent.com/jun76/raggify/main/media/Raggify.png" />
 
+## Core Concept
+
 **Raggify** is a llama-index based Python library for building multimodal RAG(Retrieval-Augmented Generation) systems that run locally or as a service. It now ships with an asynchronous ingest pipeline for files, web pages, and URL lists, normalizes metadata, persists cache fingerprints to avoid redundant upserts, and keeps a document store in sync for BM25 / Vector hybrid retrieval.
 
 Raggify is designed with the goal of **natively handling multimodal data—including images, audio, video, and other unknown future modalities—** from the outset, rather than repeatedly modifying systems based on text modality. It also serves to absorb various specification changes in the embedded models and client APIs provided by each AI provider.
+
+## Stability
+
+raggify is currently in **Beta**.
+Core APIs are considered stable, but minor breaking changes may occur before the 1.0 release.
 
 # 🔎 Overview
 
