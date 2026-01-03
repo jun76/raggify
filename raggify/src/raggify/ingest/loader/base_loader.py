@@ -1,8 +1,15 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from functools import partial
 
-from llama_index.core.schema import Document, ImageNode, MediaResource, TextNode
+from llama_index.core.schema import (
+    BaseNode,
+    Document,
+    ImageNode,
+    MediaResource,
+    TextNode,
+)
 
 from ...core.exts import Exts
 from ...core.metadata import BasicMetaData
@@ -17,6 +24,21 @@ __all__ = ["BaseLoader"]
 class BaseLoader:
     """Base loader class."""
 
+    @staticmethod
+    def _build_hierarchy_node_id(level: int, index: int, node: BaseNode) -> str:
+        """Build a stable node ID for hierarchical parsing.
+
+        Args:
+            level (int): Hierarchy level index.
+            index (int): Chunk index within the level.
+            node (BaseNode): Source node.
+
+        Returns:
+            str: Stable node ID.
+        """
+        base_id = node.id_ or node.hash or "node"
+        return f"{base_id}:L{level}:C{index}"
+
     def _build_text_hierarchy_nodes(self, docs: list[Document]) -> list[TextNode]:
         """Build hierarchical text nodes and store them in the docstore.
 
@@ -26,7 +48,11 @@ class BaseLoader:
         Returns:
             list[TextNode]: Leaf text nodes for vector ingestion.
         """
-        from llama_index.core.node_parser import HierarchicalNodeParser, get_leaf_nodes
+        from llama_index.core.node_parser import (
+            HierarchicalNodeParser,
+            SentenceSplitter,
+            get_leaf_nodes,
+        )
 
         from ...runtime import get_runtime as _rt
 
@@ -35,9 +61,21 @@ class BaseLoader:
 
         rt = _rt()
         cfg = rt.cfg.ingest
-        parser = HierarchicalNodeParser.from_defaults(
-            chunk_sizes=cfg.hierarchy_chunk_sizes,
-            chunk_overlap=cfg.text_chunk_overlap,
+        node_parser_ids = []
+        node_parser_map = {}
+        for level, chunk_size in enumerate(cfg.hierarchy_chunk_sizes):
+            node_parser_id = f"chunk_size_{chunk_size}"
+            node_parser_ids.append(node_parser_id)
+            node_parser_map[node_parser_id] = SentenceSplitter(
+                chunk_size=chunk_size,
+                chunk_overlap=cfg.text_chunk_overlap,
+                include_metadata=True,
+                id_func=partial(self._build_hierarchy_node_id, level),
+            )
+
+        parser = HierarchicalNodeParser(
+            node_parser_ids=node_parser_ids,
+            node_parser_map=node_parser_map,
             include_metadata=True,
         )
 
