@@ -9,6 +9,7 @@ from ..logger import logger
 
 if TYPE_CHECKING:
     from llama_index.core.indices import VectorStoreIndex
+    from llama_index.core.storage.docstore.types import BaseDocumentStore
     from llama_index.core.vector_stores.types import BasePydanticVectorStore
 
 
@@ -123,14 +124,19 @@ class VectorStoreManager:
         Returns:
             VectorStoreIndex: Created index.
         """
+        from llama_index.core import StorageContext
         from llama_index.core.indices import VectorStoreIndex
         from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
 
         match modality:
             case Modality.TEXT:
+                storage_context = StorageContext.from_defaults(
+                    docstore=self._docstore.store
+                )
                 return VectorStoreIndex.from_vector_store(
                     vector_store=self.get_container(Modality.TEXT).store,
                     embed_model=self._embed.get_container(Modality.TEXT).embed,
+                    storage_context=storage_context,
                 )
             case Modality.IMAGE:
                 return MultiModalVectorStoreIndex.from_vector_store(
@@ -151,6 +157,19 @@ class VectorStoreManager:
                 )
             case _:
                 raise RuntimeError("unexpected modality")
+
+    def refresh_docstore(self, docstore: BaseDocumentStore) -> None:
+        """Refresh docstore references on existing indices.
+
+        Args:
+            docstore (BaseDocumentStore): New docstore instance.
+        """
+        for cont in self._conts.values():
+            index = cont.index
+            if index is None:
+                continue
+
+            index.storage_context.docstore = docstore
 
     def delete_nodes(self, ref_doc_ids: set[str]) -> None:
         """Delete nodes from the vector store by ref_doc_id.

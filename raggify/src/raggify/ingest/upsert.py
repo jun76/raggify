@@ -38,12 +38,10 @@ def _build_text_pipeline(
         AddChunkIndexTransform,
         EmbedTransform,
         RemoveTempFileTransform,
-        SplitTransform,
     )
 
     rt = _rt()
     transformations: list[TransformComponent] = [
-        SplitTransform(cfg=rt.cfg.ingest, is_canceled=is_canceled),
         AddChunkIndexTransform(is_canceled),
         EmbedTransform(embed=rt.embed_manager, is_canceled=is_canceled),
         RemoveTempFileTransform(is_canceled),

@@ -24,7 +24,7 @@ configure_test_env()
 
 
 def _make_docstore() -> DocumentStoreManager:
-    return cast(DocumentStoreManager, SimpleNamespace())
+    return cast(DocumentStoreManager, SimpleNamespace(store=SimpleNamespace()))
 
 
 def _make_manager(modalities: dict[Modality, FakeVectorStore]) -> VectorStoreManager:

@@ -762,6 +762,7 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 | --------------------- | -------------------------------------------------------------- | ----------------------------------- | ------------------------------------------------- |
 | `text_chunk_size`     | Chunk size for text splitting.                                 | `500`                               | Any integer (e.g., `500`, `1024`).                |
 | `text_chunk_overlap`  | Overlap between adjacent chunks.                               | `50`                                | Any integer.                                      |
+| `hierarchy_chunk_sizes` | Chunk sizes for hierarchical text splitting.                 | `[2048, 512, 256]`                  | List of integers, large to small (e.g., `[2048, 512, 256]`). |
 | `upload_dir`          | Directory for uploaded files.                                  | `~/.local/share/raggify/upload`     | Any filesystem path.                              |
 | `audio_chunk_seconds` | Chunk length for audio splitting (seconds).                    | `15`                                | Positive integer, or `null` to disable splitting. |
 | `video_chunk_seconds` | Chunk length for video splitting (seconds).                    | `15`                                | Positive integer, or `null` to disable splitting. |
@@ -804,6 +805,7 @@ Generally, edit /etc/raggify/config.yaml before starting the server. You can als
 | `bm25_topk`            | Number of docstore hits when using BM25.    | `10`     | Any integer.                          |
 | `fusion_lambda_vector` | Weight for vector retriever in QueryFusion. | `0.5`    | Float 0–1.                            |
 | `fusion_lambda_bm25`   | Weight for BM25 retriever in QueryFusion.   | `0.5`    | Float 0–1.                            |
+| `auto_merge_ratio`     | Threshold for AutoMergingRetriever merging. | `0.5`    | Float 0–1.                            |
 
 ### LLM (for input data formatting)
 

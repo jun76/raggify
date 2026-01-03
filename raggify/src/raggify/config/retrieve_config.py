@@ -22,3 +22,4 @@ class RetrieveConfig(DataClassDictMixin):
     bm25_topk: int = 10
     fusion_lambda_vector: float = 0.5
     fusion_lambda_bm25: float = 0.5
+    auto_merge_ratio: float = 0.5

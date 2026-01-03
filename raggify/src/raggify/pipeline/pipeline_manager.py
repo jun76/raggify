@@ -166,6 +166,7 @@ class PipelineManager:
                     logger.warning("pipeline has no docstore")
                 else:
                     self.document_store.store = pipe.docstore
+                    self.vector_store.refresh_docstore(self.document_store.store)
                 logger.debug(f"loaded pipeline from {persist_dir}")
         except Exception as e:
             logger.warning(f"failed to load persist dir: {e}")
@@ -200,6 +201,7 @@ class PipelineManager:
                     logger.warning("pipeline has no docstore")
                 else:
                     self.document_store.store = pipe.docstore
+                    self.vector_store.refresh_docstore(self.document_store.store)
                 logger.debug(f"persisted pipeline to {persist_dir}")
         except Exception as e:
             logger.warning(f"failed to persist: {e}")

@@ -17,6 +17,41 @@ __all__ = ["BaseLoader"]
 class BaseLoader:
     """Base loader class."""
 
+    def _build_text_hierarchy_nodes(self, docs: list[Document]) -> list[TextNode]:
+        """Build hierarchical text nodes and store them in the docstore.
+
+        Args:
+            docs (list[Document]): Input documents.
+
+        Returns:
+            list[TextNode]: Leaf text nodes for vector ingestion.
+        """
+        from llama_index.core.node_parser import HierarchicalNodeParser, get_leaf_nodes
+
+        from ...runtime import get_runtime as _rt
+
+        if not docs:
+            return []
+
+        rt = _rt()
+        cfg = rt.cfg.ingest
+        parser = HierarchicalNodeParser.from_defaults(
+            chunk_sizes=cfg.hierarchy_chunk_sizes,
+            chunk_overlap=cfg.text_chunk_overlap,
+            include_metadata=True,
+        )
+
+        all_nodes = parser.get_nodes_from_documents(docs)
+        if not all_nodes:
+            return []
+
+        rt.document_store.store.add_documents(all_nodes)
+        leaf_nodes = [
+            node for node in get_leaf_nodes(all_nodes) if isinstance(node, TextNode)
+        ]
+
+        return leaf_nodes
+
     def _finalize_docs(self, docs: list[Document]) -> None:
         """Adjust metadata and finalize documents.
 
@@ -88,7 +123,7 @@ class BaseLoader:
         image_nodes = []
         audio_nodes = []
         video_nodes = []
-        text_nodes = []
+        text_docs: list[Document] = []
         for doc in docs:
             if has_media(node=doc, exts=Exts.IMAGE):
                 image_nodes.append(
@@ -124,18 +159,11 @@ class BaseLoader:
                     )
                 )
             elif isinstance(doc, Document):
-                text_nodes.append(
-                    TextNode(
-                        text=doc.text,
-                        id_=doc.id_,
-                        doc_id=doc.doc_id,
-                        ref_doc_id=doc.doc_id,
-                        metadata=doc.metadata,
-                    )
-                )
+                text_docs.append(doc)
             else:
                 logger.warning(f"unexpected node type {type(doc)}, skipped")
 
+        text_nodes = self._build_text_hierarchy_nodes(text_docs)
         logger.debug(
             f"split into {len(text_nodes)} text, "
             f"{len(image_nodes)} image, "

@@ -46,7 +46,7 @@ def _make_cfg(provider: VectorStoreProvider, persist_dir) -> ConfigManager:
 
 
 def _make_docstore() -> DocumentStoreManager:
-    return cast(DocumentStoreManager, SimpleNamespace())
+    return cast(DocumentStoreManager, SimpleNamespace(store=SimpleNamespace()))
 
 
 @pytest.fixture(autouse=True)

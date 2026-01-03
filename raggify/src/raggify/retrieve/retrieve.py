@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, cast
 
 from llama_index.core.indices import VectorStoreIndex
-from llama_index.core.retrievers import BaseRetriever, QueryFusionRetriever
+from llama_index.core.retrievers import (
+    BaseRetriever,
+    QueryFusionRetriever,
+    VectorIndexRetriever,
+)
 from llama_index.core.retrievers.fusion_retriever import FUSION_MODES
 from llama_index.core.schema import NodeWithScore
 from llama_index.retrievers.bm25 import BM25Retriever
@@ -55,7 +59,34 @@ def _get_vector_retriever(rt: Runtime, index: VectorStoreIndex) -> BaseRetriever
     """
     logger.debug("vector only")
 
-    return index.as_retriever(similarity_top_k=rt.cfg.rerank.topk)
+    base_retriever = cast(
+        VectorIndexRetriever, index.as_retriever(similarity_top_k=rt.cfg.rerank.topk)
+    )
+
+    return _wrap_auto_merging_retriever(rt=rt, index=index, retriever=base_retriever)
+
+
+def _wrap_auto_merging_retriever(
+    rt: Runtime, index: VectorStoreIndex, retriever: VectorIndexRetriever
+) -> BaseRetriever:
+    """Wrap a vector retriever with AutoMergingRetriever.
+
+    Args:
+        rt (Runtime): Runtime instance.
+        index (VectorStoreIndex): Index instance.
+        retriever (VectorIndexRetriever): Vector index retriever.
+
+    Returns:
+        BaseRetriever: Wrapped retriever.
+    """
+    from llama_index.core.retrievers import AutoMergingRetriever
+
+    return AutoMergingRetriever(
+        retriever,
+        storage_context=index.storage_context,
+        simple_ratio_thresh=rt.cfg.retrieve.auto_merge_ratio,
+        verbose=False,
+    )
 
 
 def _get_bm25_retriever(rt: Runtime) -> Optional[BaseRetriever]:
@@ -107,11 +138,21 @@ def _get_fusion_retriever(rt: Runtime, index: VectorStoreIndex) -> BaseRetriever
     corpus_size = docstore.get_bm25_corpus_size()
     if corpus_size == 0:
         logger.warning("docstore is empty; falling back to vector-only retrieval")
-        return index.as_retriever(similarity_top_k=topk)
+        base_retriever = cast(
+            VectorIndexRetriever, index.as_retriever(similarity_top_k=topk)
+        )
+        return _wrap_auto_merging_retriever(
+            rt=rt, index=index, retriever=base_retriever
+        )
 
     bm25_topk = min(rt.cfg.retrieve.bm25_topk, corpus_size)
 
-    vector_retriever = index.as_retriever(similarity_top_k=topk)
+    base_vector_retriever = cast(
+        VectorIndexRetriever, index.as_retriever(similarity_top_k=topk)
+    )
+    vector_retriever = _wrap_auto_merging_retriever(
+        rt=rt, index=index, retriever=base_vector_retriever
+    )
 
     bm25_retriever = BM25Retriever.from_defaults(
         docstore=docstore.store,

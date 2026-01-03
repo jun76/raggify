@@ -64,5 +64,6 @@ test:
 
 clean:
 	rm -rf $(VENV)
+	rm -f uv.lock
 
 .DEFAULT_GOAL := all
