@@ -102,6 +102,7 @@ async def aingest_path(
         video_nodes=videos,
         persist_dir=rt.cfg.pipeline.persist_dir,
         pipe_batch_size=pipe_batch_size,
+        force=force,
         is_canceled=is_canceled,
     )
 
@@ -162,6 +163,7 @@ async def aingest_path_list(
         video_nodes=videos,
         persist_dir=rt.cfg.pipeline.persist_dir,
         pipe_batch_size=pipe_batch_size,
+        force=force,
         is_canceled=is_canceled,
     )
 
@@ -227,6 +229,7 @@ async def aingest_url(
         video_nodes=videos,
         persist_dir=rt.cfg.pipeline.persist_dir,
         pipe_batch_size=pipe_batch_size,
+        force=force,
         is_canceled=is_canceled,
     )
 
@@ -288,5 +291,6 @@ async def aingest_url_list(
         video_nodes=videos,
         persist_dir=rt.cfg.pipeline.persist_dir,
         pipe_batch_size=pipe_batch_size,
+        force=force,
         is_canceled=is_canceled,
     )
