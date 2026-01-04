@@ -234,16 +234,13 @@ async def _process_batch(
     pipe = _build_pipeline(
         modality=modality, persist_dir=persist_dir, is_canceled=is_canceled
     )
+    pipe.reset_nodes()
+
     rt = _rt()
     try:
-        pipe.reset_nodes()
+        pipe.disable_cache = force
         transformed_nodes = await pipe.arun(nodes=batch)
-
-        if force and not transformed_nodes:
-            raise RuntimeError(
-                "no nodes were transformed in force mode, "
-                "flushing existing nodes and reprocessing"
-            )
+        pipe.disable_cache = False
 
         rt.pipeline.persist(pipe=pipe, modality=modality, persist_dir=persist_dir)
 
