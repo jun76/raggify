@@ -134,6 +134,8 @@ class VectorStoreManager:
                     vector_store=self.get_container(Modality.TEXT).store,
                     docstore=self._docstore.store,
                 )
+                # using from_vector_store discards the docstore,
+                # so create it in the constructor
                 return VectorStoreIndex(
                     nodes=[],
                     embed_model=self._embed.get_container(Modality.TEXT).embed,
