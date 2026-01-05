@@ -11,6 +11,7 @@ from llama_index.core.schema import (
     TextNode,
 )
 
+from ...config.ingest_config import IngestConfig
 from ...core.exts import Exts
 from ...core.metadata import BasicMetaData
 from ...core.metadata import MetaKeys as MK
@@ -23,6 +24,14 @@ __all__ = ["BaseLoader"]
 
 class BaseLoader:
     """Base loader class."""
+
+    def __init__(self, cfg: IngestConfig) -> None:
+        """Constructor.
+
+        Args:
+            cfg (IngestConfig): Ingest configuration.
+        """
+        self._cfg = cfg
 
     @staticmethod
     def _build_hierarchy_node_id(level: int, index: int, node: BaseNode) -> str:
@@ -39,14 +48,17 @@ class BaseLoader:
         base_id = node.id_ or node.hash or "node"
         return f"{base_id}:L{level}:C{index}"
 
-    def _build_text_hierarchy_nodes(self, docs: list[Document]) -> list[TextNode]:
+    def _build_text_hierarchy_nodes(
+        self, docs: list[Document]
+    ) -> tuple[list[BaseNode], list[TextNode]]:
         """Build hierarchical text nodes and store them in the docstore.
 
         Args:
             docs (list[Document]): Input documents.
 
         Returns:
-            list[TextNode]: Leaf text nodes for vector ingestion.
+            tuple[list[BaseNode], list[TextNode]]:
+                All hierarchical text nodes and leaf text nodes for vector ingestion.
         """
         from llama_index.core.node_parser import (
             HierarchicalNodeParser,
@@ -54,21 +66,17 @@ class BaseLoader:
             get_leaf_nodes,
         )
 
-        from ...runtime import get_runtime as _rt
-
         if not docs:
-            return []
+            return [], []
 
-        rt = _rt()
-        cfg = rt.cfg.ingest
         node_parser_ids = []
         node_parser_map = {}
-        for level, chunk_size in enumerate(cfg.hierarchy_chunk_sizes):
+        for level, chunk_size in enumerate(self._cfg.hierarchy_chunk_sizes):
             node_parser_id = f"chunk_size_{chunk_size}"
             node_parser_ids.append(node_parser_id)
             node_parser_map[node_parser_id] = SentenceSplitter(
                 chunk_size=chunk_size,
-                chunk_overlap=cfg.text_chunk_overlap,
+                chunk_overlap=self._cfg.text_chunk_overlap,
                 include_metadata=True,
                 id_func=partial(self._build_hierarchy_node_id, level),
             )
@@ -79,16 +87,15 @@ class BaseLoader:
             include_metadata=True,
         )
 
-        all_nodes = parser.get_nodes_from_documents(docs)
-        if not all_nodes:
-            return []
+        tree_nodes = parser.get_nodes_from_documents(docs)
+        if not tree_nodes:
+            return [], []
 
-        rt.document_store.store.add_documents(all_nodes)
         leaf_nodes = [
-            node for node in get_leaf_nodes(all_nodes) if isinstance(node, TextNode)
+            node for node in get_leaf_nodes(tree_nodes) if isinstance(node, TextNode)
         ]
 
-        return leaf_nodes
+        return tree_nodes, leaf_nodes
 
     def _finalize_docs(self, docs: list[Document]) -> None:
         """Adjust metadata and finalize documents.
@@ -144,17 +151,26 @@ class BaseLoader:
             f"{MK.TEMP_FILE_PATH}:{meta.temp_file_path}"  # To identify embedded images in PDFs, etc.
         )
 
-    async def _asplit_docs_modality(
-        self, docs: list[Document]
-    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
+    async def _asplit_docs_modality(self, docs: list[Document]) -> tuple[
+        list[BaseNode],
+        list[TextNode],
+        list[ImageNode],
+        list[AudioNode],
+        list[VideoNode],
+    ]:
         """Split documents by modality.
 
         Args:
             docs (list[Document]): Input documents.
 
         Returns:
-            tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
-                Text, image, audio, and video nodes.
+            tuple[
+                list[BaseNode],
+                list[TextNode],
+                list[ImageNode],
+                list[AudioNode],
+                list[VideoNode],
+            ]: Text tree, text leaf, image, audio, and video nodes.
         """
         self._finalize_docs(docs)
 
@@ -201,12 +217,12 @@ class BaseLoader:
             else:
                 logger.warning(f"unexpected node type {type(doc)}, skipped")
 
-        text_nodes = self._build_text_hierarchy_nodes(text_docs)
+        text_tree_nodes, text_leaf_nodes = self._build_text_hierarchy_nodes(text_docs)
         logger.debug(
-            f"split into {len(text_nodes)} text, "
+            f"split into {len(text_leaf_nodes)} text, "
             f"{len(image_nodes)} image, "
             f"{len(audio_nodes)} audio, "
             f"{len(video_nodes)} video nodes"
         )
 
-        return text_nodes, image_nodes, audio_nodes, video_nodes
+        return text_tree_nodes, text_leaf_nodes, image_nodes, audio_nodes, video_nodes

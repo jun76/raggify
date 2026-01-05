@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable
 
+from ...config.ingest_config import IngestConfig
 from ...logger import logger
 from .base_loader import BaseLoader
 
 if TYPE_CHECKING:
-    from llama_index.core.schema import ImageNode, TextNode
+    from llama_index.core.schema import BaseNode, ImageNode, TextNode
 
     from ...llama_like.core.schema import AudioNode, VideoNode
     from ..parser import BaseParser
@@ -17,17 +18,23 @@ __all__ = ["FileLoader"]
 class FileLoader(BaseLoader):
     """Loader for local files that generates nodes."""
 
-    def __init__(self, parser: BaseParser) -> None:
+    def __init__(self, parser: BaseParser, cfg: IngestConfig) -> None:
         """Constructor.
 
         Args:
             parser (Parser): Parser instance.
+            cfg (IngestConfig): Ingest configuration.
         """
+        super().__init__(cfg)
         self._parser = parser
 
-    async def aload_from_path(
-        self, root: str, force: bool
-    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
+    async def aload_from_path(self, root: str, force: bool) -> tuple[
+        list[BaseNode],
+        list[TextNode],
+        list[ImageNode],
+        list[AudioNode],
+        list[VideoNode],
+    ]:
         """Load content from a local path and generate nodes.
 
         Directories are traversed recursively to ingest multiple files.
@@ -40,8 +47,13 @@ class FileLoader(BaseLoader):
             ValueError: For invalid path or load errors.
 
         Returns:
-            tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
-                Text, image, audio, and video nodes.
+            tuple[
+                list[BaseNode],
+                list[TextNode],
+                list[ImageNode],
+                list[AudioNode],
+                list[VideoNode],
+            ]: Text tree, text leaf, image, audio, and video nodes.
         """
         docs = await self._parser.aparse(root=root, force=force)
         logger.debug(f"loaded {len(docs)} docs from {root}")
@@ -53,7 +65,13 @@ class FileLoader(BaseLoader):
         paths: list[str],
         force: bool,
         is_canceled: Callable[[], bool],
-    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
+    ) -> tuple[
+        list[BaseNode],
+        list[TextNode],
+        list[ImageNode],
+        list[AudioNode],
+        list[VideoNode],
+    ]:
         """Load content from multiple paths and generate nodes.
 
         Args:
@@ -62,22 +80,29 @@ class FileLoader(BaseLoader):
             is_canceled (Callable[[], bool]): Whether this job has been canceled.
 
         Returns:
-            tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
-                Text, image, audio, and video nodes.
+            tuple[
+                list[BaseNode],
+                list[TextNode],
+                list[ImageNode],
+                list[AudioNode],
+                list[VideoNode],
+            ]: Text tree, text leaf, image, audio, and video nodes.
         """
-        texts = []
+        text_trees = []
+        text_leaves = []
         images = []
         audios = []
         videos = []
         for path in paths:
             if is_canceled():
                 logger.info("Job is canceled, aborting batch processing")
-                return [], [], [], []
+                return [], [], [], [], []
             try:
-                temp_text, temp_image, temp_audio, temp_video = (
+                temp_text_tree, temp_text_leaf, temp_image, temp_audio, temp_video = (
                     await self.aload_from_path(root=path, force=force)
                 )
-                texts.extend(temp_text)
+                text_trees.extend(temp_text_tree)
+                text_leaves.extend(temp_text_leaf)
                 images.extend(temp_image)
                 audios.extend(temp_audio)
                 videos.extend(temp_video)
@@ -85,4 +110,4 @@ class FileLoader(BaseLoader):
                 logger.exception(e)
                 continue
 
-        return texts, images, audios, videos
+        return text_trees, text_leaves, images, audios, videos

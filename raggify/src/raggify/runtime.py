@@ -194,7 +194,7 @@ class Runtime:
         if self._file_loader is None:
             from .ingest.loader.file_loader import FileLoader
 
-            self._file_loader = FileLoader(self.parser)
+            self._file_loader = FileLoader(parser=self.parser, cfg=self.cfg.ingest)
 
         return self._file_loader
 
@@ -204,8 +204,8 @@ class Runtime:
             from .ingest.loader.web_page_loader import WebPageLoader
 
             self._web_page_loader = WebPageLoader(
-                cfg=self.cfg.ingest,
                 parser=self.parser,
+                cfg=self.cfg.ingest,
                 is_known_source=(
                     self.document_store.is_known_source
                     if self.cfg.ingest.skip_known_sources

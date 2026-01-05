@@ -5,7 +5,7 @@ from typing import Callable, Optional, Sequence
 from ..core.event import async_loop_runner
 from ..ingest.upsert import aupsert_nodes
 from ..logger import logger
-from ..runtime import get_runtime as _rt
+from ..runtime import get_runtime
 
 __all__ = [
     "ingest_path",
@@ -89,14 +89,15 @@ async def aingest_path(
         is_canceled (Callable[[], bool], optional):
             Cancellation flag for the job. Defaults to lambda:False.
     """
-    rt = _rt()
-    texts, images, audios, videos = await rt.file_loader.aload_from_path(
-        root=path, force=force
+    rt = get_runtime()
+    text_trees, text_leaves, images, audios, videos = (
+        await rt.file_loader.aload_from_path(root=path, force=force)
     )
     pipe_batch_size = pipe_batch_size or rt.cfg.pipeline.batch_size
 
     await aupsert_nodes(
-        text_nodes=texts,
+        text_tree_nodes=text_trees,
+        text_leaf_nodes=text_leaves,
         image_nodes=images,
         audio_nodes=audios,
         video_nodes=videos,
@@ -151,13 +152,16 @@ async def aingest_path_list(
     if isinstance(lst, str):
         lst = _read_list(lst)
 
-    rt = _rt()
-    texts, images, audios, videos = await rt.file_loader.aload_from_paths(
-        paths=list(lst), force=force, is_canceled=is_canceled
+    rt = get_runtime()
+    text_trees, text_leaves, images, audios, videos = (
+        await rt.file_loader.aload_from_paths(
+            paths=list(lst), force=force, is_canceled=is_canceled
+        )
     )
     pipe_batch_size = pipe_batch_size or rt.cfg.pipeline.batch_size
     await aupsert_nodes(
-        text_nodes=texts,
+        text_tree_nodes=text_trees,
+        text_leaf_nodes=text_leaves,
         image_nodes=images,
         audio_nodes=audios,
         video_nodes=videos,
@@ -216,14 +220,17 @@ async def aingest_url(
         is_canceled (Callable[[], bool], optional):
             Cancellation flag for the job. Defaults to lambda:False.
     """
-    rt = _rt()
-    texts, images, audios, videos = await rt.web_page_loader.aload_from_url(
-        url=url, force=force, is_canceled=is_canceled
+    rt = get_runtime()
+    text_trees, text_leaves, images, audios, videos = (
+        await rt.web_page_loader.aload_from_url(
+            url=url, force=force, is_canceled=is_canceled
+        )
     )
     pipe_batch_size = pipe_batch_size or rt.cfg.pipeline.batch_size
 
     await aupsert_nodes(
-        text_nodes=texts,
+        text_tree_nodes=text_trees,
+        text_leaf_nodes=text_leaves,
         image_nodes=images,
         audio_nodes=audios,
         video_nodes=videos,
@@ -278,14 +285,17 @@ async def aingest_url_list(
     if isinstance(lst, str):
         lst = _read_list(lst)
 
-    rt = _rt()
-    texts, images, audios, videos = await rt.web_page_loader.aload_from_urls(
-        urls=list(lst), force=force, is_canceled=is_canceled
+    rt = get_runtime()
+    text_trees, text_leaves, images, audios, videos = (
+        await rt.web_page_loader.aload_from_urls(
+            urls=list(lst), force=force, is_canceled=is_canceled
+        )
     )
     pipe_batch_size = pipe_batch_size or rt.cfg.pipeline.batch_size
 
     await aupsert_nodes(
-        text_nodes=texts,
+        text_tree_nodes=text_trees,
+        text_leaf_nodes=text_leaves,
         image_nodes=images,
         audio_nodes=audios,
         video_nodes=videos,

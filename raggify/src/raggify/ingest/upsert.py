@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Callable, Optional, Sequence
 
 from ..llama_like.core.schema import Modality
 from ..logger import logger
-from ..runtime import get_runtime as _rt
+from ..runtime import get_runtime
 
 if TYPE_CHECKING:
     from llama_index.core.schema import (
@@ -40,7 +40,7 @@ def _build_text_pipeline(
         RemoveTempFileTransform,
     )
 
-    rt = _rt()
+    rt = get_runtime()
     transformations: list[TransformComponent] = [
         AddChunkIndexTransform(is_canceled),
         EmbedTransform(embed=rt.embed_manager, is_canceled=is_canceled),
@@ -73,7 +73,7 @@ def _build_image_pipeline(
         RemoveTempFileTransform,
     )
 
-    rt = _rt()
+    rt = get_runtime()
     transformations: list[TransformComponent] = [
         (
             LLMCaptionTransform(llm_manager=rt.llm_manager, is_canceled=is_canceled)
@@ -111,7 +111,7 @@ def _build_audio_pipeline(
         SplitTransform,
     )
 
-    rt = _rt()
+    rt = get_runtime()
     transformations: list[TransformComponent] = [
         (
             LLMCaptionTransform(llm_manager=rt.llm_manager, is_canceled=is_canceled)
@@ -152,7 +152,7 @@ def _build_video_pipeline(
         SplitTransform,
     )
 
-    rt = _rt()
+    rt = get_runtime()
     transformations: list[TransformComponent] = [
         (
             LLMCaptionTransform(llm_manager=rt.llm_manager, is_canceled=is_canceled)
@@ -236,7 +236,7 @@ async def _process_batch(
     )
     pipe.reset_nodes()
 
-    rt = _rt()
+    rt = get_runtime()
     try:
         pipe.disable_cache = force
         transformed_nodes = await pipe.arun(nodes=batch)
@@ -277,8 +277,6 @@ async def _process_batches(
     pipe_batch_size: int,
     force: bool,
     is_canceled: Callable[[], bool],
-    batch_interval_sec: float,
-    batch_retry_interval_sec: list[float],
 ) -> None:
     """Batch upserts to avoid long blocking when handling many nodes.
 
@@ -289,9 +287,6 @@ async def _process_batches(
         pipe_batch_size (int): Number of nodes processed per pipeline batch.
         force (bool): Whether to force reingestion even if already present.
         is_canceled (Callable[[], bool]): Cancellation flag for the job.
-        batch_interval_sec (float): Delay between processing batches in seconds.
-        batch_retry_interval_sec (list[float]):
-            Retry intervals for batch processing in seconds.
     """
     if not nodes or is_canceled():
         return
@@ -302,6 +297,9 @@ async def _process_batches(
         f"{len(nodes)} nodes in {total_batches} batches"
     )
 
+    rt = get_runtime()
+    batch_interval_sec = rt.cfg.pipeline.batch_interval_sec
+    batch_retry_interval_sec = rt.cfg.pipeline.batch_retry_interval_sec
     transformed = 0
     for idx in range(0, len(nodes), pipe_batch_size):
         retry_count = len(batch_retry_interval_sec)
@@ -369,7 +367,8 @@ def _cleanup_temp_files() -> None:
 
 
 async def aupsert_nodes(
-    text_nodes: Sequence[TextNode],
+    text_tree_nodes: Sequence[BaseNode],
+    text_leaf_nodes: Sequence[TextNode],
     image_nodes: Sequence[ImageNode],
     audio_nodes: Sequence[AudioNode],
     video_nodes: Sequence[VideoNode],
@@ -381,7 +380,8 @@ async def aupsert_nodes(
     """Upsert nodes into stores.
 
     Args:
-        text_nodes (Sequence[TextNode]): Text nodes.
+        text_tree_nodes (Sequence[BaseNode]): Text tree nodes.
+        text_leaf_nodes (Sequence[TextNode]): Text leaf nodes.
         image_nodes (Sequence[ImageNode]): Image nodes.
         audio_nodes (Sequence[AudioNode]): Audio nodes.
         video_nodes (Sequence[VideoNode]): Video nodes.
@@ -390,22 +390,23 @@ async def aupsert_nodes(
         force (bool): Whether to force reingestion even if already present.
         is_canceled (Callable[[], bool]): Cancellation flag for the job.
     """
-    rt = _rt()
-    batch_interval_sec = rt.cfg.pipeline.batch_interval_sec
-    batch_retry_interval_sec = rt.cfg.pipeline.batch_retry_interval_sec
+    rt = get_runtime()
     tasks = []
 
     if rt.cfg.general.text_embed_provider is not None:
+        if text_tree_nodes:
+            rt.document_store.add_documents(
+                nodes=text_tree_nodes, persist_dir=persist_dir
+            )
+
         tasks.append(
             _process_batches(
-                nodes=text_nodes,
+                nodes=text_leaf_nodes,
                 modality=Modality.TEXT,
                 persist_dir=persist_dir,
                 pipe_batch_size=pipe_batch_size,
                 force=force,
                 is_canceled=is_canceled,
-                batch_interval_sec=batch_interval_sec,
-                batch_retry_interval_sec=batch_retry_interval_sec,
             )
         )
 
@@ -418,8 +419,6 @@ async def aupsert_nodes(
                 pipe_batch_size=pipe_batch_size,
                 force=force,
                 is_canceled=is_canceled,
-                batch_interval_sec=batch_interval_sec,
-                batch_retry_interval_sec=batch_retry_interval_sec,
             )
         )
 
@@ -432,8 +431,6 @@ async def aupsert_nodes(
                 pipe_batch_size=pipe_batch_size,
                 force=force,
                 is_canceled=is_canceled,
-                batch_interval_sec=batch_interval_sec,
-                batch_retry_interval_sec=batch_retry_interval_sec,
             )
         )
 
@@ -446,8 +443,6 @@ async def aupsert_nodes(
                 pipe_batch_size=pipe_batch_size,
                 force=force,
                 is_canceled=is_canceled,
-                batch_interval_sec=batch_interval_sec,
-                batch_retry_interval_sec=batch_retry_interval_sec,
             )
         )
 

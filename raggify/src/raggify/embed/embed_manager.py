@@ -306,7 +306,8 @@ class EmbedManager:
             modality=Modality.VIDEO, inputs=paths, batcher=_batch_call
         )
 
-    def _generate_space_key(self, provider: str, model: str, modality: Modality) -> str:
+    @staticmethod
+    def _generate_space_key(provider: str, model: str, modality: Modality) -> str:
         """Generate a space key string.
 
         Args:

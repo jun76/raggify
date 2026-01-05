@@ -163,13 +163,13 @@ class PipelineManager:
             with self._pipeline_lock:
                 self.ingest_cache.get_container(modality).cache = pipe.cache
                 if pipe.docstore is None:
-                    logger.warning("pipeline has no docstore")
+                    logger.error("pipeline has no docstore")
                 else:
                     self.document_store.store = pipe.docstore
                     self.vector_store.refresh_docstore(self.document_store.store)
                 logger.debug(f"loaded pipeline from {persist_dir}")
         except Exception as e:
-            logger.warning(f"failed to load persist dir: {e}")
+            logger.warning(f"failed to load persist dir. perhaps initial run: {e}")
 
         return pipe
 
@@ -198,13 +198,13 @@ class PipelineManager:
             with self._pipeline_lock:
                 self.ingest_cache.get_container(modality).cache = pipe.cache
                 if pipe.docstore is None:
-                    logger.warning("pipeline has no docstore")
+                    logger.error("pipeline has no docstore")
                 else:
                     self.document_store.store = pipe.docstore
                     self.vector_store.refresh_docstore(self.document_store.store)
                 logger.debug(f"persisted pipeline to {persist_dir}")
         except Exception as e:
-            logger.warning(f"failed to persist: {e}")
+            logger.error(f"failed to persist: {e}")
 
     def delete_all(self) -> None:
         """Delete all data persisted in each store."""

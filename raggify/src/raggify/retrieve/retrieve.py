@@ -20,7 +20,7 @@ from ..llama_like.core.indices.multi_modal.retriever import (
 )
 from ..llama_like.core.schema import Modality
 from ..logger import logger
-from ..runtime import get_runtime as _rt
+from ..runtime import get_runtime
 
 if TYPE_CHECKING:
     from ..runtime import Runtime
@@ -209,7 +209,7 @@ async def aquery_text_text(
     Returns:
         list[NodeWithScore]: Retrieval results.
     """
-    rt = _rt()
+    rt = get_runtime()
     store = rt.vector_store
     index = store.get_index(Modality.TEXT)
     if index is None:
@@ -284,7 +284,7 @@ async def aquery_text_image(
     """
     from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
 
-    rt = _rt()
+    rt = get_runtime()
     store = rt.vector_store
     index = store.get_index(Modality.IMAGE)
     if index is None:
@@ -352,7 +352,7 @@ async def aquery_image_image(
     """
     from llama_index.core.indices.multi_modal import MultiModalVectorStoreIndex
 
-    rt = _rt()
+    rt = get_runtime()
     store = rt.vector_store
     index = store.get_index(Modality.IMAGE)
     if index is None:
@@ -413,7 +413,7 @@ async def aquery_text_audio(
     Returns:
         list[NodeWithScore]: Retrieval results.
     """
-    rt = _rt()
+    rt = get_runtime()
     store = rt.vector_store
     index = store.get_index(Modality.AUDIO)
     if index is None:
@@ -472,7 +472,7 @@ async def aquery_audio_audio(
     Returns:
         list[NodeWithScore]: Retrieval results.
     """
-    rt = _rt()
+    rt = get_runtime()
     store = rt.vector_store
     index = store.get_index(Modality.AUDIO)
     if index is None:
@@ -527,7 +527,7 @@ async def aquery_text_video(
     Returns:
         list[NodeWithScore]: Retrieval results.
     """
-    rt = _rt()
+    rt = get_runtime()
     store = rt.vector_store
     index = store.get_index(Modality.VIDEO)
     if index is None:
@@ -592,7 +592,7 @@ async def aquery_image_video(
     Returns:
         list[NodeWithScore]: Retrieval results.
     """
-    rt = _rt()
+    rt = get_runtime()
     store = rt.vector_store
     index = store.get_index(Modality.VIDEO)
     if index is None:
@@ -652,7 +652,7 @@ async def aquery_audio_video(
     Returns:
         list[NodeWithScore]: Retrieval results.
     """
-    rt = _rt()
+    rt = get_runtime()
     store = rt.vector_store
     index = store.get_index(Modality.VIDEO)
     if index is None:
@@ -706,7 +706,7 @@ async def aquery_video_video(
     Returns:
         list[NodeWithScore]: Retrieval results.
     """
-    rt = _rt()
+    rt = get_runtime()
     store = rt.vector_store
     index = store.get_index(Modality.VIDEO)
     if index is None:

@@ -10,6 +10,7 @@ from enum import StrEnum, auto
 from typing import Any, Dict, Optional
 
 from ..logger import logger
+from ..runtime import get_runtime
 
 __all__ = ["BackgroundWorker", "Job", "JobPayload", "JobStatus", "get_worker"]
 
@@ -96,10 +97,8 @@ class BackgroundWorker:
         Returns:
             Job: Created job.
         """
-        from ..runtime import get_runtime as _rt
-
         job_id = str(uuid.uuid4())[:8]
-        cfg_snapshot = _rt().cfg.get_dict()
+        cfg_snapshot = get_runtime().cfg.get_dict()
         t = str(datetime.datetime.now())
         job = Job(
             job_id=job_id,

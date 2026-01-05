@@ -15,9 +15,8 @@ from ..config.retrieve_config import RetrieveMode
 from ..core.const import PROJECT_NAME, VERSION
 from ..llama_like.core.schema import Modality
 from ..logger import configure_logging, console, logger
-from ..runtime import get_runtime as _rt
-from .background_worker import JobPayload
-from .background_worker import get_worker as _wk
+from ..runtime import get_runtime
+from .background_worker import JobPayload, get_worker
 
 __all__ = ["app"]
 
@@ -71,11 +70,11 @@ async def lifespan(app: FastAPI):
     Args:
         app (FastAPI): Server instance.
     """
-    configure_logging(_rt().cfg.general.log_level)
+    configure_logging(get_runtime().cfg.general.log_level)
 
     # Initialization
     _setup()
-    wk = _wk()
+    wk = get_worker()
     await wk.start()
 
     # Begin accepting requests
@@ -95,7 +94,7 @@ _request_lock = asyncio.Lock()
 def _setup() -> None:
     """Create required instances."""
     console.print(f"⏳ {PROJECT_NAME} server is starting up.")
-    _rt().build()
+    get_runtime().build()
     console.print(f"✅ now {PROJECT_NAME} server is online.")
 
 
@@ -123,7 +122,7 @@ async def status() -> dict[str, Any]:
     """
     logger.debug("exec /v1/status")
 
-    rt = _rt()
+    rt = get_runtime()
     async with _request_lock:
         return {
             "status": "ok",
@@ -166,7 +165,7 @@ async def upload(files: list[UploadFile] = File(...)) -> dict[str, Any]:
     logger.debug("exec /v1/upload")
 
     try:
-        upload_dir = Path(_rt().cfg.ingest.upload_dir).absolute()
+        upload_dir = Path(get_runtime().cfg.ingest.upload_dir).absolute()
         upload_dir.mkdir(parents=True, exist_ok=True)
     except Exception as e:
         msg = "mkdir failure"
@@ -225,7 +224,7 @@ async def job(payload: JobRequest) -> dict[str, Any]:
     """
     logger.debug("exec /v1/job")
 
-    wk = _wk()
+    wk = get_worker()
     async with _request_lock:
         if not payload.job_id:
             if payload.rm:
@@ -272,7 +271,7 @@ async def ingest_path(payload: PathRequest) -> dict[str, str]:
     """
     logger.debug("exec /v1/ingest/path")
 
-    job = _wk().submit(
+    job = get_worker().submit(
         JobPayload(
             kind="ingest_path",
             kwargs={"path": payload.path, "force": payload.force},
@@ -295,7 +294,7 @@ async def ingest_path_list(payload: PathRequest) -> dict[str, str]:
     """
     logger.debug("exec /v1/ingest/path_list")
 
-    job = _wk().submit(
+    job = get_worker().submit(
         JobPayload(
             kind="ingest_path_list",
             kwargs={"lst": payload.path, "force": payload.force},
@@ -319,7 +318,7 @@ async def ingest_url(payload: URLRequest) -> dict[str, str]:
     """
     logger.debug("exec /v1/ingest/url")
 
-    job = _wk().submit(
+    job = get_worker().submit(
         JobPayload(
             kind="ingest_url", kwargs={"url": payload.url, "force": payload.force}
         )
@@ -341,7 +340,7 @@ async def ingest_url_list(payload: PathRequest) -> dict[str, str]:
     """
     logger.debug("exec /v1/ingest/url_list")
 
-    job = _wk().submit(
+    job = get_worker().submit(
         JobPayload(
             kind="ingest_url_list",
             kwargs={"lst": payload.path, "force": payload.force},
@@ -367,7 +366,7 @@ async def _query_handler(
     Returns:
         dict[str, Any]: Search results.
     """
-    if modality not in _rt().embed_manager.modality:
+    if modality not in get_runtime().embed_manager.modality:
         msg = f"{modality.value} embeddings is not available in current setting"
         logger.error(msg)
         raise HTTPException(status_code=400, detail=msg)

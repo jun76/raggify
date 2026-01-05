@@ -8,7 +8,7 @@ from ...logger import logger
 from .base_loader import BaseLoader
 
 if TYPE_CHECKING:
-    from llama_index.core.schema import Document, ImageNode, TextNode
+    from llama_index.core.schema import BaseNode, Document, ImageNode, TextNode
 
     from ...llama_like.core.schema import AudioNode, VideoNode
     from ..parser import BaseParser
@@ -21,20 +21,21 @@ class WebPageLoader(BaseLoader):
 
     def __init__(
         self,
-        cfg: IngestConfig,
         parser: BaseParser,
+        cfg: IngestConfig,
         is_known_source: Optional[Callable[[str], bool]] = None,
     ):
         """Constructor.
 
         Args:
-            cfg (IngestConfig): Ingest configuration.
             parser (Parser): Parser instance.
+            cfg (IngestConfig): Ingest configuration.
             is_known_source (Optional[Callable[[str], bool]]):
                 Function to check if a source is known to skip. Defaults to None.
         """
-        self._cfg = cfg
+        super().__init__(cfg)
         self._parser = parser
+        self._cfg = cfg
         self._is_known_source = is_known_source
 
         # Do not include base_url in doc_id so identical URLs are treated
@@ -182,7 +183,13 @@ class WebPageLoader(BaseLoader):
         force: bool,
         is_canceled: Callable[[], bool],
         inloop: bool = False,
-    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
+    ) -> tuple[
+        list[BaseNode],
+        list[TextNode],
+        list[ImageNode],
+        list[AudioNode],
+        list[VideoNode],
+    ]:
         """Fetch content from a URL and generate nodes.
 
         For sitemaps (.xml), traverse the tree to ingest multiple sites.
@@ -194,14 +201,19 @@ class WebPageLoader(BaseLoader):
             inloop (bool, optional): Whether called inside an upper URL loop. Defaults to False.
 
         Returns:
-            tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
-                Text, image, audio, and video nodes.
+            tuple[
+                list[BaseNode],
+                list[TextNode],
+                list[ImageNode],
+                list[AudioNode],
+                list[VideoNode],
+            ]: Text tree, text leaf, image, audio, and video nodes.
         """
         from urllib.parse import urlparse
 
         if urlparse(url).scheme not in {"http", "https"}:
             logger.error("invalid URL. expected http(s)://*")
-            return [], [], [], []
+            return [], [], [], [], []
 
         if (
             not force
@@ -209,7 +221,7 @@ class WebPageLoader(BaseLoader):
             and self._is_known_source(url)
         ):
             logger.debug(f"skip already ingested URL: {url}")
-            return [], [], [], []
+            return [], [], [], [], []
 
         if not inloop:
             self._asset_url_cache.clear()
@@ -232,7 +244,13 @@ class WebPageLoader(BaseLoader):
         urls: list[str],
         force: bool,
         is_canceled: Callable[[], bool],
-    ) -> tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
+    ) -> tuple[
+        list[BaseNode],
+        list[TextNode],
+        list[ImageNode],
+        list[AudioNode],
+        list[VideoNode],
+    ]:
         """Fetch content from multiple URLs and generate nodes.
 
         Args:
@@ -241,26 +259,33 @@ class WebPageLoader(BaseLoader):
             is_canceled (Callable[[], bool]): Whether this job has been canceled.
 
         Returns:
-            tuple[list[TextNode], list[ImageNode], list[AudioNode], list[VideoNode]]:
-                Text, image, audio, and video nodes.
+            tuple[
+                list[BaseNode],
+                list[TextNode],
+                list[ImageNode],
+                list[AudioNode],
+                list[VideoNode],
+            ]: Text tree, text leaf, image, audio, and video nodes.
         """
         self._asset_url_cache.clear()
 
-        texts = []
+        text_trees = []
+        text_leaves = []
         images = []
         audios = []
         videos = []
         for url in urls:
             if is_canceled():
                 logger.info("Job is canceled, aborting batch processing")
-                return [], [], [], []
+                return [], [], [], [], []
             try:
-                temp_text, temp_image, temp_audio, temp_video = (
+                temp_text_tree, temp_text_leaf, temp_image, temp_audio, temp_video = (
                     await self.aload_from_url(
                         url=url, force=force, is_canceled=is_canceled, inloop=True
                     )
                 )
-                texts.extend(temp_text)
+                text_trees.extend(temp_text_tree)
+                text_leaves.extend(temp_text_leaf)
                 images.extend(temp_image)
                 audios.extend(temp_audio)
                 videos.extend(temp_video)
@@ -268,4 +293,4 @@ class WebPageLoader(BaseLoader):
                 logger.exception(e)
                 continue
 
-        return texts, images, audios, videos
+        return text_trees, text_leaves, images, audios, videos

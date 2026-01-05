@@ -89,7 +89,7 @@ def patch_rest_api_server(
 
     with ExitStack() as stack:
         stack.enter_context(
-            patch.object(module, "_rt", MagicMock(return_value=runtime))
+            patch.object(module, "get_runtime", MagicMock(return_value=runtime))
         )
         stack.enter_context(patch.object(module, "console", MagicMock()))
         stack.enter_context(patch.object(module, "logger", MagicMock()))
@@ -102,7 +102,7 @@ def patch_rest_api_server(
                     AsyncMock(return_value=None),
                 )
             )
-        stack.enter_context(patch.object(module, "_wk", worker_factory))
+        stack.enter_context(patch.object(module, "get_worker", worker_factory))
         yield MockServerContext(
             module=module, runtime=runtime, worker=worker_holder.get("worker")
         )
