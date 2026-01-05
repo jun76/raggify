@@ -131,10 +131,11 @@ class VectorStoreManager:
         match modality:
             case Modality.TEXT:
                 storage_context = StorageContext.from_defaults(
-                    docstore=self._docstore.store
-                )
-                return VectorStoreIndex.from_vector_store(
                     vector_store=self.get_container(Modality.TEXT).store,
+                    docstore=self._docstore.store,
+                )
+                return VectorStoreIndex(
+                    nodes=[],
                     embed_model=self._embed.get_container(Modality.TEXT).embed,
                     storage_context=storage_context,
                 )

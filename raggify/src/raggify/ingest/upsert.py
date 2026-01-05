@@ -215,6 +215,7 @@ async def _process_batch(
     persist_dir: Optional[Path],
     force: bool,
     is_canceled: Callable[[], bool],
+    pipe: TracablePipeline,
 ) -> Sequence[BaseNode]:
     """Process a batch of nodes through the pipeline.
 
@@ -224,6 +225,7 @@ async def _process_batch(
         persist_dir (Optional[Path]): Persist directory.
         force (bool): Whether to force reingestion even if already present.
         is_canceled (Callable[[], bool]): Cancellation flag for the job.
+        pipe (TracablePipeline): Pipeline instance.
 
     Raises:
         RuntimeError: If processing fails.
@@ -231,9 +233,6 @@ async def _process_batch(
     Returns:
         Sequence[BaseNode]: Transformed nodes.
     """
-    pipe = _build_pipeline(
-        modality=modality, persist_dir=persist_dir, is_canceled=is_canceled
-    )
     pipe.reset_nodes()
 
     rt = get_runtime()
@@ -277,6 +276,7 @@ async def _process_batches(
     pipe_batch_size: int,
     force: bool,
     is_canceled: Callable[[], bool],
+    tree_nodes: Optional[Sequence[BaseNode]] = None,
 ) -> None:
     """Batch upserts to avoid long blocking when handling many nodes.
 
@@ -287,9 +287,18 @@ async def _process_batches(
         pipe_batch_size (int): Number of nodes processed per pipeline batch.
         force (bool): Whether to force reingestion even if already present.
         is_canceled (Callable[[], bool]): Cancellation flag for the job.
+        tree_nodes (Optional[Sequence[BaseNode]], optional):
+            Tree nodes to add to the document store before processing. Defaults to None.
     """
     if not nodes or is_canceled():
         return
+
+    pipe = _build_pipeline(
+        modality=modality, persist_dir=persist_dir, is_canceled=is_canceled
+    )
+
+    if tree_nodes is not None and pipe.docstore is not None:
+        pipe.docstore.add_documents(tree_nodes)
 
     total_batches = (len(nodes) + pipe_batch_size - 1) // pipe_batch_size
     logger.debug(
@@ -297,12 +306,10 @@ async def _process_batches(
         f"{len(nodes)} nodes in {total_batches} batches"
     )
 
-    rt = get_runtime()
-    batch_interval_sec = rt.cfg.pipeline.batch_interval_sec
-    batch_retry_interval_sec = rt.cfg.pipeline.batch_retry_interval_sec
+    cfg = get_runtime().cfg.pipeline
     transformed = 0
     for idx in range(0, len(nodes), pipe_batch_size):
-        retry_count = len(batch_retry_interval_sec)
+        retry_count = len(cfg.batch_retry_interval_sec)
         for i in range(retry_count):
             if is_canceled():
                 logger.info("Job is canceled, aborting batch processing")
@@ -316,14 +323,15 @@ async def _process_batches(
                     persist_dir=persist_dir,
                     force=force,
                     is_canceled=is_canceled,
+                    pipe=pipe,
                 )
                 transformed += len(temp)
-                await asyncio.sleep(batch_interval_sec)
+                await asyncio.sleep(cfg.batch_interval_sec)
                 break
             except RuntimeError as e:
                 logger.debug(f"retry {i + 1} / {retry_count}: {e}")
 
-                await asyncio.sleep(batch_retry_interval_sec[i])
+                await asyncio.sleep(cfg.batch_retry_interval_sec[i])
         else:
             logger.error(
                 f"failed to process {modality} batch after {retry_count} attempts, aborting"
@@ -394,11 +402,6 @@ async def aupsert_nodes(
     tasks = []
 
     if rt.cfg.general.text_embed_provider is not None:
-        if text_tree_nodes:
-            rt.document_store.add_documents(
-                nodes=text_tree_nodes, persist_dir=persist_dir
-            )
-
         tasks.append(
             _process_batches(
                 nodes=text_leaf_nodes,
@@ -407,6 +410,7 @@ async def aupsert_nodes(
                 pipe_batch_size=pipe_batch_size,
                 force=force,
                 is_canceled=is_canceled,
+                tree_nodes=text_tree_nodes,
             )
         )
 

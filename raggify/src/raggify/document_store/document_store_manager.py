@@ -131,27 +131,6 @@ class DocumentStoreManager:
 
         return False
 
-    def add_documents(
-        self, nodes: Sequence[BaseNode], persist_dir: Optional[Path]
-    ) -> None:
-        """Add nodes to the document store.
-
-        Args:
-            nodes (Sequence[BaseNode]): Nodes to add.
-            persist_dir (Optional[Path]): Persist directory.
-        """
-        self.store.add_documents(nodes)
-
-        if persist_dir is not None:
-            try:
-                from llama_index.core.storage.docstore.types import (
-                    DEFAULT_PERSIST_FNAME,
-                )
-
-                self.store.persist(str(persist_dir / DEFAULT_PERSIST_FNAME))
-            except Exception as e:
-                logger.error(f"failed to persist: {e}")
-
     def delete_nodes(self, ref_doc_ids: set[str], persist_dir: Optional[Path]) -> None:
         """Delete ref_docs and related nodes stored.
 

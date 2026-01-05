@@ -46,7 +46,7 @@ class BaseLoader:
             str: Stable node ID.
         """
         base_id = node.id_ or node.hash or "node"
-        return f"{base_id}:L{level}:C{index}"
+        return f"{base_id}-L{level}-C{index}"
 
     def _build_text_hierarchy_nodes(
         self, docs: list[Document]

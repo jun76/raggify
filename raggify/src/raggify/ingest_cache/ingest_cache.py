@@ -177,7 +177,6 @@ def _local(persist_dir: Path, table_name: str) -> IngestCacheContainer:
 
     from .ingest_cache_manager import IngestCacheContainer
 
-    cache = IngestionCache()
     if persist_dir.exists():
         try:
             cache = IngestionCache.from_persist_path(
@@ -187,6 +186,8 @@ def _local(persist_dir: Path, table_name: str) -> IngestCacheContainer:
         except Exception as e:
             logger.warning(f"failed to load persist dir: {e}")
             cache = IngestionCache()
+    else:
+        cache = IngestionCache()
 
     return IngestCacheContainer(
         provider_name=IngestCacheProvider.LOCAL,

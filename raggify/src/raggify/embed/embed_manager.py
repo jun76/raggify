@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import time
+import asyncio
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Awaitable, Callable
 
@@ -180,7 +180,7 @@ class EmbedManager:
             dims.extend(await batcher(batch))
 
             logger.debug(f"embed total {len(dims)} {modality}s so far...")
-            time.sleep(self._batch_interval_sec)
+            await asyncio.sleep(self._batch_interval_sec)
 
         logger.debug(f"done. dim = {len(dims[0])}, embed {len(dims)} {modality}s")
 
