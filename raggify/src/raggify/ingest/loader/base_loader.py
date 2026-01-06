@@ -8,6 +8,7 @@ from llama_index.core.schema import (
     Document,
     ImageNode,
     MediaResource,
+    NodeRelationship,
     TextNode,
 )
 
@@ -58,7 +59,7 @@ class BaseLoader:
 
         Returns:
             tuple[list[BaseNode], list[TextNode]]:
-                All hierarchical text nodes and leaf text nodes for vector ingestion.
+                Hierarchical text nodes excluding leaves and leaf text nodes for vector ingestion.
         """
         from llama_index.core.node_parser import (
             HierarchicalNodeParser,
@@ -87,15 +88,24 @@ class BaseLoader:
             include_metadata=True,
         )
 
-        tree_nodes = parser.get_nodes_from_documents(docs)
-        if not tree_nodes:
+        text_tree_nodes = parser.get_nodes_from_documents(docs)
+        if not text_tree_nodes:
             return [], []
 
-        leaf_nodes = [
-            node for node in get_leaf_nodes(tree_nodes) if isinstance(node, TextNode)
+        text_leaf_nodes = [
+            node
+            for node in get_leaf_nodes(text_tree_nodes)
+            if isinstance(node, TextNode)
+        ]
+        for node in text_leaf_nodes:
+            node.relationships[NodeRelationship.SOURCE] = node.as_related_node_info()
+
+        leaf_ids = {node.node_id for node in text_leaf_nodes}
+        text_tree_nodes = [
+            node for node in text_tree_nodes if node.node_id not in leaf_ids
         ]
 
-        return tree_nodes, leaf_nodes
+        return text_tree_nodes, text_leaf_nodes
 
     def _finalize_docs(self, docs: list[Document]) -> None:
         """Adjust metadata and finalize documents.
