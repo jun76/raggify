@@ -97,9 +97,16 @@ class BaseLoader:
             for node in get_leaf_nodes(text_tree_nodes)
             if isinstance(node, TextNode)
         ]
+
+        # Like other modalities, it suffices to register itself instead of registering
+        # the parent document in ref_doc_id. As a result, only the text path undergoes
+        # duplicate detection at the node level.
         for node in text_leaf_nodes:
             node.relationships[NodeRelationship.SOURCE] = node.as_related_node_info()
 
+        # Registering the entire tree to the docstore causes even new leaves
+        # to be treated as already registered during pipeline execution,
+        # so we separate them here.
         leaf_ids = {node.node_id for node in text_leaf_nodes}
         text_tree_nodes = [
             node for node in text_tree_nodes if node.node_id not in leaf_ids
