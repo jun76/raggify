@@ -90,8 +90,8 @@ def _build_audio_pipeline(is_canceled: Callable[[], bool]) -> TracablePipeline:
         DefaultCaptionTransform,
         EmbedTransform,
         LLMCaptionTransform,
+        MediaSplitTransform,
         RemoveTempFileTransform,
-        SplitTransform,
     )
 
     rt = get_runtime()
@@ -101,7 +101,7 @@ def _build_audio_pipeline(is_canceled: Callable[[], bool]) -> TracablePipeline:
             if rt.cfg.general.audio_caption_transform_provider is not None
             else DefaultCaptionTransform()
         ),
-        SplitTransform(cfg=rt.cfg.ingest, is_canceled=is_canceled),
+        MediaSplitTransform(cfg=rt.cfg.ingest, is_canceled=is_canceled),
     ]
     transformations.append(
         EmbedTransform(embed=rt.embed_manager, is_canceled=is_canceled)
@@ -124,8 +124,8 @@ def _build_video_pipeline(is_canceled: Callable[[], bool]) -> TracablePipeline:
         DefaultCaptionTransform,
         EmbedTransform,
         LLMCaptionTransform,
+        MediaSplitTransform,
         RemoveTempFileTransform,
-        SplitTransform,
     )
 
     rt = get_runtime()
@@ -135,7 +135,7 @@ def _build_video_pipeline(is_canceled: Callable[[], bool]) -> TracablePipeline:
             if rt.cfg.general.video_caption_transform_provider is not None
             else DefaultCaptionTransform()
         ),
-        SplitTransform(cfg=rt.cfg.ingest, is_canceled=is_canceled),
+        MediaSplitTransform(cfg=rt.cfg.ingest, is_canceled=is_canceled),
     ]
     transformations.append(
         EmbedTransform(embed=rt.embed_manager, is_canceled=is_canceled)

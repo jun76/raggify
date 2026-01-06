@@ -13,10 +13,10 @@ from .base_transform import BaseTransform
 if TYPE_CHECKING:
     from llama_index.core.schema import TextNode
 
-__all__ = ["SplitTransform"]
+__all__ = ["MediaSplitTransform"]
 
 
-class SplitTransform(BaseTransform):
+class MediaSplitTransform(BaseTransform):
     """Base class for splitting media nodes into fixed-length chunks."""
 
     def __init__(self, cfg: IngestConfig, is_canceled: Callable[[], bool]) -> None:
@@ -27,8 +27,6 @@ class SplitTransform(BaseTransform):
             is_canceled (Callable[[], bool]): Cancellation flag for the job.
         """
         super().__init__(is_canceled)
-        self._text_chunk_size = cfg.text_chunk_size
-        self._text_chunk_overlap = cfg.text_chunk_overlap
         self._audio_chunk_seconds = cfg.audio_chunk_seconds
         self._video_chunk_seconds = cfg.video_chunk_seconds
         self._text_split_transform = None
@@ -53,8 +51,6 @@ class SplitTransform(BaseTransform):
         Returns:
             Sequence[BaseNode]: Nodes after splitting.
         """
-        from llama_index.core.schema import TextNode
-
         from ...llama_like.core.schema import AudioNode, VideoNode
 
         if not nodes:
@@ -78,8 +74,6 @@ class SplitTransform(BaseTransform):
                     chunk_seconds=self._video_chunk_seconds,
                     node_cls=VideoNode,
                 )
-            elif isinstance(node, TextNode):
-                split = self._split_text(node)
             else:
                 raise ValueError(f"unsupported node type: {type(node)}")
 
@@ -104,8 +98,6 @@ class SplitTransform(BaseTransform):
 
         return {
             "class_name": self.class_name(),
-            "text_chunk_size": self._text_chunk_size,
-            "text_chunk_overlap": self._text_chunk_overlap,
             "audio_chunk_seconds": self._audio_chunk_seconds,
             "video_chunk_seconds": self._video_chunk_seconds,
         }
@@ -124,7 +116,7 @@ class SplitTransform(BaseTransform):
             list[BaseNode]: Split nodes or the original node on failure.
         """
         from ...core.metadata import MetaKeys as MK
-        from ...ingest.util import MediaConverter
+        from ..util import MediaConverter
 
         path = node.metadata.get(MK.FILE_PATH) or node.metadata.get(MK.TEMP_FILE_PATH)
         if path is None:
@@ -138,30 +130,6 @@ class SplitTransform(BaseTransform):
             return [node]
 
         return self._build_chunk_nodes(node, base_dir, node_cls)
-
-    def _split_text(self, node: TextNode) -> list[BaseNode]:
-        """Split a text node into smaller chunks.
-
-        Args:
-            node (TextNode): Target node.
-
-        Returns:
-            list[BaseNode]: Split nodes or the original node on failure.
-        """
-        from llama_index.core.node_parser import SentenceSplitter
-
-        if self._text_split_transform is None:
-            self._text_split_transform = SentenceSplitter(
-                chunk_size=self._text_chunk_size,
-                chunk_overlap=self._text_chunk_overlap,
-                include_metadata=True,
-            )
-
-        try:
-            return self._text_split_transform([node])
-        except Exception as e:
-            logger.warning(f"failed to split text node: {e}")
-            return [node]
 
     def _build_chunk_nodes(
         self, node: TextNode, base_dir: Path, node_cls: Type[TextNode]

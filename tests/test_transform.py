@@ -24,8 +24,8 @@ from raggify.ingest.transform import (
     DefaultCaptionTransform,
     EmbedTransform,
     LLMCaptionTransform,
+    MediaSplitTransform,
     RemoveTempFileTransform,
-    SplitTransform,
 )
 from raggify.llama_like.core.schema import AudioNode, Modality, VideoNode
 from raggify.llm.llm_manager import LLMManager
@@ -124,7 +124,7 @@ def test_split_transform_splits_audio_and_rebuilds(monkeypatch, tmp_path):
     node = _make_media_node(AudioNode, local, ref_doc_id="audio-doc")
 
     cfg = _make_ingest_cfg(audio_chunk_seconds=2)
-    split_transform = SplitTransform(cfg, _never_canceled)
+    split_transform = MediaSplitTransform(cfg, _never_canceled)
     result = split_transform([node])
 
     assert len(result) == 2
@@ -157,38 +157,20 @@ def test_split_transform_splits_video(monkeypatch, tmp_path):
     node = _make_media_node(VideoNode, local, ref_doc_id="video-doc")
 
     cfg = _make_ingest_cfg(video_chunk_seconds=3)
-    split_transform = SplitTransform(cfg, _never_canceled)
+    split_transform = MediaSplitTransform(cfg, _never_canceled)
     nodes = split_transform([node])
 
     assert len(nodes) == 3
     assert all(isinstance(n, VideoNode) for n in nodes)
 
 
-def test_split_transform_dispatches_text(monkeypatch):
+def test_media_split_transform_rejects_text_nodes():
     node = make_sample_text_node()
-
-    class DummySentenceSplitter:
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def __call__(self, nodes: list[TextNode], **kwargs):
-            first = make_sample_text_node()
-            first.text = "part-1"
-            second = make_sample_text_node()
-            second.text = "part-2"
-            return [first, second]
-
-    monkeypatch.setattr(
-        "llama_index.core.node_parser.SentenceSplitter",
-        DummySentenceSplitter,
-    )
-
     cfg = _make_ingest_cfg(text_chunk_size=100, text_chunk_overlap=10)
-    split_transform = SplitTransform(cfg, _never_canceled)
-    result = split_transform([node])
+    split_transform = MediaSplitTransform(cfg, _never_canceled)
 
-    texts = [cast(TextNode, n).text for n in result]
-    assert texts == ["part-1", "part-2"]
+    with pytest.raises(ValueError, match="unsupported node type"):
+        split_transform([node])
 
 
 def test_embed_transform_writes_text_embeddings():
