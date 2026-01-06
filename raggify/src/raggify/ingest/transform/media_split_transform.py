@@ -17,7 +17,7 @@ __all__ = ["MediaSplitTransform"]
 
 
 class MediaSplitTransform(BaseTransform):
-    """Base class for splitting media nodes into fixed-length chunks."""
+    """Transform to split media nodes into fixed-length chunks."""
 
     def __init__(self, cfg: IngestConfig, is_canceled: Callable[[], bool]) -> None:
         """Constructor.
@@ -29,7 +29,6 @@ class MediaSplitTransform(BaseTransform):
         super().__init__(is_canceled)
         self._audio_chunk_seconds = cfg.audio_chunk_seconds
         self._video_chunk_seconds = cfg.video_chunk_seconds
-        self._text_split_transform = None
 
     def __call__(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:
         """Interface called from the pipeline.
