@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
@@ -29,7 +30,8 @@ class VectorStoreContainer:
 class VectorStoreManager:
     """Manager class for vector stores.
 
-    One table is allocated per space key to manage nodes."""
+    One table is allocated per space key to manage nodes.
+    """
 
     def __init__(
         self,
@@ -47,6 +49,7 @@ class VectorStoreManager:
         self._conts = conts
         self._embed = embed
         self._docstore = docstore
+        self._lock = threading.Lock()
 
         for modality, cont in self._conts.items():
             cont.index = self._create_index(modality)
@@ -183,8 +186,9 @@ class VectorStoreManager:
         for mod in self.modality:
             store = self.get_container(mod).store
             try:
-                for ref_doc_id in ref_doc_ids:
-                    store.delete(ref_doc_id)
+                with self._lock:
+                    for ref_doc_id in ref_doc_ids:
+                        store.delete(ref_doc_id)
             except Exception as e:
                 logger.warning(f"failed to delete {ref_doc_id}: {e}")
                 return
@@ -200,8 +204,9 @@ class VectorStoreManager:
             bool: True if the deletion succeeds.
         """
         try:
-            for mod in self.modality:
-                self.get_container(mod).store.clear()
+            with self._lock:
+                for mod in self.modality:
+                    self.get_container(mod).store.clear()
         except Exception as e:
             logger.warning(f"failed to clear {mod} store: {e}")
             return False

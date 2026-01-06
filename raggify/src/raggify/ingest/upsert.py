@@ -22,13 +22,10 @@ if TYPE_CHECKING:
 __all__ = ["aupsert_nodes"]
 
 
-def _build_text_pipeline(
-    persist_dir: Optional[Path], is_canceled: Callable[[], bool]
-) -> TracablePipeline:
+def _build_text_pipeline(is_canceled: Callable[[], bool]) -> TracablePipeline:
     """Build an ingestion pipeline for text.
 
     Args:
-        persist_dir (Optional[Path]): Persist directory.
         is_canceled (Callable[[], bool]): Cancellation flag for the job.
 
     Returns:
@@ -47,20 +44,13 @@ def _build_text_pipeline(
         RemoveTempFileTransform(is_canceled),
     ]
 
-    return rt.pipeline.build(
-        modality=Modality.TEXT,
-        transformations=transformations,
-        persist_dir=persist_dir,
-    )
+    return rt.pipeline.build(modality=Modality.TEXT, transformations=transformations)
 
 
-def _build_image_pipeline(
-    persist_dir: Optional[Path], is_canceled: Callable[[], bool]
-) -> TracablePipeline:
+def _build_image_pipeline(is_canceled: Callable[[], bool]) -> TracablePipeline:
     """Build an ingestion pipeline for images.
 
     Args:
-        persist_dir (Optional[Path]): Persist directory.
         is_canceled (Callable[[], bool]): Cancellation flag for the job.
 
     Returns:
@@ -84,20 +74,13 @@ def _build_image_pipeline(
         RemoveTempFileTransform(is_canceled),
     ]
 
-    return rt.pipeline.build(
-        modality=Modality.IMAGE,
-        transformations=transformations,
-        persist_dir=persist_dir,
-    )
+    return rt.pipeline.build(modality=Modality.IMAGE, transformations=transformations)
 
 
-def _build_audio_pipeline(
-    persist_dir: Optional[Path], is_canceled: Callable[[], bool]
-) -> TracablePipeline:
+def _build_audio_pipeline(is_canceled: Callable[[], bool]) -> TracablePipeline:
     """Build an ingestion pipeline for audio.
 
     Args:
-        persist_dir (Optional[Path]): Persist directory.
         is_canceled (Callable[[], bool]): Cancellation flag for the job.
 
     Returns:
@@ -125,20 +108,13 @@ def _build_audio_pipeline(
     )
     transformations.append(RemoveTempFileTransform(is_canceled))
 
-    return rt.pipeline.build(
-        modality=Modality.AUDIO,
-        transformations=transformations,
-        persist_dir=persist_dir,
-    )
+    return rt.pipeline.build(modality=Modality.AUDIO, transformations=transformations)
 
 
-def _build_video_pipeline(
-    persist_dir: Optional[Path], is_canceled: Callable[[], bool]
-) -> TracablePipeline:
+def _build_video_pipeline(is_canceled: Callable[[], bool]) -> TracablePipeline:
     """Build an ingestion pipeline for video.
 
     Args:
-        persist_dir (Optional[Path]): Persist directory.
         is_canceled (Callable[[], bool]): Cancellation flag for the job.
 
     Returns:
@@ -166,23 +142,16 @@ def _build_video_pipeline(
     )
     transformations.append(RemoveTempFileTransform(is_canceled))
 
-    return rt.pipeline.build(
-        modality=Modality.VIDEO,
-        transformations=transformations,
-        persist_dir=persist_dir,
-    )
+    return rt.pipeline.build(modality=Modality.VIDEO, transformations=transformations)
 
 
 def _build_pipeline(
-    modality: Modality,
-    persist_dir: Optional[Path],
-    is_canceled: Callable[[], bool],
+    modality: Modality, is_canceled: Callable[[], bool]
 ) -> TracablePipeline:
     """Build an ingestion pipeline for a given modality.
 
     Args:
         modality (Modality): Target modality.
-        persist_dir (Optional[Path]): Persist directory.
         is_canceled (Callable[[], bool]): Cancellation flag for the job.
 
     Returns:
@@ -190,21 +159,13 @@ def _build_pipeline(
     """
     match modality:
         case Modality.TEXT:
-            return _build_text_pipeline(
-                persist_dir=persist_dir, is_canceled=is_canceled
-            )
+            return _build_text_pipeline(is_canceled)
         case Modality.IMAGE:
-            return _build_image_pipeline(
-                persist_dir=persist_dir, is_canceled=is_canceled
-            )
+            return _build_image_pipeline(is_canceled)
         case Modality.AUDIO:
-            return _build_audio_pipeline(
-                persist_dir=persist_dir, is_canceled=is_canceled
-            )
+            return _build_audio_pipeline(is_canceled)
         case Modality.VIDEO:
-            return _build_video_pipeline(
-                persist_dir=persist_dir, is_canceled=is_canceled
-            )
+            return _build_video_pipeline(is_canceled)
         case _:
             raise ValueError(f"unexpected modality: {modality}")
 
@@ -214,7 +175,6 @@ async def _process_batch(
     modality: Modality,
     persist_dir: Optional[Path],
     force: bool,
-    is_canceled: Callable[[], bool],
     pipe: TracablePipeline,
 ) -> Sequence[BaseNode]:
     """Process a batch of nodes through the pipeline.
@@ -224,7 +184,6 @@ async def _process_batch(
         modality (Modality): Target modality.
         persist_dir (Optional[Path]): Persist directory.
         force (bool): Whether to force reingestion even if already present.
-        is_canceled (Callable[[], bool]): Cancellation flag for the job.
         pipe (TracablePipeline): Pipeline instance.
 
     Raises:
@@ -239,9 +198,7 @@ async def _process_batch(
     try:
         pipe.disable_cache = force
         transformed_nodes = await pipe.arun(nodes=batch)
-        pipe.disable_cache = False
-
-        rt.pipeline.persist(pipe=pipe, modality=modality, persist_dir=persist_dir)
+        rt.pipeline.persist(pipe=pipe, persist_dir=persist_dir)
 
         # Return [] if no nodes were processed
         return transformed_nodes
@@ -267,6 +224,8 @@ async def _process_batch(
         raise RuntimeError(
             f"failed to process {modality} batch, rolled back: {e}"
         ) from e
+    finally:
+        pipe.disable_cache = False
 
 
 async def _process_batches(
@@ -293,9 +252,7 @@ async def _process_batches(
     if not nodes or is_canceled():
         return
 
-    pipe = _build_pipeline(
-        modality=modality, persist_dir=persist_dir, is_canceled=is_canceled
-    )
+    pipe = _build_pipeline(modality=modality, is_canceled=is_canceled)
 
     if tree_nodes is not None and pipe.docstore is not None:
         pipe.docstore.add_documents(tree_nodes)
@@ -322,7 +279,6 @@ async def _process_batches(
                     modality=modality,
                     persist_dir=persist_dir,
                     force=force,
-                    is_canceled=is_canceled,
                     pipe=pipe,
                 )
                 transformed += len(temp)

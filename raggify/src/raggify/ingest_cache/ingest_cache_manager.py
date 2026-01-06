@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Sequence
@@ -34,6 +35,7 @@ class IngestCacheManager:
                 Mapping of modality to ingest cache container.
         """
         self._conts = conts
+        self._lock = threading.Lock()
 
         for modality, cont in conts.items():
             logger.debug(f"{cont.provider_name} {modality} ingest cache created")
@@ -102,15 +104,12 @@ class IngestCacheManager:
 
         try:
             key = get_transformation_hash(nodes, transformation)
-            cache.cache.delete(key=key, collection=cache.collection)
+            with self._lock:
+                cache.cache.delete(key=key, collection=cache.collection)
+                if persist_dir is not None:
+                    cache.persist(str(persist_dir / DEFAULT_CACHE_NAME))
         except Exception as e:
-            logger.warning(f"failed to delete cache entry: {e}")
-
-        try:
-            if persist_dir is not None:
-                cache.persist(str(persist_dir / DEFAULT_CACHE_NAME))
-        except Exception as e:
-            logger.warning(f"failed to persist cache after delete: {e}")
+            logger.warning(f"failed to delete cache: {e}")
 
     def delete_all(self, persist_dir: Optional[Path]) -> None:
         """Delete all caches.
@@ -120,17 +119,18 @@ class IngestCacheManager:
         """
         from llama_index.core.ingestion.cache import DEFAULT_CACHE_NAME
 
-        for mod in self.modality:
-            cache = self.get_container(mod).cache
-            if cache is None:
-                continue
+        with self._lock:
+            for mod in self.modality:
+                cache = self.get_container(mod).cache
+                if cache is None:
+                    continue
 
-            try:
-                cache.clear()
-                if persist_dir is not None:
-                    cache.persist(str(persist_dir / DEFAULT_CACHE_NAME))
-            except Exception as e:
-                logger.warning(f"failed to clear {mod} cache, skipped: {e}")
-                continue
+                try:
+                    cache.clear()
+                    if persist_dir is not None:
+                        cache.persist(str(persist_dir / DEFAULT_CACHE_NAME))
+                except Exception as e:
+                    logger.warning(f"failed to clear {mod} cache, skipped: {e}")
+                    continue
 
         logger.info("all caches are deleted from cache store")

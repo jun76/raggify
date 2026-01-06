@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Sequence
 
@@ -31,6 +32,7 @@ class DocumentStoreManager:
         self._provider_name = provider_name
         self._store = store
         self._table_name = table_name
+        self._lock = threading.Lock()
 
         logger.debug(f"{provider_name} docstore created")
 
@@ -140,23 +142,20 @@ class DocumentStoreManager:
         """
         try:
             sorted_ref_doc_ids = sorted(ref_doc_ids)
-            for ref_doc_id in sorted_ref_doc_ids:
-                self.store.delete_ref_doc(ref_doc_id)
+            with self._lock:
+                for ref_doc_id in sorted_ref_doc_ids:
+                    self.store.delete_ref_doc(ref_doc_id)
+
+                if persist_dir is not None:
+                    from llama_index.core.storage.docstore.types import (
+                        DEFAULT_PERSIST_FNAME,
+                    )
+
+                    self.store.persist(str(persist_dir / DEFAULT_PERSIST_FNAME))
+
+            logger.info(f"{len(ref_doc_ids)} documents are deleted from document store")
         except Exception as e:
             logger.error(f"failed to delete ref_doc {ref_doc_id}: {e}")
-            return
-
-        logger.info(f"{len(ref_doc_ids)} documents are deleted from document store")
-
-        if persist_dir is not None:
-            try:
-                from llama_index.core.storage.docstore.types import (
-                    DEFAULT_PERSIST_FNAME,
-                )
-
-                self.store.persist(str(persist_dir / DEFAULT_PERSIST_FNAME))
-            except Exception as e:
-                logger.error(f"failed to persist: {e}")
 
     def delete_all(self, persist_dir: Optional[Path]) -> None:
         """Delete all ref_docs and related nodes stored.

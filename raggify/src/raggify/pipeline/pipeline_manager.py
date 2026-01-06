@@ -109,7 +109,7 @@ class PipelineManager:
         self.vector_store = vector_store
         self.ingest_cache = ingest_cache
         self.document_store = document_store
-        self._pipeline_lock = threading.Lock()
+        self._lock = threading.Lock()
 
     def _use_local_workspace(self) -> bool:
         """Whether to persist cache or document store locally.
@@ -129,22 +129,18 @@ class PipelineManager:
         return False
 
     def build(
-        self,
-        modality: Modality,
-        transformations: list[TransformComponent],
-        persist_dir: Optional[Path] = None,
+        self, modality: Modality, transformations: list[TransformComponent]
     ) -> TracablePipeline:
         """Create or load an ingestion pipeline.
 
         Args:
             modality (Modality): Modality.
             transformations (list[TransformComponent]): list of transforms.
-            persist_dir (Optional[Path], optional): Persistence directory. Defaults to None.
 
         Returns:
             TracablePipeline: Pipeline instance.
         """
-        pipe = TracablePipeline(
+        return TracablePipeline(
             transformations=transformations,
             vector_store=self.vector_store.get_container(modality).store,
             cache=self.ingest_cache.get_container(modality).cache,
@@ -152,38 +148,15 @@ class PipelineManager:
             docstore_strategy=DocstoreStrategy.UPSERTS,
         )
 
-        if not self._use_local_workspace():
-            return pipe
-
-        if not (persist_dir and persist_dir.exists()):
-            return pipe
-
-        try:
-            pipe.load(str(persist_dir))
-            with self._pipeline_lock:
-                self.ingest_cache.get_container(modality).cache = pipe.cache
-                if pipe.docstore is None:
-                    logger.error("pipeline has no docstore")
-                else:
-                    self.document_store.store = pipe.docstore
-                    self.vector_store.refresh_docstore(self.document_store.store)
-                logger.debug(f"loaded pipeline from {persist_dir}")
-        except Exception as e:
-            logger.warning(f"failed to load persist dir. perhaps initial run: {e}")
-
-        return pipe
-
     def persist(
         self,
         pipe: TracablePipeline,
-        modality: Modality,
         persist_dir: Optional[Path] = None,
     ) -> None:
         """Persist the pipeline to storage.
 
         Args:
             pipe (TracablePipeline): Pipeline instance.
-            modality (Modality): Modality.
             persist_dir (Optional[Path], optional): Persistence directory. Defaults to None.
         """
         if not self._use_local_workspace():
@@ -194,29 +167,21 @@ class PipelineManager:
             return
 
         try:
-            pipe.persist(str(persist_dir))
-            with self._pipeline_lock:
-                self.ingest_cache.get_container(modality).cache = pipe.cache
-                if pipe.docstore is None:
-                    logger.error("pipeline has no docstore")
-                else:
-                    self.document_store.store = pipe.docstore
-                    self.vector_store.refresh_docstore(self.document_store.store)
-                logger.debug(f"persisted pipeline to {persist_dir}")
+            with self._lock:
+                pipe.persist(str(persist_dir))
         except Exception as e:
             logger.error(f"failed to persist: {e}")
 
     def delete_all(self) -> None:
         """Delete all data persisted in each store."""
-        with self._pipeline_lock:
-            if self._use_local_workspace():
-                persist_dir = self.cfg.pipeline.persist_dir
-            else:
-                persist_dir = None
+        if self._use_local_workspace():
+            persist_dir = self.cfg.pipeline.persist_dir
+        else:
+            persist_dir = None
 
-            if not self.vector_store.delete_all():
-                ref_doc_ids = self.document_store.get_ref_doc_ids()
-                self.vector_store.delete_nodes(ref_doc_ids)
+        if not self.vector_store.delete_all():
+            ref_doc_ids = self.document_store.get_ref_doc_ids()
+            self.vector_store.delete_nodes(ref_doc_ids)
 
-            self.ingest_cache.delete_all(persist_dir)
-            self.document_store.delete_all(persist_dir)
+        self.ingest_cache.delete_all(persist_dir)
+        self.document_store.delete_all(persist_dir)
