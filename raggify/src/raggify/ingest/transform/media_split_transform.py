@@ -157,12 +157,7 @@ class MediaSplitTransform(BaseTransform):
             meta.chunk_no = index
 
             nodes.append(
-                node_cls(
-                    text=node.text,
-                    id_=str(chunk_path),
-                    ref_doc_id=node.ref_doc_id,
-                    metadata=meta.to_dict(),
-                )
+                node_cls(text=node.text, id_=str(chunk_path), metadata=meta.to_dict())
             )
 
         logger.debug(f"split node into {len(nodes)} chunks under {base_dir}")

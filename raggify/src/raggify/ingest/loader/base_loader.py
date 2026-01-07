@@ -205,7 +205,6 @@ class BaseLoader:
                         ),  # for caption transform use
                         id_=doc.id_,
                         doc_id=doc.doc_id,
-                        ref_doc_id=doc.doc_id,
                         metadata=doc.metadata,
                     )
                 )
@@ -215,7 +214,6 @@ class BaseLoader:
                         text=doc.text,
                         id_=doc.id_,
                         doc_id=doc.doc_id,
-                        ref_doc_id=doc.doc_id,
                         metadata=doc.metadata,
                     )
                 )
@@ -225,7 +223,6 @@ class BaseLoader:
                         text=doc.text,
                         id_=doc.id_,
                         doc_id=doc.doc_id,
-                        ref_doc_id=doc.doc_id,
                         metadata=doc.metadata,
                     )
                 )
