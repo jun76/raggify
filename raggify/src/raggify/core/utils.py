@@ -101,6 +101,26 @@ def make_temp_dir(path: Path, remove: bool = True) -> None:
     """
     import shutil
 
+    # path.suffix:
+    # - Heuristic: treat a path with an extension as a file path.
+    # - Works even when the path does not exist yet.
+    # - Example: tmp_raggify_xxx.mp3 has a suffix, so it is treated as a file.
+    # path.is_file():
+    # - Checks whether the path currently exists as a file.
+    # - Always False for non-existent paths.
+    # - Example: tmp_raggify_xxx.mp3 returns False if it has not been created yet.
+    #
+    # Use suffix to detect file-intent, and is_file only for existing paths.
+    if path.suffix:
+        if remove and path.exists():
+            if path.is_file():
+                path.unlink()
+            else:
+                shutil.rmtree(path)
+
+        path.parent.mkdir(parents=True, exist_ok=True)
+        return
+
     if path.is_file():
         path = path.parent
 

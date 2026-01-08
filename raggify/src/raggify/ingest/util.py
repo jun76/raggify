@@ -80,7 +80,7 @@ class MediaConverter:
                     ar=sample_rate,
                 )
                 .overwrite_output()
-                .run(quiet=True)
+                .run(quiet=False)
             )
         except Exception as e:
             logger.error(f"failed to convert audio to mp3 for {src}: {e}")
@@ -116,7 +116,7 @@ class MediaConverter:
                     ar=sample_rate,
                 )
                 .overwrite_output()
-                .run(quiet=True)
+                .run(quiet=False)
             )
         except Exception as e:
             logger.error(f"failed to extract mp3 audio from video for {src}: {e}")
@@ -146,7 +146,7 @@ class MediaConverter:
                 self._ffmpeg.input(str(src))
                 .output(pattern, vf=f"fps={frame_rate}")
                 .overwrite_output()
-                .run(quiet=True)
+                .run(quiet=False)
             )
         except Exception as e:
             logger.error(f"failed to extract png frames from video for {src}: {e}")
@@ -193,7 +193,7 @@ class MediaConverter:
                     reset_timestamps="1",
                 )
                 .overwrite_output()
-                .run(quiet=True)
+                .run(quiet=False)
             )
         except Exception as e:
             logger.error(f"failed to split video for {src}: {e}")
