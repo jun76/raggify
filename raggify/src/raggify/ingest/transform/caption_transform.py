@@ -129,6 +129,8 @@ class LLMCaptionTransform(BaseTransform):
         if self._record_nodes:
             self._record_nodes(self, nodes)
 
+        logger.debug(f"captioned {len(captioned_nodes)} nodes")
+
         return captioned_nodes
 
     @classmethod

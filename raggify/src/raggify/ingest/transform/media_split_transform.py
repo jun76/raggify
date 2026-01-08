@@ -81,6 +81,8 @@ class MediaSplitTransform(BaseTransform):
         if self._record_nodes:
             self._record_nodes(self, nodes)
 
+        logger.debug(f"split into {len(split_nodes)} nodes")
+
         return split_nodes
 
     @classmethod

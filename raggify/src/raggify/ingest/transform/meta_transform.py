@@ -127,6 +127,8 @@ class RemoveTempFileTransform(BaseTransform):
         if self._record_nodes:
             self._record_nodes(self, nodes)
 
+        logger.debug(f"removed temporary files from {len(nodes)} nodes")
+
         return nodes
 
     async def acall(self, nodes: Sequence[BaseNode], **kwargs) -> Sequence[BaseNode]:

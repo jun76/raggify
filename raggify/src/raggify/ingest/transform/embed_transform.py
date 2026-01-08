@@ -84,6 +84,8 @@ class EmbedTransform(BaseTransform):
         if self._record_nodes:
             self._record_nodes(self, nodes)
 
+        logger.debug(f"embedded {len(embed_nodes)} nodes")
+
         return embed_nodes
 
     async def _aembed_text(self, nodes: Sequence[BaseNode]) -> Sequence[BaseNode]:
