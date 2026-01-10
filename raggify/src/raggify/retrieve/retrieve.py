@@ -63,10 +63,12 @@ def _get_vector_retriever(rt: Runtime, index: VectorStoreIndex) -> BaseRetriever
         VectorIndexRetriever, index.as_retriever(similarity_top_k=rt.cfg.rerank.topk)
     )
 
-    return _wrap_auto_merging_retriever(rt=rt, index=index, retriever=base_retriever)
+    return _wrap_with_auto_merging_retriever(
+        rt=rt, index=index, retriever=base_retriever
+    )
 
 
-def _wrap_auto_merging_retriever(
+def _wrap_with_auto_merging_retriever(
     rt: Runtime, index: VectorStoreIndex, retriever: VectorIndexRetriever
 ) -> BaseRetriever:
     """Wrap a vector retriever with AutoMergingRetriever.
@@ -141,7 +143,7 @@ def _get_fusion_retriever(rt: Runtime, index: VectorStoreIndex) -> BaseRetriever
         base_retriever = cast(
             VectorIndexRetriever, index.as_retriever(similarity_top_k=topk)
         )
-        return _wrap_auto_merging_retriever(
+        return _wrap_with_auto_merging_retriever(
             rt=rt, index=index, retriever=base_retriever
         )
 
@@ -150,7 +152,7 @@ def _get_fusion_retriever(rt: Runtime, index: VectorStoreIndex) -> BaseRetriever
     base_vector_retriever = cast(
         VectorIndexRetriever, index.as_retriever(similarity_top_k=topk)
     )
-    vector_retriever = _wrap_auto_merging_retriever(
+    vector_retriever = _wrap_with_auto_merging_retriever(
         rt=rt, index=index, retriever=base_vector_retriever
     )
 
