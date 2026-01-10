@@ -19,6 +19,8 @@ class FakeVectorStore:
 
 
 class DummyPGVectorStore(FakeVectorStore):
+    stores_text = True
+
     def __init__(self, params: dict[str, Any]) -> None:
         super().__init__()
         self.params = params

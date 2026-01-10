@@ -24,6 +24,9 @@ class DummyPostgresDocumentStore:
     def from_params(cls, **kwargs) -> DummyPostgresDocumentStore:
         return cls(kwargs)
 
+    def add_documents(self, docs) -> None:
+        return None
+
 
 class DummySimpleDocumentStore:
     last_from_dir: ClassVar[Optional[str]] = None

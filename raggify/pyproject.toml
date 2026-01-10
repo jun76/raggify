@@ -26,7 +26,6 @@ classifiers = [
 keywords = ["rag", "multimodal", "embedding", "cli", "fastapi", "streamlit", "typer"]
 dependencies = [
     "aiofiles",
-    "chromadb",
     "docx2txt",
     "fastapi",
     "fastapi-mcp",
@@ -39,7 +38,6 @@ dependencies = [
     "llama-index-readers-web",
     "llama-index-readers-wikipedia",
     "llama-index-retrievers-bm25",
-    "llama-index-vector-stores-chroma",
     "mashumaro",
     "nbconvert",
     "pydantic",
@@ -77,29 +75,11 @@ rerank = [
     "llama-index-postprocessor-cohere-rerank",
     "llama-index-postprocessor-voyageai-rerank",
 ]
-localmodel = [
-    "FlagEmbedding",
-    "llama-index-embeddings-clip",
-    "llama-index-embeddings-huggingface",
-    "llama-index-llms-huggingface==0.6.1",
-    "llama-index-postprocessor-flag-embedding-reranker",
-    "sentence-transformers==5.2.0",
-    "soundfile",
-    "torch==2.9.0",
-    "torchaudio==2.9.0",
-    "torchvision==0.24.0",
-    "transformers",
-]
 postgres = [
     "llama-index-storage-docstore-postgres",
     "llama-index-storage-kvstore-postgres",
     "llama-index-vector-stores-postgres",
     "psycopg2-binary",
-]
-redis = [
-    "llama-index-storage-docstore-redis",
-    "llama-index-storage-kvstore-redis",
-    "llama-index-vector-stores-redis",
 ]
 exam = [
     "openai-agents",
@@ -110,35 +90,21 @@ dev = [
     "pytest-cov",
 ]
 all = [
-    "FlagEmbedding",
     "ffmpeg-python",
     "llama-index-embeddings-bedrock",
-    "llama-index-embeddings-clip",
     "llama-index-embeddings-cohere",
-    "llama-index-embeddings-huggingface",
     "llama-index-embeddings-voyageai",
-    "llama-index-llms-huggingface==0.6.1",
     "llama-index-postprocessor-cohere-rerank",
-    "llama-index-postprocessor-flag-embedding-reranker",
     "llama-index-postprocessor-voyageai-rerank",
     "llama-index-storage-docstore-postgres",
-    "llama-index-storage-docstore-redis",
     "llama-index-storage-kvstore-postgres",
-    "llama-index-storage-kvstore-redis",
     "llama-index-vector-stores-postgres",
-    "llama-index-vector-stores-redis",
     "openai-agents",
     "psycopg2-binary",
     "pytest",
     "pytest-cov",
     "pymupdf",
-    "sentence-transformers==5.2.0",
-    "soundfile",
     "streamlit",
-    "torch==2.9.0",
-    "torchaudio==2.9.0",
-    "torchvision==0.24.0",
-    "transformers",
 ]
 
 [project.urls]

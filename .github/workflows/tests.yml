@@ -3,7 +3,7 @@ name: Tests
 on:
   push:
     branches:
-      - main
+      - raggify-lite
   pull_request:
 
 jobs:
@@ -25,7 +25,7 @@ jobs:
           pip install uv
 
       - name: Setup project
-        run: make api
+        run: make all
 
       - name: Run tests
         run: make test

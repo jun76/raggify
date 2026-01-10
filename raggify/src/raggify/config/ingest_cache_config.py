@@ -12,18 +12,12 @@ __all__ = ["IngestCacheProvider", "IngestCacheConfig"]
 
 
 class IngestCacheProvider(StrEnum):
-    REDIS = auto()
     POSTGRES = auto()
-    LOCAL = auto()
 
 
 @dataclass(kw_only=True)
 class IngestCacheConfig(DataClassDictMixin):
     """Config dataclass for ingest cache settings."""
-
-    # Redis
-    redis_host: str = "localhost"
-    redis_port: int = 6379
 
     # Postgres
     postgres_host: str = "localhost"

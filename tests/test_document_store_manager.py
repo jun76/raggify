@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import cast
 
 from llama_index.core.storage.docstore import BaseDocumentStore
-from llama_index.core.storage.docstore.types import DEFAULT_PERSIST_FNAME
 
 from raggify.document_store.document_store_manager import DocumentStoreManager
 from tests.utils.mock_document_store import (
@@ -86,8 +84,6 @@ def test_delete_all_with_persist(tmp_path):
     store.docs = {"a": None, "b": None}
     manager = _make_manager(store)
 
-    persist_dir = Path(tmp_path)
-    manager.delete_all(persist_dir=persist_dir)
+    manager.delete_all()
 
     assert store.deleted == ["a", "b"]
-    assert store.persist_paths == [str(persist_dir / DEFAULT_PERSIST_FNAME)]

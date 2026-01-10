@@ -94,10 +94,6 @@ def _create_container(
     match cfg.general.vector_store_provider:
         case VectorStoreProvider.PGVECTOR:
             cont = _pgvector(cfg=cfg.vector_store, table_name=table_name, dim=dim)
-        case VectorStoreProvider.CHROMA:
-            cont = _chroma(cfg=cfg.vector_store, table_name=table_name)
-        case VectorStoreProvider.REDIS:
-            cont = _redis(cfg=cfg.vector_store, table_name=table_name, dim=dim)
         case _:
             raise RuntimeError(
                 f"unsupported vector store: {cfg.general.vector_store_provider}"
@@ -155,75 +151,6 @@ def _pgvector(
             password=sec,
             table_name=table_name,
             embed_dim=dim,
-        ),
-        table_name=table_name,
-    )
-
-
-def _chroma(cfg: VectorStoreConfig, table_name: str) -> VectorStoreContainer:
-    import chromadb
-    from llama_index.vector_stores.chroma import ChromaVectorStore
-
-    from .vector_store_manager import VectorStoreContainer
-
-    if cfg.chroma_host is not None and cfg.chroma_port is not None:
-        client = chromadb.HttpClient(
-            host=cfg.chroma_host,
-            port=cfg.chroma_port,
-        )
-    elif cfg.chroma_persist_dir:
-        client = chromadb.PersistentClient(path=cfg.chroma_persist_dir)
-    else:
-        raise RuntimeError("persist_directory or host + port must be specified")
-
-    collection = client.get_or_create_collection(table_name)
-
-    return VectorStoreContainer(
-        provider_name=VectorStoreProvider.CHROMA,
-        store=ChromaVectorStore(chroma_collection=collection),
-        table_name=table_name,
-    )
-
-
-def _redis(cfg: VectorStoreConfig, table_name: str, dim: int) -> VectorStoreContainer:
-    try:
-        from llama_index.vector_stores.redis import RedisVectorStore  # type: ignore
-        from redisvl.schema import IndexSchema  # type: ignore
-    except ImportError:
-        raise ImportError(
-            EXTRA_PKG_NOT_FOUND_MSG.format(
-                pkg="llama-index-vector-stores-redis",
-                extra="redis",
-                feature="RedisVectorStore",
-            )
-        )
-
-    from .vector_store_manager import VectorStoreContainer
-
-    schema = IndexSchema.from_dict(
-        {
-            "index": {"name": table_name},
-            "fields": [
-                {"name": "id", "type": "tag"},
-                {"name": "doc_id", "type": "tag"},
-                {"name": "text", "type": "text"},
-                {
-                    "name": "vector",
-                    "type": "vector",
-                    "attrs": {
-                        "dims": dim,
-                        "algorithm": "hnsw",
-                        "distance_metric": "cosine",
-                    },
-                },
-            ],
-        }
-    )
-
-    return VectorStoreContainer(
-        provider_name=VectorStoreProvider.REDIS,
-        store=RedisVectorStore(
-            redis_url=f"redis://{cfg.redis_host}:{cfg.redis_port}", schema=schema
         ),
         table_name=table_name,
     )

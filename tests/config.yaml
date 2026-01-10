@@ -1,7 +1,7 @@
 general:
-  vector_store_provider: chroma
-  document_store_provider: local
-  ingest_cache_provider: local
+  vector_store_provider: pgvector
+  document_store_provider: postgres
+  ingest_cache_provider: postgres
   text_embed_provider: openai
   image_embed_provider: cohere
   audio_embed_provider: bedrock
@@ -12,3 +12,5 @@ general:
   rerank_provider: null
   parser_provider: local
   use_modality_fallback: false
+vector_store:
+  pgvector_password: dummy

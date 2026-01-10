@@ -14,13 +14,9 @@ from raggify.document_store.document_store_manager import DocumentStoreManager
 from raggify.embed.embed_manager import Modality
 from raggify.vector_store.vector_store import create_vector_store_manager
 from tests.utils.mock_vector_store import (
-    DummyChromaClient,
-    DummyChromaVectorStore,
     DummyEmbedManager,
-    DummyIndexSchema,
     DummyMultiModalVectorStoreIndex,
     DummyPGVectorStore,
-    DummyRedisVectorStore,
     DummyVectorStoreIndex,
     FakeVectorStore,
 )
@@ -39,7 +35,7 @@ def _make_cfg(provider: VectorStoreProvider, persist_dir) -> ConfigManager:
         audio_embed_provider=None,
         video_embed_provider=None,
     )
-    vector_cfg = VectorStoreConfig(chroma_persist_dir=persist_dir)
+    vector_cfg = VectorStoreConfig()
     vector_cfg.pgvector_password = "secret"
     stub = SimpleNamespace(general=general, vector_store=vector_cfg)
     return cast(ConfigManager, stub)
@@ -51,18 +47,21 @@ def _make_docstore() -> DocumentStoreManager:
 
 @pytest.fixture(autouse=True)
 def patch_vector_backends(monkeypatch):
+    import sys
+    import types
+
+    module_name = "llama_index.vector_stores.postgres"
+    dummy_module = types.ModuleType(module_name)
+    dummy_module.PGVectorStore = DummyPGVectorStore
+    sys.modules.setdefault(module_name, dummy_module)
+
+    import llama_index.vector_stores as vector_stores
+
+    monkeypatch.setattr(vector_stores, "postgres", dummy_module, raising=False)
+
     monkeypatch.setattr(
         "llama_index.vector_stores.postgres.PGVectorStore", DummyPGVectorStore
     )
-    monkeypatch.setattr("chromadb.HttpClient", DummyChromaClient)
-    monkeypatch.setattr("chromadb.PersistentClient", DummyChromaClient)
-    monkeypatch.setattr(
-        "llama_index.vector_stores.chroma.ChromaVectorStore", DummyChromaVectorStore
-    )
-    monkeypatch.setattr(
-        "llama_index.vector_stores.redis.RedisVectorStore", DummyRedisVectorStore
-    )
-    monkeypatch.setattr("redisvl.schema.IndexSchema", DummyIndexSchema)
     monkeypatch.setattr(
         "llama_index.core.indices.VectorStoreIndex", DummyVectorStoreIndex
     )
@@ -83,30 +82,6 @@ def test_create_vector_store_manager_pgvector(tmp_path):
     assert cont.table_name.endswith("_vec")
     store = cast(DummyPGVectorStore, cont.store)
     assert store.params["table_name"] == cont.table_name
-
-
-def test_create_vector_store_manager_chroma_http(tmp_path):
-    cfg = _make_cfg(VectorStoreProvider.CHROMA, tmp_path)
-    cfg.vector_store.chroma_host = "localhost"
-    cfg.vector_store.chroma_port = 8000
-    embed = DummyEmbedManager({Modality.TEXT: 64})
-
-    manager = create_vector_store_manager(cfg, embed, _make_docstore())
-    cont = manager.get_container(Modality.TEXT)
-    assert cont.provider_name == VectorStoreProvider.CHROMA
-    store = cast(DummyChromaVectorStore, cont.store)
-    assert store.collection.name == cont.table_name
-
-
-def test_create_vector_store_manager_redis(tmp_path):
-    cfg = _make_cfg(VectorStoreProvider.REDIS, tmp_path)
-    embed = DummyEmbedManager({Modality.TEXT: 32})
-
-    manager = create_vector_store_manager(cfg, embed, _make_docstore())
-    cont = manager.get_container(Modality.TEXT)
-    assert cont.provider_name == VectorStoreProvider.REDIS
-    store = cast(DummyRedisVectorStore, cont.store)
-    assert "redis://" in store.redis_url
 
 
 def test_vector_store_manager_delete_operations(tmp_path):

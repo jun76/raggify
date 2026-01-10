@@ -10,11 +10,8 @@ __all__ = ["EmbedProvider", "EmbedModel", "EmbedConfig"]
 
 
 class EmbedProvider(StrEnum):
-    CLIP = auto()
     OPENAI = auto()
     COHERE = auto()
-    HUGGINGFACE = auto()
-    CLAP = auto()
     VOYAGE = auto()
     BEDROCK = auto()
 
@@ -47,27 +44,6 @@ class EmbedConfig(DataClassDictMixin):
             EmbedModel.DIM.value: 1536,
         }
     )
-    clip_embed_model_text: dict[str, Any] = field(
-        default_factory=lambda: {
-            EmbedModel.NAME.value: "ViT-B/32",
-            EmbedModel.ALIAS.value: "vi32",
-            EmbedModel.DIM.value: 512,
-        }
-    )
-    clap_embed_model_text: dict[str, Any] = field(
-        default_factory=lambda: {
-            EmbedModel.NAME.value: "laion/clap-htsat-unfused",
-            EmbedModel.ALIAS.value: "lchu",
-            EmbedModel.DIM.value: 512,
-        }
-    )
-    huggingface_embed_model_text: dict[str, Any] = field(
-        default_factory=lambda: {
-            EmbedModel.NAME.value: "intfloat/multilingual-e5-base",
-            EmbedModel.ALIAS.value: "imeb",
-            EmbedModel.DIM.value: 768,
-        }
-    )
     voyage_embed_model_text: dict[str, Any] = field(
         default_factory=lambda: {
             EmbedModel.NAME.value: "voyage-3.5",
@@ -91,20 +67,6 @@ class EmbedConfig(DataClassDictMixin):
             EmbedModel.DIM.value: 1536,
         }
     )
-    clip_embed_model_image: dict[str, Any] = field(
-        default_factory=lambda: {
-            EmbedModel.NAME.value: "ViT-B/32",
-            EmbedModel.ALIAS.value: "vi32",
-            EmbedModel.DIM.value: 512,
-        }
-    )
-    huggingface_embed_model_image: dict[str, Any] = field(
-        default_factory=lambda: {
-            EmbedModel.NAME.value: "llamaindex/vdr-2b-multi-v1",
-            EmbedModel.ALIAS.value: "v2m1",
-            EmbedModel.DIM.value: 1536,
-        }
-    )
     voyage_embed_model_image: dict[str, Any] = field(
         default_factory=lambda: {
             EmbedModel.NAME.value: "voyage-multimodal-3",
@@ -121,13 +83,6 @@ class EmbedConfig(DataClassDictMixin):
     )
 
     # Audio
-    clap_embed_model_audio: dict[str, Any] = field(
-        default_factory=lambda: {
-            EmbedModel.NAME.value: "laion/clap-htsat-unfused",
-            EmbedModel.ALIAS.value: "lchu",
-            EmbedModel.DIM.value: 512,
-        }
-    )
     bedrock_embed_model_audio: dict[str, Any] = field(
         default_factory=lambda: {
             EmbedModel.NAME.value: "amazon.nova-2-multimodal-embeddings-v1:0",

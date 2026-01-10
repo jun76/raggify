@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional, Sequence
 
 from ..llama_like.core.schema import Modality
@@ -173,7 +172,6 @@ def _build_pipeline(
 async def _process_batch(
     batch: Sequence[BaseNode],
     modality: Modality,
-    persist_dir: Optional[Path],
     force: bool,
     pipe: TracablePipeline,
 ) -> Sequence[BaseNode]:
@@ -182,7 +180,6 @@ async def _process_batch(
     Args:
         batch (Sequence[BaseNode]): Nodes in the batch.
         modality (Modality): Target modality.
-        persist_dir (Optional[Path]): Persist directory.
         force (bool): Whether to force reingestion even if already present.
         pipe (TracablePipeline): Pipeline instance.
 
@@ -198,7 +195,6 @@ async def _process_batch(
     try:
         pipe.disable_cache = force
         transformed_nodes = await pipe.arun(nodes=batch)
-        rt.pipeline.persist(pipe=pipe, persist_dir=persist_dir)
 
         # Return [] if no nodes were processed
         return transformed_nodes
@@ -206,10 +202,7 @@ async def _process_batch(
         # Roll back to prevent the next transform from being skipped
         # due to docstore duplicate detection.
         rt.document_store.delete_nodes(
-            ref_doc_ids={
-                node.ref_doc_id for node in batch if node.ref_doc_id is not None
-            },
-            persist_dir=persist_dir,
+            {node.ref_doc_id for node in batch if node.ref_doc_id is not None}
         )
 
         # Roll back cache entries
@@ -218,7 +211,6 @@ async def _process_batch(
                 modality=modality,
                 nodes=nodes,
                 transformation=transformation,
-                persist_dir=persist_dir,
             )
 
         raise RuntimeError(
@@ -231,7 +223,6 @@ async def _process_batch(
 async def _process_batches(
     nodes: Sequence[BaseNode],
     modality: Modality,
-    persist_dir: Optional[Path],
     pipe_batch_size: int,
     force: bool,
     is_canceled: Callable[[], bool],
@@ -242,7 +233,6 @@ async def _process_batches(
     Args:
         nodes (Sequence[BaseNode]): Nodes.
         modality (Modality): Target modality.
-        persist_dir (Optional[Path]): Persist directory.
         pipe_batch_size (int): Number of nodes processed per pipeline batch.
         force (bool): Whether to force reingestion even if already present.
         is_canceled (Callable[[], bool]): Cancellation flag for the job.
@@ -277,7 +267,6 @@ async def _process_batches(
                 temp = await _process_batch(
                     batch=batch,
                     modality=modality,
-                    persist_dir=persist_dir,
                     force=force,
                     pipe=pipe,
                 )
@@ -336,7 +325,6 @@ async def aupsert_nodes(
     image_nodes: Sequence[ImageNode],
     audio_nodes: Sequence[AudioNode],
     video_nodes: Sequence[VideoNode],
-    persist_dir: Optional[Path],
     pipe_batch_size: int,
     force: bool,
     is_canceled: Callable[[], bool],
@@ -349,7 +337,6 @@ async def aupsert_nodes(
         image_nodes (Sequence[ImageNode]): Image nodes.
         audio_nodes (Sequence[AudioNode]): Audio nodes.
         video_nodes (Sequence[VideoNode]): Video nodes.
-        persist_dir (Optional[Path]): Persist directory.
         pipe_batch_size (int): Number of nodes processed per pipeline batch.
         force (bool): Whether to force reingestion even if already present.
         is_canceled (Callable[[], bool]): Cancellation flag for the job.
@@ -362,7 +349,6 @@ async def aupsert_nodes(
             _process_batches(
                 nodes=text_leaf_nodes,
                 modality=Modality.TEXT,
-                persist_dir=persist_dir,
                 pipe_batch_size=pipe_batch_size,
                 force=force,
                 is_canceled=is_canceled,
@@ -375,7 +361,6 @@ async def aupsert_nodes(
             _process_batches(
                 nodes=image_nodes,
                 modality=Modality.IMAGE,
-                persist_dir=persist_dir,
                 pipe_batch_size=pipe_batch_size,
                 force=force,
                 is_canceled=is_canceled,
@@ -387,7 +372,6 @@ async def aupsert_nodes(
             _process_batches(
                 nodes=audio_nodes,
                 modality=Modality.AUDIO,
-                persist_dir=persist_dir,
                 pipe_batch_size=pipe_batch_size,
                 force=force,
                 is_canceled=is_canceled,
@@ -399,7 +383,6 @@ async def aupsert_nodes(
             _process_batches(
                 nodes=video_nodes,
                 modality=Modality.VIDEO,
-                persist_dir=persist_dir,
                 pipe_batch_size=pipe_batch_size,
                 force=force,
                 is_canceled=is_canceled,

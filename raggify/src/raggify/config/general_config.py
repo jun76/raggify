@@ -23,9 +23,9 @@ class GeneralConfig(DataClassDictMixin):
     host: str = "localhost"
     port: int = 8000
     mcp: bool = False
-    vector_store_provider: VectorStoreProvider = VectorStoreProvider.CHROMA
-    document_store_provider: DocumentStoreProvider = DocumentStoreProvider.LOCAL
-    ingest_cache_provider: IngestCacheProvider = IngestCacheProvider.LOCAL
+    vector_store_provider: VectorStoreProvider = VectorStoreProvider.PGVECTOR
+    document_store_provider: DocumentStoreProvider = DocumentStoreProvider.POSTGRES
+    ingest_cache_provider: IngestCacheProvider = IngestCacheProvider.POSTGRES
     text_embed_provider: Optional[EmbedProvider] = EmbedProvider.OPENAI
     image_embed_provider: Optional[EmbedProvider] = None
     audio_embed_provider: Optional[EmbedProvider] = None

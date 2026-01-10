@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 import threading
-from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import TYPE_CHECKING, Sequence
 
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.ingestion.pipeline import DocstoreStrategy
 
 from ..ingest.transform.base_transform import BaseTransform
-from ..logger import logger
 
 if TYPE_CHECKING:
     from llama_index.core.ingestion.cache import IngestionCache
@@ -111,23 +109,6 @@ class PipelineManager:
         self.document_store = document_store
         self._lock = threading.Lock()
 
-    def _use_local_workspace(self) -> bool:
-        """Whether to persist cache or document store locally.
-
-        Returns:
-            bool: True when persisting locally.
-        """
-        from ..config.document_store_config import DocumentStoreProvider
-        from ..config.ingest_cache_config import IngestCacheProvider
-
-        cfg = self.cfg.general
-        if (cfg.ingest_cache_provider is IngestCacheProvider.LOCAL) or (
-            cfg.document_store_provider is DocumentStoreProvider.LOCAL
-        ):
-            return True
-
-        return False
-
     def build(
         self, modality: Modality, transformations: list[TransformComponent]
     ) -> TracablePipeline:
@@ -148,40 +129,12 @@ class PipelineManager:
             docstore_strategy=DocstoreStrategy.UPSERTS,
         )
 
-    def persist(
-        self,
-        pipe: TracablePipeline,
-        persist_dir: Optional[Path] = None,
-    ) -> None:
-        """Persist the pipeline to storage.
-
-        Args:
-            pipe (TracablePipeline): Pipeline instance.
-            persist_dir (Optional[Path], optional): Persistence directory. Defaults to None.
-        """
-        if not self._use_local_workspace():
-            return
-
-        if persist_dir is None:
-            logger.warning(f"persist dir not specified, skipped persisting")
-            return
-
-        try:
-            with self._lock:
-                pipe.persist(str(persist_dir))
-        except Exception as e:
-            logger.error(f"failed to persist: {e}")
-
     def delete_all(self) -> None:
         """Delete all data persisted in each store."""
-        if self._use_local_workspace():
-            persist_dir = self.cfg.pipeline.persist_dir
-        else:
-            persist_dir = None
 
         if not self.vector_store.delete_all():
             ref_doc_ids = self.document_store.get_ref_doc_ids()
             self.vector_store.delete_nodes(ref_doc_ids)
 
-        self.ingest_cache.delete_all(persist_dir)
-        self.document_store.delete_all(persist_dir)
+        self.ingest_cache.delete_all()
+        self.document_store.delete_all()

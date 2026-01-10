@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass
-from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import TYPE_CHECKING, Sequence
 
 from ..llama_like.core.schema import Modality
 from ..logger import logger
@@ -81,7 +80,6 @@ class IngestCacheManager:
         modality: Modality,
         nodes: Sequence[BaseNode],
         transformation: TransformComponent,
-        persist_dir: Optional[Path],
     ) -> None:
         """Delete cache entries for given nodes and transformation.
 
@@ -89,13 +87,11 @@ class IngestCacheManager:
             modality (Modality): Modality.
             nodes (Sequence[BaseNode]): Nodes.
             transformation (TransformComponent): Transformation.
-            persist_dir (Optional[Path]): Persist directory.
 
         Notes:
             Nodes must be the same (each transformation)
             as those used to create the cache entries.
         """
-        from llama_index.core.ingestion.cache import DEFAULT_CACHE_NAME
         from llama_index.core.ingestion.pipeline import get_transformation_hash
 
         cache = self.get_container(modality).cache
@@ -106,18 +102,11 @@ class IngestCacheManager:
             key = get_transformation_hash(nodes, transformation)
             with self._lock:
                 cache.cache.delete(key=key, collection=cache.collection)
-                if persist_dir is not None:
-                    cache.persist(str(persist_dir / DEFAULT_CACHE_NAME))
         except Exception as e:
             logger.warning(f"failed to delete cache: {e}")
 
-    def delete_all(self, persist_dir: Optional[Path]) -> None:
-        """Delete all caches.
-
-        Args:
-            persist_dir (Optional[Path]): Persist directory.
-        """
-        from llama_index.core.ingestion.cache import DEFAULT_CACHE_NAME
+    def delete_all(self) -> None:
+        """Delete all caches."""
 
         with self._lock:
             for mod in self.modality:
@@ -127,8 +116,6 @@ class IngestCacheManager:
 
                 try:
                     cache.clear()
-                    if persist_dir is not None:
-                        cache.persist(str(persist_dir / DEFAULT_CACHE_NAME))
                 except Exception as e:
                     logger.warning(f"failed to clear {mod} cache, skipped: {e}")
                     continue

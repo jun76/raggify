@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from ..config.config_manager import ConfigManager
 from ..config.rerank_config import RerankProvider
 from ..core.const import EXTRA_PKG_NOT_FOUND_MSG
-from ..logger import logger
 
 if TYPE_CHECKING:
     from .rerank_manager import RerankContainer, RerankManager
@@ -32,8 +31,6 @@ def create_rerank_manager(cfg: ConfigManager) -> RerankManager:
         match cfg.general.rerank_provider:
             case RerankProvider.COHERE:
                 rerank = _cohere(cfg)
-            case RerankProvider.FLAGEMBEDDING:
-                rerank = _flagembedding(cfg)
             case RerankProvider.VOYAGE:
                 rerank = _voyage(cfg)
             case _:
@@ -62,31 +59,6 @@ def _cohere(cfg: ConfigManager) -> RerankContainer:
     return RerankContainer(
         provider_name=RerankProvider.COHERE,
         rerank=CohereRerank(model=cfg.rerank.cohere_rerank_model),
-    )
-
-
-def _flagembedding(cfg: ConfigManager) -> RerankContainer:
-    try:
-        from llama_index.postprocessor.flag_embedding_reranker import (  # type: ignore
-            FlagEmbeddingReranker,
-        )
-    except ImportError:
-        raise ImportError(
-            EXTRA_PKG_NOT_FOUND_MSG.format(
-                pkg="llama-index-postprocessor-flag-embedding-reranker",
-                extra="rerank",
-                feature="FlagEmbeddingReranker",
-            )
-        )
-
-    from .rerank_manager import RerankContainer
-
-    model = cfg.rerank.flagembedding_rerank_model
-    logger.debug(f"Initializing FlagEmbedding Reranker with model: {model}")
-
-    return RerankContainer(
-        provider_name=RerankProvider.FLAGEMBEDDING,
-        rerank=FlagEmbeddingReranker(model=model),
     )
 
 

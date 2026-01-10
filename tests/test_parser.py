@@ -51,7 +51,7 @@ def test_parse_skips_unsupported_extension(tmp_path: Path) -> None:
 
 
 def test_audio_reader_registered_when_audio_provider_enabled() -> None:
-    cfg = GeneralConfig(audio_embed_provider=EmbedProvider.CLAP)
+    cfg = GeneralConfig(audio_embed_provider=EmbedProvider.BEDROCK)
     parser = _make_parser(cfg, {".mp3"})
 
     for ext in Exts.AUDIO:

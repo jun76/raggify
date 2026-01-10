@@ -12,18 +12,12 @@ __all__ = ["DocumentStoreProvider", "DocumentStoreConfig"]
 
 
 class DocumentStoreProvider(StrEnum):
-    REDIS = auto()
     POSTGRES = auto()
-    LOCAL = auto()
 
 
 @dataclass(kw_only=True)
 class DocumentStoreConfig(DataClassDictMixin):
     """Config dataclass for document store settings."""
-
-    # Redis
-    redis_host: str = "localhost"
-    redis_port: int = 6379
 
     # Postgres
     postgres_host: str = "localhost"

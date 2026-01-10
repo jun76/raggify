@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 from types import SimpleNamespace
 from typing import cast
 
@@ -12,7 +11,6 @@ from raggify.config.config_manager import ConfigManager
 from raggify.config.embed_config import EmbedProvider
 from raggify.config.general_config import GeneralConfig
 from raggify.config.ingest_cache_config import IngestCacheConfig, IngestCacheProvider
-from raggify.config.pipeline_config import PipelineConfig
 from raggify.embed.embed_manager import EmbedManager
 from raggify.ingest_cache.ingest_cache import create_ingest_cache_manager
 from raggify.ingest_cache.ingest_cache_manager import IngestCacheManager
@@ -20,7 +18,6 @@ from raggify.llama_like.core.schema import Modality
 from tests.utils.mock_ingest_cache import (
     DummyIngestionCache,
     DummyPostgresKVStore,
-    DummyRedisKVStore,
     FakeCache,
     FakeKVStore,
 )
@@ -44,7 +41,7 @@ class DummyEmbedManager:
     space_key_text = "text_space"
 
 
-def _make_cfg(provider: IngestCacheProvider, persist_dir) -> ConfigManager:
+def _make_cfg(provider: IngestCacheProvider) -> ConfigManager:
     general = GeneralConfig(
         knowledgebase_name="MyKB",
         ingest_cache_provider=provider,
@@ -54,22 +51,28 @@ def _make_cfg(provider: IngestCacheProvider, persist_dir) -> ConfigManager:
         video_embed_provider=None,
     )
     ingest_cache = IngestCacheConfig()
-    pipeline = PipelineConfig(persist_dir=persist_dir)
-    stub = SimpleNamespace(
-        general=general,
-        ingest_cache=ingest_cache,
-        pipeline=pipeline,
-    )
+    stub = SimpleNamespace(general=general, ingest_cache=ingest_cache)
     return cast(ConfigManager, stub)
 
 
 @pytest.fixture(autouse=True)
 def patch_ingest_cache(monkeypatch):
+    import sys
+    import types
+
+    module_name = "llama_index.storage.kvstore.postgres"
+    dummy_module = types.ModuleType(module_name)
+    dummy_module.PostgresKVStore = DummyPostgresKVStore
+    sys.modules.setdefault(module_name, dummy_module)
+
+    import llama_index.storage.kvstore as kvstore
+
+    monkeypatch.setattr(kvstore, "postgres", dummy_module, raising=False)
+
     monkeypatch.setattr(
-        "llama_index.storage.kvstore.redis.RedisKVStore", DummyRedisKVStore
-    )
-    monkeypatch.setattr(
-        "llama_index.storage.kvstore.postgres.PostgresKVStore", DummyPostgresKVStore
+        "llama_index.storage.kvstore.postgres.PostgresKVStore",
+        DummyPostgresKVStore,
+        raising=False,
     )
     monkeypatch.setattr(
         "llama_index.core.ingestion.IngestionCache", DummyIngestionCache
@@ -85,13 +88,13 @@ def patch_ingest_cache(monkeypatch):
 
 
 def _build_manager(tmp_path) -> IngestCacheManager:
-    cfg = _make_cfg(IngestCacheProvider.LOCAL, tmp_path)
+    cfg = _make_cfg(IngestCacheProvider.POSTGRES)
     return create_ingest_cache_manager(cfg, cast(EmbedManager, DummyEmbedManager()))
 
 
 def test_name_and_modality(tmp_path):
     manager = _build_manager(tmp_path)
-    assert manager.name == "local"
+    assert manager.name == str(IngestCacheProvider.POSTGRES)
     assert Modality.TEXT in manager.modality
 
 
@@ -117,21 +120,18 @@ def test_delete_invokes_cache_operations(monkeypatch, tmp_path):
         "llama_index.core.ingestion.pipeline.get_transformation_hash", fake_hash
     )
 
-    manager.delete_nodes(Modality.TEXT, nodes, transform, persist_dir=tmp_path)
+    manager.delete_nodes(Modality.TEXT, nodes, transform)
 
     assert container.cache != None
     kv = cast(FakeKVStore, cache.cache)
     assert kv.deleted_keys == [("t1:1", cache.collection)]
-    assert cache.persist_calls
 
 
 def test_delete_handles_no_cache(tmp_path):
     manager = _build_manager(tmp_path)
     container = manager.get_container(Modality.TEXT)
     container.cache = None
-    manager.delete_nodes(
-        Modality.TEXT, [], DummyTransform("noop"), persist_dir=tmp_path
-    )
+    manager.delete_nodes(Modality.TEXT, [], DummyTransform("noop"))
 
 
 def test_delete_all_clears_each_cache(tmp_path):
@@ -140,9 +140,7 @@ def test_delete_all_clears_each_cache(tmp_path):
     container.cache = cast(IngestionCache, FakeCache())
     cache = cast(FakeCache, container.cache)
 
-    persist_dir = Path(tmp_path)
-    manager.delete_all(persist_dir=persist_dir)
+    manager.delete_all()
 
     assert cache is not None
     assert cache.cleared is True
-    assert cache.persist_calls == [str(persist_dir / DummyIngestionCache.default_name)]
