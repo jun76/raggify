@@ -92,5 +92,10 @@ def configure_logging(
     app_handler.setFormatter(ShortTracebackFormatter(_LOG_FORMAT))
     logger.addHandler(app_handler)
 
+    root_logger = logging.getLogger()
+    root_logger.setLevel(log_level)
+    if not root_logger.handlers:
+        root_logger.addHandler(app_handler)
+
 
 console = Console()
