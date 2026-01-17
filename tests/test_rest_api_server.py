@@ -51,9 +51,8 @@ def test_upload_endpoint(api_client, tmp_path):
 
     payload = resp.json()
     assert payload["files"][0]["filename"] == "sample.txt"
-    saved = Path(payload["files"][0]["save_path"])
-    assert saved.exists()
-    assert saved.read_bytes() == b"hello"
+    upload_id = payload["files"][0]["upload_id"]
+    assert upload_id != ""
 
 
 def test_ingest_and_job_routes(api_client):

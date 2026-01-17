@@ -11,6 +11,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from llama_index.core.schema import NodeWithScore
 from pydantic import BaseModel
 
+from ..config.general_config import GeneralConfig
 from ..config.retrieve_config import RetrieveMode
 from ..core.const import PROJECT_NAME, VERSION
 from ..llama_like.core.schema import Modality
@@ -41,12 +42,14 @@ class QueryTextTextRequest(BaseModel):
 
 
 class QueryMultimodalRequest(BaseModel):
-    path: str
+    path: Optional[str] = None
+    upload_id: Optional[str] = None
     topk: Optional[int] = None
 
 
 class PathRequest(BaseModel):
-    path: str
+    path: Optional[str] = None
+    upload_id: Optional[str] = None
     force: bool = False
 
 
@@ -89,6 +92,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title=PROJECT_NAME, version=VERSION, lifespan=lifespan)
 
 _request_lock = asyncio.Lock()
+
+_upload_map: dict[str, Path] = {}
 
 
 def _setup() -> None:
@@ -172,39 +177,87 @@ async def upload(files: list[UploadFile] = File(...)) -> dict[str, Any]:
         logger.error(f"{msg}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=msg)
 
+    results = []
+    for f in files:
+        if f.filename is None:
+            msg = "filename is not specified"
+            logger.error(msg)
+            raise HTTPException(status_code=400, detail=msg)
+
+        try:
+            safe = Path(f.filename).name
+            path = upload_dir / safe
+            async with aiofiles.open(path, "wb") as buf:
+                while True:
+                    chunk = await f.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    await buf.write(chunk)
+        except Exception as e:
+            msg = "write failure"
+            logger.error(f"{msg}: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=msg)
+        finally:
+            await f.close()
+
+        results.append(
+            {
+                "filename": safe,
+                "content_type": f.content_type,
+                "upload_id": await _register_upload(path),
+            }
+        )
+
+    return {"files": results}
+
+
+async def _register_upload(path: Path) -> str:
+    """Register an uploaded file path and return an upload id.
+
+    Args:
+        path (Path): Absolute path to the uploaded file.
+
+    Returns:
+        str: Upload id for later reference.
+    """
+    import uuid
+
+    upload_id = uuid.uuid4().hex
     async with _request_lock:
-        results = []
-        for f in files:
-            if f.filename is None:
-                msg = "filename is not specified"
-                logger.error(msg)
-                raise HTTPException(status_code=400, detail=msg)
+        _upload_map[upload_id] = path
 
-            try:
-                safe = Path(f.filename).name
-                path = upload_dir / safe
-                async with aiofiles.open(path, "wb") as buf:
-                    while True:
-                        chunk = await f.read(1024 * 1024)
-                        if not chunk:
-                            break
-                        await buf.write(chunk)
-            except Exception as e:
-                msg = "write failure"
-                logger.error(f"{msg}: {e}", exc_info=True)
-                raise HTTPException(status_code=500, detail=msg)
-            finally:
-                await f.close()
+    return upload_id
 
-            results.append(
-                {
-                    "filename": safe,
-                    "content_type": f.content_type,
-                    "save_path": str(path),
-                }
-            )
 
-        return {"files": results}
+async def _resolve_upload_path(upload_id: Optional[str], path: Optional[str]) -> str:
+    """Resolve an uploaded path from an upload id or fallback to path.
+
+    Args:
+        upload_id (Optional[str]): Upload identifier.
+        path (Optional[str]): Path provided by the client.
+
+    Raises:
+        HTTPException: When upload_id is invalid or path is missing.
+
+    Returns:
+        str: Resolved path.
+    """
+    if upload_id:
+        async with _request_lock:
+            resolved = _upload_map.get(upload_id)
+
+        if resolved is None:
+            msg = "invalid upload id"
+            logger.error(msg)
+            raise HTTPException(status_code=400, detail=msg)
+        return str(resolved)
+
+    if not path:
+        msg = "path is not specified"
+        logger.error(msg)
+        raise HTTPException(status_code=400, detail=msg)
+
+    return path
 
 
 @app.post("/v1/job")
@@ -271,10 +324,11 @@ async def ingest_path(payload: PathRequest) -> dict[str, str]:
     """
     logger.debug("exec /v1/ingest/path")
 
+    path = await _resolve_upload_path(upload_id=payload.upload_id, path=payload.path)
     job = get_worker().submit(
         JobPayload(
             kind="ingest_path",
-            kwargs={"path": payload.path, "force": payload.force},
+            kwargs={"path": path, "force": payload.force},
         )
     )
 
@@ -294,10 +348,11 @@ async def ingest_path_list(payload: PathRequest) -> dict[str, str]:
     """
     logger.debug("exec /v1/ingest/path_list")
 
+    path = await _resolve_upload_path(upload_id=payload.upload_id, path=payload.path)
     job = get_worker().submit(
         JobPayload(
             kind="ingest_path_list",
-            kwargs={"lst": payload.path, "force": payload.force},
+            kwargs={"lst": path, "force": payload.force},
         )
     )
 
@@ -320,7 +375,8 @@ async def ingest_url(payload: URLRequest) -> dict[str, str]:
 
     job = get_worker().submit(
         JobPayload(
-            kind="ingest_url", kwargs={"url": payload.url, "force": payload.force}
+            kind="ingest_url",
+            kwargs={"url": payload.url, "force": payload.force},
         )
     )
 
@@ -340,10 +396,11 @@ async def ingest_url_list(payload: PathRequest) -> dict[str, str]:
     """
     logger.debug("exec /v1/ingest/url_list")
 
+    path = await _resolve_upload_path(upload_id=payload.upload_id, path=payload.path)
     job = get_worker().submit(
         JobPayload(
             kind="ingest_url_list",
-            kwargs={"lst": payload.path, "force": payload.force},
+            kwargs={"lst": path, "force": payload.force},
         )
     )
 
@@ -452,11 +509,12 @@ async def query_image_image(payload: QueryMultimodalRequest) -> dict[str, Any]:
 
     logger.debug("exec /v1/query/image_image")
 
+    path = await _resolve_upload_path(upload_id=payload.upload_id, path=payload.path)
     return await _query_handler(
         modality=Modality.IMAGE,
         query_func=aquery_image_image,
         operation_name="query image image",
-        path=payload.path,
+        path=path,
         topk=payload.topk,
     )
 
@@ -504,11 +562,12 @@ async def query_audio_audio(payload: QueryMultimodalRequest) -> dict[str, Any]:
 
     logger.debug("exec /v1/query/audio_audio")
 
+    path = await _resolve_upload_path(upload_id=payload.upload_id, path=payload.path)
     return await _query_handler(
         modality=Modality.AUDIO,
         query_func=aquery_audio_audio,
         operation_name="query audio audio",
-        path=payload.path,
+        path=path,
         topk=payload.topk,
     )
 
@@ -556,11 +615,12 @@ async def query_image_video(payload: QueryMultimodalRequest) -> dict[str, Any]:
 
     logger.debug("exec /v1/query/image_video")
 
+    path = await _resolve_upload_path(upload_id=payload.upload_id, path=payload.path)
     return await _query_handler(
         modality=Modality.VIDEO,
         query_func=aquery_image_video,
         operation_name="query image video",
-        path=payload.path,
+        path=path,
         topk=payload.topk,
     )
 
@@ -582,11 +642,12 @@ async def query_audio_video(payload: QueryMultimodalRequest) -> dict[str, Any]:
 
     logger.debug("exec /v1/query/audio_video")
 
+    path = await _resolve_upload_path(upload_id=payload.upload_id, path=payload.path)
     return await _query_handler(
         modality=Modality.VIDEO,
         query_func=aquery_audio_video,
         operation_name="query audio video",
-        path=payload.path,
+        path=path,
         topk=payload.topk,
     )
 
@@ -608,10 +669,11 @@ async def query_video_video(payload: QueryMultimodalRequest) -> dict[str, Any]:
 
     logger.debug("exec /v1/query/video_video")
 
+    path = await _resolve_upload_path(upload_id=payload.upload_id, path=payload.path)
     return await _query_handler(
         modality=Modality.VIDEO,
         query_func=aquery_video_video,
         operation_name="query video video",
-        path=payload.path,
+        path=path,
         topk=payload.topk,
     )

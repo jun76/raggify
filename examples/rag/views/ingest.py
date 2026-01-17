@@ -43,9 +43,9 @@ def register_uploaded_files_callback(
 
     try:
         with st.spinner("Registering files..."):
-            saved_paths = save_uploaded_files(client, files)
-            for path in saved_paths:
-                client.ingest_path(path)
+            upload_ids = save_uploaded_files(client, files)
+            for upload_id in upload_ids:
+                client.ingest_path(upload_id=upload_id)
     except Exception as e:
         logger.exception(e)
         set_feedback(feedback_key, "error", f"Failed to register files: {e}")
@@ -98,8 +98,8 @@ def register_url_list_callback(
 
     try:
         with st.spinner("Registering URL list..."):
-            saved = save_uploaded_files(client, [file_obj])[0]
-            client.ingest_url_list(saved)
+            upload_id = save_uploaded_files(client, [file_obj])[0]
+            client.ingest_url_list(upload_id=upload_id)
     except Exception as e:
         logger.exception(e)
         set_feedback(feedback_key, "error", f"Failed to register URL list: {e}")

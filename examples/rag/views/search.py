@@ -353,7 +353,7 @@ def _run_text_search(
 
 
 def _run_file_search(
-    func: Callable[[str], dict[str, Any]],
+    func: Callable[..., dict[str, Any]],
     client: RestAPIClient,
     file_obj: Any,
     result_key: SearchResult,
@@ -371,8 +371,8 @@ def _run_file_search(
 
     try:
         with st.spinner(f"Searching {search_type}..."):
-            saved = save_uploaded_files(client, [file_obj])[0]
-            result = func(saved)
+            upload_id = save_uploaded_files(client, [file_obj])[0]
+            result = func(upload_id=upload_id)
     except Exception as e:
         logger.exception(e)
         set_feedback(

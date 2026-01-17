@@ -68,8 +68,8 @@ def register_path_list_callback(
 
     try:
         with st.spinner("Registering path list..."):
-            saved = save_uploaded_files(client, [file_obj])[0]
-            client.ingest_path_list(saved)
+            upload_id = save_uploaded_files(client, [file_obj])[0]
+            client.ingest_path_list(upload_id=upload_id)
     except Exception as e:
         logger.exception(e)
         set_feedback(feedback_key, "error", f"Failed to register path list: {e}")

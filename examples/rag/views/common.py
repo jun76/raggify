@@ -21,14 +21,14 @@ def emojify_robot(s: str) -> str:
 
 
 def save_uploaded_files(client: RestAPIClient, files: list[Any]) -> list[str]:
-    """Persist uploaded files and return their paths on raggify.
+    """Persist uploaded files and return their upload ids on raggify.
 
     Args:
         client (RestAPIClient): REST API client.
         files (list[Any]): Uploaded file objects from Streamlit.
 
     Returns:
-        list[str]: List of saved file paths.
+        list[str]: List of upload identifiers.
 
     Raises:
         RuntimeError: Raised when the response payload is invalid.
@@ -46,16 +46,16 @@ def save_uploaded_files(client: RestAPIClient, files: list[Any]) -> list[str]:
     if not isinstance(entries, list):
         raise RuntimeError("raggify upload response is invalid")
 
-    saved: list[str] = []
+    upload_ids: list[str] = []
     for item in entries:
         if not isinstance(item, dict):
             raise RuntimeError("raggify upload response item is invalid")
-        save_path = item.get("save_path")
-        if not isinstance(save_path, str) or save_path == "":
-            raise RuntimeError("raggify upload save_path is invalid")
-        saved.append(save_path)
+        upload_id = item.get("upload_id")
+        if not isinstance(upload_id, str) or upload_id == "":
+            raise RuntimeError("raggify upload_id is invalid")
+        upload_ids.append(upload_id)
 
-    if len(saved) != len(payload):
+    if len(upload_ids) != len(payload):
         raise RuntimeError("raggify upload file count mismatch")
 
-    return saved
+    return upload_ids

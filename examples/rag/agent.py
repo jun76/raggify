@@ -29,7 +29,7 @@ class _TextSearchArgs(TypedDict, total=False):
 class _RagAgentContext(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     client: RestAPIClient
-    file_path: Optional[str] = None
+    upload_id: Optional[str] = None
 
 
 def _format_documents(payload: dict[str, Any]) -> dict[str, Any]:
@@ -145,12 +145,12 @@ async def tool_search_image_image(ctx: RunContextWrapper[_RagAgentContext]) -> s
     Returns:
         str: JSON string that summarizes the search results.
     """
-    query = ctx.context.file_path
-    if not query:
-        raise ValueError("file_path is not provided in context")
+    upload_id = ctx.context.upload_id
+    if not upload_id:
+        raise ValueError("upload_id is not provided in context")
 
-    response = ctx.context.client.query_image_image(query, _TOPK)
-    return _format_response("image_image", query, _TOPK, response)
+    response = ctx.context.client.query_image_image(upload_id=upload_id, topk=_TOPK)
+    return _format_response("image_image", upload_id, _TOPK, response)
 
 
 @function_tool
@@ -191,12 +191,12 @@ async def tool_search_audio_audio(ctx: RunContextWrapper[_RagAgentContext]) -> s
     Returns:
         str: JSON string that summarizes the search results.
     """
-    query = ctx.context.file_path
-    if not query:
-        raise ValueError("file_path is not provided in context")
+    upload_id = ctx.context.upload_id
+    if not upload_id:
+        raise ValueError("upload_id is not provided in context")
 
-    response = ctx.context.client.query_audio_audio(query, _TOPK)
-    return _format_response("audio_audio", query, _TOPK, response)
+    response = ctx.context.client.query_audio_audio(upload_id=upload_id, topk=_TOPK)
+    return _format_response("audio_audio", upload_id, _TOPK, response)
 
 
 @function_tool
@@ -237,12 +237,12 @@ async def tool_search_image_video(ctx: RunContextWrapper[_RagAgentContext]) -> s
     Returns:
         str: JSON string that summarizes the search results.
     """
-    query = ctx.context.file_path
-    if not query:
-        raise ValueError("file_path is not provided in context")
+    upload_id = ctx.context.upload_id
+    if not upload_id:
+        raise ValueError("upload_id is not provided in context")
 
-    response = ctx.context.client.query_image_video(query, _TOPK)
-    return _format_response("image_video", query, _TOPK, response)
+    response = ctx.context.client.query_image_video(upload_id=upload_id, topk=_TOPK)
+    return _format_response("image_video", upload_id, _TOPK, response)
 
 
 @function_tool
@@ -258,12 +258,12 @@ async def tool_search_audio_video(ctx: RunContextWrapper[_RagAgentContext]) -> s
     Returns:
         str: JSON string that summarizes the search results.
     """
-    query = ctx.context.file_path
-    if not query:
-        raise ValueError("file_path is not provided in context")
+    upload_id = ctx.context.upload_id
+    if not upload_id:
+        raise ValueError("upload_id is not provided in context")
 
-    response = ctx.context.client.query_audio_video(query, _TOPK)
-    return _format_response("audio_video", query, _TOPK, response)
+    response = ctx.context.client.query_audio_video(upload_id=upload_id, topk=_TOPK)
+    return _format_response("audio_video", upload_id, _TOPK, response)
 
 
 @function_tool
@@ -279,12 +279,12 @@ async def tool_search_video_video(ctx: RunContextWrapper[_RagAgentContext]) -> s
     Returns:
         str: JSON string that summarizes the search results.
     """
-    query = ctx.context.file_path
-    if not query:
-        raise ValueError("file_path is not provided in context")
+    upload_id = ctx.context.upload_id
+    if not upload_id:
+        raise ValueError("upload_id is not provided in context")
 
-    response = ctx.context.client.query_video_video(query, _TOPK)
-    return _format_response("video_video", query, _TOPK, response)
+    response = ctx.context.client.query_video_video(upload_id=upload_id, topk=_TOPK)
+    return _format_response("video_video", upload_id, _TOPK, response)
 
 
 _TOOLSET = [
@@ -311,14 +311,14 @@ class RagAgentManager:
         self,
         *,
         question: str,
-        file_path: Optional[str] = None,
+        upload_id: Optional[str] = None,
         max_turns: int = 5,
     ) -> str:
         """Run the agent and return the final answer.
 
         Args:
             question (str): User question text.
-            file_path (Optional[str]): Saved path to the reference file.
+            upload_id (Optional[str]): Upload id for the reference file.
             max_turns (int): Maximum number of agent turns.
 
         Raises:
@@ -338,7 +338,7 @@ class RagAgentManager:
                 "You are a search agent. "
                 "Always respond to the user in user language. "
                 "Before answering, you MUST use the provided tools to search the knowledge base. "
-                "If reference files are available, their paths are stored in file_path. "
+                "If reference files are available, their upload ids are stored in upload_id. "
                 "When relevant documents are found, include the file paths in the answer. "
                 "Do not include scores in the answer. "
                 'If no relevant documents are found or an error occurs, reply with "No relevant documents were found." only.'
@@ -347,10 +347,10 @@ class RagAgentManager:
             model=self.model,
         )
 
-        logger.debug(f"file path = {file_path}")
+        logger.debug(f"upload id = {upload_id}")
         context = _RagAgentContext(
             client=self.client,
-            file_path=file_path,
+            upload_id=upload_id,
         )
 
         async def _run() -> str:

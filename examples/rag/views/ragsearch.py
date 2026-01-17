@@ -27,18 +27,18 @@ def _save_reference_file(
     file_obj: Optional[Any],
     session_key: RagSearchSessionKey,
 ) -> Optional[str]:
-    """Upload a reference file to raggify and return its saved path.
+    """Upload a reference file to raggify and return its upload id.
 
     Args:
         client (RestAPIClient): REST API client.
         file_obj (Optional[Any]): Uploaded file object.
-        session_key (RagSearchSessionKey): Session key used to store the path.
+        session_key (RagSearchSessionKey): Session key used to store the upload id.
 
     Raises:
         AgentExecutionError: Raised when the upload fails.
 
     Returns:
-        Optional[str]: Saved file path, or None when no file is uploaded.
+        Optional[str]: Upload id, or None when no file is uploaded.
     """
     if file_obj is None:
         st.session_state[session_key] = None
@@ -50,9 +50,9 @@ def _save_reference_file(
         st.session_state[session_key] = None
         raise AgentExecutionError(f"failed to upload reference file: {e}") from e
 
-    path = saved[0] if saved else None
-    st.session_state[session_key] = path
-    return path
+    upload_id = saved[0] if saved else None
+    st.session_state[session_key] = upload_id
+    return upload_id
 
 
 def render_ragsearch_view(client: RestAPIClient) -> None:
@@ -82,9 +82,9 @@ def render_ragsearch_view(client: RestAPIClient) -> None:
         if not question.strip():
             st.warning("Enter a question.")
         else:
-            file_path = None
+            upload_id = None
             try:
-                file_path = _save_reference_file(
+                upload_id = _save_reference_file(
                     client, ref_file, RagSearchSessionKey.IMAGE_PATH
                 )
             except AgentExecutionError as e:
@@ -96,7 +96,7 @@ def render_ragsearch_view(client: RestAPIClient) -> None:
                     with st.spinner("Running RAG search..."):
                         answer = manager.run(
                             question=question,
-                            file_path=file_path,
+                            upload_id=upload_id,
                         )
                 except AgentExecutionError as e:
                     st.session_state[RagSearchSessionKey.ANSWER] = None
