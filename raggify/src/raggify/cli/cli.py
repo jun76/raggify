@@ -29,6 +29,11 @@ app = client_app
 app.info.help = _HELP_MSG.format(config_path=DEFAULT_CONFIG_PATH)
 configure_logging()
 
+_REQUEST_KWARG_HELP = (
+    "Additional request parameters as JSON string. "
+    'Example: --kwargs \'{"arg1":"aaa","arg2":123}\''
+)
+
 
 def _cfg() -> ConfigManager:
     """Getter for lazy-loading the runtime config.
@@ -148,9 +153,15 @@ def _execute_client_command(command_func: ClientCommand, *args, **kwargs) -> Non
 
 
 @app.command(name="reload", help="Reload config file.")
-def reload():
+def reload(
+    request_kwargs: Optional[str] = typer.Option(
+        None,
+        "--kwargs",
+        help=_REQUEST_KWARG_HELP,
+    )
+):
     logger.debug("")
-    _execute_client_command(lambda client: client.reload())
+    _execute_client_command(lambda client: client.reload(request_kwargs=request_kwargs))
 
 
 @app.command(name="ip", help=f"Ingest from local Path.")
@@ -159,9 +170,18 @@ def ingest_path(
     force: bool = typer.Option(
         default=False, help="Reingest even if the source was already processed."
     ),
+    request_kwargs: Optional[str] = typer.Option(
+        None,
+        "--kwargs",
+        help=_REQUEST_KWARG_HELP,
+    ),
 ):
     logger.debug(f"path = {path}")
-    _execute_client_command(lambda client: client.ingest_path(path, force=force))
+    _execute_client_command(
+        lambda client: client.ingest_path(
+            path, force=force, request_kwargs=request_kwargs
+        )
+    )
 
 
 @app.command(name="ipl", help="Ingest from local Path List.")
@@ -172,10 +192,17 @@ def ingest_path_list(
     force: bool = typer.Option(
         default=False, help="Reingest even if the source was already processed."
     ),
+    request_kwargs: Optional[str] = typer.Option(
+        None,
+        "--kwargs",
+        help=_REQUEST_KWARG_HELP,
+    ),
 ):
     logger.debug(f"list_path = {list_path}")
     _execute_client_command(
-        lambda client: client.ingest_path_list(list_path, force=force)
+        lambda client: client.ingest_path_list(
+            list_path, force=force, request_kwargs=request_kwargs
+        )
     )
 
 

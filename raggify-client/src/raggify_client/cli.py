@@ -23,6 +23,11 @@ app = typer.Typer(
     f"User config is {cfg.config_path}."
 )
 
+_REQUEST_KWARG_HELP = (
+    "Additional request parameters as JSON string. "
+    'Example: --kwargs \'{"arg1":"aaa","arg2":123}\''
+)
+
 
 def _create_rest_client() -> RestAPIClient:
     """Create a REST API client.
@@ -92,9 +97,15 @@ def _execute_client_command(command_func: ClientCommand, *args, **kwargs) -> Non
 
 
 @app.command(name="stat", help="Get server status.")
-def status():
+def status(
+    request_kwargs: Optional[str] = typer.Option(
+        None,
+        "--kwargs",
+        help=_REQUEST_KWARG_HELP,
+    )
+):
     logger.debug("")
-    _execute_client_command(lambda client: client.status())
+    _execute_client_command(lambda client: client.status(request_kwargs=request_kwargs))
 
 
 @app.command(name="reload", help=f"(Not supported in client CLI)")
@@ -113,9 +124,16 @@ def job(
         default=False,
         help="With no id, all completed tasks will be removed from the job queue.",
     ),
+    request_kwargs: Optional[str] = typer.Option(
+        None,
+        "--kwargs",
+        help=_REQUEST_KWARG_HELP,
+    ),
 ):
     logger.debug(f"id = {job_id}, rm = {rm}")
-    _execute_client_command(lambda client: client.job(job_id=job_id, rm=rm))
+    _execute_client_command(
+        lambda client: client.job(job_id=job_id, rm=rm, request_kwargs=request_kwargs)
+    )
 
 
 @app.command(name="ip", help=f"(Not supported in client CLI)")
@@ -142,9 +160,18 @@ def ingest_url(
     force: bool = typer.Option(
         default=False, help="Reingest even if the source was already processed."
     ),
+    request_kwargs: Optional[str] = typer.Option(
+        None,
+        "--kwargs",
+        help=_REQUEST_KWARG_HELP,
+    ),
 ):
     logger.debug(f"url = {url}, force = {force}")
-    _execute_client_command(lambda client: client.ingest_url(url, force=force))
+    _execute_client_command(
+        lambda client: client.ingest_url(
+            url, force=force, request_kwargs=request_kwargs
+        )
+    )
 
 
 @app.command(name="iul", help="Ingest from Url List.")
@@ -155,10 +182,17 @@ def ingest_url_list(
     force: bool = typer.Option(
         default=False, help="Reingest even if the source was already processed."
     ),
+    request_kwargs: Optional[str] = typer.Option(
+        None,
+        "--kwargs",
+        help=_REQUEST_KWARG_HELP,
+    ),
 ):
     logger.debug(f"list_path = {list_path}, force = {force}")
     _execute_client_command(
-        lambda client: client.ingest_url_list(list_path, force=force)
+        lambda client: client.ingest_url_list(
+            list_path, force=force, request_kwargs=request_kwargs
+        )
     )
 
 
@@ -174,11 +208,18 @@ def query_text_text(
     mode: Optional[Literal["vector_only", "bm25_only", "fusion"]] = typer.Option(
         default=None, help="You can specify text retrieve mode."
     ),
+    request_kwargs: Optional[str] = typer.Option(
+        None,
+        "--kwargs",
+        help=_REQUEST_KWARG_HELP,
+    ),
 ):
     logger.debug(f"query = {query}, topk = {topk}, mode = {mode}")
     topk = topk or cfg.general.topk
     _execute_client_command(
-        lambda client: client.query_text_text(query=query, topk=topk, mode=mode)
+        lambda client: client.query_text_text(
+            query=query, topk=topk, mode=mode, request_kwargs=request_kwargs
+        )
     )
 
 
@@ -191,10 +232,19 @@ def query_text_image(
     topk: Optional[int] = typer.Option(
         default=None, help="Show top-k results (defaults to config)."
     ),
+    request_kwargs: Optional[str] = typer.Option(
+        None,
+        "--kwargs",
+        help=_REQUEST_KWARG_HELP,
+    ),
 ):
     topk = topk or cfg.general.topk
     logger.debug(f"query = {query}, topk = {topk}")
-    _execute_client_command(lambda client: client.query_text_image(query, topk))
+    _execute_client_command(
+        lambda client: client.query_text_image(
+            query, topk, request_kwargs=request_kwargs
+        )
+    )
 
 
 @app.command(
@@ -206,10 +256,19 @@ def query_image_image(
     topk: Optional[int] = typer.Option(
         default=None, help="Show top-k results (defaults to config)."
     ),
+    request_kwargs: Optional[str] = typer.Option(
+        None,
+        "--kwargs",
+        help=_REQUEST_KWARG_HELP,
+    ),
 ):
     topk = topk or cfg.general.topk
     logger.debug(f"path = {path}, topk = {topk}")
-    _execute_client_command(lambda client: client.query_image_image(path, topk))
+    _execute_client_command(
+        lambda client: client.query_image_image(
+            path, topk, request_kwargs=request_kwargs
+        )
+    )
 
 
 @app.command(
@@ -221,10 +280,19 @@ def query_text_audio(
     topk: Optional[int] = typer.Option(
         default=None, help="Show top-k results (defaults to config)."
     ),
+    request_kwargs: Optional[str] = typer.Option(
+        None,
+        "--kwargs",
+        help=_REQUEST_KWARG_HELP,
+    ),
 ):
     topk = topk or cfg.general.topk
     logger.debug(f"query = {query}, topk = {topk}")
-    _execute_client_command(lambda client: client.query_text_audio(query, topk))
+    _execute_client_command(
+        lambda client: client.query_text_audio(
+            query, topk, request_kwargs=request_kwargs
+        )
+    )
 
 
 @app.command(
@@ -236,10 +304,19 @@ def query_audio_audio(
     topk: Optional[int] = typer.Option(
         default=None, help="Show top-k results (defaults to config)."
     ),
+    request_kwargs: Optional[str] = typer.Option(
+        None,
+        "--kwargs",
+        help=_REQUEST_KWARG_HELP,
+    ),
 ):
     topk = topk or cfg.general.topk
     logger.debug(f"path = {path}, topk = {topk}")
-    _execute_client_command(lambda client: client.query_audio_audio(path, topk))
+    _execute_client_command(
+        lambda client: client.query_audio_audio(
+            path, topk, request_kwargs=request_kwargs
+        )
+    )
 
 
 @app.command(
@@ -251,10 +328,19 @@ def query_text_video(
     topk: Optional[int] = typer.Option(
         default=None, help="Show top-k results (defaults to config)."
     ),
+    request_kwargs: Optional[str] = typer.Option(
+        None,
+        "--kwargs",
+        help=_REQUEST_KWARG_HELP,
+    ),
 ):
     topk = topk or cfg.general.topk
     logger.debug(f"query = {query}, topk = {topk}")
-    _execute_client_command(lambda client: client.query_text_video(query, topk))
+    _execute_client_command(
+        lambda client: client.query_text_video(
+            query, topk, request_kwargs=request_kwargs
+        )
+    )
 
 
 @app.command(
@@ -266,10 +352,19 @@ def query_image_video(
     topk: Optional[int] = typer.Option(
         default=None, help="Show top-k results (defaults to config)."
     ),
+    request_kwargs: Optional[str] = typer.Option(
+        None,
+        "--kwargs",
+        help=_REQUEST_KWARG_HELP,
+    ),
 ):
     topk = topk or cfg.general.topk
     logger.debug(f"path = {path}, topk = {topk}")
-    _execute_client_command(lambda client: client.query_image_video(path, topk))
+    _execute_client_command(
+        lambda client: client.query_image_video(
+            path, topk, request_kwargs=request_kwargs
+        )
+    )
 
 
 @app.command(
@@ -281,10 +376,19 @@ def query_audio_video(
     topk: Optional[int] = typer.Option(
         default=None, help="Show top-k results (defaults to config)."
     ),
+    request_kwargs: Optional[str] = typer.Option(
+        None,
+        "--kwargs",
+        help=_REQUEST_KWARG_HELP,
+    ),
 ):
     topk = topk or cfg.general.topk
     logger.debug(f"path = {path}, topk = {topk}")
-    _execute_client_command(lambda client: client.query_audio_video(path, topk))
+    _execute_client_command(
+        lambda client: client.query_audio_video(
+            path, topk, request_kwargs=request_kwargs
+        )
+    )
 
 
 @app.command(
@@ -296,10 +400,19 @@ def query_video_video(
     topk: Optional[int] = typer.Option(
         default=None, help="Show top-k results (defaults to config)."
     ),
+    request_kwargs: Optional[str] = typer.Option(
+        None,
+        "--kwargs",
+        help=_REQUEST_KWARG_HELP,
+    ),
 ):
     topk = topk or cfg.general.topk
     logger.debug(f"path = {path}, topk = {topk}")
-    _execute_client_command(lambda client: client.query_video_video(path, topk))
+    _execute_client_command(
+        lambda client: client.query_video_video(
+            path, topk, request_kwargs=request_kwargs
+        )
+    )
 
 
 if __name__ == "__main__":
