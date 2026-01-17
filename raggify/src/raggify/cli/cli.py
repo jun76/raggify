@@ -72,6 +72,29 @@ def _echo_json(data: dict[str, Any]) -> None:
     console.print(json.dumps(data, ensure_ascii=False, indent=2))
 
 
+def _parse_request_kwargs(payload: Optional[str]) -> dict[str, Any]:
+    """Parse JSON payload into request kwargs.
+
+    Args:
+        payload (Optional[str]): JSON payload string.
+
+    Returns:
+        dict[str, Any]: Parsed request kwargs.
+    """
+    if not payload:
+        return {}
+
+    try:
+        data = json.loads(payload)
+    except json.JSONDecodeError as exc:
+        raise typer.BadParameter("kwargs must be a valid JSON object") from exc
+
+    if not isinstance(data, dict):
+        raise typer.BadParameter("kwargs must be a JSON object")
+
+    return data
+
+
 @app.command(help="Show version.")
 def version() -> None:
     """Version command."""
@@ -161,7 +184,8 @@ def reload(
     )
 ):
     logger.debug("")
-    _execute_client_command(lambda client: client.reload(request_kwargs=request_kwargs))
+    parsed_kwargs = _parse_request_kwargs(request_kwargs)
+    _execute_client_command(lambda client: client.reload(**parsed_kwargs))
 
 
 @app.command(name="ip", help=f"Ingest from local Path.")
@@ -177,10 +201,9 @@ def ingest_path(
     ),
 ):
     logger.debug(f"path = {path}")
+    parsed_kwargs = _parse_request_kwargs(request_kwargs)
     _execute_client_command(
-        lambda client: client.ingest_path(
-            path, force=force, request_kwargs=request_kwargs
-        )
+        lambda client: client.ingest_path(path, force=force, **parsed_kwargs)
     )
 
 
@@ -199,9 +222,10 @@ def ingest_path_list(
     ),
 ):
     logger.debug(f"list_path = {list_path}")
+    parsed_kwargs = _parse_request_kwargs(request_kwargs)
     _execute_client_command(
         lambda client: client.ingest_path_list(
-            list_path, force=force, request_kwargs=request_kwargs
+            list_path, force=force, **parsed_kwargs
         )
     )
 

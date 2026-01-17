@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from typing import Any, Callable, Literal, Optional
 
 import requests
@@ -54,14 +53,12 @@ class RestAPIClient:
         except ValueError as e:
             raise RuntimeError(f"server response is not json: {e}") from e
 
-    def _get_json(
-        self, endpoint: str, request_kwargs: Optional[dict[str, Any]] = None
-    ) -> dict[str, Any]:
+    def _get_json(self, endpoint: str, **kwargs: Any) -> dict[str, Any]:
         """Send a GET request and return the JSON response.
 
         Args:
             endpoint (str): Relative path from base URL.
-            request_kwargs (Optional[dict[str, Any]]): Extra query parameters.
+            **kwargs (Any): Extra query parameters.
 
         Raises:
             RuntimeError: If the request fails or JSON parsing fails.
@@ -69,21 +66,21 @@ class RestAPIClient:
         Returns:
             dict[str, Any]: JSON response.
         """
-        params = request_kwargs if request_kwargs else None
+        params = kwargs if kwargs else None
         return self._make_request(endpoint=endpoint, func=requests.get, params=params)
 
     def _post_json(
         self,
         endpoint: str,
         payload: dict[str, Any],
-        request_kwargs: Optional[dict[str, Any]] = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Send a POST request and return the JSON response.
 
         Args:
             endpoint (str): Relative path from base URL.
             payload (dict[str, Any]): POST body.
-            request_kwargs (Optional[dict[str, Any]]): Extra JSON payload fields.
+            **kwargs (Any): Extra JSON payload fields.
 
         Raises:
             RuntimeError: If the request fails or JSON parsing fails.
@@ -91,10 +88,7 @@ class RestAPIClient:
         Returns:
             dict[str, Any]: JSON response.
         """
-        if request_kwargs:
-            merged_payload = {**request_kwargs, **payload}
-        else:
-            merged_payload = payload
+        merged_payload = {**kwargs, **payload} if kwargs else payload
         return self._make_request(
             endpoint=endpoint, func=requests.post, json=merged_payload
         )
@@ -103,14 +97,14 @@ class RestAPIClient:
         self,
         endpoint: str,
         files: list[tuple[str, tuple[str, bytes, str]]],
-        request_kwargs: Optional[dict[str, Any]] = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Send a multipart/form-data POST and return the JSON response.
 
         Args:
             endpoint (str): Relative path from base URL.
             files (list[tuple[str, tuple[str, bytes, str]]]): File tuples for multipart upload.
-            request_kwargs (Optional[dict[str, Any]]): Extra query parameters.
+            **kwargs (Any): Extra query parameters.
 
         Raises:
             RuntimeError: If the request fails or JSON parsing fails.
@@ -118,70 +112,43 @@ class RestAPIClient:
         Returns:
             dict[str, Any]: JSON response.
         """
-        params = request_kwargs if request_kwargs else None
+        params = kwargs if kwargs else None
         return self._make_request(
             endpoint=endpoint, func=requests.post, files=files, params=params
         )
 
-    def _parse_request_kwargs(self, payload: Optional[str]) -> dict[str, Any]:
-        """Parse JSON payload into request kwargs.
-
-        Args:
-            payload (Optional[str]): JSON payload string.
-
-        Raises:
-            ValueError: If parsing fails or the payload is not a JSON object.
-
-        Returns:
-            dict[str, Any]: Parsed request kwargs.
-        """
-        if not payload:
-            return {}
-
-        try:
-            data = json.loads(payload)
-        except json.JSONDecodeError as exc:
-            raise ValueError("request_kwargs must be a JSON object") from exc
-
-        if not isinstance(data, dict):
-            raise ValueError("request_kwargs must be a JSON object")
-
-        return data
-
-    def status(self, request_kwargs: Optional[str] = None) -> dict[str, str]:
+    def status(self, **kwargs: Any) -> dict[str, str]:
         """Get server status.
 
         Args:
-            request_kwargs (Optional[str]): Extra query parameters as JSON string.
+            **kwargs (Any): Extra query parameters.
 
         Returns:
             dict[str, str]: Response data.
         """
-        parsed_kwargs = self._parse_request_kwargs(request_kwargs)
-        return self._get_json("/status", request_kwargs=parsed_kwargs)
+        return self._get_json("/status", **kwargs)
 
-    def reload(self, request_kwargs: Optional[str] = None) -> dict[str, str]:
+    def reload(self, **kwargs: Any) -> dict[str, str]:
         """Reload the server configuration file.
 
         Args:
-            request_kwargs (Optional[str]): Extra query parameters as JSON string.
+            **kwargs (Any): Extra query parameters.
 
         Returns:
             dict[str, str]: Response data.
         """
-        parsed_kwargs = self._parse_request_kwargs(request_kwargs)
-        return self._get_json("/reload", request_kwargs=parsed_kwargs)
+        return self._get_json("/reload", **kwargs)
 
     def upload(
         self,
         files: list[tuple[str, bytes, Optional[str]]],
-        request_kwargs: Optional[str] = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Call the file upload API.
 
         Args:
             files (list[tuple[str, bytes, Optional[str]]]): Files to upload.
-            request_kwargs (Optional[str]): Extra query parameters as JSON string.
+            **kwargs (Any): Extra query parameters.
 
         Returns:
             dict[str, Any]: Response data.
@@ -207,21 +174,21 @@ class RestAPIClient:
         return self._post_form_data_json(
             "/upload",
             files_payload,
-            request_kwargs=self._parse_request_kwargs(request_kwargs),
+            **kwargs,
         )
 
     def job(
         self,
         job_id: str = "",
         rm: bool = False,
-        request_kwargs: Optional[str] = None,
+        **kwargs: Any,
     ) -> dict[str, str]:
         """Call the background job API.
 
         Args:
             job_id (str, optional): Job ID. Defaults to "" for all jobs.
             rm (bool, optional): Remove flag. Defaults to False.
-            request_kwargs (Optional[str]): Extra JSON payload fields as JSON string.
+            **kwargs (Any): Extra JSON payload fields.
 
         Returns:
             dict[str, str]: Response data.
@@ -233,20 +200,20 @@ class RestAPIClient:
         return self._post_json(
             "/job",
             {"job_id": job_id, "rm": rm},
-            request_kwargs=self._parse_request_kwargs(request_kwargs),
+            **kwargs,
         )
 
     def ingest_path(
         self,
         path: str,
         force: bool = False,
-        request_kwargs: Optional[str] = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Call the ingest-from-path API.
 
         Args:
             path (str): Target path.
-            request_kwargs (Optional[str]): Extra JSON payload fields as JSON string.
+            **kwargs (Any): Extra JSON payload fields.
 
         Returns:
             dict[str, Any]: Response data.
@@ -254,20 +221,20 @@ class RestAPIClient:
         return self._post_json(
             "/ingest/path",
             {"path": path, "force": force},
-            request_kwargs=self._parse_request_kwargs(request_kwargs),
+            **kwargs,
         )
 
     def ingest_path_list(
         self,
         path: str,
         force: bool = False,
-        request_kwargs: Optional[str] = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Call the ingest-from-path-list API.
 
         Args:
             path (str): Path to the path list file.
-            request_kwargs (Optional[str]): Extra JSON payload fields as JSON string.
+            **kwargs (Any): Extra JSON payload fields.
 
         Returns:
             dict[str, Any]: Response data.
@@ -275,20 +242,20 @@ class RestAPIClient:
         return self._post_json(
             "/ingest/path_list",
             {"path": path, "force": force},
-            request_kwargs=self._parse_request_kwargs(request_kwargs),
+            **kwargs,
         )
 
     def ingest_url(
         self,
         url: str,
         force: bool = False,
-        request_kwargs: Optional[str] = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Call the ingest-from-URL API.
 
         Args:
             url (str): Target URL.
-            request_kwargs (Optional[str]): Extra JSON payload fields as JSON string.
+            **kwargs (Any): Extra JSON payload fields.
 
         Returns:
             dict[str, Any]: Response data.
@@ -296,20 +263,20 @@ class RestAPIClient:
         return self._post_json(
             "/ingest/url",
             {"url": url, "force": force},
-            request_kwargs=self._parse_request_kwargs(request_kwargs),
+            **kwargs,
         )
 
     def ingest_url_list(
         self,
         path: str,
         force: bool = False,
-        request_kwargs: Optional[str] = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Call the ingest-from-URL-list API.
 
         Args:
             path (str): Path to the URL list file.
-            request_kwargs (Optional[str]): Extra JSON payload fields as JSON string.
+            **kwargs (Any): Extra JSON payload fields.
 
         Returns:
             dict[str, Any]: Response data.
@@ -317,7 +284,7 @@ class RestAPIClient:
         return self._post_json(
             "/ingest/url_list",
             {"path": path, "force": force},
-            request_kwargs=self._parse_request_kwargs(request_kwargs),
+            **kwargs,
         )
 
     def query_text_text(
@@ -325,7 +292,7 @@ class RestAPIClient:
         query: str,
         topk: Optional[int] = None,
         mode: Optional[Literal["vector_only", "bm25_only", "fusion"]] = None,
-        request_kwargs: Optional[str] = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Call the text->text search API.
 
@@ -334,7 +301,7 @@ class RestAPIClient:
             topk (Optional[int]): Max count.
             mode (Optional[Literal["vector_only", "bm25_only", "fusion"]], optional):
                 Retrieval mode. Defaults to None.
-            request_kwargs (Optional[str]): Extra JSON payload fields as JSON string.
+            **kwargs (Any): Extra JSON payload fields.
 
         Returns:
             dict[str, Any]: Response data.
@@ -349,21 +316,21 @@ class RestAPIClient:
         return self._post_json(
             "/query/text_text",
             payload,
-            request_kwargs=self._parse_request_kwargs(request_kwargs),
+            **kwargs,
         )
 
     def query_text_image(
         self,
         query: str,
         topk: Optional[int] = None,
-        request_kwargs: Optional[str] = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Call the text->image search API.
 
         Args:
             query (str): Query string.
             topk (Optional[int]): Max count.
-            request_kwargs (Optional[str]): Extra JSON payload fields as JSON string.
+            **kwargs (Any): Extra JSON payload fields.
 
         Returns:
             dict[str, Any]: Response data.
@@ -375,21 +342,21 @@ class RestAPIClient:
         return self._post_json(
             "/query/text_image",
             payload,
-            request_kwargs=self._parse_request_kwargs(request_kwargs),
+            **kwargs,
         )
 
     def query_image_image(
         self,
         path: str,
         topk: Optional[int] = None,
-        request_kwargs: Optional[str] = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Call the image->image search API.
 
         Args:
             path (str): Path to the query image file.
             topk (Optional[int]): Max count.
-            request_kwargs (Optional[str]): Extra JSON payload fields as JSON string.
+            **kwargs (Any): Extra JSON payload fields.
 
         Returns:
             dict[str, Any]: Response data.
@@ -401,21 +368,21 @@ class RestAPIClient:
         return self._post_json(
             "/query/image_image",
             payload,
-            request_kwargs=self._parse_request_kwargs(request_kwargs),
+            **kwargs,
         )
 
     def query_audio_audio(
         self,
         path: str,
         topk: Optional[int] = None,
-        request_kwargs: Optional[str] = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Call the audio->audio search API.
 
         Args:
             path (str): Path to the query audio file.
             topk (Optional[int]): Max count.
-            request_kwargs (Optional[str]): Extra JSON payload fields as JSON string.
+            **kwargs (Any): Extra JSON payload fields.
 
         Returns:
             dict[str, Any]: Response data.
@@ -427,21 +394,21 @@ class RestAPIClient:
         return self._post_json(
             "/query/audio_audio",
             payload,
-            request_kwargs=self._parse_request_kwargs(request_kwargs),
+            **kwargs,
         )
 
     def query_text_audio(
         self,
         query: str,
         topk: Optional[int] = None,
-        request_kwargs: Optional[str] = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Call the text->audio search API.
 
         Args:
             query (str): Query string.
             topk (Optional[int]): Max count.
-            request_kwargs (Optional[str]): Extra JSON payload fields as JSON string.
+            **kwargs (Any): Extra JSON payload fields.
 
         Returns:
             dict[str, Any]: Response data.
@@ -453,21 +420,21 @@ class RestAPIClient:
         return self._post_json(
             "/query/text_audio",
             payload,
-            request_kwargs=self._parse_request_kwargs(request_kwargs),
+            **kwargs,
         )
 
     def query_text_video(
         self,
         query: str,
         topk: Optional[int] = None,
-        request_kwargs: Optional[str] = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Call the text->video search API.
 
         Args:
             query (str): Query string.
             topk (Optional[int]): Max count.
-            request_kwargs (Optional[str]): Extra JSON payload fields as JSON string.
+            **kwargs (Any): Extra JSON payload fields.
 
         Returns:
             dict[str, Any]: Response data.
@@ -479,21 +446,21 @@ class RestAPIClient:
         return self._post_json(
             "/query/text_video",
             payload,
-            request_kwargs=self._parse_request_kwargs(request_kwargs),
+            **kwargs,
         )
 
     def query_image_video(
         self,
         path: str,
         topk: Optional[int] = None,
-        request_kwargs: Optional[str] = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Call the image->video search API.
 
         Args:
             path (str): Path to the query image file.
             topk (Optional[int]): Max count.
-            request_kwargs (Optional[str]): Extra JSON payload fields as JSON string.
+            **kwargs (Any): Extra JSON payload fields.
 
         Returns:
             dict[str, Any]: Response data.
@@ -505,21 +472,21 @@ class RestAPIClient:
         return self._post_json(
             "/query/image_video",
             payload,
-            request_kwargs=self._parse_request_kwargs(request_kwargs),
+            **kwargs,
         )
 
     def query_audio_video(
         self,
         path: str,
         topk: Optional[int] = None,
-        request_kwargs: Optional[str] = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Call the audio->video search API.
 
         Args:
             path (str): Path to the query audio file.
             topk (Optional[int]): Max count.
-            request_kwargs (Optional[str]): Extra JSON payload fields as JSON string.
+            **kwargs (Any): Extra JSON payload fields.
 
         Returns:
             dict[str, Any]: Response data.
@@ -531,21 +498,21 @@ class RestAPIClient:
         return self._post_json(
             "/query/audio_video",
             payload,
-            request_kwargs=self._parse_request_kwargs(request_kwargs),
+            **kwargs,
         )
 
     def query_video_video(
         self,
         path: str,
         topk: Optional[int] = None,
-        request_kwargs: Optional[str] = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Call the video->video search API.
 
         Args:
             path (str): Path to the query video file.
             topk (Optional[int]): Max count.
-            request_kwargs (Optional[str]): Extra JSON payload fields as JSON string.
+            **kwargs (Any): Extra JSON payload fields.
 
         Returns:
             dict[str, Any]: Response data.
@@ -557,5 +524,5 @@ class RestAPIClient:
         return self._post_json(
             "/query/video_video",
             payload,
-            request_kwargs=self._parse_request_kwargs(request_kwargs),
+            **kwargs,
         )

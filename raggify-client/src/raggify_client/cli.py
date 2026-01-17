@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import mimetypes
 import os
 from typing import TYPE_CHECKING, Any, Literal, Optional, Protocol
 
@@ -38,6 +39,29 @@ def _create_rest_client() -> RestAPIClient:
     from .client import RestAPIClient
 
     return RestAPIClient(host=cfg.general.host, port=cfg.general.port)
+
+
+def _parse_request_kwargs(payload: Optional[str]) -> dict[str, Any]:
+    """Parse JSON payload into request kwargs.
+
+    Args:
+        payload (Optional[str]): JSON payload string.
+
+    Returns:
+        dict[str, Any]: Parsed request kwargs.
+    """
+    if not payload:
+        return {}
+
+    try:
+        data = json.loads(payload)
+    except json.JSONDecodeError as exc:
+        raise typer.BadParameter("kwargs must be a valid JSON object") from exc
+
+    if not isinstance(data, dict):
+        raise typer.BadParameter("kwargs must be a JSON object")
+
+    return data
 
 
 def _echo_json(data: dict[str, Any]) -> None:
@@ -105,7 +129,8 @@ def status(
     )
 ):
     logger.debug("")
-    _execute_client_command(lambda client: client.status(request_kwargs=request_kwargs))
+    parsed_kwargs = _parse_request_kwargs(request_kwargs)
+    _execute_client_command(lambda client: client.status(**parsed_kwargs))
 
 
 @app.command(name="reload", help=f"(Not supported in client CLI)")
@@ -131,9 +156,42 @@ def job(
     ),
 ):
     logger.debug(f"id = {job_id}, rm = {rm}")
+    parsed_kwargs = _parse_request_kwargs(request_kwargs)
     _execute_client_command(
-        lambda client: client.job(job_id=job_id, rm=rm, request_kwargs=request_kwargs)
+        lambda client: client.job(job_id=job_id, rm=rm, **parsed_kwargs)
     )
+
+
+@app.command(name="upload", help="Upload files.")
+def upload(
+    paths: list[str] = typer.Argument(help="File paths to upload."),
+    request_kwargs: Optional[str] = typer.Option(
+        None,
+        "--kwargs",
+        help=_REQUEST_KWARG_HELP,
+    ),
+):
+    logger.debug(f"paths = {paths}")
+    if not paths:
+        raise typer.BadParameter("paths must not be empty")
+
+    files: list[tuple[str, bytes, Optional[str]]] = []
+    for path in paths:
+        if not os.path.exists(path):
+            raise typer.BadParameter(f"file not found: {path}")
+
+        filename = os.path.basename(path)
+        if not filename:
+            raise typer.BadParameter(f"invalid file path: {path}")
+
+        with open(path, "rb") as handle:
+            data = handle.read()
+
+        content_type, _ = mimetypes.guess_type(path)
+        files.append((filename, data, content_type))
+
+    parsed_kwargs = _parse_request_kwargs(request_kwargs)
+    _execute_client_command(lambda client: client.upload(files, **parsed_kwargs))
 
 
 @app.command(name="ip", help=f"(Not supported in client CLI)")
@@ -167,10 +225,9 @@ def ingest_url(
     ),
 ):
     logger.debug(f"url = {url}, force = {force}")
+    parsed_kwargs = _parse_request_kwargs(request_kwargs)
     _execute_client_command(
-        lambda client: client.ingest_url(
-            url, force=force, request_kwargs=request_kwargs
-        )
+        lambda client: client.ingest_url(url, force=force, **parsed_kwargs)
     )
 
 
@@ -189,10 +246,9 @@ def ingest_url_list(
     ),
 ):
     logger.debug(f"list_path = {list_path}, force = {force}")
+    parsed_kwargs = _parse_request_kwargs(request_kwargs)
     _execute_client_command(
-        lambda client: client.ingest_url_list(
-            list_path, force=force, request_kwargs=request_kwargs
-        )
+        lambda client: client.ingest_url_list(list_path, force=force, **parsed_kwargs)
     )
 
 
@@ -216,9 +272,10 @@ def query_text_text(
 ):
     logger.debug(f"query = {query}, topk = {topk}, mode = {mode}")
     topk = topk or cfg.general.topk
+    parsed_kwargs = _parse_request_kwargs(request_kwargs)
     _execute_client_command(
         lambda client: client.query_text_text(
-            query=query, topk=topk, mode=mode, request_kwargs=request_kwargs
+            query=query, topk=topk, mode=mode, **parsed_kwargs
         )
     )
 
@@ -240,10 +297,9 @@ def query_text_image(
 ):
     topk = topk or cfg.general.topk
     logger.debug(f"query = {query}, topk = {topk}")
+    parsed_kwargs = _parse_request_kwargs(request_kwargs)
     _execute_client_command(
-        lambda client: client.query_text_image(
-            query, topk, request_kwargs=request_kwargs
-        )
+        lambda client: client.query_text_image(query, topk, **parsed_kwargs)
     )
 
 
@@ -264,10 +320,9 @@ def query_image_image(
 ):
     topk = topk or cfg.general.topk
     logger.debug(f"path = {path}, topk = {topk}")
+    parsed_kwargs = _parse_request_kwargs(request_kwargs)
     _execute_client_command(
-        lambda client: client.query_image_image(
-            path, topk, request_kwargs=request_kwargs
-        )
+        lambda client: client.query_image_image(path, topk, **parsed_kwargs)
     )
 
 
@@ -288,10 +343,9 @@ def query_text_audio(
 ):
     topk = topk or cfg.general.topk
     logger.debug(f"query = {query}, topk = {topk}")
+    parsed_kwargs = _parse_request_kwargs(request_kwargs)
     _execute_client_command(
-        lambda client: client.query_text_audio(
-            query, topk, request_kwargs=request_kwargs
-        )
+        lambda client: client.query_text_audio(query, topk, **parsed_kwargs)
     )
 
 
@@ -312,10 +366,9 @@ def query_audio_audio(
 ):
     topk = topk or cfg.general.topk
     logger.debug(f"path = {path}, topk = {topk}")
+    parsed_kwargs = _parse_request_kwargs(request_kwargs)
     _execute_client_command(
-        lambda client: client.query_audio_audio(
-            path, topk, request_kwargs=request_kwargs
-        )
+        lambda client: client.query_audio_audio(path, topk, **parsed_kwargs)
     )
 
 
@@ -336,10 +389,9 @@ def query_text_video(
 ):
     topk = topk or cfg.general.topk
     logger.debug(f"query = {query}, topk = {topk}")
+    parsed_kwargs = _parse_request_kwargs(request_kwargs)
     _execute_client_command(
-        lambda client: client.query_text_video(
-            query, topk, request_kwargs=request_kwargs
-        )
+        lambda client: client.query_text_video(query, topk, **parsed_kwargs)
     )
 
 
@@ -360,10 +412,9 @@ def query_image_video(
 ):
     topk = topk or cfg.general.topk
     logger.debug(f"path = {path}, topk = {topk}")
+    parsed_kwargs = _parse_request_kwargs(request_kwargs)
     _execute_client_command(
-        lambda client: client.query_image_video(
-            path, topk, request_kwargs=request_kwargs
-        )
+        lambda client: client.query_image_video(path, topk, **parsed_kwargs)
     )
 
 
@@ -384,10 +435,9 @@ def query_audio_video(
 ):
     topk = topk or cfg.general.topk
     logger.debug(f"path = {path}, topk = {topk}")
+    parsed_kwargs = _parse_request_kwargs(request_kwargs)
     _execute_client_command(
-        lambda client: client.query_audio_video(
-            path, topk, request_kwargs=request_kwargs
-        )
+        lambda client: client.query_audio_video(path, topk, **parsed_kwargs)
     )
 
 
@@ -408,10 +458,9 @@ def query_video_video(
 ):
     topk = topk or cfg.general.topk
     logger.debug(f"path = {path}, topk = {topk}")
+    parsed_kwargs = _parse_request_kwargs(request_kwargs)
     _execute_client_command(
-        lambda client: client.query_video_video(
-            path, topk, request_kwargs=request_kwargs
-        )
+        lambda client: client.query_video_video(path, topk, **parsed_kwargs)
     )
 
 
