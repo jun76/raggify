@@ -339,6 +339,7 @@ class RagAgentManager:
                 "Always respond to the user in user language. "
                 "Before answering, you MUST use the provided tools to search the knowledge base. "
                 "If reference files are available, their upload ids are stored in upload_id. "
+                "Use tools with the upload_id to search based on the reference files. "
                 "When relevant documents are found, include the file paths in the answer. "
                 "Do not include scores in the answer. "
                 'If no relevant documents are found or an error occurs, reply with "No relevant documents were found." only.'
@@ -347,7 +348,7 @@ class RagAgentManager:
             model=self.model,
         )
 
-        logger.debug(f"upload id = {upload_id}")
+        logger.info(f"upload id = {upload_id}")
         context = _RagAgentContext(
             client=self.client,
             upload_id=upload_id,

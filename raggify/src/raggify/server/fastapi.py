@@ -85,6 +85,8 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         await wk.shutdown()
+        await _remove_all_uploads()
+
         console.print(f"🛑 now {PROJECT_NAME} server is stopped.")
 
 
@@ -258,6 +260,18 @@ async def _resolve_upload_path(upload_id: Optional[str], path: Optional[str]) ->
         raise HTTPException(status_code=400, detail=msg)
 
     return path
+
+
+async def _remove_all_uploads() -> None:
+    """Remove all uploaded files and clear the upload map."""
+    async with _request_lock:
+        for path in _upload_map.values():
+            try:
+                path.unlink(missing_ok=True)
+            except Exception as e:
+                logger.error(f"file removal failure: {e}", exc_info=True)
+
+        _upload_map.clear()
 
 
 @app.post("/v1/job")
