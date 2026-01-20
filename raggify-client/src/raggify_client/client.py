@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Any, Callable, Literal, Optional
 
 import requests
@@ -69,6 +70,18 @@ class RestAPIClient:
         params = kwargs if kwargs else None
         return self._make_request(endpoint=endpoint, func=requests.get, params=params)
 
+    async def aget_json(self, endpoint: str, **kwargs: Any) -> dict[str, Any]:
+        """Send a GET request asynchronously and return the JSON response.
+
+        Args:
+            endpoint (str): Relative path from base URL.
+            **kwargs (Any): Extra query parameters.
+
+        Returns:
+            dict[str, Any]: JSON response.
+        """
+        return await asyncio.to_thread(self.get_json, endpoint, **kwargs)
+
     def post_json(
         self, endpoint: str, payload: dict[str, Any], **kwargs: Any
     ) -> dict[str, Any]:
@@ -89,6 +102,24 @@ class RestAPIClient:
         return self._make_request(
             endpoint=endpoint, func=requests.post, json=merged_payload
         )
+
+    async def apost_json(
+        self, endpoint: str, payload: dict[str, Any], **kwargs: Any
+    ) -> dict[str, Any]:
+        """Send a POST request asynchronously and return the JSON response.
+
+        Args:
+            endpoint (str): Relative path from base URL.
+            payload (dict[str, Any]): POST body.
+            **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, Any]: JSON response.
+        """
+        return await asyncio.to_thread(self.post_json, endpoint, payload, **kwargs)
 
     def post_form_data_json(
         self,
@@ -114,27 +145,88 @@ class RestAPIClient:
             endpoint=endpoint, func=requests.post, files=files, params=params
         )
 
+    async def apost_form_data_json(
+        self,
+        endpoint: str,
+        files: list[tuple[str, tuple[str, bytes, str]]],
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """Send a multipart/form-data POST asynchronously and return the JSON response.
+
+        Args:
+            endpoint (str): Relative path from base URL.
+            files (list[tuple[str, tuple[str, bytes, str]]]): File tuples for multipart upload.
+            **kwargs (Any): Extra query parameters.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, Any]: JSON response.
+        """
+        return await asyncio.to_thread(
+            self.post_form_data_json, endpoint, files, **kwargs
+        )
+
     def status(self, **kwargs: Any) -> dict[str, str]:
         """Get server status.
 
         Args:
             **kwargs (Any): Extra query parameters.
 
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
         Returns:
             dict[str, str]: Response data.
         """
         return self.get_json("/status", **kwargs)
 
-    def reload(self, **kwargs: Any) -> dict[str, str]:
-        """Reload the server configuration file.
+    async def astatus(self, **kwargs: Any) -> dict[str, str]:
+        """Get server status asynchronously.
 
         Args:
             **kwargs (Any): Extra query parameters.
 
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
         Returns:
             dict[str, str]: Response data.
         """
-        return self.post_json("/reload", **kwargs)
+        return await asyncio.to_thread(self.status, **kwargs)
+
+    def reload(self, config: dict[str, Any] = {}, **kwargs: Any) -> dict[str, str]:
+        """Reload the server configuration file.
+
+        Args:
+            config (dict[str, Any]): Configuration data. Defaults to {}.
+            **kwargs (Any): Extra query parameters.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, str]: Response data.
+        """
+        return self.post_json("/reload", config, **kwargs)
+
+    async def areload(
+        self, config: dict[str, Any] = {}, **kwargs: Any
+    ) -> dict[str, str]:
+        """Reload the server configuration file asynchronously.
+
+        Args:
+            config (dict[str, Any]): Configuration data. Defaults to {}.
+            **kwargs (Any): Extra query parameters.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, str]: Response data.
+        """
+        return await asyncio.to_thread(self.reload, config, **kwargs)
 
     def upload(
         self, files: list[tuple[str, bytes, Optional[str]]], **kwargs: Any
@@ -168,8 +260,47 @@ class RestAPIClient:
 
         return self.post_form_data_json("/upload", files_payload, **kwargs)
 
+    async def aupload(
+        self, files: list[tuple[str, bytes, Optional[str]]], **kwargs: Any
+    ) -> dict[str, Any]:
+        """Call the file upload API asynchronously.
+
+        Args:
+            files (list[tuple[str, bytes, Optional[str]]]): Files to upload.
+            **kwargs (Any): Extra query parameters.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, Any]: Response data.
+        """
+        return await asyncio.to_thread(self.upload, files, **kwargs)
+
     def job(self, job_id: str = "", rm: bool = False, **kwargs: Any) -> dict[str, str]:
         """Call the background job API.
+
+        Args:
+            job_id (str, optional): Job ID. Defaults to "" for all jobs.
+            rm (bool, optional): Remove flag. Defaults to False.
+            **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, str]: Response data.
+
+        Note:
+            If job_id is empty, returns status for all jobs.
+            If job_id is empty and rm is True, removes all completed jobs.
+        """
+        return self.post_json("/job", {"job_id": job_id, "rm": rm}, **kwargs)
+
+    async def ajob(
+        self, job_id: str = "", rm: bool = False, **kwargs: Any
+    ) -> dict[str, str]:
+        """Call the background job API asynchronously.
 
         Args:
             job_id (str, optional): Job ID. Defaults to "" for all jobs.
@@ -183,7 +314,7 @@ class RestAPIClient:
             If job_id is empty, returns status for all jobs.
             If job_id is empty and rm is True, removes all completed jobs.
         """
-        return self.post_json("/job", {"job_id": job_id, "rm": rm}, **kwargs)
+        return await asyncio.to_thread(self.job, job_id=job_id, rm=rm, **kwargs)
 
     def ingest_path(
         self, path: Optional[str] = None, force: bool = False, **kwargs: Any
@@ -194,6 +325,9 @@ class RestAPIClient:
             path (Optional[str]): Target path. Defaults to None.
             force (bool, optional): Force flag. Defaults to False.
             **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
 
         Returns:
             dict[str, Any]: Response data.
@@ -206,6 +340,26 @@ class RestAPIClient:
 
         return self.post_json("/ingest/path", payload=payload, **kwargs)
 
+    async def aingest_path(
+        self, path: Optional[str] = None, force: bool = False, **kwargs: Any
+    ) -> dict[str, Any]:
+        """Call the ingest-from-path API asynchronously.
+
+        Args:
+            path (Optional[str]): Target path. Defaults to None.
+            force (bool, optional): Force flag. Defaults to False.
+            **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, Any]: Response data.
+        """
+        return await asyncio.to_thread(
+            self.ingest_path, path=path, force=force, **kwargs
+        )
+
     def ingest_path_list(
         self, path: Optional[str] = None, force: bool = False, **kwargs: Any
     ) -> dict[str, Any]:
@@ -215,6 +369,9 @@ class RestAPIClient:
             path (Optional[str]): Path to the path list file. Defaults to None.
             force (bool, optional): Force flag. Defaults to False.
             **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
 
         Returns:
             dict[str, Any]: Response data.
@@ -227,6 +384,26 @@ class RestAPIClient:
 
         return self.post_json("/ingest/path_list", payload, **kwargs)
 
+    async def aingest_path_list(
+        self, path: Optional[str] = None, force: bool = False, **kwargs: Any
+    ) -> dict[str, Any]:
+        """Call the ingest-from-path-list API asynchronously.
+
+        Args:
+            path (Optional[str]): Path to the path list file. Defaults to None.
+            force (bool, optional): Force flag. Defaults to False.
+            **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, Any]: Response data.
+        """
+        return await asyncio.to_thread(
+            self.ingest_path_list, path=path, force=force, **kwargs
+        )
+
     def ingest_url(
         self, url: str, force: bool = False, **kwargs: Any
     ) -> dict[str, Any]:
@@ -237,10 +414,31 @@ class RestAPIClient:
             force (bool, optional): Force flag. Defaults to False.
             **kwargs (Any): Extra JSON payload fields.
 
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
         Returns:
             dict[str, Any]: Response data.
         """
         return self.post_json("/ingest/url", {"url": url, "force": force}, **kwargs)
+
+    async def aingest_url(
+        self, url: str, force: bool = False, **kwargs: Any
+    ) -> dict[str, Any]:
+        """Call the ingest-from-URL API asynchronously.
+
+        Args:
+            url (str): Target URL.
+            force (bool, optional): Force flag. Defaults to False.
+            **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, Any]: Response data.
+        """
+        return await asyncio.to_thread(self.ingest_url, url, force=force, **kwargs)
 
     def ingest_url_list(
         self, path: Optional[str] = None, force: bool = False, **kwargs: Any
@@ -252,6 +450,9 @@ class RestAPIClient:
             force (bool, optional): Force flag. Defaults to False.
             **kwargs (Any): Extra JSON payload fields.
 
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
         Returns:
             dict[str, Any]: Response data.
         """
@@ -262,6 +463,26 @@ class RestAPIClient:
         payload["force"] = force
 
         return self.post_json("/ingest/url_list", payload, **kwargs)
+
+    async def aingest_url_list(
+        self, path: Optional[str] = None, force: bool = False, **kwargs: Any
+    ) -> dict[str, Any]:
+        """Call the ingest-from-URL-list API asynchronously.
+
+        Args:
+            path (Optional[str]): Path to the URL list file. Defaults to None.
+            force (bool, optional): Force flag. Defaults to False.
+            **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, Any]: Response data.
+        """
+        return await asyncio.to_thread(
+            self.ingest_url_list, path=path, force=force, **kwargs
+        )
 
     def query_text_text(
         self,
@@ -279,6 +500,9 @@ class RestAPIClient:
                 Retrieval mode. Defaults to None.
             **kwargs (Any): Extra JSON payload fields.
 
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
         Returns:
             dict[str, Any]: Response data.
         """
@@ -291,6 +515,32 @@ class RestAPIClient:
 
         return self.post_json("/query/text_text", payload, **kwargs)
 
+    async def aquery_text_text(
+        self,
+        query: str,
+        topk: Optional[int] = None,
+        mode: Optional[Literal["vector_only", "bm25_only", "fusion"]] = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """Call the text->text search API asynchronously.
+
+        Args:
+            query (str): Query string.
+            topk (Optional[int], optional): Max count. Defaults to None.
+            mode (Optional[Literal["vector_only", "bm25_only", "fusion"]], optional):
+                Retrieval mode. Defaults to None.
+            **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, Any]: Response data.
+        """
+        return await asyncio.to_thread(
+            self.query_text_text, query, topk=topk, mode=mode, **kwargs
+        )
+
     def query_text_image(
         self, query: str, topk: Optional[int] = None, **kwargs: Any
     ) -> dict[str, Any]:
@@ -301,6 +551,9 @@ class RestAPIClient:
             topk (Optional[int], optional): Max count. Defaults to None.
             **kwargs (Any): Extra JSON payload fields.
 
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
         Returns:
             dict[str, Any]: Response data.
         """
@@ -309,6 +562,26 @@ class RestAPIClient:
             payload["topk"] = topk
 
         return self.post_json("/query/text_image", payload, **kwargs)
+
+    async def aquery_text_image(
+        self, query: str, topk: Optional[int] = None, **kwargs: Any
+    ) -> dict[str, Any]:
+        """Call the text->image search API asynchronously.
+
+        Args:
+            query (str): Query string.
+            topk (Optional[int], optional): Max count. Defaults to None.
+            **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, Any]: Response data.
+        """
+        return await asyncio.to_thread(
+            self.query_text_image, query, topk=topk, **kwargs
+        )
 
     def query_image_image(
         self, path: Optional[str] = None, topk: Optional[int] = None, **kwargs: Any
@@ -319,6 +592,9 @@ class RestAPIClient:
             path (Optional[str]): Path to the query image file. Defaults to None.
             topk (Optional[int], optional): Max count. Defaults to None.
             **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
 
         Returns:
             dict[str, Any]: Response data.
@@ -332,6 +608,26 @@ class RestAPIClient:
 
         return self.post_json("/query/image_image", payload, **kwargs)
 
+    async def aquery_image_image(
+        self, path: Optional[str] = None, topk: Optional[int] = None, **kwargs: Any
+    ) -> dict[str, Any]:
+        """Call the image->image search API asynchronously.
+
+        Args:
+            path (Optional[str]): Path to the query image file. Defaults to None.
+            topk (Optional[int], optional): Max count. Defaults to None.
+            **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, Any]: Response data.
+        """
+        return await asyncio.to_thread(
+            self.query_image_image, path, topk=topk, **kwargs
+        )
+
     def query_audio_audio(
         self, path: Optional[str] = None, topk: Optional[int] = None, **kwargs: Any
     ) -> dict[str, Any]:
@@ -341,6 +637,9 @@ class RestAPIClient:
             path (Optional[str]): Path to the query audio file. Defaults to None.
             topk (Optional[int], optional): Max count. Defaults to None.
             **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
 
         Returns:
             dict[str, Any]: Response data.
@@ -354,6 +653,26 @@ class RestAPIClient:
 
         return self.post_json("/query/audio_audio", payload, **kwargs)
 
+    async def aquery_audio_audio(
+        self, path: Optional[str] = None, topk: Optional[int] = None, **kwargs: Any
+    ) -> dict[str, Any]:
+        """Call the audio->audio search API asynchronously.
+
+        Args:
+            path (Optional[str]): Path to the query audio file. Defaults to None.
+            topk (Optional[int], optional): Max count. Defaults to None.
+            **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, Any]: Response data.
+        """
+        return await asyncio.to_thread(
+            self.query_audio_audio, path, topk=topk, **kwargs
+        )
+
     def query_text_audio(
         self, query: str, topk: Optional[int] = None, **kwargs: Any
     ) -> dict[str, Any]:
@@ -364,6 +683,9 @@ class RestAPIClient:
             topk (Optional[int], optional): Max count. Defaults to None.
             **kwargs (Any): Extra JSON payload fields.
 
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
         Returns:
             dict[str, Any]: Response data.
         """
@@ -372,6 +694,26 @@ class RestAPIClient:
             payload["topk"] = topk
 
         return self.post_json("/query/text_audio", payload, **kwargs)
+
+    async def aquery_text_audio(
+        self, query: str, topk: Optional[int] = None, **kwargs: Any
+    ) -> dict[str, Any]:
+        """Call the text->audio search API asynchronously.
+
+        Args:
+            query (str): Query string.
+            topk (Optional[int], optional): Max count. Defaults to None.
+            **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, Any]: Response data.
+        """
+        return await asyncio.to_thread(
+            self.query_text_audio, query, topk=topk, **kwargs
+        )
 
     def query_text_video(
         self, query: str, topk: Optional[int] = None, **kwargs: Any
@@ -383,6 +725,9 @@ class RestAPIClient:
             topk (Optional[int], optional): Max count. Defaults to None.
             **kwargs (Any): Extra JSON payload fields.
 
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
         Returns:
             dict[str, Any]: Response data.
         """
@@ -391,6 +736,26 @@ class RestAPIClient:
             payload["topk"] = topk
 
         return self.post_json("/query/text_video", payload, **kwargs)
+
+    async def aquery_text_video(
+        self, query: str, topk: Optional[int] = None, **kwargs: Any
+    ) -> dict[str, Any]:
+        """Call the text->video search API asynchronously.
+
+        Args:
+            query (str): Query string.
+            topk (Optional[int], optional): Max count. Defaults to None.
+            **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, Any]: Response data.
+        """
+        return await asyncio.to_thread(
+            self.query_text_video, query, topk=topk, **kwargs
+        )
 
     def query_image_video(
         self, path: Optional[str] = None, topk: Optional[int] = None, **kwargs: Any
@@ -401,6 +766,9 @@ class RestAPIClient:
             path (Optional[str]): Path to the query image file. Defaults to None.
             topk (Optional[int], optional): Max count. Defaults to None.
             **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
 
         Returns:
             dict[str, Any]: Response data.
@@ -414,6 +782,26 @@ class RestAPIClient:
 
         return self.post_json("/query/image_video", payload, **kwargs)
 
+    async def aquery_image_video(
+        self, path: Optional[str] = None, topk: Optional[int] = None, **kwargs: Any
+    ) -> dict[str, Any]:
+        """Call the image->video search API asynchronously.
+
+        Args:
+            path (Optional[str]): Path to the query image file. Defaults to None.
+            topk (Optional[int], optional): Max count. Defaults to None.
+            **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, Any]: Response data.
+        """
+        return await asyncio.to_thread(
+            self.query_image_video, path, topk=topk, **kwargs
+        )
+
     def query_audio_video(
         self, path: Optional[str] = None, topk: Optional[int] = None, **kwargs: Any
     ) -> dict[str, Any]:
@@ -423,6 +811,9 @@ class RestAPIClient:
             path (Optional[str]): Path to the query audio file. Defaults to None.
             topk (Optional[int], optional): Max count. Defaults to None.
             **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
 
         Returns:
             dict[str, Any]: Response data.
@@ -436,6 +827,26 @@ class RestAPIClient:
 
         return self.post_json("/query/audio_video", payload, **kwargs)
 
+    async def aquery_audio_video(
+        self, path: Optional[str] = None, topk: Optional[int] = None, **kwargs: Any
+    ) -> dict[str, Any]:
+        """Call the audio->video search API asynchronously.
+
+        Args:
+            path (Optional[str]): Path to the query audio file. Defaults to None.
+            topk (Optional[int], optional): Max count. Defaults to None.
+            **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, Any]: Response data.
+        """
+        return await asyncio.to_thread(
+            self.query_audio_video, path, topk=topk, **kwargs
+        )
+
     def query_video_video(
         self, path: Optional[str] = None, topk: Optional[int] = None, **kwargs: Any
     ) -> dict[str, Any]:
@@ -445,6 +856,9 @@ class RestAPIClient:
             path (Optional[str]): Path to the query video file. Defaults to None.
             topk (Optional[int], optional): Max count. Defaults to None.
             **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
 
         Returns:
             dict[str, Any]: Response data.
@@ -457,3 +871,23 @@ class RestAPIClient:
             payload["topk"] = topk
 
         return self.post_json("/query/video_video", payload, **kwargs)
+
+    async def aquery_video_video(
+        self, path: Optional[str] = None, topk: Optional[int] = None, **kwargs: Any
+    ) -> dict[str, Any]:
+        """Call the video->video search API asynchronously.
+
+        Args:
+            path (Optional[str]): Path to the query video file. Defaults to None.
+            topk (Optional[int], optional): Max count. Defaults to None.
+            **kwargs (Any): Extra JSON payload fields.
+
+        Raises:
+            RuntimeError: If the request fails or JSON parsing fails.
+
+        Returns:
+            dict[str, Any]: Response data.
+        """
+        return await asyncio.to_thread(
+            self.query_video_video, path, topk=topk, **kwargs
+        )
