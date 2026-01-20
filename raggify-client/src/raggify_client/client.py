@@ -53,7 +53,7 @@ class RestAPIClient:
         except ValueError as e:
             raise RuntimeError(f"server response is not json: {e}") from e
 
-    def _get_json(self, endpoint: str, **kwargs: Any) -> dict[str, Any]:
+    def get_json(self, endpoint: str, **kwargs: Any) -> dict[str, Any]:
         """Send a GET request and return the JSON response.
 
         Args:
@@ -69,7 +69,7 @@ class RestAPIClient:
         params = kwargs if kwargs else None
         return self._make_request(endpoint=endpoint, func=requests.get, params=params)
 
-    def _post_json(
+    def post_json(
         self, endpoint: str, payload: dict[str, Any], **kwargs: Any
     ) -> dict[str, Any]:
         """Send a POST request and return the JSON response.
@@ -90,7 +90,7 @@ class RestAPIClient:
             endpoint=endpoint, func=requests.post, json=merged_payload
         )
 
-    def _post_form_data_json(
+    def post_form_data_json(
         self,
         endpoint: str,
         files: list[tuple[str, tuple[str, bytes, str]]],
@@ -123,7 +123,7 @@ class RestAPIClient:
         Returns:
             dict[str, str]: Response data.
         """
-        return self._get_json("/status", **kwargs)
+        return self.get_json("/status", **kwargs)
 
     def reload(self, **kwargs: Any) -> dict[str, str]:
         """Reload the server configuration file.
@@ -134,7 +134,7 @@ class RestAPIClient:
         Returns:
             dict[str, str]: Response data.
         """
-        return self._get_json("/reload", **kwargs)
+        return self.get_json("/reload", **kwargs)
 
     def upload(
         self, files: list[tuple[str, bytes, Optional[str]]], **kwargs: Any
@@ -166,7 +166,7 @@ class RestAPIClient:
             mime = content_type or "application/octet-stream"
             files_payload.append(("files", (name, data, mime)))
 
-        return self._post_form_data_json("/upload", files_payload, **kwargs)
+        return self.post_form_data_json("/upload", files_payload, **kwargs)
 
     def job(self, job_id: str = "", rm: bool = False, **kwargs: Any) -> dict[str, str]:
         """Call the background job API.
@@ -183,7 +183,7 @@ class RestAPIClient:
             If job_id is empty, returns status for all jobs.
             If job_id is empty and rm is True, removes all completed jobs.
         """
-        return self._post_json("/job", {"job_id": job_id, "rm": rm}, **kwargs)
+        return self.post_json("/job", {"job_id": job_id, "rm": rm}, **kwargs)
 
     def ingest_path(
         self, path: Optional[str] = None, force: bool = False, **kwargs: Any
@@ -204,7 +204,7 @@ class RestAPIClient:
 
         payload["force"] = force
 
-        return self._post_json("/ingest/path", payload=payload, **kwargs)
+        return self.post_json("/ingest/path", payload=payload, **kwargs)
 
     def ingest_path_list(
         self, path: Optional[str] = None, force: bool = False, **kwargs: Any
@@ -225,7 +225,7 @@ class RestAPIClient:
 
         payload["force"] = force
 
-        return self._post_json("/ingest/path_list", payload, **kwargs)
+        return self.post_json("/ingest/path_list", payload, **kwargs)
 
     def ingest_url(
         self, url: str, force: bool = False, **kwargs: Any
@@ -240,7 +240,7 @@ class RestAPIClient:
         Returns:
             dict[str, Any]: Response data.
         """
-        return self._post_json("/ingest/url", {"url": url, "force": force}, **kwargs)
+        return self.post_json("/ingest/url", {"url": url, "force": force}, **kwargs)
 
     def ingest_url_list(
         self, path: Optional[str] = None, force: bool = False, **kwargs: Any
@@ -261,7 +261,7 @@ class RestAPIClient:
 
         payload["force"] = force
 
-        return self._post_json("/ingest/url_list", payload, **kwargs)
+        return self.post_json("/ingest/url_list", payload, **kwargs)
 
     def query_text_text(
         self,
@@ -289,7 +289,7 @@ class RestAPIClient:
         if mode is not None:
             payload["mode"] = mode
 
-        return self._post_json("/query/text_text", payload, **kwargs)
+        return self.post_json("/query/text_text", payload, **kwargs)
 
     def query_text_image(
         self, query: str, topk: Optional[int] = None, **kwargs: Any
@@ -308,7 +308,7 @@ class RestAPIClient:
         if topk is not None:
             payload["topk"] = topk
 
-        return self._post_json("/query/text_image", payload, **kwargs)
+        return self.post_json("/query/text_image", payload, **kwargs)
 
     def query_image_image(
         self, path: Optional[str] = None, topk: Optional[int] = None, **kwargs: Any
@@ -330,7 +330,7 @@ class RestAPIClient:
         if topk is not None:
             payload["topk"] = topk
 
-        return self._post_json("/query/image_image", payload, **kwargs)
+        return self.post_json("/query/image_image", payload, **kwargs)
 
     def query_audio_audio(
         self, path: Optional[str] = None, topk: Optional[int] = None, **kwargs: Any
@@ -352,7 +352,7 @@ class RestAPIClient:
         if topk is not None:
             payload["topk"] = topk
 
-        return self._post_json("/query/audio_audio", payload, **kwargs)
+        return self.post_json("/query/audio_audio", payload, **kwargs)
 
     def query_text_audio(
         self, query: str, topk: Optional[int] = None, **kwargs: Any
@@ -371,7 +371,7 @@ class RestAPIClient:
         if topk is not None:
             payload["topk"] = topk
 
-        return self._post_json("/query/text_audio", payload, **kwargs)
+        return self.post_json("/query/text_audio", payload, **kwargs)
 
     def query_text_video(
         self, query: str, topk: Optional[int] = None, **kwargs: Any
@@ -390,7 +390,7 @@ class RestAPIClient:
         if topk is not None:
             payload["topk"] = topk
 
-        return self._post_json("/query/text_video", payload, **kwargs)
+        return self.post_json("/query/text_video", payload, **kwargs)
 
     def query_image_video(
         self, path: Optional[str] = None, topk: Optional[int] = None, **kwargs: Any
@@ -412,7 +412,7 @@ class RestAPIClient:
         if topk is not None:
             payload["topk"] = topk
 
-        return self._post_json("/query/image_video", payload, **kwargs)
+        return self.post_json("/query/image_video", payload, **kwargs)
 
     def query_audio_video(
         self, path: Optional[str] = None, topk: Optional[int] = None, **kwargs: Any
@@ -434,7 +434,7 @@ class RestAPIClient:
         if topk is not None:
             payload["topk"] = topk
 
-        return self._post_json("/query/audio_video", payload, **kwargs)
+        return self.post_json("/query/audio_video", payload, **kwargs)
 
     def query_video_video(
         self, path: Optional[str] = None, topk: Optional[int] = None, **kwargs: Any
@@ -456,4 +456,4 @@ class RestAPIClient:
         if topk is not None:
             payload["topk"] = topk
 
-        return self._post_json("/query/video_video", payload, **kwargs)
+        return self.post_json("/query/video_video", payload, **kwargs)
