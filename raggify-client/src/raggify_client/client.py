@@ -196,11 +196,13 @@ class RestAPIClient:
         """
         return await asyncio.to_thread(self.status, **kwargs)
 
-    def reload(self, config: dict[str, Any] = {}, **kwargs: Any) -> dict[str, str]:
+    def reload(
+        self, config: Optional[dict[str, Any]] = None, **kwargs: Any
+    ) -> dict[str, str]:
         """Reload the server configuration file.
 
         Args:
-            config (dict[str, Any]): Configuration data. Defaults to {}.
+            config (Optional[dict[str, Any]]): Configuration data. Defaults to None.
             **kwargs (Any): Extra query parameters.
 
         Raises:
@@ -209,15 +211,15 @@ class RestAPIClient:
         Returns:
             dict[str, str]: Response data.
         """
-        return self.post_json("/reload", config, **kwargs)
+        return self.post_json("/reload", config or {}, **kwargs)
 
     async def areload(
-        self, config: dict[str, Any] = {}, **kwargs: Any
+        self, config: Optional[dict[str, Any]] = None, **kwargs: Any
     ) -> dict[str, str]:
         """Reload the server configuration file asynchronously.
 
         Args:
-            config (dict[str, Any]): Configuration data. Defaults to {}.
+            config (Optional[dict[str, Any]]): Configuration data. Defaults to None.
             **kwargs (Any): Extra query parameters.
 
         Raises:
