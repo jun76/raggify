@@ -134,7 +134,7 @@ class RestAPIClient:
         Returns:
             dict[str, str]: Response data.
         """
-        return self.get_json("/reload", **kwargs)
+        return self.post_json("/reload", **kwargs)
 
     def upload(
         self, files: list[tuple[str, bytes, Optional[str]]], **kwargs: Any

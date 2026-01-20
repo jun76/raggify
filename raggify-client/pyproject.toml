@@ -5,7 +5,7 @@ build-backend = "uv_build"
 
 [project]
 name = "raggify-client"
-version = "0.3.4"
+version = "0.3.5"
 description = "client tool for raggify, a llama index based library for building multimodal RAG systems"
 authors = [
     { name = "jun76", email = "jun76.git@gmail.com" }
