@@ -211,7 +211,11 @@ class RestAPIClient:
         Returns:
             dict[str, str]: Response data.
         """
-        return self.post_json("/reload", config or {}, **kwargs)
+        payload: dict[str, Any] = {}
+        if config is not None:
+            payload["config"] = config
+
+        return self.post_json("/reload", payload, **kwargs)
 
     async def areload(
         self, config: Optional[dict[str, Any]] = None, **kwargs: Any
